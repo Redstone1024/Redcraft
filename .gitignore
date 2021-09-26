@@ -1,0 +1,6 @@
+# Visual Studio cache directory
+.vs/
+
+# CMake generated files
+Build/
+Install/
