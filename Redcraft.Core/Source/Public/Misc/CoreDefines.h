@@ -1,13 +1,20 @@
 #pragma once
 
-#define NS_REDCRAFT			RFur
-#define NS_REDCRAFT_BEGIN	namespace NS_REDCRAFT {
-#define NS_REDCRAFT_END		}
-#define NS_REDCRAFT_USING	using namespace NS_REDCRAFT;
+#define NS_BEGIN(Name) namespace Name {
+#define NS_END(Name)   }
+#define NS_USING(Name) using namespace Name;
 
-#define NS_STD_BEGIN	namespace std {
-#define NS_STD_END		}
-#define NS_STD_USING	using namespace std;
+#define NS_REDCRAFT		  RFur
+#define NS_REDCRAFT_BEGIN NS_BEGIN(NS_REDCRAFT)
+#define NS_REDCRAFT_END	  NS_END(NS_REDCRAFT)
+#define NS_REDCRAFT_USING NS_USING(NS_REDCRAFT)
+
+#define NS_STD_BEGIN NS_BEGIN(std)
+#define NS_STD_END	 NS_END(std)
+#define NS_STD_USING NS_USING(std)
+
+#define NS_UNNAMED_BEGIN namespace {
+#define NS_UNNAMED_END	 }
 
 NS_REDCRAFT_BEGIN
 
