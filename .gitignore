@@ -2,5 +2,4 @@
 .vs/
 
 # CMake generated files
-Build/
-Install/
+out/

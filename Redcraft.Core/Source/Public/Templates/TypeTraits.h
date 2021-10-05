@@ -84,7 +84,6 @@ template <typename T, size_t N = 0> struct TExtent { static constexpr size_t Val
 template <typename T, typename U>                               struct TIsSame             { static constexpr bool Value = std::is_same_v<T, U>;                             };
 template <typename T, typename U>                               struct TIsBaseOf           { static constexpr bool Value = std::is_base_of_v<T, U>;                          };
 template <typename T, typename U>                               struct TIsConvertible      { static constexpr bool Value = std::is_convertible_v<T, U>;                      };
-template <typename T, typename U>                               struct TIsLayoutCompatible { static constexpr bool Value = std::is_layout_compatible_v<T, U>;                };
 template <typename Func, typename... ArgTypes>                  struct TIsInvocable        { static constexpr bool Value = std::is_invocable_v<Func, ArgTypes...>;           };
 template <typename Result, typename Func, typename... ArgTypes> struct TIsInvocableResult  { static constexpr bool Value = std::is_invocable_r_v<Result, Func, ArgTypes...>; };
 
@@ -120,14 +119,14 @@ template <typename T> struct TRemoveAllExtents { typedef typename std::remove_al
 
 // Miscellaneous transformations
 
-template <size_t Len, size_t Align = alignof(max_align_t)> struct TAlignedStorage { typedef typename std::aligned_storage_t<Len, Align>          Type; };
-template <size_t Len, typename... Types>                   struct TAlignedUnion   { typedef typename std::aligned_union_t<Len, Types...>         Type; };
-template <typename T>                                      struct TDecay          { typedef typename std::decay_t<T>                             Type; };
-template <typename T>                                      struct TRemoveCVRef    { typedef typename std::remove_cvref_t<T>                      Type; };
-template <bool B, typename T, typename F>                  struct TConditional    { typedef typename std::conditional_t<B, T, F>                 Type; };
-template <typename... T>                                   struct TCommonType     { typedef typename std::common_type_t<T...>                    Type; };
-template <typename T>                                      struct TUnderlyingType { typedef typename std::underlying_type_t<T>                   Type; };
-template <typename Func, typename... ArgTypes>             struct TInvokeResult   { typedef typename std::invoke_result_t<Func, ArgTypes...>     Type; };
+template <size_t Len, size_t Alignment>        struct TAlignedStorage { typedef typename std::aligned_storage_t<Len, Alignment>      Type; };
+template <size_t Len, typename... Types>       struct TAlignedUnion   { typedef typename std::aligned_union_t<Len, Types...>         Type; };
+template <typename T>                          struct TDecay          { typedef typename std::decay_t<T>                             Type; };
+template <typename T>                          struct TRemoveCVRef    { typedef typename std::remove_cvref_t<T>                      Type; };
+template <bool B, typename T, typename F>      struct TConditional    { typedef typename std::conditional_t<B, T, F>                 Type; };
+template <typename... T>                       struct TCommonType     { typedef typename std::common_type_t<T...>                    Type; };
+template <typename T>                          struct TUnderlyingType { typedef typename std::underlying_type_t<T>                   Type; };
+template <typename Func, typename... ArgTypes> struct TInvokeResult   { typedef typename std::invoke_result_t<Func, ArgTypes...>     Type; };
 
 // Operations on traits
 

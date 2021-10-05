@@ -2,6 +2,7 @@
 
 #include "Misc/CoreDefines.h"
 
+#include <new>
 #include <cstdint>
 #include <cstdlib>
 #include <cstddef>
@@ -46,20 +47,36 @@ NS_REDCRAFT_BEGIN
 
 // Alignment.
 
-#if defined(__clang__)
+#if PLATFORM_WINDOWS
 
-	#define GCC_PACK(n)		__attribute__((packed,aligned(n)))
-	#define GCC_ALIGN(n)	__attribute__((aligned(n)))
-
-	#if defined(_MSC_VER)
-		#define MS_ALIGN(n)	__declspec(align(n))
+	#if defined(__clang__)
+	
+		#define GCC_PACK(n)		__attribute__((packed,aligned(n)))
+		#define GCC_ALIGN(n)	__attribute__((aligned(n)))
+		
+		#if defined(_MSC_VER)
+			#define MS_ALIGN(n)	__declspec(align(n))
+		#endif
+	
+	#else
+	
+		#define GCC_PACK(n)
+		#define GCC_ALIGN(n)
+		#define MS_ALIGN(n)		__declspec(align(n))
+	
 	#endif
+	
+#elif PLATFORM_LINUX
+
+	#define GCC_PACK(n)			__attribute__((packed,aligned(n)))
+	#define GCC_ALIGN(n)		__attribute__((aligned(n)))
+	#define MS_ALIGN(n)
 
 #else
 
 	#define GCC_PACK(n)
 	#define GCC_ALIGN(n)
-	#define MS_ALIGN(n)		__declspec(align(n))
+	#define MS_ALIGN(n)
 
 #endif
 
@@ -113,10 +130,6 @@ typedef intptr_t			ssize_t;
 
 typedef decltype(NULL)		null_t;
 typedef std::nullptr_t		nullptr_t;
-
-// Alignment.
-
-typedef std::max_align_t	max_align_t;
 
 #if PLATFORM_LINUX
 	#define PLATFORM_TCHAR_IS_CHAR16 1
