@@ -2,7 +2,7 @@
 
 #include "Templates/Alignment.h"
 
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 #include <corecrt_malloc.h>
 #endif
 
@@ -15,7 +15,7 @@ void* Malloc(size_t Count, uint32 Alignment)
 
 	void* Result = nullptr;
 
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 	if (Count != 0) Result = _aligned_malloc(Count, Alignment);
 #else
 	void* Ptr = SystemMalloc(Count + Alignment + sizeof(void*) + sizeof(size_t));
@@ -36,7 +36,7 @@ void* Realloc(void* Ptr, size_t Count, uint32 Alignment)
 
 	if (Ptr && Count)
 	{
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 		return _aligned_realloc(Ptr, Count, Alignment);
 #else
 		void* Result = Malloc(Count, Alignment);

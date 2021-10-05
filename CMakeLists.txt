@@ -26,6 +26,10 @@ endif ()
 add_compile_definitions ("BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
 	add_compile_definitions ("BUILD_DEBUG=1")
+elseif (CMAKE_BUILD_TYPE MATCHES "Release")
+	add_compile_definitions ("BUILD_RELEASE=1")
+else ()
+	add_compile_definitions ("BUILD_UNKNOWN=1")
 endif ()
 
 # Add subproject  

@@ -9,6 +9,40 @@
 
 NS_REDCRAFT_BEGIN
 
+// Build information macro.
+
+#ifndef PLATFORM_NAME
+	#define PLATFORM_NAME Unknown
+#endif
+
+#ifndef PLATFORM_WINDOWS
+	#define PLATFORM_WINDOWS 0
+#endif
+
+#ifndef PLATFORM_LINUX
+	#define PLATFORM_LINUX 0
+#endif
+
+#ifndef PLATFORM_UNKNOWN
+	#define PLATFORM_UNKNOWN 0
+#endif
+
+#ifndef BUILD_TYPE
+	#define BUILD_TYPE Unknown
+#endif
+
+#ifndef BUILD_DEBUG
+	#define BUILD_DEBUG 0
+#endif
+
+#ifndef BUILD_RELEASE
+	#define BUILD_RELEASE 0
+#endif
+
+#ifndef BUILD_UNKNOWN
+	#define BUILD_UNKNOWN 0
+#endif
+
 // Function type macros.
 
 #if PLATFORM_WINDOWS

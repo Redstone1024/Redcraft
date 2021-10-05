@@ -10,9 +10,7 @@ NS_REDCRAFT_USING
 
 int main()
 {
-	int32* Ptr = new int32;
-	*Ptr = 13;
-	cout << *Ptr << endl;
-	delete Ptr;
+	check_no_entry();
+	cout << "Done!" << endl;
 	return 0;
 }
