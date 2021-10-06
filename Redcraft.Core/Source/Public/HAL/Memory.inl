@@ -7,27 +7,27 @@
 NS_REDCRAFT_BEGIN
 NS_BEGIN(Memory)
 
-void* Memmove(void* Dest, const void* Src, size_t Count)
+FORCEINLINE void* Memmove(void* Dest, const void* Src, size_t Count)
 {
 	return std::memmove(Dest, Src, Count);
 }
 
-int32 Memcmp(const void* Buf1, const void* Buf2, size_t Count)
+FORCEINLINE int32 Memcmp(const void* Buf1, const void* Buf2, size_t Count)
 {
 	return std::memcmp(Buf1, Buf2, Count);
 }
 
-void Memset(void* Dest, uint8 ValueToSet, size_t Count)
+FORCEINLINE void Memset(void* Dest, uint8 ValueToSet, size_t Count)
 {
 	std::memset(Dest, ValueToSet, Count);
 }
 
-void* Memzero(void* Dest, size_t Count)
+FORCEINLINE void* Memzero(void* Dest, size_t Count)
 {
 	return std::memset(Dest, 0, Count);
 }
 
-void* Memcpy(void* Dest, const void* Src, size_t Count)
+FORCEINLINE void* Memcpy(void* Dest, const void* Src, size_t Count)
 {
 	return std::memcpy(Dest, Src, Count);
 }
@@ -53,12 +53,12 @@ static FORCEINLINE void Memcpy(T& Dest, const T& Src)
 	Memcpy(&Dest, &Src, sizeof(T));
 }
 
-void* SystemMalloc(size_t Count)
+FORCEINLINE void* SystemMalloc(size_t Count)
 {
 	return std::malloc(Count);
 }
 
-void SystemFree(void* Ptr)
+FORCEINLINE void SystemFree(void* Ptr)
 {
 	std::free(Ptr);
 }
