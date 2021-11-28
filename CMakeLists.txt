@@ -1,7 +1,9 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
 # Main project
-project ("Redcraft")
+string(REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR})
+project (${CURRENT_FOLDER})
+message (STATUS "Configuring project: " ${CURRENT_FOLDER})
 
 # Reset the binary file directory
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Build")
@@ -38,7 +40,6 @@ foreach (PROJECT_SUBDIRECTORY ${PROJECT_FOLDERS})
 	if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_SUBDIRECTORY}")
 		file (GLOB PROJECT_CMAKELISTS "${PROJECT_SUBDIRECTORY}/CMakeLists.txt")
 		if (NOT "${PROJECT_CMAKELISTS}" STREQUAL "")
-			message (STATUS "Add subdirectory: " ${PROJECT_SUBDIRECTORY})
 			add_subdirectory (${PROJECT_SUBDIRECTORY})
 		endif ()
 	endif ()
