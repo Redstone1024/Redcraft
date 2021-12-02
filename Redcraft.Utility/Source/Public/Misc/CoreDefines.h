@@ -5,6 +5,14 @@
 #define NAMESPACE_END(Name)				}
 #define NAMESPACE_USING(Name)			using namespace Name;
 
+// Define the inline namespace
+#define NAMESPACE_INLINE_BEGIN(Name)	inline NAMESPACE_BEGIN(Name)
+#define NAMESPACE_INLINE_END(Name)		NAMESPACE_END(Name)
+
+// Define the module namespace
+#define NAMESPACE_MODULE_BEGIN(Name)	NAMESPACE_INLINE_BEGIN(Name)
+#define NAMESPACE_MODULE_END(Name)		NAMESPACE_INLINE_END(Name)
+
 // Define the redcraft master namespace
 #define NAMESPACE_REDCRAFT				RFur
 #define NAMESPACE_REDCRAFT_BEGIN		NAMESPACE_BEGIN(NAMESPACE_REDCRAFT)
@@ -30,10 +38,12 @@
 #define NAMESPACE_DEFINE(Source, Target)	NAMESPACE_BEGIN(Target) NAMESPACE_USING(Source) NAMESPACE_END(Target)
 
 NAMESPACE_REDCRAFT_BEGIN
+NAMESPACE_MODULE_BEGIN(Utility)
 
 enum { INDEX_NONE = -1 };
 enum { UNICODE_BOM = 0xfeff };
 
 enum EForceInit { ForceInit };
 
+NAMESPACE_MODULE_END(Utility)
 NAMESPACE_REDCRAFT_END
