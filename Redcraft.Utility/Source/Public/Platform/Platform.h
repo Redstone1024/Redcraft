@@ -6,6 +6,7 @@
 #include <cstdlib>
 
 NAMESPACE_REDCRAFT_BEGIN
+NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 // Build information macro.
@@ -66,18 +67,18 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #if PLATFORM_WINDOWS
 
-#	define VARARGS				__cdecl                    
-#	define CDECL				__cdecl                    
-#	define NAMESPACE_STDCALL	__NAMESPACE_STDcall                
-#	define FORCEINLINE			__forceinline            
-#	define FORCENOINLINE		__declspec(noinline)    
+#	define VARARGS				__cdecl
+#	define CDECL				__cdecl
+#	define STDCALL				__stdcall
+#	define FORCEINLINE			__forceinline
+#	define FORCENOINLINE		__declspec(noinline)
 #	define RESTRICT				__restrict
 
 #elif PLATFORM_LINUX
 
 #	define VARARGS
 #	define CDECL
-#	define NAMESPACE_STDCALL
+#	define STDCALL
 #	define FORCENOINLINE		__attribute__((noinline))
 #	define RESTRICT				__restrict
 
@@ -91,45 +92,10 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #	define VARARGS
 #	define CDECL
-#	define NAMESPACE_STDCALL
+#	define STDCALL
 #	define FORCEINLINE
 #	define FORCENOINLINE
 #	define RESTRICT				__restrict
-
-#endif
-
-// Alignment.
-
-#if PLATFORM_WINDOWS
-
-#	if defined(__clang__)
-
-#		define GCC_PACK(n)		__attribute__((packed,aligned(n)))
-#		define GCC_ALIGN(n)		__attribute__((aligned(n)))
-
-#		if defined(_MSC_VER)
-#			define MS_ALIGN(n)	__declspec(align(n))
-#		endif
-
-#	else
-
-#		define GCC_PACK(n)
-#		define GCC_ALIGN(n)
-#		define MS_ALIGN(n)		__declspec(align(n))
-
-#	endif
-
-#elif PLATFORM_LINUX
-
-#	define GCC_PACK(n)			__attribute__((packed,aligned(n)))
-#	define GCC_ALIGN(n)			__attribute__((aligned(n)))
-#	define MS_ALIGN(n)
-
-#else
-
-#	define GCC_PACK(n)
-#	define GCC_ALIGN(n)
-#	define MS_ALIGN(n)
 
 #endif
 
@@ -137,13 +103,13 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #if PLATFORM_WINDOWS
 
-#	define DLLEXPORT    __declspec(dllexport)
-#	define DLLIMPORT    __declspec(dllimport)
+#	define DLLEXPORT	__declspec(dllexport)
+#	define DLLIMPORT	__declspec(dllimport)
 
 #elif PLATFORM_LINUX
 
-#	define DLLEXPORT    __attribute__((visibility("default")))
-#	define DLLIMPORT    __attribute__((visibility("default")))
+#	define DLLEXPORT	__attribute__((visibility("default")))
+#	define DLLIMPORT	__attribute__((visibility("default")))
 
 #else
 
@@ -200,4 +166,5 @@ typedef NAMESPACE_STD::nullptr_t	nullptr_t;
 #define TEXT(x) TEXT_PASTE(x)
 
 NAMESPACE_MODULE_END(Utility)
+NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

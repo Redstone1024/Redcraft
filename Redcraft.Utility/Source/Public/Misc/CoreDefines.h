@@ -33,11 +33,11 @@
 // Define the unnamed namespace
 #define NAMESPACE_UNNAMED_BEGIN			namespace {
 #define NAMESPACE_UNNAMED_END			}
-
-// Create an alias for the namespace - like typedef
-#define NAMESPACE_DEFINE(Source, Target)	NAMESPACE_BEGIN(Target) NAMESPACE_USING(Source) NAMESPACE_END(Target)
+#define NAMESPACE_INLINE_UNNAMED_BEGIN	inline namespace {
+#define NAMESPACE_INLINE_UNNAMED_END	}
 
 NAMESPACE_REDCRAFT_BEGIN
+NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 enum { INDEX_NONE = -1 };
@@ -46,4 +46,5 @@ enum { UNICODE_BOM = 0xfeff };
 enum EForceInit { ForceInit };
 
 NAMESPACE_MODULE_END(Utility)
+NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
