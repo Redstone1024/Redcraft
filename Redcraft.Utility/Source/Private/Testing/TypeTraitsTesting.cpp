@@ -2,6 +2,7 @@
 #include "Misc/AssertionMacros.h"
 #include "TypeTraits/HelperClasses.h"
 #include "TypeTraits/PrimaryType.h"
+#include "TypeTraits/CompositeType.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -106,6 +107,46 @@ void TestTypeTraits()
 
 	always_check(!TypeTraits::TIsEnumClass<ETestEnum>::Value);
 	always_check(TypeTraits::TIsEnumClass<ETestEnumClass>::Value);
+
+	// CompositeType.h
+
+	always_check(!TypeTraits::TIsFundamental<FTestStruct>::Value);
+	always_check(TypeTraits::TIsFundamental<int32>::Value);
+	always_check(TypeTraits::TIsFundamental<float>::Value);
+	always_check(!TypeTraits::TIsFundamental<int32*>::Value);
+	always_check(TypeTraits::TIsFundamental<void>::Value);
+
+	always_check(!TypeTraits::TIsArithmetic<FTestStruct>::Value);
+	always_check(TypeTraits::TIsArithmetic<int32>::Value);
+	always_check(TypeTraits::TIsArithmetic<float>::Value);
+	always_check(!TypeTraits::TIsArithmetic<int32*>::Value);
+	always_check(!TypeTraits::TIsArithmetic<void>::Value);
+
+	always_check(!TypeTraits::TIsScalar<FTestStruct>::Value);
+	always_check(TypeTraits::TIsScalar<int32>::Value);
+	always_check(TypeTraits::TIsScalar<float>::Value);
+	always_check(TypeTraits::TIsScalar<int32*>::Value);
+	always_check(!TypeTraits::TIsScalar<void>::Value);
+
+	always_check(TypeTraits::TIsObject<FTestStruct>::Value);
+	always_check(!TypeTraits::TIsObject<FTestStruct&>::Value);
+	always_check(TypeTraits::TIsObject<int32>::Value);
+	always_check(TypeTraits::TIsObject<int32*>::Value);
+	always_check(!TypeTraits::TIsObject<int32&>::Value);
+
+	always_check(TypeTraits::TIsCompound<FTestStruct>::Value);
+	always_check(TypeTraits::TIsCompound<FTestStruct&>::Value);
+	always_check(!TypeTraits::TIsCompound<int32>::Value);
+	always_check(TypeTraits::TIsCompound<int32*>::Value);
+	always_check(TypeTraits::TIsCompound<int32&>::Value);
+
+	always_check(!TypeTraits::TIsReference<int32>::Value);
+	always_check(!TypeTraits::TIsReference<int32*>::Value);
+	always_check(TypeTraits::TIsReference<int32&>::Value);
+	always_check(TypeTraits::TIsReference<int32&&>::Value);
+
+	always_check(!TypeTraits::TIsMemberPointer<FTestStruct>::Value);
+	always_check(TypeTraits::TIsMemberPointer<int32(FTestStruct::*)>::Value);
 }
 
 NAMESPACE_MODULE_END(Utility)
