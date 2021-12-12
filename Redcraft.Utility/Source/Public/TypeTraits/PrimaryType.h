@@ -25,19 +25,6 @@ template <typename T> struct TIsUnion                 : TBoolConstant<NAMESPACE_
 template <typename T> struct TIsClass                 : TBoolConstant<NAMESPACE_STD::is_class_v<T>>                   { };
 template <typename T> struct TIsFunction              : TBoolConstant<NAMESPACE_STD::is_function_v<T>>                { };
 
-NAMESPACE_PRIVATE_BEGIN
-
-static char(&Resolve(int))[2];
-static char Resolve(...);
-
-template <typename T>
-struct TIsEnumConvertibleToInt : TBoolConstant<sizeof(Resolve(T())) - 1> { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T>
-struct TIsEnumClass : TBoolConstant<TAnd<TIsEnum<T>, TNot<NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>>>::Value> { };
-
 NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
