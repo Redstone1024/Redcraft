@@ -4,6 +4,7 @@
 #include "TypeTraits/PrimaryType.h"
 #include "TypeTraits/CompositeType.h"
 #include "TypeTraits/TypeProperties.h"
+#include "TypeTraits/SupportedOperations.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -22,6 +23,20 @@ struct FTestStructE { virtual void Member() = 0; };
 struct FTestStructF { int32 MemberA; private: int32 MemberB; };
 struct FTestStructG { char MemberA; float MemberB; short MemberC; int MemberD; };
 struct FTestStructH final : FTestStructE { virtual void Member() override { } };
+struct FTestStructI { int32 MemberA; double MemberB; FTestStructI(int32 A, double B) { } FTestStructI& operator=(int32) { return *this; };  };
+struct FTestStructJ { int32 MemberA; double MemberB; FTestStructJ() { }; };
+struct FTestStructK { int32 MemberA; double MemberB; FTestStructK() = default; };
+struct FTestStructL { int32 MemberA; double MemberB; FTestStructL() = delete; };
+struct FTestStructM { int32 MemberA; double MemberB; FTestStructM(const FTestStructM&) { }; FTestStructM& operator=(const FTestStructM&) { return *this; }; };
+struct FTestStructN { int32 MemberA; double MemberB; FTestStructN(const FTestStructN&) = default; FTestStructN& operator=(const FTestStructN&) = default;  };
+struct FTestStructO { int32 MemberA; double MemberB; FTestStructO(const FTestStructO&) = delete; FTestStructO& operator=(const FTestStructO&) = delete;  };
+struct FTestStructP { int32 MemberA; double MemberB; FTestStructP(FTestStructP&&) { }; FTestStructP& operator=(FTestStructP&&) { return *this; }; };
+struct FTestStructQ { int32 MemberA; double MemberB; FTestStructQ(FTestStructQ&&) = default; FTestStructQ& operator=(FTestStructQ&&) = default; };
+struct FTestStructR { int32 MemberA; double MemberB; FTestStructR(FTestStructR&&) = delete; FTestStructR& operator=(FTestStructR&&) = delete; };
+struct FTestStructS { int32 MemberA; double MemberB; ~FTestStructS() { } };
+struct FTestStructT { int32 MemberA; double MemberB; ~FTestStructT() = default; };
+struct FTestStructU { int32 MemberA; double MemberB; ~FTestStructU() = delete; };
+struct FTestStructV { int32 MemberA; double MemberB; virtual ~FTestStructV() { }; };
 
 enum ETestEnum { };
 enum class ETestEnumClass { };
@@ -215,6 +230,77 @@ void TestTypeTraits()
 
 	always_check(!TypeTraits::TIsScopedEnum<ETestEnum>::Value);
 	always_check(TypeTraits::TIsScopedEnum<ETestEnumClass>::Value);
+
+	// SupportedOperations.h
+
+	always_check(!TypeTraits::TIsDefaultConstructible<FTestStructI>::Value);
+	always_check(TypeTraits::TIsDefaultConstructible<FTestStructJ>::Value);
+	always_check(TypeTraits::TIsDefaultConstructible<FTestStructK>::Value);
+	always_check(!TypeTraits::TIsDefaultConstructible<FTestStructL>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyDefaultConstructible<FTestStructI>::Value);
+	always_check(!TypeTraits::TIsTriviallyDefaultConstructible<FTestStructJ>::Value);
+	always_check(TypeTraits::TIsTriviallyDefaultConstructible<FTestStructK>::Value);
+	always_check(!TypeTraits::TIsTriviallyDefaultConstructible<FTestStructL>::Value);
+
+	always_check(!(TypeTraits::TIsConstructible<FTestStructI, int32>::Value));
+	always_check((TypeTraits::TIsConstructible<FTestStructI, FTestStructI&>::Value));
+	always_check((TypeTraits::TIsConstructible<FTestStructI, int32, double>::Value));
+
+	always_check(!(TypeTraits::TIsTriviallyConstructible<FTestStructI, int32>::Value));
+	always_check((TypeTraits::TIsTriviallyConstructible<FTestStructI, FTestStructI&>::Value));
+	always_check(!(TypeTraits::TIsTriviallyConstructible<FTestStructI, int32, double>::Value));
+
+	always_check(TypeTraits::TIsCopyConstructible<FTestStructM>::Value);
+	always_check(TypeTraits::TIsCopyConstructible<FTestStructN>::Value);
+	always_check(!TypeTraits::TIsCopyConstructible<FTestStructO>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyCopyConstructible<FTestStructM>::Value);
+	always_check(TypeTraits::TIsTriviallyCopyConstructible<FTestStructN>::Value);
+	always_check(!TypeTraits::TIsTriviallyCopyConstructible<FTestStructO>::Value);
+
+	always_check(TypeTraits::TIsMoveConstructible<FTestStructP>::Value);
+	always_check(TypeTraits::TIsMoveConstructible<FTestStructQ>::Value);
+	always_check(!TypeTraits::TIsMoveConstructible<FTestStructR>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyMoveConstructible<FTestStructP>::Value);
+	always_check(TypeTraits::TIsTriviallyMoveConstructible<FTestStructQ>::Value);
+	always_check(!TypeTraits::TIsTriviallyMoveConstructible<FTestStructR>::Value);
+
+	always_check(!(TypeTraits::TIsAssignable<FTestStructI, FTestStructH>::Value));
+	always_check((TypeTraits::TIsAssignable<FTestStructI, FTestStructI&>::Value));
+	always_check((TypeTraits::TIsAssignable<FTestStructI, int32>::Value));
+
+	always_check(!(TypeTraits::TIsTriviallyAssignable<FTestStructI, FTestStructH>::Value));
+	always_check((TypeTraits::TIsTriviallyAssignable<FTestStructI, FTestStructI&>::Value));
+	always_check(!(TypeTraits::TIsTriviallyAssignable<FTestStructI, int32>::Value));
+
+	always_check(TypeTraits::TIsCopyAssignable<FTestStructM>::Value);
+	always_check(TypeTraits::TIsCopyAssignable<FTestStructN>::Value);
+	always_check(!TypeTraits::TIsCopyAssignable<FTestStructO>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyCopyAssignable<FTestStructM>::Value);
+	always_check(TypeTraits::TIsTriviallyCopyAssignable<FTestStructN>::Value);
+	always_check(!TypeTraits::TIsTriviallyCopyAssignable<FTestStructO>::Value);
+
+	always_check(TypeTraits::TIsMoveAssignable<FTestStructP>::Value);
+	always_check(TypeTraits::TIsMoveAssignable<FTestStructQ>::Value);
+	always_check(!TypeTraits::TIsMoveAssignable<FTestStructR>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyMoveAssignable<FTestStructP>::Value);
+	always_check(TypeTraits::TIsTriviallyMoveAssignable<FTestStructQ>::Value);
+	always_check(!TypeTraits::TIsTriviallyMoveAssignable<FTestStructR>::Value);
+
+	always_check(TypeTraits::TIsDestructible<FTestStructS>::Value);
+	always_check(TypeTraits::TIsDestructible<FTestStructT>::Value);
+	always_check(!TypeTraits::TIsDestructible<FTestStructU>::Value);
+
+	always_check(!TypeTraits::TIsTriviallyDestructible<FTestStructS>::Value);
+	always_check(TypeTraits::TIsTriviallyDestructible<FTestStructT>::Value);
+	always_check(!TypeTraits::TIsTriviallyDestructible<FTestStructU>::Value);
+
+	always_check(!TypeTraits::THasVirtualDestructor<FTestStructT>::Value);
+	always_check(TypeTraits::THasVirtualDestructor<FTestStructV>::Value);
 }
 
 NAMESPACE_MODULE_END(Utility)
