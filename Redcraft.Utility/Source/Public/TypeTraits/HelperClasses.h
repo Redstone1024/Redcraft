@@ -10,17 +10,15 @@ NAMESPACE_BEGIN(TypeTraits)
 template <typename InType, InType InValue>
 struct TConstant
 {
-	using Type = InType;
-	static constexpr Type Value = InValue;
-	constexpr operator Type() const { return Value; }
-	constexpr Type operator()() const { return Value; }
+	using ValueType = InType;
+	using Type = TConstant;
+	static constexpr ValueType Value = InValue;
+	constexpr operator ValueType() const { return Value; }
+	constexpr ValueType operator()() const { return Value; }
 };
 
 template <bool InValue>
 using TBoolConstant = TConstant<bool, InValue>;
-
-template <int32 InValue>
-using TIntegralConstant = TConstant<int32, InValue>;
 
 using FTrue  = TBoolConstant<true>;
 using FFalse = TBoolConstant<false>;

@@ -47,9 +47,9 @@ void TestTypeTraits()
 {
 	// HelperClasses.h
 
-	always_check(TypeTraits::TIntegralConstant<1>::Value == 1);
-	always_check(static_cast<int32>(TypeTraits::TIntegralConstant<2>::Value) == 2);
-	always_check(TypeTraits::TIntegralConstant<3>() == 3);
+	always_check((TypeTraits::TConstant<int32, 1>::Value == 1));
+	always_check(static_cast<int32>(TypeTraits::TConstant<int32, 2>::Value) == 2);
+	always_check((TypeTraits::TConstant<int32, 3>() == 3));
 
 	always_check(!TypeTraits::FFalse::Value);
 	always_check(TypeTraits::FTrue::Value);
