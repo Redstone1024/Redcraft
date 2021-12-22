@@ -5,6 +5,7 @@
 #include "TypeTraits/CompositeType.h"
 #include "TypeTraits/TypeProperties.h"
 #include "TypeTraits/SupportedOperations.h"
+#include "TypeTraits/Miscellaneous.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -16,7 +17,7 @@ int32 TestObject;
 void TestFunction() { }
 
 struct FTestStructA { };
-struct FTestStructB { int32 Member; };
+struct FTestStructB : FTestStructA { int32 Member; };
 struct FTestStructC { FTestStructC() { } };
 struct FTestStructD { FTestStructD(const FTestStructD&) { } };
 struct FTestStructE { virtual void Member() = 0; };
@@ -37,9 +38,13 @@ struct FTestStructS { int32 MemberA; double MemberB; ~FTestStructS() { } };
 struct FTestStructT { int32 MemberA; double MemberB; ~FTestStructT() = default; };
 struct FTestStructU { int32 MemberA; double MemberB; ~FTestStructU() = delete; };
 struct FTestStructV { int32 MemberA; double MemberB; virtual ~FTestStructV() { }; };
+struct FTestStructW { int32 MemberA; double MemberB; operator FTestStructV() { return FTestStructV(); } };
 
 enum ETestEnum { };
 enum class ETestEnumClass { };
+enum class ETestEnumClass8 : uint8 { };
+enum class ETestEnumClass32 : uint32 { };
+enum class ETestEnumClass64 : uint64 { };
 
 union FTestUnion { };
 
@@ -301,6 +306,146 @@ void TestTypeTraits()
 
 	always_check(!TypeTraits::THasVirtualDestructor<FTestStructT>::Value);
 	always_check(TypeTraits::THasVirtualDestructor<FTestStructV>::Value);
+
+	// Miscellaneous.h
+
+	always_check(TypeTraits::TRank<int32[1][2][3]>::Value == 3);
+	always_check(TypeTraits::TRank<int32[1][2][3][4]>::Value == 4);
+	always_check(TypeTraits::TRank<int32>::Value == 0);
+
+	always_check(TypeTraits::TExtent<int32[1][2][3]>::Value == 1);
+	always_check((TypeTraits::TExtent<int32[1][2][3][4], 1>::Value == 2));
+	always_check(TypeTraits::TExtent<int32[]>::Value == 0);
+
+	always_check(!(TypeTraits::TIsSame<int32, int64>::Value));
+	always_check((TypeTraits::TIsSame<int32, int32>::Value));
+
+	always_check(!(TypeTraits::TIsBaseOf<FTestStructH, FTestStructD>::Value));
+	always_check(!(TypeTraits::TIsBaseOf<FTestStructH, FTestStructE>::Value));
+	always_check((TypeTraits::TIsBaseOf<FTestStructE, FTestStructH>::Value));
+
+	always_check((TypeTraits::TIsConvertible<int32, uint32>::Value));
+	always_check(!(TypeTraits::TIsConvertible<FTestStructH*, FTestStructD*>::Value));
+	always_check((TypeTraits::TIsConvertible<FTestStructH*, FTestStructE*>::Value));
+	always_check(!(TypeTraits::TIsConvertible<FTestStructE*, FTestStructH*>::Value));
+	always_check((TypeTraits::TIsConvertible<FTestStructW, FTestStructV>::Value));
+
+	always_check((TypeTraits::TIsInvocable<void, int32()>::Value));
+	always_check((TypeTraits::TIsInvocable<int32, int32()>::Value));
+	always_check((TypeTraits::TIsInvocable<int32, int32(int32), int32>::Value));
+	always_check(!(TypeTraits::TIsInvocable<int32, int32(int32), FTestStructA>::Value));
+	always_check(!(TypeTraits::TIsInvocable<FTestStructA, int32(int32), int32>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<int32*>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<int32&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<int32&&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<const int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<const volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveConst<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<int32*>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<int32&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<int32&&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<const int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<const volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveVolatile<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<int32*>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<int32&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<int32&&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<const int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<volatile int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<const volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveCV<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<int32*>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<int32&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<int32&&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<const int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<const volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemovePointer<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<int32*>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<int32&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<int32&&>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<const int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<const volatile int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveReference<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<int32>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<int32*>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<int32&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<int32&&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<const int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<volatile int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<const volatile int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveCVRef<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveExtent<int32[1]>::Type>::Value));
+	always_check(!(TypeTraits::TIsSame<int32, TypeTraits::TRemoveExtent<int32[1][2]>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32[2][3], TypeTraits::TRemoveExtent<int32[1][2][3]>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveAllExtents<int32[1]>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveAllExtents<int32[1][2]>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TRemoveAllExtents<int32[1][2][3]>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TMakeSigned<int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TMakeSigned<uint32>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<uint32, TypeTraits::TMakeUnsigned<int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<uint32, TypeTraits::TMakeUnsigned<uint32>::Type>::Value));
+
+	TypeTraits::TAlignedStorage<32, 4>::Type Aligned4;
+	TypeTraits::TAlignedStorage<32, 8>::Type Aligned8;
+	TypeTraits::TAlignedStorage<32, 16>::Type Aligned16;
+	TypeTraits::TAlignedStorage<32, 32>::Type Aligned32;
+	always_check((int64)(&Aligned4) % 4 == 0);
+	always_check((int64)(&Aligned8) % 8 == 0);
+	always_check((int64)(&Aligned16) % 16 == 0);
+	always_check((int64)(&Aligned32) % 32 == 0);
+
+	always_check(sizeof(TypeTraits::TAlignedUnion<8, int32, int32>::Type) == 8);
+	always_check(sizeof(TypeTraits::TAlignedUnion<0, int8, int32>::Type) == 4);
+	always_check(sizeof(TypeTraits::TAlignedUnion<0, int32, int64>::Type) == 8);
+	always_check(sizeof(TypeTraits::TAlignedUnion<0, int32, double>::Type) == 8);
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32*, TypeTraits::TDecay<int32*>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32*, TypeTraits::TDecay<int32[]>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<int32&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<int32&&>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<const int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<volatile int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<const volatile int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TDecay<const volatile int32&>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TConditional<true, int32, int64>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int64, TypeTraits::TConditional<false, int32, int64>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TCommonType<int8, int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int64, TypeTraits::TCommonType<int8, int32, int64>::Type>::Value));
+	always_check((TypeTraits::TIsSame<double, TypeTraits::TCommonType<float, double>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int, TypeTraits::TUnderlyingType<ETestEnumClass>::Type>::Value));
+	always_check((TypeTraits::TIsSame<uint8, TypeTraits::TUnderlyingType<ETestEnumClass8>::Type>::Value));
+	always_check((TypeTraits::TIsSame<uint32, TypeTraits::TUnderlyingType<ETestEnumClass32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<uint64, TypeTraits::TUnderlyingType<ETestEnumClass64>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TInvokeResult<int32()>::Type>::Value));
+	always_check((TypeTraits::TIsSame<int32, TypeTraits::TInvokeResult<int32(int32), int32>::Type>::Value));
+
+	always_check((TypeTraits::TIsSame<void, TypeTraits::TVoid<int32>::Type>::Value));
+	always_check((TypeTraits::TIsSame<void, TypeTraits::TVoid<int32, int64>::Type>::Value));
+
 }
 
 NAMESPACE_MODULE_END(Utility)
