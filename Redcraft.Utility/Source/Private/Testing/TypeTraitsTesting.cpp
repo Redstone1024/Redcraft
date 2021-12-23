@@ -1,11 +1,6 @@
 #include "Testing/TypeTraitsTesting.h"
 #include "Misc/AssertionMacros.h"
-#include "TypeTraits/HelperClasses.h"
-#include "TypeTraits/PrimaryType.h"
-#include "TypeTraits/CompositeType.h"
-#include "TypeTraits/TypeProperties.h"
-#include "TypeTraits/SupportedOperations.h"
-#include "TypeTraits/Miscellaneous.h"
+#include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
