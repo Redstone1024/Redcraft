@@ -8,7 +8,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-NAMESPACE_BEGIN(TypeTraits)
 
 NAMESPACE_PRIVATE_BEGIN
 
@@ -56,7 +55,6 @@ template <typename T>                     struct TUnderlyingType { using Type = 
 template <typename F, typename... Args>   struct TInvokeResult   { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     }; // FIXME: The result for char(&())[2] is wrong on MSVC
 template <typename... Types>              struct TVoid           { using Type = void;                                           };
 
-NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

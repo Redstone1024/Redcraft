@@ -8,7 +8,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-NAMESPACE_BEGIN(TypeTraits)
 
 template <typename T> struct TIsConst                        : TBoolConstant<NAMESPACE_STD::is_const_v<T>>                          { };
 template <typename T> struct TIsVolatile                     : TBoolConstant<NAMESPACE_STD::is_volatile_v<T>>                       { };
@@ -37,9 +36,8 @@ struct TIsEnumConvertibleToInt : TBoolConstant<sizeof(Resolve(T())) - 1> { };
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-struct TIsScopedEnum : TAnd<TIsEnum<T>, TNot<NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>>> { };
+struct TIsScopedEnum : TBoolConstant<TIsEnum<T>::Value && !NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>::Value> { };
 
-NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

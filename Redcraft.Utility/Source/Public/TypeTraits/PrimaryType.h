@@ -8,7 +8,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-NAMESPACE_BEGIN(TypeTraits)
 
 template <typename T> struct TIsVoid                  : TBoolConstant<NAMESPACE_STD::is_void_v<T>>                    { };
 template <typename T> struct TIsNullPointer           : TBoolConstant<NAMESPACE_STD::is_null_pointer_v<T>>            { };
@@ -25,7 +24,6 @@ template <typename T> struct TIsUnion                 : TBoolConstant<NAMESPACE_
 template <typename T> struct TIsClass                 : TBoolConstant<NAMESPACE_STD::is_class_v<T>>                   { };
 template <typename T> struct TIsFunction              : TBoolConstant<NAMESPACE_STD::is_function_v<T>>                { };
 
-NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

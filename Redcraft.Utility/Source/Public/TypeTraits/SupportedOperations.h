@@ -8,7 +8,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-NAMESPACE_BEGIN(TypeTraits)
 
 template <typename T> struct TIsDefaultConstructible          : TBoolConstant<NAMESPACE_STD::is_default_constructible_v<T>>           { };
 template <typename T> struct TIsCopyConstructible             : TBoolConstant<NAMESPACE_STD::is_copy_constructible_v<T>>              { };
@@ -45,7 +44,6 @@ template <typename T, typename... Args> struct TIsTriviallyConstructible : TBool
 
 //template <typename T, typename... Args> struct TIsNothrowConstructible;
 
-NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
