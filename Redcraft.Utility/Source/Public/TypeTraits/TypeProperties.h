@@ -28,8 +28,8 @@ template <typename T> struct TIsUnboundedArray               : TBoolConstant<NAM
 
 NAMESPACE_PRIVATE_BEGIN
 
-char(&Resolve(int64))[2];
-char Resolve(...);
+uint8(&Resolve(int64))[2];
+uint8 Resolve(...);
 
 template <typename T>
 struct TIsEnumConvertibleToInt : TBoolConstant<sizeof(Resolve(T())) - 1> { };
@@ -37,7 +37,7 @@ struct TIsEnumConvertibleToInt : TBoolConstant<sizeof(Resolve(T())) - 1> { };
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-struct TIsScopedEnum : TBoolConstant<TAnd<TIsEnum<T>, TNot<NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>>>::Value> { };
+struct TIsScopedEnum : TAnd<TIsEnum<T>, TNot<NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>>> { };
 
 NAMESPACE_END(TypeTraits)
 NAMESPACE_MODULE_END(Utility)

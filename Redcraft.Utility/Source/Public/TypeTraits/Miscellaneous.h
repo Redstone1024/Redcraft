@@ -53,7 +53,7 @@ template <bool B, typename T = void>      struct TEnableIf       { using Type = 
 template <bool B, typename T, typename F> struct TConditional    { using Type = NAMESPACE_STD::conditional_t<B, T, F>;          };
 template <typename... Types>              struct TCommonType     { using Type = NAMESPACE_STD::common_type_t<Types...>;         };
 template <typename T>                     struct TUnderlyingType { using Type = NAMESPACE_STD::underlying_type_t<T>;            };
-template <typename F, typename... Args>   struct TInvokeResult   { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     };
+template <typename F, typename... Args>   struct TInvokeResult   { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     }; // FIXME: The result for char(&())[2] is wrong on MSVC
 template <typename... Types>              struct TVoid           { using Type = void;                                           };
 
 NAMESPACE_END(TypeTraits)

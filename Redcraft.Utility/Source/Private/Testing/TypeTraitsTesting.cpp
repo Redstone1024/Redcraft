@@ -437,6 +437,7 @@ void TestTypeTraits()
 
 	always_check((TypeTraits::TIsSame<int32, TypeTraits::TInvokeResult<int32()>::Type>::Value));
 	always_check((TypeTraits::TIsSame<int32, TypeTraits::TInvokeResult<int32(int32), int32>::Type>::Value));
+//	always_check((TypeTraits::TIsSame<char(&)[2], TypeTraits::TInvokeResult<char(&())[2]>::Type>::Value));
 
 	always_check((TypeTraits::TIsSame<void, TypeTraits::TVoid<int32>::Type>::Value));
 	always_check((TypeTraits::TIsSame<void, TypeTraits::TVoid<int32, int64>::Type>::Value));
