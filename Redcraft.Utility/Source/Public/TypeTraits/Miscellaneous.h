@@ -45,15 +45,16 @@ template <typename T> struct TRemoveAllExtents { using Type = NAMESPACE_STD::rem
 template <typename T> struct TMakeSigned   { using Type = NAMESPACE_STD::make_signed_t<T>;   };
 template <typename T> struct TMakeUnsigned { using Type = NAMESPACE_STD::make_unsigned_t<T>; };
 
-template <size_t Size, size_t Align>      struct TAlignedStorage { class Type { struct alignas(Align) { uint8 Pad[Size]; } Padding; }; };
-template <size_t Size, typename... Types> struct TAlignedUnion   { using Type = TAlignedStorage<NAMESPACE_PRIVATE::TMaximum<Size, sizeof(Types)...>::Value, NAMESPACE_PRIVATE::TMaximum<alignof(Types)...>::Value>::Type; };
-template <typename T>                     struct TDecay          { using Type = NAMESPACE_STD::decay_t<T>;                      };
-template <bool B, typename T = void>      struct TEnableIf       { using Type = NAMESPACE_STD::enable_if_t<B, T>;               };
-template <bool B, typename T, typename F> struct TConditional    { using Type = NAMESPACE_STD::conditional_t<B, T, F>;          };
-template <typename... Types>              struct TCommonType     { using Type = NAMESPACE_STD::common_type_t<Types...>;         };
-template <typename T>                     struct TUnderlyingType { using Type = NAMESPACE_STD::underlying_type_t<T>;            };
-template <typename F, typename... Args>   struct TInvokeResult   { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     }; // FIXME: The result for char(&())[2] is wrong on MSVC
-template <typename... Types>              struct TVoid           { using Type = void;                                           };
+template <size_t Size, size_t Align>      struct TAlignedStorage  { class Type { struct alignas(Align) { uint8 Pad[Size]; } Padding; }; };
+template <size_t Size, typename... Types> struct TAlignedUnion    { using Type = TAlignedStorage<NAMESPACE_PRIVATE::TMaximum<Size, sizeof(Types)...>::Value, NAMESPACE_PRIVATE::TMaximum<alignof(Types)...>::Value>::Type; };
+template <typename T>                     struct TDecay           { using Type = NAMESPACE_STD::decay_t<T>;                      };
+template <bool B, typename T = void>      struct TEnableIf        { using Type = NAMESPACE_STD::enable_if_t<B, T>;               };
+template <bool B, typename T, typename F> struct TConditional     { using Type = NAMESPACE_STD::conditional_t<B, T, F>;          };
+template <typename... Types>              struct TCommonType      { using Type = NAMESPACE_STD::common_type_t<Types...>;         };
+template <typename... Types>              struct TCommonReference { using Type = NAMESPACE_STD::common_reference_t<Types...>;    };
+template <typename T>                     struct TUnderlyingType  { using Type = NAMESPACE_STD::underlying_type_t<T>;            };
+template <typename F, typename... Args>   struct TInvokeResult    { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     }; // FIXME: The result for char(&())[2] is wrong on MSVC
+template <typename... Types>              struct TVoid            { using Type = void;                                           };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
