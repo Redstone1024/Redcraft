@@ -8,6 +8,8 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // Warning: The test here is not a complete test, it is only used to determine whether the environment supports the traits
 
+NAMESPACE_UNNAMED_BEGIN
+
 int32 TestObject;
 void TestFunction() { }
 
@@ -42,6 +44,8 @@ enum class ETestEnumClass32 : uint32 { };
 enum class ETestEnumClass64 : uint64 { };
 
 union FTestUnion { };
+
+NAMESPACE_UNNAMED_END
 
 void TestTypeTraits()
 {
