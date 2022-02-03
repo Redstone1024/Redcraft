@@ -8,12 +8,14 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 struct FNoncopyable
 {
+	FNoncopyable() = default;
 	FNoncopyable(const FNoncopyable&) = delete;
 	FNoncopyable& operator=(const FNoncopyable&) = delete;
 };
 
 struct FNonmovable
 {
+	FNonmovable() = default;
 	FNonmovable(const FNonmovable&&) = delete;
 	FNonmovable& operator=(const FNonmovable&&) = delete;
 };
