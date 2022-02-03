@@ -413,14 +413,6 @@ void TestTypeTraits()
 	always_check((TIsSame<int32, TConditional<true, int32, int64>::Type>::Value));
 	always_check((TIsSame<int64, TConditional<false, int32, int64>::Type>::Value));
 
-	always_check((TIsSame<int32, TCommonType<int8, int32>::Type>::Value));
-	always_check((TIsSame<int64, TCommonType<int8, int32, int64>::Type>::Value));
-	always_check((TIsSame<double, TCommonType<float, double>::Type>::Value));
-
-	always_check((TIsSame<int32, TCommonReference<int8, int32>::Type>::Value));
-	always_check((TIsSame<int64, TCommonReference<int8, int32, int64>::Type>::Value));
-	always_check((TIsSame<double, TCommonReference<float, double>::Type>::Value));
-
 	always_check((TIsSame<int, TUnderlyingType<ETestEnumClass>::Type>::Value));
 	always_check((TIsSame<uint8, TUnderlyingType<ETestEnumClass8>::Type>::Value));
 	always_check((TIsSame<uint32, TUnderlyingType<ETestEnumClass32>::Type>::Value));
@@ -432,6 +424,16 @@ void TestTypeTraits()
 
 	always_check((TIsSame<void, TVoid<int32>::Type>::Value));
 	always_check((TIsSame<void, TVoid<int32, int64>::Type>::Value));
+
+	// Common.h
+
+	always_check((TIsSame<int32, TCommonType<int8, int32>::Type>::Value));
+	always_check((TIsSame<int64, TCommonType<int8, int32, int64>::Type>::Value));
+	always_check((TIsSame<double, TCommonType<float, double>::Type>::Value));
+
+	always_check((TIsSame<int32, TCommonReference<int8, int32>::Type>::Value));
+	always_check((TIsSame<int64, TCommonReference<int8, int32, int64>::Type>::Value));
+	always_check((TIsSame<double, TCommonReference<float, double>::Type>::Value));
 
 }
 
