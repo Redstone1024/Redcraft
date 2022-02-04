@@ -1,6 +1,7 @@
 #include "Testing/TypeTraitsTesting.h"
 #include "Misc/AssertionMacros.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Templates/Templates.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -434,6 +435,15 @@ void TestTypeTraits()
 	always_check((TIsSame<int32, TCommonReference<int8, int32>::Type>::Value));
 	always_check((TIsSame<int64, TCommonReference<int8, int32, int64>::Type>::Value));
 	always_check((TIsSame<double, TCommonReference<float, double>::Type>::Value));
+
+	// Swappable.h
+
+	always_check(TIsSwappable<int32>::Value);
+	always_check(TIsSwappable<FTestStructG>::Value);
+	always_check(TIsSwappable<FTestStructN>::Value);
+	always_check(!TIsSwappable<FSingleton>::Value);
+
+	always_check((TIsSwappableWith<int32&, int32&>::Value));
 
 }
 

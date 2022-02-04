@@ -179,7 +179,7 @@ void TestConcepts()
 	always_check(CSwappable<int32>);
 	always_check(CSwappable<FTestStructG>);
 	always_check(CSwappable<FTestStructN>);
-//	always_check(!CSwappable<FSingleton>);
+	always_check(!CSwappable<FSingleton>);
 
 	always_check((CSwappableWith<int32&, int32&>));
 

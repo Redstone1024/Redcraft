@@ -7,4 +7,5 @@
 #include "TypeTraits/TypeProperties.h"
 #include "TypeTraits/SupportedOperations.h"
 #include "TypeTraits/Miscellaneous.h"
+#include "TypeTraits/Swappable.h"
 #include "TypeTraits/Common.h"

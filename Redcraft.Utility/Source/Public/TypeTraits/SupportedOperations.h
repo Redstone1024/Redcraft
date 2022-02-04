@@ -23,21 +23,17 @@ template <typename T> struct TIsTriviallyMoveAssignable       : TBoolConstant<NA
 template <typename T> struct TIsTriviallyDestructible         : TBoolConstant<NAMESPACE_STD::is_trivially_destructible_v<T>>          { };
 template <typename T> struct THasVirtualDestructor            : TBoolConstant<NAMESPACE_STD::has_virtual_destructor_v<T>>             { };
 
-//template <typename T> struct TIsSwappable;
 //template <typename T> struct TIsNothrowDefaultConstructible;
 //template <typename T> struct TIsNothrowCopyConstructible;
 //template <typename T> struct TIsNothrowMoveConstructible;
 //template <typename T> struct TIsNothrowCopyAssignable;
 //template <typename T> struct TIsNothrowMoveAssignable;
-//template <typename T> struct TIsNothrowSwappable;
 //template <typename T> struct TIsNothrowDestructible;
 
 template <typename T, typename U> struct TIsAssignable          : TBoolConstant<NAMESPACE_STD::is_assignable_v<T, U>>           { };
 template <typename T, typename U> struct TIsTriviallyAssignable : TBoolConstant<NAMESPACE_STD::is_trivially_assignable_v<T, U>> { };
 
-//template <typename T, typename U> struct TIsSwappableWith;
 //template <typename T, typename U> struct TIsNothrowAssignable;
-//template <typename T, typename U> struct TIsNothrowSwappableWith;
 
 template <typename T, typename... Args> struct TIsConstructible          : TBoolConstant<NAMESPACE_STD::is_constructible_v<T, Args...>>           { };
 template <typename T, typename... Args> struct TIsTriviallyConstructible : TBoolConstant<NAMESPACE_STD::is_trivially_constructible_v<T, Args...>> { };

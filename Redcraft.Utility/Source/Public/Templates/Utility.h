@@ -63,18 +63,20 @@ FORCEINLINE T&& Forward(typename TRemoveReference<T>::Type&& Obj)
 	return (T&&)Obj;
 }
 
-template <typename T>
-FORCEINLINE void Swap(T& A, T& B)
+template <typename T> requires TIsMoveConstructible<T>::Value && TIsMoveAssignable<T>::Value
+constexpr void Swap(T& A, T& B)
 {
 	T Temp = MoveTemp(A);
 	A = MoveTemp(B);
 	B = MoveTemp(Temp);
 }
 
-template <typename T>
-FORCEINLINE void Exchange(T& A, T& B)
+template <typename T, typename U = T> requires TIsMoveConstructible<T>::Value && TIsAssignable<T&, U>::Value
+constexpr T Exchange(T& A, U&& B)
 {
-	Swap(A, B);
+	T Temp = MoveTemp(A);
+	A = Forward<U>(B);
+	return Temp;
 }
 
 template <typename T>
