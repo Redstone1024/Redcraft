@@ -313,11 +313,16 @@ void TestTypeTraits()
 	always_check(!(TIsConvertible<FTestStructE*, FTestStructH*>::Value));
 	always_check((TIsConvertible<FTestStructW, FTestStructV>::Value));
 
-	always_check((TIsInvocable<void, int32()>::Value));
-	always_check((TIsInvocable<int32, int32()>::Value));
-	always_check((TIsInvocable<int32, int32(int32), int32>::Value));
-	always_check(!(TIsInvocable<int32, int32(int32), FTestStructA>::Value));
-	always_check(!(TIsInvocable<FTestStructA, int32(int32), int32>::Value));
+	always_check((TIsInvocable<int32()>::Value));
+	always_check((TIsInvocable<int32(int32), int32>::Value));
+	always_check(!(TIsInvocable<int32(int32), FTestStructA>::Value));
+	always_check((TIsInvocable<int32(int32), int32>::Value));
+
+	always_check((TIsInvocableResult<void, int32()>::Value));
+	always_check((TIsInvocableResult<int32, int32()>::Value));
+	always_check((TIsInvocableResult<int32, int32(int32), int32>::Value));
+	always_check(!(TIsInvocableResult<int32, int32(int32), FTestStructA>::Value));
+	always_check(!(TIsInvocableResult<FTestStructA, int32(int32), int32>::Value));
 
 	always_check((TIsSame<int32, TRemoveConst<int32>::Type>::Value));
 	always_check(!(TIsSame<int32, TRemoveConst<int32*>::Type>::Value));

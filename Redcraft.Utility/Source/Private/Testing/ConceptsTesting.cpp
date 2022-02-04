@@ -183,6 +183,15 @@ void TestConcepts()
 
 	always_check((CSwappableWith<int32&, int32&>));
 
+	// Invocable.h
+
+	always_check((CInvocable          <decltype([](                         ) -> void  {                          })                      >));
+	always_check((CRegularInvocable   <decltype([](int32 A                  ) -> int32 { return A;                }), int32               >));
+	always_check((CPredicate          <decltype([](int32 A, int32 B, int32 C) -> bool  { return (A + B + C) == 0; }), int32, int32, int32 >));
+	always_check((CRelation           <decltype([](int32 A, int32 B         ) -> bool  { return (A ^ B) == 0;     }), int32, int32        >));
+	always_check((CEquivalenceRelation<decltype([](int32 A, int32 B         ) -> bool  { return A == B;           }), int32, int32        >));
+	always_check((CStrictWeakOrder    <decltype([](int32 A, int32 B         ) -> bool  { return A < B;            }), int32, int32        >));
+
 }
 
 NAMESPACE_MODULE_END(Utility)
