@@ -114,6 +114,75 @@ void TestConcepts()
 	always_check(!CFloatingPoint<int32>);
 	always_check(CFloatingPoint<float>);
 
+	// BooleanTestable.h
+
+	always_check(CBooleanTestable<bool>);
+	always_check(CBooleanTestable<int32>);
+	always_check(CBooleanTestable<float>);
+	always_check(!CBooleanTestable<FTestStructA>);
+
+	// Assignable.h
+
+	always_check((CAssignableFrom<int32&, int64>));
+	always_check((CAssignableFrom<int32&, int32>));
+	always_check((CAssignableFrom<int32&, int8>));
+	always_check(!(CAssignableFrom<FTestStructI&, int32>));
+	always_check(!(CAssignableFrom<FTestStructA&, void>));
+
+	// Common.h
+
+	always_check((CCommonWith<int32, int32>));
+	always_check((CCommonWith<int8, int32>));
+	always_check((CCommonWith<float, double>));
+	always_check(!(CCommonWith<FTestStructA, int32>));
+
+	always_check((CCommonReferenceWith<int8, int32>));
+	always_check((CCommonReferenceWith<float, int32>));
+	always_check((CCommonReferenceWith<float, double>));
+	always_check(!(CCommonReferenceWith<FTestStructA, double>));
+
+	// Comparable.h
+
+	always_check((CEqualityComparable<int32>));
+	always_check(!(CEqualityComparable<FTestStructA>));
+
+	always_check((CEqualityComparableWith<int32, int32>));
+	always_check((CEqualityComparableWith<int32, int64>));
+	always_check(!(CEqualityComparableWith<FTestStructA, FTestStructA>));
+
+	always_check((CTotallyOrdered<int32>));
+	always_check(!(CTotallyOrdered<FTestStructA>));
+
+	always_check((CTotallyOrderedWith<int32, int32>));
+	always_check((CTotallyOrderedWith<int32, int64>));
+	always_check(!(CTotallyOrderedWith<FTestStructA, FTestStructA>));
+
+	// Objects.h
+
+	always_check(CMovable<int32>);
+	always_check(CCopyable<int32>);
+	always_check(CSemiregular<int32>);
+	always_check(CRegular<int32>);
+	
+	always_check(CMovable<FTestStructQ>);
+	always_check(!CCopyable<FTestStructQ>);
+	always_check(!CSemiregular<FTestStructQ>);
+	always_check(!CRegular<FTestStructQ>);
+
+	always_check(CMovable<FTestStructN>);
+	always_check(CCopyable<FTestStructN>);
+	always_check(!CSemiregular<FTestStructN>);
+	always_check(!CRegular<FTestStructN>);
+	
+	// Swappable.h
+
+	always_check(CSwappable<int32>);
+	always_check(CSwappable<FTestStructG>);
+	always_check(CSwappable<FTestStructN>);
+//	always_check(!CSwappable<FSingleton>);
+
+	always_check((CSwappableWith<int32&, int32&>));
+
 }
 
 NAMESPACE_MODULE_END(Utility)
