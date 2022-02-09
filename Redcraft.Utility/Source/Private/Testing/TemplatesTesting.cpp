@@ -9,6 +9,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 void TestTemplates()
 {
 	TestInvoke();
+	TestMiscellaneous();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -42,6 +43,41 @@ void TestInvoke()
 	int64 TempE = InvokeResult<int64>(&FTestStructA::Num, TempA);
 	always_check(TempD == 123);
 	always_check(TempE == 123);
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+template <typename T>
+struct TTestStructA
+{
+	T* Pad;
+	T* Data;
+
+	TTestStructA(T* InData) : Pad(nullptr), Data(InData) { }
+	~TTestStructA() { delete Data; }
+	T** operator&() { return &Data; }
+};
+
+template <typename T>
+int32 TestFunctionB(TTestStructA<T>* Ptr)
+{
+	return 0;
+}
+
+template <typename T>
+int32 TestFunctionB(T** Ptr)
+{
+	return 1;
+}
+
+NAMESPACE_UNNAMED_END
+
+void TestMiscellaneous()
+{
+	TTestStructA<int32> ObjectA(new int32(3));
+	always_check(TestFunctionB(&ObjectA) == 1);
+	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
+	always_check(AddressOf(TestMiscellaneous) == &TestMiscellaneous);
 }
 
 NAMESPACE_MODULE_END(Utility)
