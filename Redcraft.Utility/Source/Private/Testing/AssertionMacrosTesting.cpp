@@ -1,5 +1,5 @@
 #include "Testing/AssertionMacrosTesting.h"
-#include "Misc/AssertionMacros.h"
+#include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)

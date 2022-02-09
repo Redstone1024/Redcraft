@@ -1,5 +1,5 @@
 #include "Testing/TypeTraitsTesting.h"
-#include "Misc/AssertionMacros.h"
+#include "Miscellaneous/AssertionMacros.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/Templates.h"
 

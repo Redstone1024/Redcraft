@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Misc/PreprocessorHelpers.h"
+#include "Miscellaneous/PreprocessorHelpers.h"
 
 #undef NDEBUG
 #include <cassert>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Misc/CoreDefines.h"
+#include "Miscellaneous/CoreDefines.h"
 
 #include <cstdint>
 #include <cstdlib>

@@ -1,5 +1,5 @@
 #include "Testing/ConceptsTesting.h"
-#include "Misc/AssertionMacros.h"
+#include "Miscellaneous/AssertionMacros.h"
 #include "Concepts/Concepts.h"
 
 NAMESPACE_REDCRAFT_BEGIN

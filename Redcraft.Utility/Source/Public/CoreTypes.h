@@ -1,4 +1,4 @@
 #pragma once
 
-#include "Misc/Platform.h"
-#include "Misc/CoreDefines.h"
+#include "Miscellaneous/Platform.h"
+#include "Miscellaneous/CoreDefines.h"

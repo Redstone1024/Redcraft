@@ -1,5 +1,5 @@
 #include "Testing/TemplatesTesting.h"
-#include "Misc/AssertionMacros.h"
+#include "Miscellaneous/AssertionMacros.h"
 #include "Templates/Templates.h"
 
 NAMESPACE_REDCRAFT_BEGIN
