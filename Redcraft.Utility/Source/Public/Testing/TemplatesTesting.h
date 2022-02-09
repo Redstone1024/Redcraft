@@ -8,6 +8,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 void REDCRAFTUTILITY_API TestTemplates();
 void REDCRAFTUTILITY_API TestInvoke();
+void REDCRAFTUTILITY_API TestReferenceWrapper();
 void REDCRAFTUTILITY_API TestMiscellaneous();
 
 NAMESPACE_MODULE_END(Utility)

@@ -9,6 +9,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 void TestTemplates()
 {
 	TestInvoke();
+	TestReferenceWrapper();
 	TestMiscellaneous();
 }
 
@@ -43,6 +44,26 @@ void TestInvoke()
 	int64 TempE = InvokeResult<int64>(&FTestStructA::Num, TempA);
 	always_check(TempD == 123);
 	always_check(TempE == 123);
+}
+
+void TestReferenceWrapper()
+{
+	typedef int32(*FuncType)(int32, int32, int32);
+	FuncType TempA = [](int32 A, int32 B, int32 C) -> int32 { return A * B * C; };
+	TReferenceWrapper<FuncType> TempB(TempA);
+	always_check(TempB(1, 1, 1) == 1);
+	TempB.Get() = &TestFunctionA;
+	always_check(TempA(1, 1, 1) == 3);
+	
+	int32 ArrayA[3] = { 1, 2, 3 };
+	TReferenceWrapper<int32> ArrayB[3] = { ArrayA[1], ArrayA[0], ArrayA[2] };
+	always_check(ArrayB[0] == 2);
+	always_check(ArrayB[1] == 1);
+	always_check(ArrayB[2] == 3);
+	for (int32& Element : ArrayB) Element *= 2;
+	always_check(ArrayA[0] == 2);
+	always_check(ArrayA[1] == 4);
+	always_check(ArrayA[2] == 6);
 }
 
 NAMESPACE_UNNAMED_BEGIN

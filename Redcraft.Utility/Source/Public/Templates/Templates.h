@@ -5,3 +5,4 @@
 #include "Templates/Container.h"
 #include "Templates/Noncopyable.h"
 #include "Templates/Invoke.h"
+#include "Templates/ReferenceWrapper.h"
