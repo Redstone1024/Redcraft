@@ -16,7 +16,7 @@ public:
 
 	using Type = T;
 
-	template <typename U> requires !TIsSame<TReferenceWrapper, typename TRemoveCVRef<U>::Type>::Value
+	template <typename U> requires (!TIsSame<TReferenceWrapper, typename TRemoveCVRef<U>::Type>::Value)
 	constexpr TReferenceWrapper(U&& Object) : Ptr(AddressOf(Forward<U>(Object))) { }
 
 	TReferenceWrapper(const TReferenceWrapper&) = default;
