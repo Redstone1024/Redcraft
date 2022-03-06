@@ -2,7 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Concepts/Common.h"
-#include "Templates/Templates.h"
+#include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
