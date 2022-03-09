@@ -6,3 +6,4 @@
 #include "Templates/Noncopyable.h"
 #include "Templates/Invoke.h"
 #include "Templates/ReferenceWrapper.h"
+#include "Templates/Compare.h"
