@@ -12,9 +12,9 @@ constexpr auto GetData(T&& Container)
 	return Container.GetData();
 }
 
-template <typename T, size_t N> constexpr       T* GetData(T(&Container)[N]) { return Container; }
-template <typename T, size_t N> constexpr       T* GetData(T(&& Container)[N]) { return Container; }
-template <typename T, size_t N> constexpr const T* GetData(const T(&Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr       T* GetData(      T(&  Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr       T* GetData(      T(&& Container)[N]) { return Container; }
+template <typename T, size_t N> constexpr const T* GetData(const T(&  Container)[N]) { return Container; }
 template <typename T, size_t N> constexpr const T* GetData(const T(&& Container)[N]) { return Container; }
 
 template <typename T> requires requires(T Container) { Container.data(); }
@@ -29,9 +29,9 @@ constexpr auto GetNum(T&& Container)
 	return Container.Num();
 }
 
-template <typename T, size_t N> constexpr size_t GetNum(T(&Container)[N]) { return N; }
-template <typename T, size_t N> constexpr size_t GetNum(T(&& Container)[N]) { return N; }
-template <typename T, size_t N> constexpr size_t GetNum(const T(&Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(      T(&  Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(      T(&& Container)[N]) { return N; }
+template <typename T, size_t N> constexpr size_t GetNum(const T(&  Container)[N]) { return N; }
 template <typename T, size_t N> constexpr size_t GetNum(const T(&& Container)[N]) { return N; }
 
 template <typename T> requires requires(T Container) { Container.size(); }

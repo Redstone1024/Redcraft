@@ -11,6 +11,7 @@ void TestTemplates()
 	TestInvoke();
 	TestReferenceWrapper();
 	TestCompare();
+	TestOptional();
 	TestMiscellaneous();
 }
 
@@ -193,6 +194,79 @@ void TestCompare()
 	always_check((CompareWeakOrderFallback(0, 0)    == strong_ordering::equal));
 	always_check((ComparePartialOrderFallback(0, 0) == strong_ordering::equal));
 
+}
+
+void TestOptional()
+{
+	TOptional<int32> TempA;
+	TOptional<int32> TempB(Invalid);
+	TOptional<int32> TempC(InPlace, 0);
+	TOptional<int32> TempD(0);
+	TOptional<int32> TempE(0l);
+	TOptional<int32> TempF(0.0);
+	TOptional<int32> TempG(TempA);
+	TOptional<int32> TempH(TempD);
+	TOptional<int32> TempI(MakeOptional<int32>(0));
+	TOptional<int32> TempJ(MakeOptional<int32>(Invalid));
+
+	TOptional<int32> TempK, TempL, TempM, TempN;
+	TempK = TempA;
+	TempL = TempD;
+	TempM = MakeOptional<int32>(0);
+	TempN = MakeOptional<int32>(Invalid);
+
+	*TempL = 303;
+	*TempM = 404;
+
+	TOptional<int32> TempO;
+	TempO.Emplace(404);
+
+	always_check(TempO);
+	always_check(TempO.IsValid());
+
+	always_check(*TempO == 404);
+	always_check(TempO.GetValue() == 404);
+	always_check(TempO.Get(500) == 404);
+
+	TempO.Reset();
+	always_check(TempO == TempO);
+	always_check(TempO.Get(500) == 500);
+
+	int32 TempP = 200;
+	TempO = TempP;
+	TempO = 300;
+
+	always_check(TempO != TempA);
+	always_check(TempO != TempD);
+	always_check(TempO == TempO);
+	always_check(TempO == 300);
+	always_check(300 == TempO);
+
+	int16 TempQ = 1024;
+	TOptional<int16> TempR = TempQ;
+
+	TOptional<int32> TempS(InPlace, TempQ);
+	TOptional<int32> TempT(TempQ);
+	TOptional<int32> TempU(TempR);
+	TOptional<int32> TempV(MakeOptional<int16>(2048));
+
+	TOptional<int32> TempW, TempX, TempY;
+	TempW = TempQ;
+	TempX = TempR;
+	TempY = MakeOptional<int16>(2048);
+
+	struct FTracker
+	{
+		FTracker() { }
+		FTracker(const FTracker& InValue) { always_check_no_entry(); }
+		FTracker(FTracker&& InValue) { }
+		FTracker& operator=(const FTracker& InValue) { always_check_no_entry(); return *this; }
+		FTracker& operator=(FTracker&& InValue) { return *this; }
+	};
+
+	TOptional<FTracker> TempZ(MakeOptional<FTracker>());
+	TempZ = MakeOptional<FTracker>();
+	TempZ = FTracker();
 }
 
 NAMESPACE_UNNAMED_BEGIN

@@ -7,3 +7,4 @@
 #include "Templates/Invoke.h"
 #include "Templates/ReferenceWrapper.h"
 #include "Templates/Compare.h"
+#include "Templates/Optional.h"

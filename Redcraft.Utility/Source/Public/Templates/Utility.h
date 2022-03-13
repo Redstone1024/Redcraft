@@ -23,7 +23,7 @@ constexpr const T(&AsConst(T(&Array)[N]))[N]
 }
 
 template <typename T>
-FORCEINLINE typename TRemoveReference<T>::Type&& MoveTemp(T&& Obj)
+constexpr typename TRemoveReference<T>::Type&& MoveTemp(T&& Obj)
 {
 	typedef typename TRemoveReference<T>::Type CastType;
 	
@@ -34,31 +34,31 @@ FORCEINLINE typename TRemoveReference<T>::Type&& MoveTemp(T&& Obj)
 }
 
 template <typename T>
-FORCEINLINE T CopyTemp(T& Val)
+constexpr T CopyTemp(T& Val)
 {
 	return const_cast<const T&>(Val);
 }
 
 template <typename T>
-FORCEINLINE T CopyTemp(const T& Val)
+constexpr T CopyTemp(const T& Val)
 {
 	return Val;
 }
 
 template <typename T>
-FORCEINLINE T&& CopyTemp(T&& Val)
+constexpr T&& CopyTemp(T&& Val)
 {
 	return MoveTemp(Val);
 }
 
 template <typename T>
-FORCEINLINE T&& Forward(typename TRemoveReference<T>::Type& Obj)
+constexpr T&& Forward(typename TRemoveReference<T>::Type& Obj)
 {
 	return (T&&)Obj;
 }
 
 template <typename T>
-FORCEINLINE T&& Forward(typename TRemoveReference<T>::Type&& Obj)
+constexpr T&& Forward(typename TRemoveReference<T>::Type&& Obj)
 {
 	return (T&&)Obj;
 }
@@ -80,7 +80,7 @@ constexpr T Exchange(T& A, U&& B)
 }
 
 template <typename T>
-T&& DeclVal();
+constexpr T&& DeclVal();
 
 template <typename T> requires TIsObject<T>::Value
 constexpr T* AddressOf(T& Object)
@@ -88,7 +88,7 @@ constexpr T* AddressOf(T& Object)
 	return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(Object)));
 }
 
-template <typename T> requires !TIsObject<T>::Value
+template <typename T> requires (!TIsObject<T>::Value)
 constexpr T* AddressOf(T& Object)
 {
 	return &Object;

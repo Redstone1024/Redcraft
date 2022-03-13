@@ -10,6 +10,7 @@ void REDCRAFTUTILITY_API TestTemplates();
 void REDCRAFTUTILITY_API TestInvoke();
 void REDCRAFTUTILITY_API TestReferenceWrapper();
 void REDCRAFTUTILITY_API TestCompare();
+void REDCRAFTUTILITY_API TestOptional();
 void REDCRAFTUTILITY_API TestMiscellaneous();
 
 NAMESPACE_MODULE_END(Utility)
