@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Templates/Compare.h"
+#include "Templates/Placeholders.h"
 #include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -19,17 +20,17 @@ public:
 
 	constexpr TOptional() : bIsValid(false) { }
 
-	constexpr TOptional(EInvalid) : TOptional() { }
+	constexpr TOptional(FInvalid) : TOptional() { }
 
 	template <typename... Types> requires TIsConstructible<OptionalType, Types...>::Value
-	constexpr explicit TOptional(EInPlace, Types&&... Args)
+	constexpr explicit TOptional(FInPlace, Types&&... Args)
 		: bIsValid(true)
 	{
 		new(&Value) OptionalType(Forward<Types>(Args)...);
 	}
 
 	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
-		&& (!TIsSame<typename TRemoveCVRef<T>::Type, EInPlace>::Value) && (!TIsSame<typename TRemoveCVRef<T>::Type, TOptional>::Value)
+		&& (!TIsSame<typename TRemoveCVRef<T>::Type, FInPlace>::Value) && (!TIsSame<typename TRemoveCVRef<T>::Type, TOptional>::Value)
 	constexpr explicit(!TIsConvertible<T&&, OptionalType>::Value) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
@@ -248,6 +249,12 @@ template <typename T, typename U>
 constexpr bool operator!=(const T& LHS, const TOptional<U>& RHS)
 {
 	return RHS.IsValid() ? LHS != *RHS : true;
+}
+
+template <typename T>
+constexpr TOptional<typename TDecay<T>::Type> MakeOptional(FInvalid)
+{
+	return TOptional<typename TDecay<T>::Type>(Invalid);
 }
 
 template <typename T>

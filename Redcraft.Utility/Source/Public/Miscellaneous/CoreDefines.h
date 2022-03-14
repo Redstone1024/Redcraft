@@ -41,11 +41,6 @@ NAMESPACE_MODULE_BEGIN(Utility)
 enum { INDEX_NONE = -1 };
 enum { UNICODE_BOM = 0xfeff };
 
-enum EForceInit { ForceInit };
-enum ENoInit    { NoInit    };
-enum EInvalid   { Invalid   };
-enum EInPlace   { InPlace   };
-
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
