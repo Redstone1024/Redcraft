@@ -230,6 +230,7 @@ void TestOptional()
 
 	TempO.Reset();
 	always_check(TempO == TempO);
+	always_check(!(TempO != TempO));
 	always_check(TempO.Get(500) == 500);
 
 	int32 TempP = 200;

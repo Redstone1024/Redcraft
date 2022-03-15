@@ -223,7 +223,7 @@ template <typename T, typename U>
 constexpr bool operator!=(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return true;
-	if (LHS.IsValid() == false) return true;
+	if (LHS.IsValid() == false) return false;
 	return *LHS != *RHS;
 }
 
