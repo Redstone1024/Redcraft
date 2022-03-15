@@ -26,10 +26,6 @@ template <typename T>
 constexpr typename TRemoveReference<T>::Type&& MoveTemp(T&& Obj)
 {
 	typedef typename TRemoveReference<T>::Type CastType;
-	
-	static_assert(TIsLValueReference<T>::Value, "MoveTemp called on an rvalue.");
-	static_assert(!TIsConst<CastType>::Value, "MoveTemp called on a const object.");
-
 	return (CastType&&)Obj;
 }
 
