@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Templates/Utility.h"
 #include "TypeTraits/HelperClasses.h"
 
 NAMESPACE_REDCRAFT_BEGIN
