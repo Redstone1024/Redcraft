@@ -9,3 +9,4 @@
 #include "TypeTraits/Miscellaneous.h"
 #include "TypeTraits/Swappable.h"
 #include "TypeTraits/Common.h"
+#include "TypeTraits/CopyQualifiers.h"

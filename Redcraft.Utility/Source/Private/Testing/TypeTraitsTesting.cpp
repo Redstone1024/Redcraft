@@ -450,6 +450,84 @@ void TestTypeTraits()
 
 	always_check((TIsSwappableWith<int32&, int32&>::Value));
 
+	// CopyQualifiers.h
+
+	always_check((TIsSame<               int32, TCopyConst<               int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyConst<const          int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyConst<const volatile int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyConst<               int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyConst<const          int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyConst<const volatile int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyConst<               int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyConst<const          int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyConst<const volatile int32, const volatile int32>::Type>::Value));
+	
+	always_check((TIsSame<               int32, TCopyVolatile<               int32,                int32>::Type>::Value));
+	always_check((TIsSame<               int32, TCopyVolatile<const          int32,                int32>::Type>::Value));
+	always_check((TIsSame<      volatile int32, TCopyVolatile<const volatile int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyVolatile<               int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyVolatile<const          int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyVolatile<const volatile int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyVolatile<               int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyVolatile<const          int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyVolatile<const volatile int32, const volatile int32>::Type>::Value));
+	
+	always_check((TIsSame<               int32, TCopyCV<               int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCV<const          int32,                int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCV<               int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCV<const          int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCV<               int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCV<const          int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32, const volatile int32>::Type>::Value));
+	
+	always_check((TIsSame<int32,   TCopyReference<int32,   int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyReference<int32,   int32& >::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyReference<int32,   int32&&>::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32& >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32&&>::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyReference<int32&&, int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyReference<int32&&, int32& >::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyReference<int32&&, int32&&>::Type>::Value));
+
+	always_check((TIsSame<               int32, TCopyCVRef<               int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<const          int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<               int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<const          int32, const          int32>::Type>::Value));
+	always_check((TIsSame<      volatile int32, TCopyCVRef<      volatile int32,                int32>::Type>::Value));
+	always_check((TIsSame<      volatile int32, TCopyCVRef<               int32,       volatile int32>::Type>::Value));
+	always_check((TIsSame<      volatile int32, TCopyCVRef<      volatile int32,       volatile int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<const          int32,                int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32,                int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<               int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const          int32, TCopyCVRef<const          int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32, const          int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCVRef<               int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCVRef<const          int32, const volatile int32>::Type>::Value));
+	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32, const volatile int32>::Type>::Value));
+	
+	always_check((TIsSame<int32,   TCopyCVRef<int32,   int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyCVRef<int32,   int32& >::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyCVRef<int32,   int32&&>::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32& >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32&&>::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyCVRef<int32&&, int32  >::Type>::Value));
+	always_check((TIsSame<int32&,  TCopyCVRef<int32&&, int32& >::Type>::Value));
+	always_check((TIsSame<int32&&, TCopyCVRef<int32&&, int32&&>::Type>::Value));
+
+	always_check((TIsSame<const           int32,   TCopyCVRef<const          int32,         int32  >::Type>::Value));
+	always_check((TIsSame<const           int32&,  TCopyCVRef<               int32,   const int32& >::Type>::Value));
+	always_check((TIsSame<const volatile  int32&&, TCopyCVRef<const volatile int32,   const int32&&>::Type>::Value));
+	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&,        int32  >::Type>::Value));
+	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&,  const int32& >::Type>::Value));
+	always_check((TIsSame<const volatile  int32&,  TCopyCVRef<      volatile int32&,  const int32&&>::Type>::Value));
+	always_check((TIsSame<const           int32&&, TCopyCVRef<const          int32&&,       int32  >::Type>::Value));
+	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&&, const int32& >::Type>::Value));
+	always_check((TIsSame<const volatile  int32&&, TCopyCVRef<const volatile int32&&, const int32&&>::Type>::Value));
+
 }
 
 NAMESPACE_MODULE_END(Utility)
