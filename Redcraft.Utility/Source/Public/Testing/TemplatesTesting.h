@@ -6,13 +6,13 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-void REDCRAFTUTILITY_API TestTemplates();
-void REDCRAFTUTILITY_API TestInvoke();
-void REDCRAFTUTILITY_API TestReferenceWrapper();
-void REDCRAFTUTILITY_API TestCompare();
-void REDCRAFTUTILITY_API TestOptional();
-void REDCRAFTUTILITY_API TestVariant();
-void REDCRAFTUTILITY_API TestMiscellaneous();
+REDCRAFTUTILITY_API void TestTemplates();
+REDCRAFTUTILITY_API void TestInvoke();
+REDCRAFTUTILITY_API void TestReferenceWrapper();
+REDCRAFTUTILITY_API void TestCompare();
+REDCRAFTUTILITY_API void TestOptional();
+REDCRAFTUTILITY_API void TestVariant();
+REDCRAFTUTILITY_API void TestMiscellaneous();
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
