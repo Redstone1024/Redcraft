@@ -9,10 +9,9 @@ NAMESPACE_MODULE_BEGIN(Utility)
 REDCRAFTUTILITY_API void TestTemplates();
 REDCRAFTUTILITY_API void TestInvoke();
 REDCRAFTUTILITY_API void TestReferenceWrapper();
-REDCRAFTUTILITY_API void TestCompare();
 REDCRAFTUTILITY_API void TestOptional();
 REDCRAFTUTILITY_API void TestVariant();
-REDCRAFTUTILITY_API void TestMiscellaneous();
+REDCRAFTUTILITY_API void TestOther();
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
