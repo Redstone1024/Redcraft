@@ -3,7 +3,6 @@
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
-#include "Templates/Placeholders.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN

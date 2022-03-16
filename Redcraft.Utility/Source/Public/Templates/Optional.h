@@ -2,7 +2,6 @@
 
 #include "CoreTypes.h"
 #include "Templates/Compare.h"
-#include "Templates/Placeholders.h"
 #include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
