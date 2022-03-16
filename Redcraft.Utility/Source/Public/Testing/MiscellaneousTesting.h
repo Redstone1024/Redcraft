@@ -9,6 +9,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 REDCRAFTUTILITY_API void TestMiscellaneous();
 REDCRAFTUTILITY_API void TestAssertionMacros();
 REDCRAFTUTILITY_API void TestCompare();
+REDCRAFTUTILITY_API void TestTypeInfo();
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -1,5 +1,6 @@
 #include "Testing/MiscellaneousTesting.h"
 #include "Miscellaneous/AssertionMacros.h"
+#include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/Compare.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -10,6 +11,7 @@ void TestMiscellaneous()
 {
 	TestAssertionMacros();
 	TestCompare();
+	TestTypeInfo();
 }
 
 NAMESPACE_PRIVATE_BEGIN
@@ -202,6 +204,34 @@ void TestCompare()
 	always_check((CompareWeakOrderFallback(0, 0)    == strong_ordering::equal));
 	always_check((ComparePartialOrderFallback(0, 0) == strong_ordering::equal));
 
+}
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename...>
+struct TTestTemplateType { };
+
+NAMESPACE_PRIVATE_END
+
+void TestTypeInfo()
+{
+	FTypeInfo TempA;
+	FTypeInfo TempB(Invalid);
+
+	always_check(TempA == TempB);
+	always_check(TempA == Typeid(void));
+
+	FTypeInfo TempC(Typeid(NAMESPACE_PRIVATE::TTestTemplateType<int8, int16>));
+	FTypeInfo TempD = Typeid(NAMESPACE_PRIVATE::TTestTemplateType<int8, int32>);
+
+	FTypeInfo TempE, TempF;
+	TempE = TempC;
+	TempF = MoveTemp(TempD);
+
+	always_check(TempE != TempF);
+	always_check((TempE < TempF) == (TempF > TempE));
+	always_check((TempE > TempF) == (TempF < TempE));
+	always_check((TempE <=> TempF) != 0);
 }
 
 NAMESPACE_MODULE_END(Utility)
