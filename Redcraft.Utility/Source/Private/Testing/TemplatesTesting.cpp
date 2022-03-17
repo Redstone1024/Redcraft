@@ -17,7 +17,7 @@ void TestTemplates()
 	TestReferenceWrapper();
 	TestOptional();
 	TestVariant();
-	TestOther();
+	TestMiscTemplates();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -340,12 +340,12 @@ int32 TestFunctionB(T** Ptr)
 
 NAMESPACE_UNNAMED_END
 
-void TestOther()
+void TestMiscTemplates()
 {
 	TTestStructA<int32> ObjectA(new int32(3));
 	always_check(TestFunctionB(&ObjectA) == 1);
 	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
-	always_check(AddressOf(TestOther) == &TestOther);
+	always_check(AddressOf(TestMiscTemplates) == &TestMiscTemplates);
 }
 
 NAMESPACE_MODULE_END(Utility)

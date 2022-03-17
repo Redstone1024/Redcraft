@@ -11,7 +11,7 @@ REDCRAFTUTILITY_API void TestInvoke();
 REDCRAFTUTILITY_API void TestReferenceWrapper();
 REDCRAFTUTILITY_API void TestOptional();
 REDCRAFTUTILITY_API void TestVariant();
-REDCRAFTUTILITY_API void TestOther();
+REDCRAFTUTILITY_API void TestMiscTemplates();
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
