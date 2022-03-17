@@ -16,12 +16,12 @@ struct TVariantAlternativeIndex;
 
 template <typename T, typename U, typename... Types>
 struct TVariantAlternativeIndex<T, U, Types...>
-	: TConstant<size_t, TIsSame<T, U>::Value ? 0 : (TVariantAlternativeIndex<T, Types...>::Value == static_cast<size_t>(INDEX_NONE)
-	? static_cast<size_t>(INDEX_NONE) : TVariantAlternativeIndex<T, Types...>::Value + 1)>
+	: TConstant<size_t, TIsSame<T, U>::Value ? 0 : (TVariantAlternativeIndex<T, Types...>::Value == INDEX_NONE
+	? INDEX_NONE : TVariantAlternativeIndex<T, Types...>::Value + 1)>
 { };
 
 template <typename T>
-struct TVariantAlternativeIndex<T> : TConstant<size_t, static_cast<size_t>(INDEX_NONE)> { };
+struct TVariantAlternativeIndex<T> : TConstant<size_t, INDEX_NONE> { };
 
 template <size_t I, typename... Types>
 struct TVariantAlternativeType;
@@ -225,20 +225,20 @@ struct TVariant
 	template <size_t I>   struct TAlternativeType  : NAMESPACE_PRIVATE::TVariantAlternativeType<I, Types...>  { };
 	template <typename T> struct TAlternativeIndex : NAMESPACE_PRIVATE::TVariantAlternativeIndex<T, Types...> { };
 
-	constexpr TVariant() : TypeIndex(static_cast<size_t>(INDEX_NONE)) { };
+	constexpr TVariant() : TypeIndex(INDEX_NONE) { };
 
 	constexpr TVariant(FInvalid) : TVariant() { };
 
 	constexpr TVariant(const TVariant& InValue)
 		: TypeIndex(InValue.GetIndex())
 	{
-		if (GetIndex() != static_cast<size_t>(INDEX_NONE)) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() != INDEX_NONE) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	constexpr TVariant(TVariant&& InValue)
 		: TypeIndex(InValue.GetIndex())
 	{
-		if (GetIndex() != static_cast<size_t>(INDEX_NONE)) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() != INDEX_NONE) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	template<size_t I, typename... ArgTypes> requires (I < FAlternativeSize::Value)
@@ -250,7 +250,7 @@ struct TVariant
 		new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
 	}
 
-	template<typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != static_cast<size_t>(INDEX_NONE))
+	template<typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
 		&& TIsConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>::Value
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
@@ -338,7 +338,7 @@ struct TVariant
 		return *Result;
 	}
 
-	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != static_cast<size_t>(INDEX_NONE))
+	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
 		&& TIsConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>::Value
 	constexpr T& Emplace(ArgTypes&&... Args)
 	{
@@ -346,8 +346,8 @@ struct TVariant
 	}
 
 	constexpr size_t GetIndex()        const { return TypeIndex; }
-	constexpr bool IsValid()           const { return GetIndex() != static_cast<size_t>(INDEX_NONE); }
-	constexpr explicit operator bool() const { return GetIndex() != static_cast<size_t>(INDEX_NONE); }
+	constexpr bool IsValid()           const { return GetIndex() != INDEX_NONE; }
+	constexpr explicit operator bool() const { return GetIndex() != INDEX_NONE; }
 
 	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                           : false; }
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TAlternativeIndex<T>::Value : false; }
@@ -433,11 +433,11 @@ struct TVariant
 
 	constexpr void Reset()
 	{
-		if (GetIndex() == static_cast<size_t>(INDEX_NONE)) return;
+		if (GetIndex() == INDEX_NONE) return;
 
 		FHelper::DestroyFuncs[GetIndex()](&Value);
 
-		TypeIndex = static_cast<size_t>(INDEX_NONE);
+		TypeIndex = INDEX_NONE;
 	}
 
 private:

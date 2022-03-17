@@ -2,7 +2,6 @@
 
 #include "CoreTypes.h"
 #include "Miscellaneous/Compare.h"
-#include "Miscellaneous/Placeholders.h"
 
 #include <typeinfo>
 
