@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <cstddef>
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -142,6 +143,7 @@ typedef WIDECHAR					TCHAR;
 
 typedef NAMESPACE_STD::uintptr_t	uintptr_t;
 typedef NAMESPACE_STD::intptr_t		intptr_t;
+typedef NAMESPACE_STD::ptrdiff_t	ptrdiff_t;
 typedef NAMESPACE_STD::size_t		size_t;
 typedef intptr_t					ssize_t;
 
