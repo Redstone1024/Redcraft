@@ -19,12 +19,18 @@ template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsEnum<T>::Va
 // This type traits is allowed to be specialised.
 template <typename T, typename U> struct TIsBitwiseConstructible;
 
+template <typename T, typename U> struct TIsBitwiseConstructible<               T, const          U> : TIsBitwiseConstructible<T, U> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<               T,       volatile U> : TIsBitwiseConstructible<T, U> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<               T, const volatile U> : TIsBitwiseConstructible<T, U> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<const          T,                U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const          T, const          U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const          T,       volatile U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const          T, const volatile U> : TIsBitwiseConstructible<T, U> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T,                U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T, const          U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,                U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const          U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
@@ -47,12 +53,18 @@ template <> struct TIsBitwiseConstructible< int64, uint64> : FTrue { };
 // It is usually only necessary to specialize TIsBitwiseConstructible and not recommended to specialize TIsBitwiseRelocatable.
 template <typename T, typename U> struct TIsBitwiseRelocatable;
 
+template <typename T, typename U> struct TIsBitwiseRelocatable<               T, const          U> : TIsBitwiseRelocatable<T, U> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable<               T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable<               T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable<const          T,                U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const          T, const          U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const          T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const          T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T,                U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T, const          U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,                U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const          U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
