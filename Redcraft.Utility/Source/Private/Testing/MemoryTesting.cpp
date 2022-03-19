@@ -2,6 +2,7 @@
 
 #include "Memory/Memory.h"
 #include "Memory/Alignment.h"
+#include "Memory/MemoryOperator.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -15,6 +16,7 @@ void TestMemory()
 	TestAlignment();
 	TestMemoryBuffer();
 	TestMemoryMalloc();
+	TestMemoryOperator();
 }
 
 void TestAlignment()
@@ -137,6 +139,67 @@ void TestMemoryMalloc()
 	always_check(PtrC->A == 0x01234567);
 	delete[] PtrC;
 
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+struct FTracker
+{
+	static int32 Status;
+	FTracker()                                               { always_check(Status == 0); Status = -1; }
+	FTracker(const FTracker&)                                { always_check(Status == 1); Status = -1; }
+	FTracker(FTracker&&)                                     { always_check(Status == 2); Status = -1; }
+	~FTracker()                                              { always_check(Status == 3); Status = -1; }
+	FTracker& operator=(const FTracker&)                     { always_check(Status == 4); Status = -1; return *this; }
+	FTracker& operator=(FTracker&&)                          { always_check(Status == 5); Status = -1; return *this; }
+	friend bool operator==(const FTracker&, const FTracker&) { always_check(Status == 6); Status = -1; return  true; }
+};
+
+int32 FTracker::Status = -1;
+
+NAMESPACE_UNNAMED_END
+
+void TestMemoryOperator()
+{
+
+	FTracker* PtrA = reinterpret_cast<FTracker*>(Memory::Malloc(sizeof(FTracker)));
+	FTracker* PtrB = reinterpret_cast<FTracker*>(Memory::Malloc(sizeof(FTracker)));
+
+	FTracker::Status = 0;
+	Memory::DefaultConstruct(PtrA);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 1;
+	Memory::Construct(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 2;
+	Memory::MoveConstruct(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = -1;
+	Memory::RelocateConstruct(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 3;
+	Memory::Destruct(PtrA);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 4;
+	Memory::CopyAssign(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 5;
+	Memory::MoveAssign(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 6;
+	const bool bResult = Memory::Compare(PtrA, PtrB);
+	always_check(bResult);
+	always_check(FTracker::Status == -1);
+
+	Memory::Free(PtrA);
+	Memory::Free(PtrB);
 }
 
 NAMESPACE_END(Testing)

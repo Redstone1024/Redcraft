@@ -17,7 +17,7 @@ void TestMiscellaneous()
 	TestTypeInfo();
 }
 
-NAMESPACE_PRIVATE_BEGIN
+NAMESPACE_UNNAMED_BEGIN
 
 void TestNoEntry()
 {
@@ -47,7 +47,7 @@ void TestUnimplemented()
 	always_unimplemented();
 }
 
-NAMESPACE_PRIVATE_END
+NAMESPACE_UNNAMED_END
 
 void TestAssertionMacros()
 {
@@ -61,16 +61,16 @@ void TestAssertionMacros()
 	always_checkf(true, "True!");
 	//always_checkf(false, "False!");
 
-	//NAMESPACE_PRIVATE::TestNoEntry();
+	//TestNoEntry();
 
-	NAMESPACE_PRIVATE::TestNoReentry();
-	//NAMESPACE_PRIVATE::TestNoReentry();
+	TestNoReentry();
+	//TestNoReentry();
 
-	NAMESPACE_PRIVATE::TestNoRecursion(0);
-	NAMESPACE_PRIVATE::TestNoRecursion(0);
-	//NAMESPACE_PRIVATE::TestNoRecursion(1);
+	TestNoRecursion(0);
+	TestNoRecursion(0);
+	//TestNoRecursion(1);
 
-	//NAMESPACE_PRIVATE::TestUnimplemented();
+	//TestUnimplemented();
 
 	verify(true);
 	//verify(false);
@@ -209,12 +209,12 @@ void TestCompare()
 
 }
 
-NAMESPACE_PRIVATE_BEGIN
+NAMESPACE_UNNAMED_BEGIN
 
 template <typename...>
 struct TTestTemplateType { };
 
-NAMESPACE_PRIVATE_END
+NAMESPACE_UNNAMED_END
 
 void TestTypeInfo()
 {
@@ -224,8 +224,8 @@ void TestTypeInfo()
 	always_check(TempA == TempB);
 	always_check(TempA == Typeid(void));
 
-	FTypeInfo TempC(Typeid(NAMESPACE_PRIVATE::TTestTemplateType<int8, int16>));
-	FTypeInfo TempD = Typeid(NAMESPACE_PRIVATE::TTestTemplateType<int8, int32>);
+	FTypeInfo TempC(Typeid(TTestTemplateType<int8, int16>));
+	FTypeInfo TempD = Typeid(TTestTemplateType<int8, int32>);
 
 	FTypeInfo TempE, TempF;
 	TempE = TempC;
