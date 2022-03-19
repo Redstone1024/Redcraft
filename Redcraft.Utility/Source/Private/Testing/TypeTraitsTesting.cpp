@@ -1,4 +1,5 @@
 #include "Testing/TypeTraitsTesting.h"
+
 #include "Miscellaneous/AssertionMacros.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/Templates.h"
@@ -6,6 +7,8 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
+
+NAMESPACE_BEGIN(Testing)
 
 // Warning: The test here is not a complete test, it is only used to determine whether the environment supports the traits
 
@@ -529,6 +532,8 @@ void TestTypeTraits()
 	always_check((TIsSame<const volatile  int32&&, TCopyCVRef<const volatile int32&&, const int32&&>::Type>::Value));
 
 }
+
+NAMESPACE_END(Testing)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -1,4 +1,5 @@
 #include "Testing/TemplatesTesting.h"
+
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/Compare.h"
 #include "Templates/Templates.h"
@@ -10,6 +11,8 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
+
+NAMESPACE_BEGIN(Testing)
 
 void TestTemplates()
 {
@@ -347,6 +350,8 @@ void TestMiscTemplates()
 	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
 	always_check(AddressOf(TestMiscTemplates) == &TestMiscTemplates);
 }
+
+NAMESPACE_END(Testing)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

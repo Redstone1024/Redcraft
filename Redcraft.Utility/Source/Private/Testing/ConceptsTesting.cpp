@@ -1,4 +1,5 @@
 #include "Testing/ConceptsTesting.h"
+
 #include "Miscellaneous/AssertionMacros.h"
 #include "Templates/Templates.h"
 #include "Concepts/Concepts.h"
@@ -6,6 +7,8 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
+
+NAMESPACE_BEGIN(Testing)
 
 // Warning: The test here is not a complete test, it is only used to determine whether the environment supports the concepts
 
@@ -194,6 +197,8 @@ void TestConcepts()
 	always_check((CStrictWeakOrder    <decltype([](int32 A, int32 B         ) -> bool  { return A < B;            }), int32, int32        >));
 
 }
+
+NAMESPACE_END(Testing)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

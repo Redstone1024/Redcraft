@@ -1,4 +1,5 @@
 #include "Testing/MiscellaneousTesting.h"
+
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/Compare.h"
@@ -6,6 +7,8 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
+
+NAMESPACE_BEGIN(Testing)
 
 void TestMiscellaneous()
 {
@@ -233,6 +236,8 @@ void TestTypeInfo()
 	always_check((TempE > TempF) == (TempF < TempE));
 	always_check((TempE <=> TempF) != 0);
 }
+
+NAMESPACE_END(Testing)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

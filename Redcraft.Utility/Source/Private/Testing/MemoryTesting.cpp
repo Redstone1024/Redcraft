@@ -8,6 +8,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+NAMESPACE_BEGIN(Testing)
+
 void TestMemory()
 {
 	TestAlignment();
@@ -136,6 +138,8 @@ void TestMemoryMalloc()
 	delete[] PtrC;
 
 }
+
+NAMESPACE_END(Testing)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

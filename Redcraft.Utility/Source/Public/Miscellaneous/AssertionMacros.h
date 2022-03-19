@@ -34,7 +34,7 @@ NAMESPACE_PRIVATE_END
 #define always_checkf(InExpr, InFormat, ...)		RS_CHECK_F_IMPL(InExpr, InFormat, ##__VA_ARGS__)
 #define always_check_no_entry()						always_checkf(false, "Enclosing block should never be called.")
 #define always_check_no_reentry()					{ static bool PREPROCESSOR_JOIN(bBeenHere, __LINE__) = false; always_checkf(!PREPROCESSOR_JOIN(bBeenHere, __LINE__), "Enclosing block was called more than once."); PREPROCESSOR_JOIN(bBeenHere, __LINE__) = true; }
-#define always_check_no_recursion()					static uint8 PREPROCESSOR_JOIN(RecursionCounter, __LINE__) = 0; always_checkf(PREPROCESSOR_JOIN(RecursionCounter, __LINE__) == 0, "Enclosing block was entered recursively."); const NAMESPACE_PRIVATE::FRecursionScopeMarker PREPROCESSOR_JOIN(ScopeMarker, __LINE__)(PREPROCESSOR_JOIN(RecursionCounter, __LINE__))
+#define always_check_no_recursion()					static uint8 PREPROCESSOR_JOIN(RecursionCounter, __LINE__) = 0; always_checkf(PREPROCESSOR_JOIN(RecursionCounter, __LINE__) == 0, "Enclosing block was entered recursively."); const NAMESPACE_REDCRAFT::NAMESPACE_PRIVATE::FRecursionScopeMarker PREPROCESSOR_JOIN(ScopeMarker, __LINE__)(PREPROCESSOR_JOIN(RecursionCounter, __LINE__))
 #define always_unimplemented()						always_checkf(false, "Unimplemented function called.")
 
 #if BUILD_DEBUG
