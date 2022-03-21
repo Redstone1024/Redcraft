@@ -9,7 +9,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename OptionalType>
+template <typename OptionalType> requires (TIsObject<OptionalType>::Value && !TIsArray<OptionalType>::Value&& TIsDestructible<OptionalType>::Value)
 struct TOptional
 {
 public:

@@ -85,7 +85,7 @@ template <typename T>
 constexpr void VariantCopyConstruct(void* Target, const void* Source)
 {
 	if constexpr (!TIsCopyConstructible<T>::Value || TIsConst<T>::Value) check_no_entry();
-	new(reinterpret_cast<T*>(Target)) T(*reinterpret_cast<const T*>(Source));
+	else new(reinterpret_cast<T*>(Target)) T(*reinterpret_cast<const T*>(Source));
 }
 
 using FVariantCopyConstructFunc = void(*)(void*, const void*);
@@ -94,7 +94,7 @@ template <typename T>
 constexpr void VariantMoveConstruct(void* Target, void* Source)
 {
 	if constexpr (!TIsMoveConstructible<T>::Value || TIsConst<T>::Value) check_no_entry();
-	new(reinterpret_cast<T*>(Target)) T(MoveTemp(*reinterpret_cast<T*>(Source)));
+	else new(reinterpret_cast<T*>(Target)) T(MoveTemp(*reinterpret_cast<T*>(Source)));
 }
 
 using FVariantMoveConstructFunc = void(*)(void*, void*);
@@ -103,7 +103,7 @@ template <typename T>
 constexpr void VariantCopyAssign(void* Target, const void* Source)
 {
 	if constexpr (!TIsCopyAssignable<T>::Value || TIsConst<T>::Value) check_no_entry();
-	*reinterpret_cast<T*>(Target) = *reinterpret_cast<const T*>(Source);
+	else *reinterpret_cast<T*>(Target) = *reinterpret_cast<const T*>(Source);
 }
 
 using FVariantCopyAssignFunc = void(*)(void*, const void*);
@@ -112,7 +112,7 @@ template <typename T>
 constexpr void VariantMoveAssign(void* Target, void* Source)
 {
 	if constexpr (!TIsMoveAssignable<T>::Value || TIsConst<T>::Value) check_no_entry();
-	*reinterpret_cast<T*>(Target) = MoveTemp(*reinterpret_cast<T*>(Source));
+	else *reinterpret_cast<T*>(Target) = MoveTemp(*reinterpret_cast<T*>(Source));
 }
 
 using FVariantMoveAssignFunc = void(*)(void*, void*);
@@ -148,14 +148,6 @@ struct TVariantHelper
 	static constexpr FVariantEqualityOperatorFunc   EqualityOperatorFuncs[]   = { VariantEqualityOperator<Types>...   };
 	static constexpr FVariantInequalityOperatorFunc InequalityOperatorFuncs[] = { VariantInequalityOperator<Types>... };
 };
-
-template <typename... Types> constexpr FVariantDestroyFunc            TVariantHelper<Types...>::DestroyFuncs[];
-template <typename... Types> constexpr FVariantCopyConstructFunc      TVariantHelper<Types...>::CopyConstructFuncs[];
-template <typename... Types> constexpr FVariantMoveConstructFunc      TVariantHelper<Types...>::MoveConstructFuncs[];
-template <typename... Types> constexpr FVariantCopyAssignFunc         TVariantHelper<Types...>::CopyAssignFuncs[];
-template <typename... Types> constexpr FVariantMoveAssignFunc         TVariantHelper<Types...>::MoveAssignFuncs[];
-template <typename... Types> constexpr FVariantEqualityOperatorFunc   TVariantHelper<Types...>::EqualityOperatorFuncs[];
-template <typename... Types> constexpr FVariantInequalityOperatorFunc TVariantHelper<Types...>::InequalityOperatorFuncs[];
 
 template <typename R, typename F, typename T>
 constexpr R VariantVisitLValue(F&& Func, void* Arg)
@@ -210,14 +202,9 @@ struct TVariantVisitHelper
 	static constexpr FVariantVisitConstRValueFunc<R, F> VisitConstRValueFuncs[] = { VariantVisitConstRValue<R, F, Types>... };
 };
 
-template <typename R, typename F, typename... Types> constexpr FVariantVisitLValueFunc<R, F>      TVariantVisitHelper<R, F, Types...>::VisitLValueFuncs[];
-template <typename R, typename F, typename... Types> constexpr FVariantVisitRValueFunc<R, F>      TVariantVisitHelper<R, F, Types...>::VisitRValueFuncs[];
-template <typename R, typename F, typename... Types> constexpr FVariantVisitConstLValueFunc<R, F> TVariantVisitHelper<R, F, Types...>::VisitConstLValueFuncs[];
-template <typename R, typename F, typename... Types> constexpr FVariantVisitConstRValueFunc<R, F> TVariantVisitHelper<R, F, Types...>::VisitConstRValueFuncs[];
-
 NAMESPACE_PRIVATE_END
 
-template <typename... Types>
+template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value))
 struct TVariant
 {
 	struct FAlternativeSize : TConstant<size_t, sizeof...(Types)> { };
@@ -241,7 +228,7 @@ struct TVariant
 		if (GetIndex() != INDEX_NONE) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	template<size_t I, typename... ArgTypes> requires (I < FAlternativeSize::Value)
+	template <size_t I, typename... ArgTypes> requires (I < FAlternativeSize::Value)
 		&& TIsConstructible<typename TAlternativeType<I>::Type, ArgTypes...>::Value
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
@@ -250,7 +237,7 @@ struct TVariant
 		new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
 	}
 
-	template<typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
+	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
 		&& TIsConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>::Value
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
