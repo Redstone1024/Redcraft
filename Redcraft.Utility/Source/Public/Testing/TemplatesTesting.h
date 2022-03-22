@@ -13,6 +13,7 @@ REDCRAFTUTILITY_API void TestInvoke();
 REDCRAFTUTILITY_API void TestReferenceWrapper();
 REDCRAFTUTILITY_API void TestOptional();
 REDCRAFTUTILITY_API void TestVariant();
+REDCRAFTUTILITY_API void TestAny();
 REDCRAFTUTILITY_API void TestMiscTemplates();
 
 NAMESPACE_END(Testing)

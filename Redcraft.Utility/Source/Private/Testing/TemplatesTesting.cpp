@@ -20,6 +20,7 @@ void TestTemplates()
 	TestReferenceWrapper();
 	TestOptional();
 	TestVariant();
+	TestAny();
 	TestMiscTemplates();
 }
 
@@ -314,6 +315,210 @@ void TestVariant()
 	auto ReturnRD = MoveTemp(TempRD).Visit<int32>(TestQualifiers);
 	always_check((TIsSame<int32, decltype(ReturnRD)>::Value));
 
+}
+
+void TestAny()
+{
+	struct FIntegral
+	{
+		int32 A;
+		FIntegral() { }
+		FIntegral(int32 InA) : A(InA) { }
+		bool operator==(FIntegral RHS) const { return A == RHS.A; }
+	};
+
+	struct FFloating
+	{
+		double A;
+		uint8 Pad[64];
+		FFloating() { }
+		FFloating(double InA) : A(InA) { }
+		bool operator==(FFloating RHS) const { return A == RHS.A; }
+	};
+
+	struct FTracker
+	{
+		FTracker() { }
+		FTracker(const FTracker& InValue) { always_check_no_entry(); }
+		FTracker(FTracker&& InValue) { }
+		FTracker& operator=(const FTracker& InValue) { always_check_no_entry(); return *this; }
+		FTracker& operator=(FTracker&& InValue) { return *this; }
+	};
+
+	{
+		FAny TempA;
+		FAny TempB(Invalid);
+		FAny TempC(0);
+		FAny TempD(InPlaceType<int32>, 0);
+		FAny TempG(TempA);
+		FAny TempH(TempC);
+
+		FAny TempK, TempL, TempM, TempN;
+		TempK = TempA;
+		TempL = TempD;
+		TempM = FAny(0);
+		TempN = FAny(Invalid);
+
+		TempL = 303;
+		TempM = 404;
+
+		FAny TempO;
+		TempO.Emplace<int32>(202);
+		TempO.Emplace<int32>(404);
+
+		always_check(TempO);
+		always_check(TempO.IsValid());
+
+		always_check(TempO == 404);
+		always_check(TempO.GetValue<int32>() == 404);
+		always_check(TempO.Get<int32>(500) == 404);
+
+		TempO.Reset();
+		always_check(TempO.Get<int32>(500) == 500);
+
+		int32 TempP = 200;
+		TempO = TempP;
+		TempO = 300;
+
+		always_check(TempO == 300);
+		always_check(300 == TempO);
+
+		Swap(TempD, TempA);
+
+		always_check(!TempD.IsValid());
+		always_check(0 == TempA);
+	}
+
+	{
+		FAny TempA;
+		FAny TempB(Invalid);
+		FAny TempC(FIntegral(0));
+		FAny TempD(InPlaceType<FIntegral>, 0);
+		FAny TempG(TempA);
+		FAny TempH(TempC);
+
+		FAny TempK, TempL, TempM, TempN;
+		TempK = TempA;
+		TempL = TempD;
+		TempM = FAny(FIntegral(0));
+		TempN = FAny(Invalid);
+
+		TempL = FIntegral(303);
+		TempM = FIntegral(404);
+
+		FAny TempO;
+		TempO.Emplace<FIntegral>(202);
+		TempO.Emplace<FIntegral>(404);
+
+		always_check(TempO);
+		always_check(TempO.IsValid());
+
+		always_check(TempO == FIntegral(404));
+		always_check(TempO.GetValue<FIntegral>() == FIntegral(404));
+		always_check(TempO.Get<FIntegral>(500) == FIntegral(404));
+
+		TempO.Reset();
+		always_check(TempO.Get<FIntegral>(500) == FIntegral(500));
+
+		FIntegral TempP = FIntegral(200);
+		TempO = TempP;
+		TempO = FIntegral(300);
+
+		always_check(TempO == FIntegral(300));
+		always_check(FIntegral(300) == TempO);
+
+		Swap(TempD, TempA);
+
+		always_check(!TempD.IsValid());
+		always_check(FIntegral(0) == TempA);
+	}
+
+	{
+		FAny TempA;
+		FAny TempB(Invalid);
+		FAny TempC(FFloating(0.0));
+		FAny TempD(InPlaceType<FFloating>, 0.0);
+		FAny TempG(TempA);
+		FAny TempH(TempC);
+
+		FAny TempK, TempL, TempM, TempN;
+		TempK = TempA;
+		TempL = TempD;
+		TempM = FAny(FFloating(0.0));
+		TempN = FAny(Invalid);
+
+		TempL = FFloating(303.0);
+		TempM = FFloating(404.0);
+
+		FAny TempO;
+		TempO.Emplace<FFloating>(202.0);
+		TempO.Emplace<FFloating>(404.0);
+
+		always_check(TempO);
+		always_check(TempO.IsValid());
+
+		always_check(TempO == FFloating(404.0));
+		always_check(TempO.GetValue<FFloating>() == FFloating(404.0));
+		always_check(TempO.Get<FFloating>(500.0) == FFloating(404.0));
+
+		TempO.Reset();
+		always_check(TempO.Get<FFloating>(500.0) == FFloating(500.0));
+
+		FFloating TempP = FFloating(200.0);
+		TempO = TempP;
+		TempO = FFloating(300.0);
+
+		always_check(TempO == FFloating(300.0));
+		always_check(FFloating(300.0) == TempO);
+
+		Swap(TempD, TempA);
+
+		always_check(!TempD.IsValid());
+		always_check(FFloating(0.0) == TempA);
+	}
+
+	{
+		FAny TempA;
+		FAny TempB(InPlaceType<int32>, 0);
+		FAny TempC(InPlaceType<FIntegral>, 0);
+		FAny TempD(InPlaceType<FFloating>, 0.0);
+		FAny TempE(InPlaceType<FTracker>);
+
+		Swap(TempA, TempB);
+		Swap(TempA, TempC);
+		Swap(TempA, TempD);
+		Swap(TempA, TempE);
+
+		Swap(TempB, TempA);
+		Swap(TempB, TempC);
+		Swap(TempB, TempD);
+		Swap(TempB, TempE);
+
+		Swap(TempC, TempA);
+		Swap(TempC, TempB);
+		Swap(TempC, TempD);
+		Swap(TempC, TempE);
+
+		Swap(TempD, TempA);
+		Swap(TempD, TempB);
+		Swap(TempD, TempC);
+		Swap(TempD, TempE);
+
+		Swap(TempE, TempA);
+		Swap(TempE, TempB);
+		Swap(TempE, TempC);
+		Swap(TempE, TempD);
+
+		always_check(TempA == FIntegral(0));
+		always_check(TempB == FFloating(0.0));
+		always_check(TempC.HoldsAlternative<FTracker>());
+		always_check(TempD == Invalid);
+		always_check(TempE == int32(0));
+
+		FAny TempZ(Invalid);
+		TempZ = FAny();
+		TempZ = FTracker();
+	}
 }
 
 NAMESPACE_UNNAMED_BEGIN
