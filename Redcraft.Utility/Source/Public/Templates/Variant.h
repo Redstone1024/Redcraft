@@ -4,6 +4,7 @@
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -472,6 +473,30 @@ template <typename T, typename... Types>
 constexpr bool operator!=(const T& LHS, const TVariant<Types...>& RHS)
 {
 	return RHS.template HoldsAlternative<T>() ? LHS != RHS.template GetValue<T>() : true;
+}
+
+template <typename... Types>
+constexpr bool operator==(const TVariant<Types...>& LHS, FInvalid)
+{
+	return !LHS.IsValid();
+}
+
+template <typename... Types>
+constexpr bool operator!=(const TVariant<Types...>& LHS, FInvalid)
+{
+	return LHS.IsValid();
+}
+
+template <typename... Types>
+constexpr bool operator==(FInvalid, const TVariant<Types...>& RHS)
+{
+	return !RHS.IsValid();
+}
+
+template <typename... Types>
+constexpr bool operator!=(FInvalid, const TVariant<Types...>& RHS)
+{
+	return RHS.IsValid();
 }
 
 template <typename... Types> requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))

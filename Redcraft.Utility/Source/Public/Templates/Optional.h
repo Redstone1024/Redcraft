@@ -250,6 +250,30 @@ constexpr bool operator!=(const T& LHS, const TOptional<U>& RHS)
 }
 
 template <typename T>
+constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
+{
+	return !LHS.IsValid();
+}
+
+template <typename T>
+constexpr bool operator!=(const TOptional<T>& LHS, FInvalid)
+{
+	return LHS.IsValid();
+}
+
+template <typename T>
+constexpr bool operator==(FInvalid, const TOptional<T>& RHS)
+{
+	return !RHS.IsValid();
+}
+
+template <typename T>
+constexpr bool operator!=(FInvalid, const TOptional<T>& RHS)
+{
+	return RHS.IsValid();
+}
+
+template <typename T>
 constexpr TOptional<typename TDecay<T>::Type> MakeOptional(FInvalid)
 {
 	return TOptional<typename TDecay<T>::Type>(Invalid);
