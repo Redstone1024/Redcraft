@@ -9,3 +9,4 @@
 #include "Templates/Optional.h"
 #include "Templates/Variant.h"
 #include "Templates/Any.h"
+#include "Templates/IntegerSequence.h"
