@@ -9,12 +9,12 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename OptionalType> requires (TIsObject<OptionalType>::Value && !TIsArray<OptionalType>::Value&& TIsDestructible<OptionalType>::Value)
+template <typename OptionalType> requires TIsObject<OptionalType>::Value && (!TIsArray<OptionalType>::Value) && TIsDestructible<OptionalType>::Value
 struct TOptional
 {
 public:
 
-	using Type = OptionalType;
+	using ValueType = OptionalType;
 
 	constexpr TOptional() : bIsValid(false) { }
 
@@ -29,7 +29,7 @@ public:
 
 	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
 		&& (!TIsSame<typename TRemoveCVRef<T>::Type, FInPlace>::Value) && (!TIsSame<typename TRemoveCVRef<T>::Type, TOptional>::Value)
-	constexpr explicit(!TIsConvertible<T&&, OptionalType>::Value) TOptional(T&& InValue)
+	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
@@ -46,14 +46,14 @@ public:
 	}
 
 	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value
-	constexpr explicit(!TIsConvertible<const T&, OptionalType>::Value) TOptional(const TOptional<T>& InValue)
+	constexpr explicit (!TIsConvertible<const T&, OptionalType>::Value) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
 	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
-	constexpr explicit(!TIsConvertible<T&&, OptionalType>::Value) TOptional(TOptional<T>&& InValue)
+	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
@@ -61,7 +61,7 @@ public:
 
 	constexpr ~TOptional()
 	{
-		Reset();
+		if constexpr (!TIsTriviallyDestructible<OptionalType>::Value) Reset();
 	}
 
 	constexpr TOptional& operator=(const TOptional& InValue)
@@ -168,11 +168,14 @@ public:
 
 	constexpr bool           IsValid() const { return bIsValid; }
 	constexpr explicit operator bool() const { return bIsValid; }
+	
+	constexpr       void* GetData()       { return &Value; }
+	constexpr const void* GetData() const { return &Value; }
 
-	constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *(OptionalType*)&Value;  }
-	constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*(OptionalType*)&Value); }
-	constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *(OptionalType*)&Value;  }
-	constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*(OptionalType*)&Value); }
+	constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      OptionalType*>(&Value);   }
+	constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      OptionalType*>(&Value));  }
+	constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const OptionalType*>(&Value);   }
+	constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const OptionalType*>(&Value));  }
 
 	constexpr const OptionalType* operator->() const { return &GetValue(); }
 	constexpr       OptionalType* operator->()       { return &GetValue(); }
@@ -182,11 +185,8 @@ public:
 	constexpr const OptionalType&  operator*() const&  { return GetValue(); }
 	constexpr const OptionalType&& operator*() const&& { return GetValue(); }
 
-	template <typename T = OptionalType>
-	constexpr OptionalType Get(T&& DefaultValue) &&     { return IsValid() ? GetValue() : DefaultValue; }
-
-	template <typename T = OptionalType>
-	constexpr OptionalType Get(T&& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue; }
+	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
+	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
 
 	constexpr void Reset()
 	{

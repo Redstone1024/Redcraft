@@ -72,8 +72,7 @@ struct TVariantSelectedType<T>
 template <typename T>
 constexpr void VariantDestroy(void* InValue)
 {
-	if constexpr (!TIsDestructible<T>::Value) check_no_entry();
-	else if constexpr (!TIsTriviallyDestructible<T>::Value)
+	if constexpr (!TIsTriviallyDestructible<T>::Value)
 	{
 		typedef T DestructOptionalType;
 		reinterpret_cast<T*>(InValue)->DestructOptionalType::~DestructOptionalType();
@@ -153,8 +152,7 @@ struct TVariantHelper
 template <typename R, typename F, typename T>
 constexpr R VariantVisitLValue(F&& Func, void* Arg)
 {
-	if constexpr (!TIsInvocableResult<R, F, T>::Value) check_no_entry();
-	else if constexpr(TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<T*>(Arg));
+	if constexpr(TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<T*>(Arg));
 	else return InvokeResult<R>(Forward<F>(Func), *reinterpret_cast<T*>(Arg));
 }
 
@@ -164,8 +162,7 @@ using FVariantVisitLValueFunc = R(*)(F&&, void*);
 template <typename R, typename F, typename T>
 constexpr R VariantVisitRValue(F&& Func, void* Arg)
 {
-	if constexpr (!TIsInvocableResult<R, F, T>::Value) check_no_entry();
-	else if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<T*>(Arg)));
+	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<T*>(Arg)));
 	else return InvokeResult<R>(Forward<F>(Func), MoveTemp(*reinterpret_cast<T*>(Arg)));
 }
 
@@ -175,8 +172,7 @@ using FVariantVisitRValueFunc = R(*)(F&&, void*);
 template <typename R, typename F, typename T>
 constexpr R VariantVisitConstLValue(F&& Func, const void* Arg)
 {
-	if constexpr (!TIsInvocableResult<R, F, T>::Value) check_no_entry();
-	else if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<const T*>(Arg));
+	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<const T*>(Arg));
 	else return InvokeResult<R>(Forward<F>(Func), *reinterpret_cast<const T*>(Arg));
 }
 
@@ -186,8 +182,7 @@ using FVariantVisitConstLValueFunc = R(*)(F&&, const void*);
 template <typename R, typename F, typename T>
 constexpr R VariantVisitConstRValue(F&& Func, const void* Arg)
 {
-	if constexpr (!TIsInvocableResult<R, F, T>::Value) check_no_entry();
-	else if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<const T*>(Arg)));
+	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<const T*>(Arg)));
 	else return InvokeResult<R>(Forward<F>(Func), MoveTemp(*reinterpret_cast<const T*>(Arg)));
 }
 
@@ -208,7 +203,7 @@ NAMESPACE_PRIVATE_END
 template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value))
 struct TVariant
 {
-	struct FAlternativeSize : TConstant<size_t, sizeof...(Types)> { };
+	static constexpr size_t AlternativeSize = sizeof...(Types);
 
 	template <size_t I>   struct TAlternativeType  : NAMESPACE_PRIVATE::TVariantAlternativeType<I, Types...>  { };
 	template <typename T> struct TAlternativeIndex : NAMESPACE_PRIVATE::TVariantAlternativeIndex<T, Types...> { };
@@ -229,7 +224,7 @@ struct TVariant
 		if (GetIndex() != INDEX_NONE) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < FAlternativeSize::Value)
+	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
 		&& TIsConstructible<typename TAlternativeType<I>::Type, ArgTypes...>::Value
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
@@ -252,7 +247,7 @@ struct TVariant
 
 	constexpr ~TVariant()
 	{
-		Reset();
+		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value)) Reset();
 	}
 
 	constexpr TVariant& operator=(const TVariant& InValue)
@@ -313,7 +308,7 @@ struct TVariant
 		return *this;
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < FAlternativeSize::Value)
+	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
 		&& TIsConstructible<typename TAlternativeType<I>::Type, ArgTypes...>::Value
 	constexpr typename TAlternativeType<I>::Type& Emplace(ArgTypes&&... Args)
 	{
@@ -343,23 +338,23 @@ struct TVariant
 	constexpr       void* GetData()       { return &Value; }
 	constexpr const void* GetData() const { return &Value; }
 
-	template <size_t I> constexpr       typename TAlternativeType<I>::Type&  GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TAlternativeType<I>::Type*>(&Value);  }
-	template <size_t I> constexpr       typename TAlternativeType<I>::Type&& GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TAlternativeType<I>::Type*>(&Value)); }
-	template <size_t I> constexpr const typename TAlternativeType<I>::Type&  GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TAlternativeType<I>::Type*>(&Value);  }
-	template <size_t I> constexpr const typename TAlternativeType<I>::Type&& GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TAlternativeType<I>::Type*>(&Value)); }
+	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&  GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TAlternativeType<I>::Type*>(&Value);  }
+	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&& GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TAlternativeType<I>::Type*>(&Value)); }
+	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type&  GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TAlternativeType<I>::Type*>(&Value);  }
+	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type&& GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TAlternativeType<I>::Type*>(&Value)); }
 
-	template <typename T> constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
-	template <typename T> constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
-	template <typename T> constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
-	template <typename T> constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
 
-	template <size_t I> constexpr typename TAlternativeType<I>::Type Get(typename TAlternativeType<I>::Type&& DefaultValue) &&     { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
-	template <size_t I> constexpr typename TAlternativeType<I>::Type Get(typename TAlternativeType<I>::Type&& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type& Get(typename TAlternativeType<I>::Type& DefaultValue)& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type& Get(const typename TAlternativeType<I>::Type& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 
-	template <typename T> constexpr T Get(T&& DefaultValue) &&     { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	template <typename T> constexpr T Get(T&& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T& Get(T& DefaultValue)& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
-	template <typename F>
+	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
 	constexpr auto Visit(F&& Func) &
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
@@ -367,7 +362,7 @@ struct TVariant
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename F>
+	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
 	constexpr auto Visit(F&& Func) &&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
@@ -375,7 +370,7 @@ struct TVariant
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename F>
+	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
 	constexpr auto Visit(F&& Func) const&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
@@ -383,7 +378,7 @@ struct TVariant
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename F>
+	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
 	constexpr auto Visit(F&& Func) const&&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
@@ -391,28 +386,28 @@ struct TVariant
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename R, typename F>
+	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) &
 	{
 		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename R, typename F>
+	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) &&
 	{
 		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename R, typename F>
+	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) const&
 	{
 		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	template <typename R, typename F>
+	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) const&&
 	{
 		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
@@ -423,7 +418,10 @@ struct TVariant
 	{
 		if (GetIndex() == INDEX_NONE) return;
 
-		FHelper::DestroyFuncs[GetIndex()](&Value);
+		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value))
+		{
+			FHelper::DestroyFuncs[GetIndex()](&Value);
+		}
 
 		TypeIndex = INDEX_NONE;
 	}
