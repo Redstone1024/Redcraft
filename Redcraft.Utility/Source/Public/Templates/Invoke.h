@@ -1,8 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "TypeTraits/Miscellaneous.h"
-
+#include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
