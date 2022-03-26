@@ -75,6 +75,9 @@ void TestReferenceWrapper()
 	always_check(ArrayA[0] == 2);
 	always_check(ArrayA[1] == 4);
 	always_check(ArrayA[2] == 6);
+
+	always_check((TIsSame<int32,  TUnwrapRefDecay<int32>::Type>::Value));
+	always_check((TIsSame<int32&, TUnwrapRefDecay<TReferenceWrapper<int32>>::Type>::Value));
 }
 
 void TestOptional()

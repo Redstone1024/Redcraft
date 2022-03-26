@@ -40,6 +40,11 @@ private:
 template <typename T>
 TReferenceWrapper(T&) -> TReferenceWrapper<T>;
 
+template <typename T> struct TUnwrapReference                       { using Type = T;  };
+template <typename T> struct TUnwrapReference<TReferenceWrapper<T>> { using Type = T&; };
+
+template <typename T> struct TUnwrapRefDecay { using Type = typename TUnwrapReference<typename TDecay<T>::Type>::Type; };
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
