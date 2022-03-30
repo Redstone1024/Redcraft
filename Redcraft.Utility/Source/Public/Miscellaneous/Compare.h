@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Utility.h"
 #include "Concepts/Concepts.h"
 #include "TypeTraits/TypeTraits.h"
 
@@ -52,7 +53,7 @@ concept CThreeWayComparableWith = CWeaklyEqualityComparableWith<T, U> && CPartia
 	CThreeWayComparable<T, OrderingType> &&	CThreeWayComparable<U, OrderingType> &&
 	CCommonReferenceWith<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&> &&
 	CThreeWayComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type, OrderingType> &&
-	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<T>::Type& B)
+	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<U>::Type& B)
 	{
 		{ A <=> B } -> CThreeWayComparesAs<OrderingType>;
 		{ B <=> A } -> CThreeWayComparesAs<OrderingType>;
@@ -67,7 +68,7 @@ struct TCompareThreeWayResult<T, U>
 	using Type = decltype(DeclVal<const typename TRemoveReference<T>::Type&>() <=> DeclVal<const typename TRemoveReference<U>::Type&>());
 };
 
-template <typename T = void> requires CSameAs<T, void> || CThreeWayComparable<T>
+template <typename T = void> requires (CSameAs<T, void> || CThreeWayComparable<T>)
 struct TCompareThreeWay
 {
 	constexpr auto operator()(T&& LHS, T&& RHS) const
@@ -84,6 +85,61 @@ struct TCompareThreeWay<void>
 	{
 		return Forward<T>(LHS) <=> Forward<U>(RHS);
 	}
+};
+
+template <typename T, typename OrderingType = partial_ordering>
+concept CSynthThreeWayComparable = CThreeWayComparable<T> ||
+	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<T>::Type& B)
+	{
+		{ A < B } -> CBooleanTestable;
+		{ B < A } -> CBooleanTestable;
+	};
+
+template <typename T, typename U, typename OrderingType = partial_ordering>
+concept CSynthThreeWayComparableWith = CThreeWayComparableWith<T, U> ||
+	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<U>::Type& B)
+	{
+		{ A < B } -> CBooleanTestable;
+		{ B < A } -> CBooleanTestable;
+	};
+
+template <typename T = void> requires (CSameAs<T, void> || CSynthThreeWayComparable<T>)
+struct TSynthThreeWay
+{
+	constexpr auto operator()(T&& LHS, T&& RHS) const
+	{
+		if constexpr (CThreeWayComparable<T>)
+		{
+			return Forward<T>(LHS) <=> Forward<T>(RHS);
+		}
+		else
+		{
+			return Forward<T>(LHS) < Forward<T>(RHS) ? weak_ordering::less : Forward<T>(RHS) < Forward<T>(LHS) ? weak_ordering::greater : weak_ordering::equivalent;
+		}
+	}
+};
+
+template <>
+struct TSynthThreeWay<void>
+{
+	template <typename T, typename U> requires CSynthThreeWayComparableWith<T, U>
+	constexpr auto operator()(T&& LHS, U&& RHS) const
+	{
+		if constexpr (CThreeWayComparableWith<T, U>)
+		{
+			return Forward<T>(LHS) <=> Forward<U>(RHS);
+		}
+		else
+		{
+			return Forward<T>(LHS) < Forward<U>(RHS) ? weak_ordering::less : Forward<U>(RHS) < Forward<T>(LHS) ? weak_ordering::greater : weak_ordering::equivalent;
+		}
+	}
+};
+
+template <typename T, typename U = T>
+struct TSynthThreeWayResult
+{
+	using Type = decltype(TSynthThreeWay{}(DeclVal<const typename TRemoveReference<T>::Type&>(), DeclVal<const typename TRemoveReference<U>::Type&>()));
 };
 
 NAMESPACE_UNNAMED_BEGIN

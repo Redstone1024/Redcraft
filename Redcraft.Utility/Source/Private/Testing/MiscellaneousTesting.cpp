@@ -108,6 +108,14 @@ struct FTestStrongOrdering
 	friend strong_ordering operator<=>(FTestStrongOrdering LHS, FTestStrongOrdering RHS) { return LHS.Num <=> RHS.Num; }
 };
 
+struct FTestSynth
+{
+	int32 A;
+	FTestSynth(int32 InA) : A(InA) { }
+	friend bool operator==(FTestSynth LHS, FTestSynth RHS) { return LHS.A == RHS.A; }
+	friend bool operator< (FTestSynth LHS, FTestSynth RHS) { return LHS.A <  RHS.A; }
+};
+
 NAMESPACE_UNNAMED_END
 
 void TestCompare()
@@ -200,6 +208,17 @@ void TestCompare()
 	always_check((TCompareThreeWay<int32>()(0, 0)   == strong_ordering::equal));
 	always_check((TCompareThreeWay<void>() (0, 0.0) == strong_ordering::equal));
 
+	
+	always_check(TSynthThreeWay{}(FTestPartialOrdering(-1), FTestPartialOrdering( 0)) == partial_ordering::less);
+	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0), FTestPartialOrdering( 0)) == partial_ordering::equivalent);
+	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0), FTestPartialOrdering(-1)) == partial_ordering::greater);
+
+	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0, true), FTestPartialOrdering( 0, false)) == partial_ordering::unordered);
+	
+	always_check(TSynthThreeWay{}(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
+	always_check(TSynthThreeWay{}(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
+	always_check(TSynthThreeWay{}(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
+	
 	always_check((StrongOrder(0, 0)                 == strong_ordering::equal));
 	always_check((WeakOrder(0, 0)                   == strong_ordering::equal));
 	always_check((PartialOrder(0, 0)                == strong_ordering::equal));
