@@ -37,6 +37,9 @@ struct TVariantAlternativeType<I, T, Types...>
 template <typename T, typename... Types>
 struct TVariantAlternativeType<0, T, Types...> { using Type = T; };
 
+template <>
+struct TVariantAlternativeType<0> { };
+
 template <typename T, typename... Types>
 struct TVariantSelectedType;
 
@@ -46,17 +49,18 @@ struct TVariantSelectedType<T, U, Types...>
 	using TypeAlternativeA = typename TConditional<TIsConstructible<U, T&&>::Value, U, void>::Type;
 	using TypeAlternativeB = typename TVariantSelectedType<T, Types...>::Type;
 
-	using Type = typename TConditional<TIsSame<TypeAlternativeA, void>::Value, TypeAlternativeB,
-				 typename TConditional<TIsSame<TypeAlternativeB, void>::Value, TypeAlternativeA, 
-				 typename TConditional<TIsSame<TypeAlternativeB,    T>::Value, TypeAlternativeB, TypeAlternativeA>::Type>::Type>::Type;
+	using Type = typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, void>::Value, TypeAlternativeB,
+				 typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeB>::Type, void>::Value, TypeAlternativeA, 
+				 typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeB>::Type, typename TRemoveCVRef<T>::Type>::Value, TypeAlternativeB, TypeAlternativeA>::Type>::Type>::Type;
 
 	// 0 - Type not found
 	// 1 - Same type found
 	// 2 - Multiple types found
 	// 3 - The type found
-	static constexpr uint8 Flag = TIsSame<Type, void>::Value ? 0 :
-								  TIsSame<Type,    T>::Value ? 1 :
-								  !TIsSame<TypeAlternativeA, void>::Value && !TIsSame<TypeAlternativeB, void>::Value ? 2 : 3;
+	static constexpr uint8 Flag = TIsSame<typename TRemoveCVRef<Type>::Type, void>::Value ? 0 :
+								  TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, typename TRemoveCVRef<TypeAlternativeB>::Type>::Value ? 2 :
+								  TIsSame<typename TRemoveCVRef<            Type>::Type, typename TRemoveCVRef<               T>::Type>::Value ? 1 :
+								 !TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, void>::Value && !TIsSame<TypeAlternativeB, void>::Value ? 2 : 3;
 
 	static constexpr bool Value = Flag & 1;
 
@@ -348,10 +352,10 @@ struct TVariant
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
 
-	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type& Get(typename TAlternativeType<I>::Type& DefaultValue)& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type& Get(      typename TAlternativeType<I>::Type& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type& Get(const typename TAlternativeType<I>::Type& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T& Get(T& DefaultValue)& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T& Get(T& DefaultValue)&             { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
@@ -523,6 +527,9 @@ constexpr void Swap(TVariant<Types...>& A, TVariant<Types...>& B)
 
 template <typename    T    > struct TIsVariantSpecialization                     : FFalse { };
 template <typename... Types> struct TIsVariantSpecialization<TVariant<Types...>> : FTrue  { };
+
+template <typename VariantType> requires TIsVariantSpecialization<typename TRemoveCVRef<VariantType>::Type>::Value
+struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
 
 template <size_t I, typename VariantType> requires TIsVariantSpecialization<typename TRemoveCVRef<VariantType>::Type>::Value
 struct TVariantAlternativeType { using Type = typename TCopyCV<typename TRemoveReference<VariantType>::Type, typename TRemoveCVRef<VariantType>::Type::template TAlternativeType<I>::Type>::Type; };
