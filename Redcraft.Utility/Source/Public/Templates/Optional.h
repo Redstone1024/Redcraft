@@ -321,6 +321,9 @@ constexpr void Swap(TOptional<T>& A, TOptional<T>& B)
 	Swap(*A, *B);
 }
 
+template <typename T> struct TIsTOptional               : FFalse { };
+template <typename T> struct TIsTOptional<TOptional<T>> : FTrue  { };
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

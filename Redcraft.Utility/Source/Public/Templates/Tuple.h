@@ -379,16 +379,16 @@ TTuple(Types...) -> TTuple<Types...>;
 template <typename T, typename U>
 using TPair = TTuple<T, U>;
 
-template <typename    T    > struct TIsTupleSpecialization                   : FFalse { };
-template <typename... Types> struct TIsTupleSpecialization<TTuple<Types...>> : FTrue  { };
+template <typename    T    > struct TIsTTuple                   : FFalse { };
+template <typename... Types> struct TIsTTuple<TTuple<Types...>> : FTrue  { };
 
-template <typename TupleType> requires TIsTupleSpecialization<typename TRemoveCVRef<TupleType>::Type>::Value
+template <typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
 struct TTupleElementSize : TConstant<size_t, TRemoveCVRef<TupleType>::Type::ElementSize> { };
 
-template <size_t I, typename TupleType> requires TIsTupleSpecialization<typename TRemoveCVRef<TupleType>::Type>::Value
+template <size_t I, typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
 struct TTupleElementType { using Type = typename TCopyCVRef<typename TRemoveReference<TupleType>::Type, typename TRemoveCVRef<TupleType>::Type::template TElementType<I>::Type>::Type; };
 
-template <typename T, typename TupleType> requires TIsTupleSpecialization<typename TRemoveCVRef<TupleType>::Type>::Value
+template <typename T, typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
 struct TTupleElementIndex : TupleType::template TElementIndex<T> { };
 
 template <typename... Types>
@@ -553,10 +553,10 @@ struct TTupleVisitImpl<TIndexSequence<>>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... TTupleTypes> requires (true && ... && (TIsTupleSpecialization<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
+template <typename... TTupleTypes> requires (true && ... && (TIsTTuple<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
 struct TTupleCatResult { using Type = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<typename TRemoveReference<TTupleTypes>::Type..., NAMESPACE_PRIVATE::FTupleEndFlag>::Type; };
 
-template <typename... TTupleTypes> requires (true && ... && (TIsTupleSpecialization<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
+template <typename... TTupleTypes> requires (true && ... && (TIsTTuple<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
 constexpr auto TupleCat(TTupleTypes&&... Args)
 {
 	using R = typename TTupleCatResult<TTupleTypes...>::Type;

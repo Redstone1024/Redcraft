@@ -119,12 +119,12 @@ struct TAnyRTTIHelper
 	};
 };
 
-inline constexpr size_t ANY_DEFAULT_INLINE_SIZE = 64 - sizeof(FTypeInfo) - sizeof(const FAnyRTTI*);
-inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = Memory::MINIMUM_ALIGNMENT;
-
 NAMESPACE_PRIVATE_END
 
-template <size_t InlineSize, size_t InlineAlignment = NAMESPACE_PRIVATE::ANY_DEFAULT_INLINE_ALIGNMENT>
+inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 64 - sizeof(FTypeInfo) - sizeof(const NAMESPACE_PRIVATE::FAnyRTTI*);
+inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = Memory::MINIMUM_ALIGNMENT;
+
+template <size_t InlineSize, size_t InlineAlignment = ANY_DEFAULT_INLINE_ALIGNMENT>
 struct TAny
 {
 	template <typename T>
@@ -186,7 +186,7 @@ struct TAny
 		}
 	}
 
-	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsInPlaceTypeSpecialization<typename TDecay<T>::Type>::Value)
+	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
 	TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
@@ -255,7 +255,7 @@ struct TAny
 		return *this;
 	}
 
-	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsInPlaceTypeSpecialization<typename TDecay<T>::Type>::Value)
+	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
 	TAny& operator=(T&& InValue)
@@ -451,7 +451,10 @@ constexpr void Swap(TAny<InlineSize, InlineAlignment>& A, TAny<InlineSize, Inlin
 	B = MoveTemp(Temp);
 }
 
-using FAny = TAny<NAMESPACE_PRIVATE::ANY_DEFAULT_INLINE_SIZE>;
+template <typename T>                                struct TIsTAny                                    : FFalse { };
+template <size_t InlineSize, size_t InlineAlignment> struct TIsTAny<TAny<InlineSize, InlineAlignment>> : FTrue  { };
+
+using FAny = TAny<ANY_DEFAULT_INLINE_SIZE>;
 
 static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
 

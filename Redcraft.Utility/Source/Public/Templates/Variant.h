@@ -245,7 +245,7 @@ struct TVariant
 	{ }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Value
-		&& (!TIsInPlaceTypeSpecialization<typename TRemoveCVRef<T>::Type>::Value) && (!TIsInPlaceIndexSpecialization<typename TRemoveCVRef<T>::Type>::Value)
+		&& (!TIsTInPlaceType<typename TRemoveCVRef<T>::Type>::Value) && (!TIsTInPlaceIndex<typename TRemoveCVRef<T>::Type>::Value)
 		&& (!TIsSame<typename TRemoveCVRef<T>::Type, TVariant>::Value)
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Type>, Forward<T>(InValue))
 	{ }
@@ -532,16 +532,16 @@ constexpr void Swap(TVariant<Types...>& A, TVariant<Types...>& B)
 	B = MoveTemp(Temp);
 }
 
-template <typename    T    > struct TIsVariantSpecialization                     : FFalse { };
-template <typename... Types> struct TIsVariantSpecialization<TVariant<Types...>> : FTrue  { };
+template <typename    T    > struct TIsTVariant                     : FFalse { };
+template <typename... Types> struct TIsTVariant<TVariant<Types...>> : FTrue  { };
 
-template <typename VariantType> requires TIsVariantSpecialization<typename TRemoveCVRef<VariantType>::Type>::Value
+template <typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
 struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
 
-template <size_t I, typename VariantType> requires TIsVariantSpecialization<typename TRemoveCVRef<VariantType>::Type>::Value
+template <size_t I, typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
 struct TVariantAlternativeType { using Type = typename TCopyCV<typename TRemoveReference<VariantType>::Type, typename TRemoveCVRef<VariantType>::Type::template TAlternativeType<I>::Type>::Type; };
 
-template <typename T, typename VariantType> requires TIsVariantSpecialization<typename TRemoveCVRef<VariantType>::Type>::Value
+template <typename T, typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
 struct TVariantAlternativeIndex : VariantType::template TAlternativeIndex<T> { };
 
 NAMESPACE_MODULE_END(Utility)

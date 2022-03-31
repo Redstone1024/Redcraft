@@ -40,6 +40,9 @@ private:
 template <typename T>
 TReferenceWrapper(T&) -> TReferenceWrapper<T>;
 
+template <typename T> struct TIsTReferenceWrapper                       : FFalse { };
+template <typename T> struct TIsTReferenceWrapper<TReferenceWrapper<T>> : FTrue  { };
+
 template <typename T> struct TUnwrapReference                       { using Type = T;  };
 template <typename T> struct TUnwrapReference<TReferenceWrapper<T>> { using Type = T&; };
 

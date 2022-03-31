@@ -7,11 +7,11 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename T> struct TIsInPlaceTypeSpecialization                  : FFalse { };
-template <typename T> struct TIsInPlaceTypeSpecialization<TInPlaceType<T>> : FTrue  { };
+template <typename T> struct TIsTInPlaceType                  : FFalse { };
+template <typename T> struct TIsTInPlaceType<TInPlaceType<T>> : FTrue  { };
 
-template <typename T> struct TIsInPlaceIndexSpecialization                   : FFalse { };
-template <size_t   I> struct TIsInPlaceIndexSpecialization<TInPlaceIndex<I>> : FTrue  { };
+template <typename T> struct TIsTInPlaceIndex                   : FFalse { };
+template <size_t   I> struct TIsTInPlaceIndex<TInPlaceIndex<I>> : FTrue  { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
