@@ -92,6 +92,14 @@ constexpr T* AddressOf(T& Object)
 	return &Object;
 }
 
+struct FIgnore
+{
+	template <typename T>
+	constexpr void operator=(T&&) const { }
+};
+
+inline constexpr FIgnore Ignore;
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
