@@ -216,13 +216,13 @@ struct TVariant
 
 	constexpr TVariant(FInvalid) : TVariant() { };
 
-	constexpr TVariant(const TVariant& InValue)
+	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
 		: TypeIndex(InValue.GetIndex())
 	{
 		if (GetIndex() != INDEX_NONE) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	constexpr TVariant(TVariant&& InValue)
+	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
 		: TypeIndex(InValue.GetIndex())
 	{
 		if (GetIndex() != INDEX_NONE) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
@@ -254,7 +254,7 @@ struct TVariant
 		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value)) Reset();
 	}
 
-	constexpr TVariant& operator=(const TVariant& InValue)
+	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (TIsCopyConstructible<Types>::Value && TIsCopyAssignable<Types>::Value))
 	{
 		if (&InValue == this) return *this;
 
@@ -275,7 +275,7 @@ struct TVariant
 		return *this;
 	}
 
-	constexpr TVariant& operator=(TVariant&& InValue)
+	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsMoveAssignable<Types>::Value))
 	{
 		if (&InValue == this) return *this;
 
@@ -437,14 +437,14 @@ private:
 	TAlignedUnion<1, Types...>::Type Value;
 	size_t TypeIndex;
 
-	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS)
+	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Types>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
 		return FHelper::EqualityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
-	friend constexpr bool operator!=(const TVariant& LHS, const TVariant& RHS)
+	friend constexpr bool operator!=(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Types>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return true;
 		if (LHS.IsValid() == false) return false;
@@ -453,25 +453,25 @@ private:
 
 };
 
-template <typename T, typename... Types>
+template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
 constexpr bool operator==(const TVariant<Types...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
-template <typename T, typename... Types>
+template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
 constexpr bool operator!=(const TVariant<Types...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() != RHS : true;
 }
 
-template <typename T, typename... Types>
+template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
 constexpr bool operator==(const T& LHS, const TVariant<Types...>& RHS)
 {
 	return RHS.template HoldsAlternative<T>() ? LHS == RHS.template GetValue<T>() : false;
 }
 
-template <typename T, typename... Types>
+template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
 constexpr bool operator!=(const T& LHS, const TVariant<Types...>& RHS)
 {
 	return RHS.template HoldsAlternative<T>() ? LHS != RHS.template GetValue<T>() : true;
