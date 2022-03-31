@@ -11,3 +11,4 @@
 #include "Templates/Any.h"
 #include "Templates/IntegerSequence.h"
 #include "Templates/Tuple.h"
+#include "Templates/TypeHash.h"

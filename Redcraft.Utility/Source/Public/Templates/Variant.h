@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
+#include "Templates/TypeHash.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -416,6 +417,12 @@ struct TVariant
 	{
 		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
+	}
+
+	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
+	{
+		if (!IsValid()) return NAMESPACE_REDCRAFT::GetTypeHash(nullptr);
+		return Visit([](auto&& A) { return NAMESPACE_REDCRAFT::GetTypeHash(A); });
 	}
 
 	constexpr void Reset()

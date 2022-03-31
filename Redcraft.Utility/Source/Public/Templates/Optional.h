@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
 #include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -188,6 +189,12 @@ public:
 
 	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
 	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
+
+	constexpr size_t GetTypeHash() const requires CHashable<OptionalType>
+	{
+		if (!IsValid()) return NAMESPACE_REDCRAFT::GetTypeHash(nullptr);
+		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
+	}
 
 	constexpr void Reset()
 	{

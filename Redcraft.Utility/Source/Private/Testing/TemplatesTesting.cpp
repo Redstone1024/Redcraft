@@ -153,6 +153,9 @@ void TestOptional()
 	TOptional<FTracker> TempZ(MakeOptional<FTracker>());
 	TempZ = MakeOptional<FTracker>();
 	TempZ = FTracker();
+
+	always_check(GetTypeHash(MakeOptional<int32>(114)) == GetTypeHash(MakeOptional<int32>(114)));
+	always_check(GetTypeHash(MakeOptional<int32>(114)) != GetTypeHash(MakeOptional<int32>(514)));
 }
 
 void TestVariant()
@@ -319,6 +322,8 @@ void TestVariant()
 	auto ReturnRD = MoveTemp(TempRD).Visit<int32>(TestQualifiers);
 	always_check((TIsSame<int32, decltype(ReturnRD)>::Value));
 
+	always_check(GetTypeHash(TVariant<int32, float>(114)) == GetTypeHash(TVariant<int32, float>(114)));
+	always_check(GetTypeHash(TVariant<int32, float>(114)) != GetTypeHash(TVariant<int32, float>(514)));
 }
 
 void TestAny()
@@ -898,6 +903,9 @@ void TestTuple()
 		always_check(C == 'A');
 		always_check((TIsSame<decltype(C), char>::Value));
 	}
+
+	always_check(GetTypeHash(MakeTuple(114, 1.0f)) == GetTypeHash(MakeTuple(114, 1.0f)));
+	always_check(GetTypeHash(MakeTuple(114, 1.0f)) != GetTypeHash(MakeTuple(514, 1.0f)));
 }
 
 NAMESPACE_UNNAMED_BEGIN
