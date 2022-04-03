@@ -135,7 +135,7 @@ struct TAny
 
 	constexpr TAny() : TypeInfo(Typeid(void)), RTTI(nullptr) { }
 
-	TAny(FInvalid) : TAny() { }
+	constexpr TAny(FInvalid) : TAny() { }
 
 	TAny(const TAny& InValue)
 		: TypeInfo(InValue.TypeInfo), RTTI(InValue.RTTI)
@@ -165,25 +165,9 @@ struct TAny
 		&& (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, Types...>::Value
 	explicit TAny(TInPlaceType<T>, Types&&... Args)
-		: TypeInfo(Typeid(typename TDecay<T>::Type))
 	{
 		using SelectedType = typename TDecay<T>::Type;
-
-		if constexpr (TIsTriviallyStorable<SelectedType>::Value)
-		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
-			RTTI = nullptr;
-		}
-		else if constexpr (TIsInlineStorable<SelectedType>::Value)
-		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
-			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, true>::RTTI;
-		}
-		else
-		{
-			DynamicValue = new SelectedType(Forward<Types>(Args)...);
-			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
-		}
+		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 	}
 
 	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
@@ -199,6 +183,8 @@ struct TAny
 
 	TAny& operator=(const TAny& InValue)
 	{
+		if (&InValue == this) return *this;
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -225,6 +211,8 @@ struct TAny
 
 	TAny& operator=(TAny&& InValue)
 	{
+		if (&InValue == this) return *this;
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -271,24 +259,7 @@ struct TAny
 		else
 		{
 			Reset();
-
-			TypeInfo = Typeid(SelectedType);
-
-			if constexpr (TIsTriviallyStorable<SelectedType>::Value)
-			{
-				new(&InlineValue) SelectedType(Forward<T>(InValue));
-				RTTI = nullptr;
-			}
-			else if constexpr (TIsInlineStorable<SelectedType>::Value)
-			{
-				new(&InlineValue) SelectedType(Forward<T>(InValue));
-				RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, true>::RTTI;
-			}
-			else
-			{
-				DynamicValue = new SelectedType(Forward<T>(InValue));
-				RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
-			}
+			EmplaceImpl<SelectedType>(Forward<T>(InValue));
 		}
 
 		return *this;
@@ -302,33 +273,15 @@ struct TAny
 		Reset();
 		
 		using SelectedType = typename TDecay<T>::Type;
-
-		TypeInfo = Typeid(SelectedType);
-
-		if constexpr (TIsTriviallyStorable<SelectedType>::Value)
-		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
-			RTTI = nullptr;
-		}
-		else if constexpr (TIsInlineStorable<SelectedType>::Value)
-		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
-			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, true>::RTTI;
-		}
-		else
-		{
-			DynamicValue = new SelectedType(Forward<Types>(Args)...);
-			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
-		}
-
+		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 		return GetValue<SelectedType>();
 	}
 
-	constexpr FTypeInfo  GetTypeInfo() const { return TypeInfo;                                  }
-	constexpr bool           IsValid() const { return TypeInfo != Typeid(void);                  }
-	constexpr explicit operator bool() const { return TypeInfo != Typeid(void);                  }
-	constexpr bool          IsInline() const { return RTTI != nullptr ? RTTI->bIsInline : true;  }
-	constexpr bool         IsTrivial() const { return RTTI == nullptr;                           }
+	constexpr FTypeInfo  GetTypeInfo() const { return TypeInfo;                                 }
+	constexpr bool           IsValid() const { return TypeInfo != Typeid(void);                 }
+	constexpr explicit operator bool() const { return TypeInfo != Typeid(void);                 }
+	constexpr bool          IsInline() const { return RTTI != nullptr ? RTTI->bIsInline : true; }
+	constexpr bool         IsTrivial() const { return RTTI == nullptr;                          }
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? TypeInfo == Typeid(T) : false; }
 
@@ -377,6 +330,28 @@ private:
 	FTypeInfo TypeInfo;
 	const NAMESPACE_PRIVATE::FAnyRTTI* RTTI;
 
+	template <typename SelectedType, typename... Types>
+	void EmplaceImpl(Types&&... Args)
+	{
+		TypeInfo = Typeid(SelectedType);
+
+		if constexpr (TIsTriviallyStorable<SelectedType>::Value)
+		{
+			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
+			RTTI = nullptr;
+		}
+		else if constexpr (TIsInlineStorable<SelectedType>::Value)
+		{
+			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
+			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, true>::RTTI;
+		}
+		else
+		{
+			DynamicValue = new SelectedType(Forward<Types>(Args)...);
+			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
+		}
+	}
+
 };
 
 template <typename T, size_t InlineSize, size_t InlineAlignment>
@@ -385,46 +360,10 @@ constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, const T&
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
-template <typename T, size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator!=(const TAny<InlineSize, InlineAlignment>& LHS, const T& RHS)
-{
-	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() != RHS : true;
-}
-
-template <typename T, size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator==(const T& LHS, const TAny<InlineSize, InlineAlignment>& RHS)
-{
-	return RHS.template HoldsAlternative<T>() ? LHS == RHS.template GetValue<T>() : false;
-}
-
-template <typename T, size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator!=(const T& LHS, const TAny<InlineSize, InlineAlignment>& RHS)
-{
-	return RHS.template HoldsAlternative<T>() ? LHS != RHS.template GetValue<T>() : true;
-}
-
 template <size_t InlineSize, size_t InlineAlignment>
 constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
-}
-
-template <size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator!=(const TAny<InlineSize, InlineAlignment>& LHS, FInvalid)
-{
-	return LHS.IsValid();
-}
-
-template <size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator==(FInvalid, const TAny<InlineSize, InlineAlignment>& RHS)
-{
-	return !RHS.IsValid();
-}
-
-template <size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator!=(FInvalid, const TAny<InlineSize, InlineAlignment>& RHS)
-{
-	return RHS.IsValid();
 }
 
 template <size_t InlineSize, size_t InlineAlignment>

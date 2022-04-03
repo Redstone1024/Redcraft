@@ -132,16 +132,6 @@ constexpr bool VariantEqualityOperator(const void* LHS, const void* RHS)
 
 using FVariantEqualityOperatorFunc = bool(*)(const void*, const void*);
 
-template <typename T>
-constexpr bool VariantInequalityOperator(const void* LHS, const void* RHS)
-{
-	if constexpr (!CEqualityComparable<T>) check_no_entry();
-	else return *reinterpret_cast<const T*>(LHS) != *reinterpret_cast<const T*>(RHS);
-	return false;
-}
-
-using FVariantInequalityOperatorFunc = bool(*)(const void*, const void*);
-
 template <typename... Types>
 struct TVariantHelper
 {
@@ -151,7 +141,6 @@ struct TVariantHelper
 	static constexpr FVariantCopyAssignFunc         CopyAssignFuncs[]         = { VariantCopyAssign<Types>...         };
 	static constexpr FVariantMoveAssignFunc         MoveAssignFuncs[]         = { VariantMoveAssign<Types>...         };
 	static constexpr FVariantEqualityOperatorFunc   EqualityOperatorFuncs[]   = { VariantEqualityOperator<Types>...   };
-	static constexpr FVariantInequalityOperatorFunc InequalityOperatorFuncs[] = { VariantInequalityOperator<Types>... };
 };
 
 template <typename R, typename F, typename T>
@@ -451,13 +440,6 @@ private:
 		return FHelper::EqualityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
-	friend constexpr bool operator!=(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Types>)
-	{
-		if (LHS.GetIndex() != RHS.GetIndex()) return true;
-		if (LHS.IsValid() == false) return false;
-		return FHelper::InequalityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
-	}
-
 };
 
 template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
@@ -466,46 +448,10 @@ constexpr bool operator==(const TVariant<Types...>& LHS, const T& RHS)
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
-template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
-constexpr bool operator!=(const TVariant<Types...>& LHS, const T& RHS)
-{
-	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() != RHS : true;
-}
-
-template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
-constexpr bool operator==(const T& LHS, const TVariant<Types...>& RHS)
-{
-	return RHS.template HoldsAlternative<T>() ? LHS == RHS.template GetValue<T>() : false;
-}
-
-template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
-constexpr bool operator!=(const T& LHS, const TVariant<Types...>& RHS)
-{
-	return RHS.template HoldsAlternative<T>() ? LHS != RHS.template GetValue<T>() : true;
-}
-
 template <typename... Types>
 constexpr bool operator==(const TVariant<Types...>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
-}
-
-template <typename... Types>
-constexpr bool operator!=(const TVariant<Types...>& LHS, FInvalid)
-{
-	return LHS.IsValid();
-}
-
-template <typename... Types>
-constexpr bool operator==(FInvalid, const TVariant<Types...>& RHS)
-{
-	return !RHS.IsValid();
-}
-
-template <typename... Types>
-constexpr bool operator!=(FInvalid, const TVariant<Types...>& RHS)
-{
-	return RHS.IsValid();
 }
 
 template <typename... Types> requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))

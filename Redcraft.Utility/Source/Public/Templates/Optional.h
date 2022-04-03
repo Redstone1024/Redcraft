@@ -106,9 +106,11 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType, const T&>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
+		if (&InValue == this) return *this;
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -125,9 +127,11 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
+		if (&InValue == this) return *this;
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -144,7 +148,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value
 	constexpr TOptional& operator=(T&& InValue)
 	{
 		if (IsValid()) GetValue() = Forward<T>(InValue);
@@ -157,12 +161,12 @@ public:
 		return *this;
 	}
 
-	template <typename... ArgsType>
-	constexpr OptionalType& Emplace(ArgsType&&... Args)
+	template <typename... ArgTypes> requires TIsConstructible<OptionalType, ArgTypes...>::Value
+	constexpr OptionalType& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
 
-		OptionalType* Result = new(&Value) OptionalType(Forward<ArgsType>(Args)...);
+		OptionalType* Result = new(&Value) OptionalType(Forward<ArgTypes>(Args)...);
 		bIsValid = true;
 
 		return *Result;
@@ -226,59 +230,15 @@ constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 }
 
 template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
-constexpr bool operator!=(const TOptional<T>& LHS, const TOptional<U>& RHS)
-{
-	if (LHS.IsValid() != RHS.IsValid()) return true;
-	if (LHS.IsValid() == false) return false;
-	return *LHS != *RHS;
-}
-
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
 constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
 {
 	return LHS.IsValid() ? *LHS == RHS : false;
-}
-
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
-constexpr bool operator!=(const TOptional<T>& LHS, const U& RHS)
-{
-	return LHS.IsValid() ? *LHS != RHS : true;
-}
-
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
-constexpr bool operator==(const T& LHS, const TOptional<U>& RHS)
-{
-	return RHS.IsValid() ? LHS == *RHS : false;
-}
-
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
-constexpr bool operator!=(const T& LHS, const TOptional<U>& RHS)
-{
-	return RHS.IsValid() ? LHS != *RHS : true;
 }
 
 template <typename T>
 constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
-}
-
-template <typename T>
-constexpr bool operator!=(const TOptional<T>& LHS, FInvalid)
-{
-	return LHS.IsValid();
-}
-
-template <typename T>
-constexpr bool operator==(FInvalid, const TOptional<T>& RHS)
-{
-	return !RHS.IsValid();
-}
-
-template <typename T>
-constexpr bool operator!=(FInvalid, const TOptional<T>& RHS)
-{
-	return RHS.IsValid();
 }
 
 template <typename T> requires (TIsObject<T>::Value && !TIsArray<T>::Value && TIsDestructible<T>::Value)

@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #define CARRIES_DEPENDENCY     [[carries_dependency]]
 #define DEPRECATED(Message)    [[deprecated(Message)]]
 #define FALLTHROUGH            [[fallthrough]]
-#define NODISCARD(Message)     [[nodiscard(Message)]]
+#define NODISCARD              [[nodiscard]]
 #define MAYBE_UNUSED           [[maybe_unused]]
 #define LIKELY                 [[likely]]
 #define UNLIKELY               [[unlikely]]
