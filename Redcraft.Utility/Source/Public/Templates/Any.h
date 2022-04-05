@@ -74,8 +74,9 @@ using FAnyMoveConstructFunc = void(*)(void*, void*);
 template <typename T>
 void AnyCopyAssign(void* Target, const void* Source)
 {
-	if constexpr (!TIsCopyAssignable<T>::Value) check_no_entry();
-	else *reinterpret_cast<T*>(Target) = *reinterpret_cast<const T*>(Source);
+	if constexpr (TIsCopyAssignable<T>::Value) *reinterpret_cast<T*>(Target) = *reinterpret_cast<const T*>(Source);
+	else if constexpr (TIsCopyConstructible<T>::Value) { AnyDestroy<T>(Target); AnyCopyConstruct<T>(Target, Source); }
+	else check_no_entry();
 }
 
 using FAnyCopyAssignFunc = void(*)(void*, const void*);
@@ -83,8 +84,9 @@ using FAnyCopyAssignFunc = void(*)(void*, const void*);
 template <typename T>
 void AnyMoveAssign(void* Target, void* Source)
 {
-	if constexpr (!TIsMoveAssignable<T>::Value) check_no_entry();
-	else *reinterpret_cast<T*>(Target) = MoveTemp(*reinterpret_cast<T*>(Source));
+	if constexpr (TIsMoveAssignable<T>::Value) *reinterpret_cast<T*>(Target) = MoveTemp(*reinterpret_cast<T*>(Source));
+	else if constexpr (TIsMoveConstructible<T>::Value) { AnyDestroy<T>(Target); AnyMoveConstruct<T>(Target, Source); }
+	else check_no_entry();
 }
 
 using FAnyMoveAssignFunc = void(*)(void*, void*);
@@ -121,8 +123,8 @@ struct TAnyRTTIHelper
 
 NAMESPACE_PRIVATE_END
 
-inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 64 - sizeof(FTypeInfo) - sizeof(const NAMESPACE_PRIVATE::FAnyRTTI*);
-inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = Memory::MINIMUM_ALIGNMENT;
+inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 48;
+inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = 16;
 
 template <size_t InlineSize, size_t InlineAlignment = ANY_DEFAULT_INLINE_ALIGNMENT>
 struct TAny
@@ -331,7 +333,7 @@ private:
 	const NAMESPACE_PRIVATE::FAnyRTTI* RTTI;
 
 	template <typename SelectedType, typename... Types>
-	void EmplaceImpl(Types&&... Args)
+	FORCEINLINE void EmplaceImpl(Types&&... Args)
 	{
 		TypeInfo = Typeid(SelectedType);
 
