@@ -16,8 +16,8 @@ struct FNoncopyable
 struct FNonmovable
 {
 	FNonmovable() = default;
-	FNonmovable(const FNonmovable&&) = delete;
-	FNonmovable& operator=(const FNonmovable&&) = delete;
+	FNonmovable(FNonmovable&&) = delete;
+	FNonmovable& operator=(FNonmovable&&) = delete;
 };
 
 struct FSingleton : public FNoncopyable, public FNonmovable { };

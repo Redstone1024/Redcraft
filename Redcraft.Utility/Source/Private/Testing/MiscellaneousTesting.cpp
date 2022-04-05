@@ -237,22 +237,23 @@ NAMESPACE_UNNAMED_END
 
 void TestTypeInfo()
 {
-	FTypeInfo TempA;
-	FTypeInfo TempB(Invalid);
+	const FTypeInfo& TempA = Typeid(void);
+	const FTypeInfo& TempB = Typeid(void);
 
 	always_check(TempA == TempB);
 	always_check(TempA == Typeid(void));
 
-	FTypeInfo TempC(Typeid(TTestTemplateType<int8, int16>));
-	FTypeInfo TempD = Typeid(TTestTemplateType<int8, int32>);
+	const FTypeInfo& TempC(Typeid(TTestTemplateType<int8, int16>));
+	const FTypeInfo& TempD = Typeid(TTestTemplateType<int8, int32>);
 
-	FTypeInfo TempE, TempF;
-	TempE = TempC;
-	TempF = MoveTemp(TempD);
+	const FTypeInfo& TempE = TempC;
+	const FTypeInfo& TempF = TempD;
 
 	always_check(TempE != TempF);
 	always_check((TempE < TempF) == (TempF > TempE));
 	always_check((TempE > TempF) == (TempF < TempE));
+	always_check((TempE <= TempF) == (TempF >= TempE));
+	always_check((TempE >= TempF) == (TempF <= TempE));
 	always_check((TempE <=> TempF) != 0);
 }
 

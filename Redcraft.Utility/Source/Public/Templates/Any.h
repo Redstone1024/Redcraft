@@ -135,11 +135,11 @@ struct TAny
 	template <typename T>
 	struct TIsTriviallyStorable : TBoolConstant<TIsInlineStorable<T>::Value && TIsTrivial<T>::Value && TIsTriviallyCopyable<T>::Value> { };
 
-	constexpr TAny() : TypeInfo(Typeid(void)), RTTI(nullptr) { }
+	constexpr TAny() : TypeInfo(nullptr), RTTI(nullptr) { }
 
 	constexpr TAny(FInvalid) : TAny() { }
 
-	TAny(const TAny& InValue)
+	FORCEINLINE TAny(const TAny& InValue)
 		: TypeInfo(InValue.TypeInfo), RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
@@ -149,7 +149,7 @@ struct TAny
 		else DynamicValue = RTTI->CopyNew(InValue.GetData());
 	}
 
-	TAny(TAny&& InValue)
+	FORCEINLINE TAny(TAny&& InValue)
 		: TypeInfo(InValue.TypeInfo), RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
@@ -159,14 +159,14 @@ struct TAny
 		else
 		{
 			DynamicValue = InValue.DynamicValue;
-			InValue.TypeInfo = Typeid(void);
+			InValue.TypeInfo = nullptr;
 		}
 	}
 
 	template <typename T, typename... Types> requires TIsObject<typename TDecay<T>::Type>::Value
 		&& (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, Types...>::Value
-	explicit TAny(TInPlaceType<T>, Types&&... Args)
+	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
 		using SelectedType = typename TDecay<T>::Type;
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
@@ -175,15 +175,15 @@ struct TAny
 	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
-	TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
+	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
 	{ }
 
-	~TAny()
+	FORCEINLINE ~TAny()
 	{
-		Reset();
+		ResetImpl();
 	}
 
-	TAny& operator=(const TAny& InValue)
+	FORCEINLINE TAny& operator=(const TAny& InValue)
 	{
 		if (&InValue == this) return *this;
 
@@ -191,14 +191,14 @@ struct TAny
 		{
 			Reset();
 		}
-		else if (TypeInfo == InValue.TypeInfo)
+		else if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
 			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
 			else RTTI->CopyAssign(GetData(), InValue.GetData());
 		}
 		else
 		{
-			Reset();
+			ResetImpl();
 
 			TypeInfo = InValue.TypeInfo;
 			RTTI = InValue.RTTI;
@@ -211,7 +211,7 @@ struct TAny
 		return *this;
 	}
 
-	TAny& operator=(TAny&& InValue)
+	FORCEINLINE TAny& operator=(TAny&& InValue)
 	{
 		if (&InValue == this) return *this;
 
@@ -219,7 +219,7 @@ struct TAny
 		{
 			Reset();
 		}
-		else if (TypeInfo == InValue.TypeInfo)
+		else if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
 			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
 			else if (IsInline()) RTTI->MoveAssign(GetData(), InValue.GetData());
@@ -227,12 +227,12 @@ struct TAny
 			{
 				RTTI->Delete(DynamicValue);
 				DynamicValue = InValue.DynamicValue;
-				InValue.TypeInfo = Typeid(void);
+				InValue.TypeInfo = nullptr;
 			}
 		}
 		else
 		{
-			Reset();
+			ResetImpl();
 
 			TypeInfo = InValue.TypeInfo;
 			RTTI = InValue.RTTI;
@@ -248,11 +248,11 @@ struct TAny
 	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
-	TAny& operator=(T&& InValue)
+	FORCEINLINE TAny& operator=(T&& InValue)
 	{
 		using SelectedType = typename TDecay<T>::Type;
 
-		if (TypeInfo == Typeid(SelectedType))
+		if (HoldsAlternative<SelectedType>())
 		{
 			if constexpr (TIsTriviallyStorable<SelectedType>::Value)
 				Memory::Memcpy(&InlineValue, &InValue, sizeof(SelectedType));
@@ -270,22 +270,23 @@ struct TAny
 	template <typename T, typename... Types> requires TIsObject<typename TDecay<T>::Type>::Value
 		&& (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
-	typename TDecay<T>::Type& Emplace(Types&&... Args)
+	FORCEINLINE typename TDecay<T>::Type& Emplace(Types&&... Args)
 	{
-		Reset();
+		ResetImpl();
 		
 		using SelectedType = typename TDecay<T>::Type;
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 		return GetValue<SelectedType>();
 	}
 
-	constexpr FTypeInfo  GetTypeInfo() const { return TypeInfo;                                 }
-	constexpr bool           IsValid() const { return TypeInfo != Typeid(void);                 }
-	constexpr explicit operator bool() const { return TypeInfo != Typeid(void);                 }
+	constexpr const FTypeInfo& GetTypeInfo() const { return TypeInfo != nullptr ? *TypeInfo : Typeid(void); }
+
+	constexpr bool           IsValid() const { return TypeInfo != nullptr;                      }
+	constexpr explicit operator bool() const { return TypeInfo != nullptr;                      }
 	constexpr bool          IsInline() const { return RTTI != nullptr ? RTTI->bIsInline : true; }
 	constexpr bool         IsTrivial() const { return RTTI == nullptr;                          }
 
-	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? TypeInfo == Typeid(T) : false; }
+	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == Typeid(T) : false; }
 
 	constexpr       void* GetData()       { return IsInline() ? &InlineValue : DynamicValue; }
 	constexpr const void* GetData() const { return IsInline() ? &InlineValue : DynamicValue; }
@@ -308,17 +309,10 @@ struct TAny
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
-	void Reset()
+	FORCEINLINE void Reset()
 	{
-		if (!IsValid()) return;
-
-		TypeInfo = Typeid(void);
-
-		if (IsTrivial());
-		else if (IsInline()) RTTI->Destroy(&InlineValue);
-		else RTTI->Delete(DynamicValue);
-
-		RTTI = nullptr;
+		TypeInfo = nullptr;
+		ResetImpl();
 	}
 
 private:
@@ -329,13 +323,13 @@ private:
 		void* DynamicValue;
 	};
 
-	FTypeInfo TypeInfo;
+	const FTypeInfo* TypeInfo;
 	const NAMESPACE_PRIVATE::FAnyRTTI* RTTI;
 
 	template <typename SelectedType, typename... Types>
 	FORCEINLINE void EmplaceImpl(Types&&... Args)
 	{
-		TypeInfo = Typeid(SelectedType);
+		TypeInfo = &Typeid(SelectedType);
 
 		if constexpr (TIsTriviallyStorable<SelectedType>::Value)
 		{
@@ -352,6 +346,13 @@ private:
 			DynamicValue = new SelectedType(Forward<Types>(Args)...);
 			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
 		}
+	}
+
+	FORCEINLINE void ResetImpl()
+	{
+		if (!IsValid() || IsTrivial()) return;
+		else if (IsInline()) RTTI->Destroy(&InlineValue);
+		else RTTI->Delete(DynamicValue);
 	}
 
 };
