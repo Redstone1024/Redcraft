@@ -14,7 +14,7 @@ struct InvokeFunction
 	template <typename F, typename... Types>
 	static auto Invoke(F&& Object, Types&&... Args)
 	{
-		return Object(Forward<Types>(Args)...);
+		return Forward<F>(Object)(Forward<Types>(Args)...);
 	}
 };
 
@@ -22,16 +22,16 @@ struct InvokeMemberFunction
 {
 	template <typename F, typename ObjectType, typename... Types>
 	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args) ->
-		decltype((Object->*Func)(Forward<Types>(Args)...))
+		decltype((Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...))
 	{
-		return (Object->*Func)(Forward<Types>(Args)...);
+		return (Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...);
 	}
 
 	template <typename F, typename ObjectType, typename... Types>
 	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args) ->
-		decltype((Object.*Func)(Forward<Types>(Args)...))
+		decltype((Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...))
 	{
-		return (Object.*Func)(Forward<Types>(Args)...);
+		return (Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...);
 	}
 };
 
@@ -39,16 +39,16 @@ struct InvokeMemberObject
 {
 	template <typename F, typename ObjectType>
 	static auto Invoke(F&& Func, ObjectType&& Object) ->
-		decltype(Object->*Func)
+		decltype(Forward<ObjectType>(Object)->*Func)
 	{
-		return (Object->*Func);
+		return (Forward<ObjectType>(Object)->*Func);
 	}
 
 	template <typename F, typename ObjectType>
 	static auto Invoke(F&& Func, ObjectType&& Object) ->
-		decltype(Object.*Func)
+		decltype(Forward<ObjectType>(Object).*Func)
 	{
-		return (Object.*Func);
+		return (Forward<ObjectType>(Object).*Func);
 	}
 };
 
@@ -81,6 +81,7 @@ NAMESPACE_PRIVATE_END
 
 template <typename F, typename... Types> requires TIsInvocable<F, Types...>::Value
 constexpr auto Invoke(F&& Func, Types&&... Args)
+	-> decltype(NAMESPACE_PRIVATE::InvokeImpl<F, Types...>::Invoke(Forward<F>(Func), Forward<Types>(Args)...))
 {
 	return NAMESPACE_PRIVATE::InvokeImpl<F, Types...>::Invoke(Forward<F>(Func), Forward<Types>(Args)...);
 }
