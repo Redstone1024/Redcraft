@@ -12,3 +12,4 @@
 #include "Templates/IntegerSequence.h"
 #include "Templates/Tuple.h"
 #include "Templates/TypeHash.h"
+#include "Templates/Function.h"
