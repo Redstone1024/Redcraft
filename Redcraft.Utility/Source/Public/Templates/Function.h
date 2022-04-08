@@ -267,7 +267,7 @@ public:
 	{
 		using DecayedFunctorType = typename TDecay<T>::Type;
 		EmplaceImpl<DecayedFunctorType>(Forward<ArgTypes>(Args)...);
-		return *reinterpret_cast<typename TDecay<T>::Type*>(Target());
+		return Target<DecayedFunctorType>();
 	}
 
 	FORCEINLINE ResultType operator()(Types... Args)         requires (Specifiers == EFunctionSpecifiers::None       ) { return CallImpl(Forward<Types>(Args)...); }
@@ -280,10 +280,15 @@ public:
 	constexpr bool           IsValid() const { return Call != nullptr; }
 	constexpr explicit operator bool() const { return Call != nullptr; }
 
+	FORCEINLINE       void* GetData()       { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
+	FORCEINLINE const void* GetData() const { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
+
 	FORCEINLINE const FTypeInfo& TargetType() const requires (FunctionType != EFunctionType::Reference) { return IsValid() ? Storage.GetTypeInfo() : Typeid(void); };
 
-	FORCEINLINE       void* Target()       { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
-	FORCEINLINE const void* Target() const { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
+	template <typename T> FORCEINLINE       T&  Target() &       requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&& Target() &&      requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&  Target() const&  requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&& Target() const&& requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
 
 	constexpr void Reset() requires (FunctionType != EFunctionType::Reference) { Call = nullptr; }
 
@@ -306,7 +311,7 @@ private:
 	FORCEINLINE ResultType CallImpl(Types&&... Args) const
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		return Call(const_cast<TFunctionImpl&>(*this).Target(), Forward<Types>(Args)...);
+		return Call(const_cast<TFunctionImpl&>(*this).GetData(), Forward<Types>(Args)...);
 	}
 
 	FORCEINLINE void AssignImpl(const TFunctionImpl& InValue)
@@ -338,37 +343,37 @@ struct TFunctionSelect;
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...)        , InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::None, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::None, FunctionType>;
 };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...) &      , InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::LValue, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::LValue, FunctionType>;
 };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...) &&     , InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::RValue, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::RValue, FunctionType>;
 };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...) const  , InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::Const, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::Const, FunctionType>;
 };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...) const& , InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::ConstLValue, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::ConstLValue, FunctionType>;
 };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionType FunctionType>
 struct TFunctionSelect<R(Types...) const&&, InlineSize, InlineAlignment, FunctionType>
 {
-	using Type = NAMESPACE_PRIVATE::TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::ConstRValue, FunctionType>;
+	using Type = TFunctionImpl<R(Types...), InlineSize, InlineAlignment, EFunctionSpecifiers::ConstRValue, FunctionType>;
 };
 
 NAMESPACE_PRIVATE_END
