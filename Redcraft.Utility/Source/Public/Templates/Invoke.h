@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -13,6 +14,7 @@ struct InvokeFunction
 {
 	template <typename F, typename... Types>
 	static auto Invoke(F&& Object, Types&&... Args)
+		-> decltype(Forward<F>(Object)(Forward<Types>(Args)...))
 	{
 		return Forward<F>(Object)(Forward<Types>(Args)...);
 	}
@@ -21,15 +23,15 @@ struct InvokeFunction
 struct InvokeMemberFunction
 {
 	template <typename F, typename ObjectType, typename... Types>
-	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args) ->
-		decltype((Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...))
+	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args)
+		-> decltype((Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...))
 	{
 		return (Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...);
 	}
 
 	template <typename F, typename ObjectType, typename... Types>
-	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args) ->
-		decltype((Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...))
+	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args)
+		-> decltype((Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...))
 	{
 		return (Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...);
 	}
@@ -38,15 +40,15 @@ struct InvokeMemberFunction
 struct InvokeMemberObject
 {
 	template <typename F, typename ObjectType>
-	static auto Invoke(F&& Func, ObjectType&& Object) ->
-		decltype(Forward<ObjectType>(Object)->*Func)
+	static auto Invoke(F&& Func, ObjectType&& Object)
+		-> decltype(Forward<ObjectType>(Object)->*Func)
 	{
 		return (Forward<ObjectType>(Object)->*Func);
 	}
 
 	template <typename F, typename ObjectType>
-	static auto Invoke(F&& Func, ObjectType&& Object) ->
-		decltype(Forward<ObjectType>(Object).*Func)
+	static auto Invoke(F&& Func, ObjectType&& Object)
+		-> decltype(Forward<ObjectType>(Object).*Func)
 	{
 		return (Forward<ObjectType>(Object).*Func);
 	}

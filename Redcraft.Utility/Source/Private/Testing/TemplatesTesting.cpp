@@ -1155,6 +1155,87 @@ void TestFunction()
 		always_check(FunctionDebug.Output[10] == 720);
 		always_check(FunctionDebug.Output[11] == 5040);
 	}
+
+	{
+		TFunction<bool(bool)> Identity = TIdentity<>();
+		TFunction<bool(bool)> NotIdentity = NotFn(Identity);
+	
+		always_check(Identity(true));
+		always_check(NotIdentity(false));
+	}
+
+	{
+		always_check(TPlus      <int32>()(4, 2) == 6);
+		always_check(TMinus     <int32>()(4, 2) == 2);
+		always_check(TMultiplies<int32>()(4, 2) == 8);
+		always_check(TDivides   <int32>()(4, 2) == 2);
+		always_check(TModulus   <int32>()(4, 2) == 0);
+		always_check(TNegate    <int32>()(4   ) == -4);
+
+		always_check(TEqualTo     <int32>()(4, 2) == false);
+		always_check(TNotEqualTo  <int32>()(4, 2) == true);
+		always_check(TGreater     <int32>()(4, 2) == true);
+		always_check(TLess        <int32>()(4, 2) == false);
+		always_check(TGreaterEqual<int32>()(4, 2) == true);
+		always_check(TLessEqual   <int32>()(4, 2) == false);
+
+		always_check(TLogicalAnd<int32>()(4, 2) == true);
+		always_check(TLogicalOr <int32>()(4, 2) == true);
+		always_check(TLogicalNot<int32>()(4   ) == false);
+
+		always_check(TBitAnd<int32>()(4, 2) == 0);
+		always_check(TBitOr <int32>()(4, 2) == 6);
+		always_check(TBitXor<int32>()(4, 2) == 6);
+		always_check(TBitNot<int32>()(4   ) == -5);
+	}
+	
+	{
+		TFunction<int32(int32, int32)> TempA = TPlus      <>();
+		TFunction<int32(int32, int32)> TempB = TMinus     <>();
+		TFunction<int32(int32, int32)> TempC = TMultiplies<>();
+		TFunction<int32(int32, int32)> TempD = TDivides   <>();
+		TFunction<int32(int32, int32)> TempE = TModulus   <>();
+		TFunction<int32(int32       )> TempF = TNegate    <>();
+		
+		always_check(TempA(4, 2) == 6);
+		always_check(TempB(4, 2) == 2);
+		always_check(TempC(4, 2) == 8);
+		always_check(TempD(4, 2) == 2);
+		always_check(TempE(4, 2) == 0);
+		always_check(TempF(4   ) == -4);
+		
+		TFunction<bool(int32, int32)> TempG = TEqualTo     <>();
+		TFunction<bool(int32, int32)> TempH = TNotEqualTo  <>();
+		TFunction<bool(int32, int32)> TempI = TGreater     <>();
+		TFunction<bool(int32, int32)> TempJ = TLess        <>();
+		TFunction<bool(int32, int32)> TempK = TGreaterEqual<>();
+		TFunction<bool(int32, int32)> TempL = TLessEqual   <>();
+		
+		always_check(TempG(4, 2) == false);
+		always_check(TempH(4, 2) == true);
+		always_check(TempI(4, 2) == true);
+		always_check(TempJ(4, 2) == false);
+		always_check(TempK(4, 2) == true);
+		always_check(TempL(4, 2) == false);
+		
+		TFunction<bool(int32, int32)> TempM = TLogicalAnd<>();
+		TFunction<bool(int32, int32)> TempN = TLogicalOr <>();
+		TFunction<bool(int32       )> TempO = TLogicalNot<>();
+	
+		always_check(TempM(4, 2) == true);
+		always_check(TempN(4, 2) == true);
+		always_check(TempO(4   ) == false);
+		
+		TFunction<int32(int32, int32)> TempP = TBitAnd<>();
+		TFunction<int32(int32, int32)> TempQ = TBitOr <>();
+		TFunction<int32(int32, int32)> TempR = TBitXor<>();
+		TFunction<int32(int32       )> TempS = TBitNot<>();
+	
+		always_check(TempP(4, 2) == 0);
+		always_check(TempQ(4, 2) == 6);
+		always_check(TempR(4, 2) == 6);
+		always_check(TempS(4   ) == -5);
+	}
 }
 
 NAMESPACE_UNNAMED_BEGIN
