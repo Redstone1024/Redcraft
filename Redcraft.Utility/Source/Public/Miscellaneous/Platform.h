@@ -68,25 +68,25 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #if PLATFORM_WINDOWS
 
-#	define VARARGS				__cdecl
-#	define CDECL				__cdecl
-#	define STDCALL				__stdcall
-#	define FORCEINLINE			__forceinline
-#	define FORCENOINLINE		__declspec(noinline)
-#	define RESTRICT				__restrict
+#	define VARARGS              __cdecl
+#	define CDECL                __cdecl
+#	define STDCALL              __stdcall
+#	define FORCEINLINE          __forceinline
+#	define FORCENOINLINE        __declspec(noinline)
+#	define RESTRICT             __restrict
 
 #elif PLATFORM_LINUX
 
 #	define VARARGS
 #	define CDECL
 #	define STDCALL
-#	define FORCENOINLINE		__attribute__((noinline))
-#	define RESTRICT				__restrict
+#	define FORCENOINLINE        __attribute__((noinline))
+#	define RESTRICT             __restrict
 
 #	if BUILD_DEBUG
-#		define FORCEINLINE		inline
+#		define FORCEINLINE      inline
 #	else
-#		define FORCEINLINE		inline __attribute__ ((always_inline))
+#		define FORCEINLINE      inline __attribute__ ((always_inline))
 #	endif
 
 #else
@@ -96,7 +96,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	define STDCALL
 #	define FORCEINLINE
 #	define FORCENOINLINE
-#	define RESTRICT				__restrict
+#	define RESTRICT             __restrict
 
 #endif
 
@@ -104,13 +104,13 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #if PLATFORM_WINDOWS
 
-#	define DLLEXPORT	__declspec(dllexport)
-#	define DLLIMPORT	__declspec(dllimport)
+#	define DLLEXPORT    __declspec(dllexport)
+#	define DLLIMPORT    __declspec(dllimport)
 
 #elif PLATFORM_LINUX
 
-#	define DLLEXPORT	__attribute__((visibility("default")))
-#	define DLLIMPORT	__attribute__((visibility("default")))
+#	define DLLEXPORT    __attribute__((visibility("default")))
+#	define DLLIMPORT    __attribute__((visibility("default")))
 
 #else
 
@@ -121,31 +121,34 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // Unsigned base types.
 
-typedef NAMESPACE_STD::uint8_t		 uint8;
-typedef NAMESPACE_STD::uint16_t		uint16;
-typedef NAMESPACE_STD::uint32_t		uint32;
-typedef NAMESPACE_STD::uint64_t		uint64;
+typedef NAMESPACE_STD::uint8_t      uint8;
+typedef NAMESPACE_STD::uint16_t     uint16;
+typedef NAMESPACE_STD::uint32_t     uint32;
+typedef NAMESPACE_STD::uint64_t     uint64;
 
 // Signed base types.
 
-typedef NAMESPACE_STD::int8_t		 int8;
-typedef NAMESPACE_STD::int16_t		int16;
-typedef NAMESPACE_STD::int32_t		int32;
-typedef NAMESPACE_STD::int64_t		int64;
+typedef NAMESPACE_STD::int8_t       int8;
+typedef NAMESPACE_STD::int16_t      int16;
+typedef NAMESPACE_STD::int32_t      int32;
+typedef NAMESPACE_STD::int64_t      int64;
 
 // Character types.
 
-typedef char						ANSICHAR;
-typedef wchar_t						WIDECHAR;
-typedef WIDECHAR					TCHAR;
+typedef char                        chara;
+typedef wchar_t                     charw;
+typedef charw                       chart;
+typedef char8_t                     char8;
+typedef char16_t                    char16;
+typedef char32_t                    char32;
 
 // Pointer types.
 
-typedef NAMESPACE_STD::uintptr_t	uintptr_t;
-typedef NAMESPACE_STD::intptr_t		intptr_t;
-typedef NAMESPACE_STD::ptrdiff_t	ptrdiff_t;
-typedef NAMESPACE_STD::size_t		size_t;
-typedef intptr_t					ssize_t;
+typedef NAMESPACE_STD::uintptr_t    uintptr;
+typedef NAMESPACE_STD::intptr_t     intptr;
+typedef NAMESPACE_STD::ptrdiff_t    ptrdiff;
+typedef NAMESPACE_STD::size_t       size_t;
+typedef intptr_t                    ssize_t;
 
 // Null types.
 
