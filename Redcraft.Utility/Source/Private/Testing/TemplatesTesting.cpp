@@ -1165,12 +1165,24 @@ void TestFunction()
 	}
 
 	{
-		always_check(TPlus      <int32>()(4, 2) == 6);
-		always_check(TMinus     <int32>()(4, 2) == 2);
-		always_check(TMultiplies<int32>()(4, 2) == 8);
-		always_check(TDivides   <int32>()(4, 2) == 2);
-		always_check(TModulus   <int32>()(4, 2) == 0);
+		always_check(TPromote   <int32>()(4   ) ==  4);
 		always_check(TNegate    <int32>()(4   ) == -4);
+		always_check(TPlus      <int32>()(4, 2) ==  6);
+		always_check(TMinus     <int32>()(4, 2) ==  2);
+		always_check(TMultiplies<int32>()(4, 2) ==  8);
+		always_check(TDivides   <int32>()(4, 2) ==  2);
+		always_check(TModulus   <int32>()(4, 2) ==  0);
+		
+		always_check(TBitNot<int32>()(4   ) == -5);
+		always_check(TBitAnd<int32>()(4, 2) ==  0);
+		always_check(TBitOr <int32>()(4, 2) ==  6);
+		always_check(TBitXor<int32>()(4, 2) ==  6);
+		always_check(TBitLsh<int32>()(4, 2) == 16);
+		always_check(TBitRsh<int32>()(4, 2) ==  1);
+		
+		always_check(TLogicalAnd<int32>()(4, 2) == true);
+		always_check(TLogicalOr <int32>()(4, 2) == true);
+		always_check(TLogicalNot<int32>()(4   ) == false);
 
 		always_check(TEqualTo     <int32>()(4, 2) == false);
 		always_check(TNotEqualTo  <int32>()(4, 2) == true);
@@ -1178,15 +1190,6 @@ void TestFunction()
 		always_check(TLess        <int32>()(4, 2) == false);
 		always_check(TGreaterEqual<int32>()(4, 2) == true);
 		always_check(TLessEqual   <int32>()(4, 2) == false);
-
-		always_check(TLogicalAnd<int32>()(4, 2) == true);
-		always_check(TLogicalOr <int32>()(4, 2) == true);
-		always_check(TLogicalNot<int32>()(4   ) == false);
-
-		always_check(TBitAnd<int32>()(4, 2) == 0);
-		always_check(TBitOr <int32>()(4, 2) == 6);
-		always_check(TBitXor<int32>()(4, 2) == 6);
-		always_check(TBitNot<int32>()(4   ) == -5);
 	}
 	
 	{

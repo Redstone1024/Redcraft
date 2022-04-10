@@ -537,51 +537,54 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 	return NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type>(Forward<F>(Func));
 }
 
-#define FUNCTOR_UNARY_OPERATOR_IMPL(Name, Operator, ReturnType, ConceptT, ConceptU) \
-	template <typename T = void> requires (CSameAs<T, void> || ConceptT)            \
-	struct Name                                                                     \
-	{                                                                               \
-		constexpr ReturnType operator()(const T& InValue) const {                   \
-			return Operator InValue;                                                \
-		}                                                                           \
-	};                                                                              \
-	                                                                                \
-	template <>                                                                     \
-	struct Name<void>                                                               \
-	{                                                                               \
-		template <typename U> requires ConceptU                                     \
-		constexpr auto operator()(U&& InValue) const                                \
-			-> decltype(Operator Forward<U>(InValue))                               \
-		{                                                                           \
-			return Operator Forward<U>(InValue);                                    \
-		}                                                                           \
+#define FUNCTOR_UNARY_OPERATOR_IMPL(Name, Operator, ConceptT, ConceptU)  \
+	template <typename T = void> requires (CSameAs<T, void> || ConceptT) \
+	struct Name                                                          \
+	{                                                                    \
+		constexpr auto operator()(const T& InValue) const                \
+			-> decltype(Operator InValue)                                \
+		{                                                                \
+			return Operator InValue;                                     \
+		}                                                                \
+	};                                                                   \
+	                                                                     \
+	template <>                                                          \
+	struct Name<void>                                                    \
+	{                                                                    \
+		template <typename U> requires ConceptU                          \
+		constexpr auto operator()(U&& InValue) const                     \
+			-> decltype(Operator Forward<U>(InValue))                    \
+		{                                                                \
+			return Operator Forward<U>(InValue);                         \
+		}                                                                \
 	}
 
-#define FUNCTOR_BINARY_OPERATOR_IMPL(Name, Operator, ReturnType, ConceptT, ConceptTU) \
-	template <typename T = void> requires (CSameAs<T, void> || ConceptT)              \
-	struct Name                                                                       \
-	{                                                                                 \
-		constexpr ReturnType operator()(const T& LHS, const T& RHS) const             \
-		{                                                                             \
-			return LHS Operator RHS;                                                  \
-		}                                                                             \
-	};                                                                                \
-	                                                                                  \
-	template <>                                                                       \
-	struct Name<void>                                                                 \
-	{                                                                                 \
-		template <typename T, typename U> requires ConceptTU                          \
-		constexpr auto operator()(T&& LHS, U&& RHS) const                             \
-			-> decltype(Forward<T>(LHS) Operator Forward<U>(RHS))                     \
-		{                                                                             \
-			return Forward<T>(LHS) Operator Forward<U>(RHS);                          \
-		}                                                                             \
+#define FUNCTOR_BINARY_OPERATOR_IMPL(Name, Operator, ConceptT, ConceptTU) \
+	template <typename T = void> requires (CSameAs<T, void> || ConceptT)  \
+	struct Name                                                           \
+	{                                                                     \
+		constexpr auto operator()(const T& LHS, const T& RHS) const       \
+			-> decltype(LHS Operator RHS)                                 \
+		{                                                                 \
+			return LHS Operator RHS;                                      \
+		}                                                                 \
+	};                                                                    \
+	                                                                      \
+	template <>                                                           \
+	struct Name<void>                                                     \
+	{                                                                     \
+		template <typename T, typename U> requires ConceptTU              \
+		constexpr auto operator()(T&& LHS, U&& RHS) const                 \
+			-> decltype(Forward<T>(LHS) Operator Forward<U>(RHS))         \
+		{                                                                 \
+			return Forward<T>(LHS) Operator Forward<U>(RHS);              \
+		}                                                                 \
 	}
 
 #define FUNCTOR_UNARY_OPERATOR_A_IMPL(Name, Operator)                                \
 	FUNCTOR_UNARY_OPERATOR_IMPL                                                      \
 	(                                                                                \
-		Name, Operator, T,                                                           \
+		Name, Operator,                                                              \
 		(requires(const T& InValue) { { Operator InValue } -> CConvertibleTo<T>; }), \
 		(requires(U&& InValue) { Operator Forward<U>(InValue); })                    \
 	)
@@ -589,7 +592,7 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 #define FUNCTOR_BINARY_OPERATOR_A_IMPL(Name, Operator)                                         \
 	FUNCTOR_BINARY_OPERATOR_IMPL                                                               \
 	(                                                                                          \
-		Name, Operator, T,                                                                     \
+		Name, Operator,                                                                        \
 		(requires(const T& LHS, const T& RHS) { { LHS Operator RHS } -> CConvertibleTo<T>; }), \
 		(requires(T&& LHS, U&& RHS) { Forward<T>(LHS) Operator Forward<U>(RHS); })             \
 	)
@@ -597,7 +600,7 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 #define FUNCTOR_UNARY_OPERATOR_B_IMPL(Name, Operator)                                     \
 	FUNCTOR_UNARY_OPERATOR_IMPL                                                           \
 	(                                                                                     \
-		Name, Operator, bool,                                                             \
+		Name, Operator,                                                                   \
 		(requires(const T& InValue) { { Operator InValue } -> CBooleanTestable; }),       \
 		(requires(U&& InValue) { { Operator Forward<U>(InValue) } -> CBooleanTestable; }) \
 	)
@@ -605,7 +608,7 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 #define FUNCTOR_BINARY_OPERATOR_B_IMPL(Name, Operator)                                                     \
 	FUNCTOR_BINARY_OPERATOR_IMPL                                                                           \
 	(                                                                                                      \
-		Name, Operator, bool,                                                                              \
+		Name, Operator,                                                                                    \
 		(requires(const T& LHS, const T& RHS) { { LHS Operator RHS } -> CBooleanTestable; }),              \
 		(requires(T&& LHS, U&& RHS) { { Forward<T>(LHS) Operator Forward<U>(RHS) } -> CBooleanTestable; }) \
 	)
@@ -613,7 +616,7 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 #define FUNCTOR_BINARY_OPERATOR_C_IMPL(Name, Operator) \
 	FUNCTOR_BINARY_OPERATOR_IMPL                       \
 	(                                                  \
-		Name, Operator, bool,                          \
+		Name, Operator,                                \
 		(CEqualityComparable<T>),                      \
 		(CEqualityComparableWith<T, U>)                \
 	)
@@ -621,17 +624,29 @@ constexpr NAMESPACE_PRIVATE::NotFunctionType<typename TDecay<F>::Type> NotFn(F&&
 #define FUNCTOR_BINARY_OPERATOR_D_IMPL(Name, Operator) \
 	FUNCTOR_BINARY_OPERATOR_IMPL                       \
 	(                                                  \
-		Name, Operator, bool,                          \
+		Name, Operator,                                \
 		(CTotallyOrdered<T>),                          \
 		(CTotallyOrderedWith<T, U>)                    \
 	)
 	
+FUNCTOR_UNARY_OPERATOR_A_IMPL (TPromote,    +);
+FUNCTOR_UNARY_OPERATOR_A_IMPL (TNegate,     -);
 FUNCTOR_BINARY_OPERATOR_A_IMPL(TPlus,       +);
 FUNCTOR_BINARY_OPERATOR_A_IMPL(TMinus,      -);
 FUNCTOR_BINARY_OPERATOR_A_IMPL(TMultiplies, *);
 FUNCTOR_BINARY_OPERATOR_A_IMPL(TDivides,    /);
 FUNCTOR_BINARY_OPERATOR_A_IMPL(TModulus,    %);
-FUNCTOR_UNARY_OPERATOR_A_IMPL (TNegate,     -);
+
+FUNCTOR_UNARY_OPERATOR_A_IMPL (TBitNot, ~ );
+FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitAnd, & );
+FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitOr,  | );
+FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitXor, ^ );
+FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitLsh, <<);
+FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitRsh, >>);
+
+FUNCTOR_BINARY_OPERATOR_B_IMPL(TLogicalAnd, &&);
+FUNCTOR_BINARY_OPERATOR_B_IMPL(TLogicalOr,  ||);
+FUNCTOR_UNARY_OPERATOR_B_IMPL (TLogicalNot, ! );
 
 FUNCTOR_BINARY_OPERATOR_C_IMPL(TEqualTo,      ==);
 FUNCTOR_BINARY_OPERATOR_C_IMPL(TNotEqualTo,   !=);
@@ -639,15 +654,6 @@ FUNCTOR_BINARY_OPERATOR_D_IMPL(TGreater,      > );
 FUNCTOR_BINARY_OPERATOR_D_IMPL(TLess,         < );
 FUNCTOR_BINARY_OPERATOR_D_IMPL(TGreaterEqual, >=);
 FUNCTOR_BINARY_OPERATOR_D_IMPL(TLessEqual,    <=);
-
-FUNCTOR_BINARY_OPERATOR_B_IMPL(TLogicalAnd, &&);
-FUNCTOR_BINARY_OPERATOR_B_IMPL(TLogicalOr,  ||);
-FUNCTOR_UNARY_OPERATOR_B_IMPL (TLogicalNot, ! );
-
-FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitAnd, &);
-FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitOr,  |);
-FUNCTOR_BINARY_OPERATOR_A_IMPL(TBitXor, ^);
-FUNCTOR_UNARY_OPERATOR_A_IMPL (TBitNot, ~);
 
 #undef FUNCTOR_BINARY_OPERATOR_D_IMPL
 #undef FUNCTOR_BINARY_OPERATOR_C_IMPL
