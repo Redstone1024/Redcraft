@@ -9,35 +9,27 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Memory)
 
-template <typename T>
+template <typename T> requires TIsIntegral<T>::Value || TIsPointer<T>::Value
 FORCEINLINE constexpr T Align(T InValue, size_t Alignment)
 {
-	static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "Align expects an integer or pointer type");
-
 	return (T)(((uintptr)(InValue) + static_cast<uintptr>(Alignment) - 1) & ~(static_cast<uintptr>(Alignment) - 1));
 }
 
-template <typename T>
+template <typename T> requires TIsIntegral<T>::Value || TIsPointer<T>::Value
 FORCEINLINE constexpr T AlignDown(T InValue, size_t Alignment)
 {
-	static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "AlignDown expects an integer or pointer type");
-
 	return (T)((uintptr)(InValue) & ~(static_cast<uintptr>(Alignment) - 1));
 }
 
-template <typename T>
+template <typename T> requires TIsIntegral<T>::Value || TIsPointer<T>::Value
 FORCEINLINE constexpr T AlignArbitrary(T InValue, size_t Alignment)
 {
-	static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "AlignArbitrary expects an integer or pointer type");
-
 	return (T)((((uintptr)(InValue) + static_cast<uintptr>(Alignment) - 1) / static_cast<uintptr>(Alignment)) * static_cast<uintptr>(Alignment));
 }
 
-template <typename T>
+template <typename T> requires TIsIntegral<T>::Value || TIsPointer<T>::Value
 FORCEINLINE constexpr bool IsAligned(T InValue, size_t Alignment)
 {
-	static_assert(TIsIntegral<T>::Value || TIsPointer<T>::Value, "IsAligned expects an integer or pointer type");
-
 	return !((uintptr)(InValue) & (static_cast<uintptr>(Alignment) - 1));
 }
 

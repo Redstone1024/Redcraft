@@ -13,18 +13,18 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Memory)
 
-inline constexpr size_t DEFAULT_ALIGNMENT = 0;
-inline constexpr size_t MINIMUM_ALIGNMENT = 8;
+inline constexpr size_t DefaultAlignment = 0;
+inline constexpr size_t MinimumAlignment = 8;
 
 #ifdef __cpp_lib_hardware_interference_size
 
-inline constexpr size_t DESTRUCTIVE_INTERFERENCE = std::hardware_destructive_interference_size;
-inline constexpr size_t CONSTRUCTIVE_INTERFERENCE = std::hardware_constructive_interference_size;
+inline constexpr size_t DestructiveInterference = std::hardware_destructive_interference_size;
+inline constexpr size_t ConstructiveInterference = std::hardware_constructive_interference_size;
 
 #else
 
-inline constexpr size_t DESTRUCTIVE_INTERFERENCE = 64;
-inline constexpr size_t CONSTRUCTIVE_INTERFERENCE = 64;
+inline constexpr size_t DestructiveInterference = 64;
+inline constexpr size_t ConstructiveInterference = 64;
 
 #endif
 
@@ -89,10 +89,10 @@ FORCEINLINE void SystemFree(void* Ptr)
 	std::free(Ptr);
 }
 
-REDCRAFTUTILITY_API void* Malloc(size_t Count, size_t Alignment = DEFAULT_ALIGNMENT);
-REDCRAFTUTILITY_API void* Realloc(void* Ptr, size_t Count, size_t Alignment = DEFAULT_ALIGNMENT);
+REDCRAFTUTILITY_API void* Malloc(size_t Count, size_t Alignment = DefaultAlignment);
+REDCRAFTUTILITY_API void* Realloc(void* Ptr, size_t Count, size_t Alignment = DefaultAlignment);
 REDCRAFTUTILITY_API void Free(void* Ptr);
-REDCRAFTUTILITY_API size_t QuantizeSize(size_t Count, size_t Alignment = DEFAULT_ALIGNMENT);
+REDCRAFTUTILITY_API size_t QuantizeSize(size_t Count, size_t Alignment = DefaultAlignment);
 
 NAMESPACE_END(Memory)
 
