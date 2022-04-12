@@ -23,6 +23,7 @@ void TestTemplates()
 	TestAny();
 	TestTuple();
 	TestFunction();
+	TestAtomic();
 	TestMiscTemplates();
 }
 
@@ -1238,6 +1239,116 @@ void TestFunction()
 		always_check(TempQ(4, 2) == 6);
 		always_check(TempR(4, 2) == 6);
 		always_check(TempS(4   ) == -5);
+	}
+}
+
+void TestAtomic()
+{
+	{
+		TAtomic<int32> TempA;
+	
+		always_check(TempA.bIsAlwaysLockFree);
+		always_check(TempA.IsLockFree());
+		always_check((TempA = 11) == 11);
+		TempA.Store(12);
+		always_check(TempA.Load() == 12);
+		always_check((int32)TempA == 12);
+		always_check(TempA.Exchange(13) == 12);
+		int32 TempB = 13;
+		always_check(TempA.CompareExchange(TempB, 15) == true);
+		always_check(TempA.CompareExchange(TempB, 15) == false);
+		always_check(TempA.CompareExchange(TempB, 15) == true);
+		TempA.Wait(13);
+		TempA.Notify();
+		always_check(TempA.FetchAdd(1) == 15);
+		always_check(TempA.FetchSub(1) == 16);
+		always_check(TempA.FetchMul(3) == 15);
+		always_check(TempA.FetchDiv(3) == 45);
+		always_check(TempA.FetchMod(16) == 15);
+		always_check(TempA.FetchAnd(0xFF) == 15);
+		always_check(TempA.FetchOr(0xFFFF) == 0xF);
+		always_check(TempA.FetchXor(0xFF) == 0xFFFF);
+		always_check(TempA.FetchLsh(4) == 0xFF00);
+		always_check(TempA.FetchRsh(4) == 0xFF000);
+		always_check(++TempA == 0xFF01);
+		always_check(TempA++ == 0xFF01);
+		always_check(--TempA == 0xFF01);
+		always_check(TempA-- == 0xFF01);
+		always_check((TempA += 1) == 0xFF01);
+		always_check((TempA -= 1) == 0xFF00);
+		always_check((TempA *= 16) == 0xFF000);
+		always_check((TempA /= 16) == 0xFF00);
+		always_check((TempA %= 0x1000) == 0xF00);
+		always_check((TempA &= 1) == 0x0);
+		always_check((TempA |= 1) == 0x1);
+		always_check((TempA ^= 0xF) == 0xE);
+		always_check((TempA <<= 4) == 0xE0);
+		always_check((TempA >>= 4) == 0xE);
+	}
+
+	{
+		int32 A;
+		TAtomicRef<int32> TempA(A);
+
+		always_check(TempA.bIsAlwaysLockFree);
+		always_check(TempA.IsLockFree());
+		always_check((TempA = 11) == 11);
+		TempA.Store(12);
+		always_check(TempA.Load() == 12);
+		always_check((int32)TempA == 12);
+		always_check(TempA.Exchange(13) == 12);
+		int32 TempB = 13;
+		always_check(TempA.CompareExchange(TempB, 15) == true);
+		always_check(TempA.CompareExchange(TempB, 15) == false);
+		always_check(TempA.CompareExchange(TempB, 15) == true);
+		TempA.Wait(13);
+		TempA.Notify();
+		always_check(TempA.FetchAdd(1) == 15);
+		always_check(TempA.FetchSub(1) == 16);
+		always_check(TempA.FetchMul(3) == 15);
+		always_check(TempA.FetchDiv(3) == 45);
+		always_check(TempA.FetchMod(16) == 15);
+		always_check(TempA.FetchAnd(0xFF) == 15);
+		always_check(TempA.FetchOr(0xFFFF) == 0xF);
+		always_check(TempA.FetchXor(0xFF) == 0xFFFF);
+		always_check(TempA.FetchLsh(4) == 0xFF00);
+		always_check(TempA.FetchRsh(4) == 0xFF000);
+		always_check(++TempA == 0xFF01);
+		always_check(TempA++ == 0xFF01);
+		always_check(--TempA == 0xFF01);
+		always_check(TempA-- == 0xFF01);
+		always_check((TempA += 1) == 0xFF01);
+		always_check((TempA -= 1) == 0xFF00);
+		always_check((TempA *= 16) == 0xFF000);
+		always_check((TempA /= 16) == 0xFF00);
+		always_check((TempA %= 0x1000) == 0xF00);
+		always_check((TempA &= 1) == 0x0);
+		always_check((TempA |= 1) == 0x1);
+		always_check((TempA ^= 0xF) == 0xE);
+		always_check((TempA <<= 4) == 0xE0);
+		always_check((TempA >>= 4) == 0xE);
+	}
+
+	{
+		FAtomicFlag Flag;
+
+		always_check(Flag.TestAndSet() == false);
+		always_check(Flag.Test() == true);
+		Flag.Clear();
+		always_check(Flag.Test() == false);
+		Flag.Wait(true);
+		Flag.Notify();
+	}
+
+	{
+		int32 TempA = 10;
+		int32 TempB = KillDependency(TempA);
+		always_check(TempB == 10);
+	}
+
+	{
+		AtomicThreadFence();
+		AtomicSignalFence();
 	}
 }
 

@@ -13,3 +13,4 @@
 #include "Templates/Tuple.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Function.h"
+#include "Templates/Atomic.h"
