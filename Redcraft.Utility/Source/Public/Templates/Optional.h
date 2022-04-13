@@ -14,6 +14,20 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <typename OptionalType> requires TIsObject<OptionalType>::Value && (!TIsArray<OptionalType>::Value) && TIsDestructible<OptionalType>::Value
 struct TOptional
 {
+private:
+	
+	template <typename T>
+	struct TAllowUnwrapping : TBoolConstant<!(
+		   TIsConstructible<OptionalType,       TOptional<T>& >::Value
+		|| TIsConstructible<OptionalType, const TOptional<T>& >::Value
+		|| TIsConstructible<OptionalType,       TOptional<T>&&>::Value
+		|| TIsConstructible<OptionalType, const TOptional<T>&&>::Value
+		|| TIsConvertible<      TOptional<T>&,  OptionalType>::Value
+		|| TIsConvertible<const TOptional<T>&,  OptionalType>::Value
+		|| TIsConvertible<      TOptional<T>&&, OptionalType>::Value
+		|| TIsConvertible<const TOptional<T>&&, OptionalType>::Value
+	)> { };
+
 public:
 
 	using ValueType = OptionalType;
@@ -47,14 +61,14 @@ public:
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TAllowUnwrapping<T>::Value
 	constexpr explicit (!TIsConvertible<const T&, OptionalType>::Value) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TAllowUnwrapping<T>::Value
 	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
@@ -106,7 +120,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType, const T&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType, const T&>::Value && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (&InValue == this) return *this;
@@ -127,7 +141,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (&InValue == this) return *this;
@@ -219,7 +233,7 @@ private:
 };
 
 template <typename T>
-TOptional(T) ->TOptional<T>;
+TOptional(T) -> TOptional<T>;
 
 template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
 constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
