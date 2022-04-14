@@ -61,12 +61,20 @@ constexpr T&& Forward(typename TRemoveReference<T>::Type&& Obj)
 	return (T&&)Obj;
 }
 
-template <typename T> requires TIsMoveConstructible<T>::Value && TIsMoveAssignable<T>::Value
+template <typename T> requires requires(T& A, T& B) { A.Swap(B); }
+	|| (TIsMoveConstructible<T>::Value && TIsMoveAssignable<T>::Value)
 constexpr void Swap(T& A, T& B)
 {
-	T Temp = MoveTemp(A);
-	A = MoveTemp(B);
-	B = MoveTemp(Temp);
+	if constexpr (requires(T& A, T& B) { A.Swap(B); })
+	{
+		A.Swap(B);
+	}
+	else
+	{
+		T Temp = MoveTemp(A);
+		A = MoveTemp(B);
+		B = MoveTemp(Temp);
+	}
 }
 
 template <typename T, typename U = T> requires TIsMoveConstructible<T>::Value && TIsAssignable<T&, U>::Value

@@ -225,6 +225,28 @@ public:
 		}
 	}
 
+	template <typename T> requires TIsMoveConstructible<OptionalType>::Value && TIsSwappable<OptionalType>::Value
+	constexpr void Swap(TOptional& InValue)
+	{
+		if (!IsValid() && !InValue.IsValid()) return;
+
+		if (IsValid() && !InValue.IsValid())
+		{
+			InValue = MoveTemp(*this);
+			Reset();
+			return;
+		}
+
+		if (InValue.IsValid() && !IsValid())
+		{
+			*this = MoveTemp(InValue);
+			InValue.Reset();
+			return;
+		}
+
+		NAMESPACE_REDCRAFT::Swap(GetValue(), InValue.GetValue());
+	}
+
 private:
 
 	TAlignedStorage<sizeof(OptionalType), alignof(OptionalType)>::Type Value;
@@ -271,28 +293,6 @@ template <typename T, typename... Types> requires (TIsObject<T>::Value && !TIsAr
 constexpr TOptional<T> MakeOptional(Types&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
-}
-
-template <typename T> requires TIsMoveConstructible<T>::Value&& TIsSwappable<T>::Value
-constexpr void Swap(TOptional<T>& A, TOptional<T>& B)
-{
-	if (!A && !B) return;
-
-	if (A && !B)
-	{
-		B = MoveTemp(A);
-		A.Reset();
-		return;
-	}
-
-	if (B && !A)
-	{
-		A = MoveTemp(B);
-		B.Reset();
-		return;
-	}
-
-	Swap(*A, *B);
 }
 
 template <typename T> struct TIsTOptional               : FFalse { };

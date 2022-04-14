@@ -132,6 +132,15 @@ constexpr bool VariantEqualityOperator(const void* LHS, const void* RHS)
 
 using FVariantEqualityOperatorFunc = bool(*)(const void*, const void*);
 
+template <typename T>
+constexpr void VariantSwap(void* A, void* B)
+{
+	if constexpr (TIsSwappable<T>::Value) Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+	else check_no_entry();
+}
+
+using FVariantSwapFunc = void(*)(void*, void*);
+
 template <typename... Types>
 struct TVariantHelper
 {
@@ -141,6 +150,7 @@ struct TVariantHelper
 	static constexpr FVariantCopyAssignFunc         CopyAssignFuncs[]         = { VariantCopyAssign<Types>...         };
 	static constexpr FVariantMoveAssignFunc         MoveAssignFuncs[]         = { VariantMoveAssign<Types>...         };
 	static constexpr FVariantEqualityOperatorFunc   EqualityOperatorFuncs[]   = { VariantEqualityOperator<Types>...   };
+	static constexpr FVariantSwapFunc               SwapFuncs[]               = { VariantSwap<Types>...               };
 };
 
 template <typename R, typename F, typename T>
@@ -425,6 +435,35 @@ struct TVariant
 
 		TypeIndex = INDEX_NONE;
 	}
+	
+	constexpr void Swap(TVariant& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
+	{
+		if (!IsValid() && !InValue.IsValid()) return;
+
+		if (IsValid() && !InValue.IsValid())
+		{
+			InValue = MoveTemp(*this);
+			Reset();
+			return;
+		}
+
+		if (InValue.IsValid() && !IsValid())
+		{
+			*this = MoveTemp(InValue);
+			InValue.Reset();
+			return;
+		}
+
+		if (GetIndex() == InValue.GetIndex())
+		{
+			FHelper::SwapFuncs[GetIndex()](GetData(), InValue.GetData());
+			return;
+		}
+
+		TVariant Temp = MoveTemp(*this);
+		*this = MoveTemp(InValue);
+		InValue = MoveTemp(Temp);
+	}
 
 private:
 
@@ -452,30 +491,6 @@ template <typename... Types>
 constexpr bool operator==(const TVariant<Types...>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
-}
-
-template <typename... Types> requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
-constexpr void Swap(TVariant<Types...>& A, TVariant<Types...>& B)
-{
-	if (!A && !B) return;
-
-	if (A && !B)
-	{
-		B = MoveTemp(A);
-		A.Reset();
-		return;
-	}
-
-	if (B && !A)
-	{
-		A = MoveTemp(B);
-		B.Reset();
-		return;
-	}
-
-	TVariant<Types...> Temp = MoveTemp(A);
-	A = MoveTemp(B);
-	B = MoveTemp(Temp);
 }
 
 template <typename    T    > struct TIsTVariant                     : FFalse { };

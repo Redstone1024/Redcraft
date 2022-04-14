@@ -207,6 +207,11 @@ protected:
 		return T(Forward<TTupleType>(Arg).template GetValue<Indices>()...);
 	}
 
+	template <typename TTupleType>
+	static constexpr void Swap(TTupleType& A, TTupleType& B)
+	{
+		((NAMESPACE_REDCRAFT::Swap(A.template GetValue<Indices>(), B.template GetValue<Indices>())), ...);
+	}
 };
 
 NAMESPACE_PRIVATE_END
@@ -371,6 +376,11 @@ public:
 
 	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>);
 
+	constexpr void Swap(TTuple& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value&& TIsSwappable<Types>::Value))
+	{
+		Super::Swap(*this, InValue);
+	}
+
 };
 
 template <typename... Types>
@@ -518,19 +528,6 @@ struct TTupleThreeWay<R, TIndexSequence<>>
 };
 
 template <typename Indices>
-struct TTupleSwapImpl;
-
-template <size_t... Indices>
-struct TTupleSwapImpl<TIndexSequence<Indices...>>
-{
-	template <typename TTupleType>
-	static constexpr void F(TTupleType& A, TTupleType& B)
-	{
-		((Swap(A.template GetValue<Indices>(), B.template GetValue<Indices>())), ...);
-	}
-};
-
-template <typename Indices>
 struct TTupleVisitImpl;
 
 template <size_t I, size_t... Indices>
@@ -576,12 +573,6 @@ constexpr typename TCommonComparisonCategory<typename TSynthThreeWayResult<LHSTy
 {
 	using R = typename TCommonComparisonCategory<typename TSynthThreeWayResult<LHSTypes, RHSTypes>::Type...>::Type;
 	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::F(LHS, RHS);
-}
-
-template <typename... Types> requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
-constexpr void Swap(TTuple<Types...>& A, TTuple<Types...>& B)
-{
-	NAMESPACE_PRIVATE::TTupleSwapImpl<TIndexSequenceFor<Types...>>::F(A, B);
 }
 
 template <typename F> requires TIsInvocable<F>::Value

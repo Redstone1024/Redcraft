@@ -292,6 +292,28 @@ public:
 
 	constexpr void Reset() requires (FunctionType != EFunctionType::Reference) { Call = nullptr; }
 
+	constexpr void Swap(TFunctionImpl& InValue) requires (FunctionType != EFunctionType::Reference)
+	{
+		if (!IsValid() && !InValue.IsValid()) return;
+
+		if (IsValid() && !InValue.IsValid())
+		{
+			InValue = MoveTemp(*this);
+			Reset();
+			return;
+		}
+
+		if (InValue.IsValid() && !IsValid())
+		{
+			*this = MoveTemp(InValue);
+			InValue.Reset();
+			return;
+		}
+		
+		NAMESPACE_REDCRAFT::Swap(Call, InValue.Call);
+		NAMESPACE_REDCRAFT::Swap(Storage, InValue.Storage);
+	}
+
 private:
 
 	using CallFunc = ResultType(*)(void*, Types&&...);
@@ -410,54 +432,6 @@ template <typename F>
 constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
 {
 	return !LHS;
-}
-
-template <typename F, size_t I, size_t J>
-constexpr void Swap(TFunction<F, I, J>& A, TFunction<F, I, J>& B)
-{
-	if (!A && !B) return;
-
-	if (A && !B)
-	{
-		B = MoveTemp(A);
-		A = nullptr;
-		return;
-	}
-
-	if (B && !A)
-	{
-		A = MoveTemp(B);
-		B = nullptr;
-		return;
-	}
-
-	TFunction<F, I, J> Temp = MoveTemp(A);
-	A = MoveTemp(B);
-	B = MoveTemp(Temp);
-}
-
-template <typename F, size_t I, size_t J>
-constexpr void Swap(TUniqueFunction<F, I, J>& A, TUniqueFunction<F, I, J>& B)
-{
-	if (!A && !B) return;
-
-	if (A && !B)
-	{
-		B = MoveTemp(A);
-		A = nullptr;
-		return;
-	}
-
-	if (B && !A)
-	{
-		A = MoveTemp(B);
-		B = nullptr;
-		return;
-	}
-
-	TFunction<F, I, J> Temp = MoveTemp(A);
-	A = MoveTemp(B);
-	B = MoveTemp(Temp);
 }
 
 static_assert(sizeof(TFunctionRef<void()>)    == 16, "The byte size of TFunctionRef is unexpected");

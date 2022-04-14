@@ -91,6 +91,15 @@ void AnyMoveAssign(void* Target, void* Source)
 
 using FAnyMoveAssignFunc = void(*)(void*, void*);
 
+template <typename T>
+void AnySwap(void* A, void* B)
+{
+	if constexpr (TIsSwappable<T>::Value) Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+	else check_no_entry();
+}
+
+using FAnySwapFunc = void(*)(void*, void*);
+
 struct FAnyRTTI
 {
 	bool                       bIsInline;
@@ -102,6 +111,7 @@ struct FAnyRTTI
 	FAnyMoveConstructFunc      MoveConstruct;
 	FAnyCopyAssignFunc         CopyAssign;
 	FAnyMoveAssignFunc         MoveAssign;
+	FAnySwapFunc               SwapObject;
 };
 
 template <typename T, bool bInIsInline>
@@ -118,6 +128,7 @@ struct TAnyRTTIHelper
 		AnyMoveConstruct<T>,
 		AnyCopyAssign<T>,
 		AnyMoveAssign<T>,
+		AnySwap<T>,
 	};
 };
 
@@ -315,6 +326,35 @@ struct TAny
 		ResetImpl();
 	}
 
+	constexpr void Swap(TAny& InValue)
+	{
+		if (!IsValid() && !InValue.IsValid()) return;
+
+		if (IsValid() && !InValue.IsValid())
+		{
+			InValue = MoveTemp(*this);
+			Reset();
+			return;
+		}
+
+		if (InValue.IsValid() && !IsValid())
+		{
+			*this = MoveTemp(InValue);
+			InValue.Reset();
+			return;
+		}
+
+		if (GetTypeInfo() == InValue.GetTypeInfo())
+		{
+			RTTI->SwapObject(GetData(), InValue.GetData());
+			return;
+		}
+		
+		TAny Temp = MoveTemp(*this);
+		*this = MoveTemp(InValue);
+		InValue = MoveTemp(Temp);
+	}
+
 private:
 
 	union
@@ -367,30 +407,6 @@ template <size_t InlineSize, size_t InlineAlignment>
 constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
-}
-
-template <size_t InlineSize, size_t InlineAlignment>
-constexpr void Swap(TAny<InlineSize, InlineAlignment>& A, TAny<InlineSize, InlineAlignment>& B)
-{
-	if (!A && !B) return;
-
-	if (A && !B)
-	{
-		B = MoveTemp(A);
-		A.Reset();
-		return;
-	}
-
-	if (B && !A)
-	{
-		A = MoveTemp(B);
-		B.Reset();
-		return;
-	}
-
-	TAny<InlineSize, InlineAlignment> Temp = MoveTemp(A);
-	A = MoveTemp(B);
-	B = MoveTemp(Temp);
 }
 
 template <typename T>                                struct TIsTAny                                    : FFalse { };
