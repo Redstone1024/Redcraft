@@ -10,10 +10,10 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// Build information macro.
+// Build information macro
 
 #ifndef PLATFORM_NAME
-#	error "PLATFORM_NAME must be defined"
+#	error "PLATFORM_NAME must be defined."
 #endif
 
 #ifndef PLATFORM_WINDOWS
@@ -29,11 +29,15 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #endif
 
 #ifndef BUILD_TYPE
-#	error "BUILD_TYPE must be defined"
+#	error "BUILD_TYPE must be defined."
 #endif
 
 #ifndef BUILD_DEBUG
 #	define BUILD_DEBUG 0
+#endif
+
+#ifndef BUILD_DEVELOPMENT
+#	define BUILD_DEVELOPMENT 0
 #endif
 
 #ifndef BUILD_RELEASE
@@ -64,7 +68,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	endif
 #endif
 
-// Function type macros.
+// Function type macros
 
 #if PLATFORM_WINDOWS
 
@@ -86,7 +90,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	if BUILD_DEBUG
 #		define FORCEINLINE      inline
 #	else
-#		define FORCEINLINE      inline __attribute__ ((always_inline))
+#		define FORCEINLINE      inline __attribute__((always_inline))
 #	endif
 
 #else
@@ -100,40 +104,57 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 #endif
 
-// DLL export and import definitions.
+// DLL export and import macros
 
 #if PLATFORM_WINDOWS
-
 #	define DLLEXPORT    __declspec(dllexport)
 #	define DLLIMPORT    __declspec(dllimport)
-
 #elif PLATFORM_LINUX
-
 #	define DLLEXPORT    __attribute__((visibility("default")))
 #	define DLLIMPORT    __attribute__((visibility("default")))
-
 #else
-
-#	define DLLEXPORT
-#	define DLLIMPORT
-
+#	error "DLL export and import macros must be defined."
 #endif
 
-// Unsigned base types.
+// Optimization macros
+
+#if !defined(__clang__)
+#	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("optimize(\"\", off)")
+#	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("optimize(\"\", on)")
+#elif defined(_MSC_VER)
+#	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("clang optimize off")
+#	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("clang optimize on")
+#elif defined(__GNUC__ )
+#	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("GCC push_options") _Pragma("GCC optimize (\"O0\")")
+#	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("GCC pop_options")
+#else
+#	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
+#	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
+#endif
+
+#if BUILD_DEBUG
+#	define PRAGMA_DISABLE_OPTIMIZATION
+#	define PRAGMA_ENABLE_OPTIMIZATION
+#else
+#	define PRAGMA_DISABLE_OPTIMIZATION PRAGMA_DISABLE_OPTIMIZATION_ACTUAL
+#	define PRAGMA_ENABLE_OPTIMIZATION  PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
+#endif
+
+// Unsigned base types
 
 typedef NAMESPACE_STD::uint8_t      uint8;
 typedef NAMESPACE_STD::uint16_t     uint16;
 typedef NAMESPACE_STD::uint32_t     uint32;
 typedef NAMESPACE_STD::uint64_t     uint64;
 
-// Signed base types.
+// Signed base types
 
 typedef NAMESPACE_STD::int8_t       int8;
 typedef NAMESPACE_STD::int16_t      int16;
 typedef NAMESPACE_STD::int32_t      int32;
 typedef NAMESPACE_STD::int64_t      int64;
 
-// Character types.
+// Character types
 
 typedef char                        chara;
 typedef wchar_t                     charw;
@@ -142,7 +163,7 @@ typedef char8_t                     char8;
 typedef char16_t                    char16;
 typedef char32_t                    char32;
 
-// Pointer types.
+// Pointer types
 
 typedef NAMESPACE_STD::uintptr_t    uintptr;
 typedef NAMESPACE_STD::intptr_t     intptr;
@@ -150,7 +171,7 @@ typedef NAMESPACE_STD::ptrdiff_t    ptrdiff;
 typedef NAMESPACE_STD::size_t       size_t;
 typedef intptr_t                    ssize_t;
 
-// Null types.
+// Null types
 
 typedef decltype(NULL)				null_t;
 typedef NAMESPACE_STD::nullptr_t	nullptr_t;
@@ -161,7 +182,7 @@ typedef NAMESPACE_STD::nullptr_t	nullptr_t;
 #	define PLATFORM_TCHAR_IS_CHAR16 0
 #endif
 
-// Define the TEXT macro.
+// Define the TEXT macro
 
 #if PLATFORM_TCHAR_IS_CHAR16
 #	define TEXT_PASTE(x) u ## x

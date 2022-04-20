@@ -1,7 +1,7 @@
 ﻿cmake_minimum_required (VERSION 3.8)
 
 # Main project
-string(REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR})
+string (REGEX REPLACE ".*/(.*)" "\\1" CURRENT_FOLDER ${CMAKE_CURRENT_SOURCE_DIR})
 project (${CURRENT_FOLDER})
 message (STATUS "Configuring project: " ${CURRENT_FOLDER})
 
@@ -25,16 +25,21 @@ else ()
 endif ()
 
 # Define configuration type macros
-add_compile_definitions ("BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
 	add_compile_definitions ("BUILD_DEBUG=1")
+	add_compile_definitions ("BUILD_TYPE=Debug")
+elseif (CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+	add_compile_definitions ("BUILD_DEVELOPMENT=1")
+	add_compile_definitions ("BUILD_TYPE=Development")
 elseif (CMAKE_BUILD_TYPE MATCHES "Release")
 	add_compile_definitions ("BUILD_RELEASE=1")
+	add_compile_definitions ("BUILD_TYPE=Release")
 else ()
 	add_compile_definitions ("BUILD_UNKNOWN=1")
+	add_compile_definitions ("BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 endif ()
 
-# Add subproject  
+# Add subproject
 file (GLOB PROJECT_FOLDERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*")
 foreach (PROJECT_SUBDIRECTORY ${PROJECT_FOLDERS}) 
 	if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_SUBDIRECTORY}")
