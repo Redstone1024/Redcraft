@@ -1248,7 +1248,6 @@ void TestAtomic()
 		TAtomic<int32> TempA;
 	
 		always_check(TempA.bIsAlwaysLockFree);
-		always_check(TempA.IsLockFree());
 		always_check((TempA = 11) == 11);
 		TempA.Store(12);
 		always_check(TempA.Load() == 12);
@@ -1291,7 +1290,6 @@ void TestAtomic()
 		TAtomicRef<int32> TempA(A);
 
 		always_check(TempA.bIsAlwaysLockFree);
-		always_check(TempA.IsLockFree());
 		always_check((TempA = 11) == 11);
 		TempA.Store(12);
 		always_check(TempA.Load() == 12);

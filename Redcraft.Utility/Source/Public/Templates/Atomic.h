@@ -77,9 +77,6 @@ public:
 	FORCEINLINE ValueType operator=(ValueType Desired)                                     { return Element = Desired; }
 	FORCEINLINE ValueType operator=(ValueType Desired) volatile requires bIsAlwaysLockFree { return Element = Desired; }
 
-	FORCEINLINE bool IsLockFree() const          { return Element.is_lock_free(); }
-	FORCEINLINE bool IsLockFree() const volatile { return Element.is_lock_free(); }
-
 	FORCEINLINE void Store(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)                                     { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); Element.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	FORCEINLINE void Store(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires bIsAlwaysLockFree { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); Element.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
