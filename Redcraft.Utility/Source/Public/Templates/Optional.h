@@ -208,12 +208,6 @@ public:
 	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
 	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
 
-	constexpr size_t GetTypeHash() const requires CHashable<OptionalType>
-	{
-		if (!IsValid()) return NAMESPACE_REDCRAFT::GetTypeHash(nullptr);
-		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
-	}
-
 	constexpr void Reset()
 	{
 		if (bIsValid)
@@ -223,6 +217,12 @@ public:
 			typedef OptionalType DestructOptionalType;
 			((OptionalType*)&Value)->DestructOptionalType::~DestructOptionalType();
 		}
+	}
+
+	constexpr size_t GetTypeHash() const requires CHashable<OptionalType>
+	{
+		if (!IsValid()) return 2824517378;
+		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
 	}
 
 	template <typename T> requires TIsMoveConstructible<OptionalType>::Value && TIsSwappable<OptionalType>::Value

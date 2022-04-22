@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Concepts/Same.h"
+#include "Templates/Utility.h"
 #include "TypeTraits/PrimaryType.h"
 #include "TypeTraits/Miscellaneous.h"
 
@@ -9,9 +10,21 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+constexpr size_t HashCombine()
+{
+	return 0;
+}
+
+constexpr size_t HashCombine(size_t A)
+{
+	return A;
+}
+
 constexpr size_t HashCombine(size_t A, size_t C)
 {
-	size_t B = 0x9E3779B97F4A7C16;
+	
+	size_t B = static_cast<size_t>(0x9E3779B97F4A7C16);
+
 	A += B;
 
 	A -= B; A -= C; A ^= (C >> 13);
@@ -27,14 +40,24 @@ constexpr size_t HashCombine(size_t A, size_t C)
 	return C;
 }
 
+template <typename... Ts> requires (true && ... && TIsConvertible<Ts, size_t>::Value)
+constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
+{
+	size_t B = HashCombine(A, C);
+	return HashCombine(B, InOther...);
+}
+
 template <typename T> requires TIsIntegral<T>::Value
 constexpr size_t GetTypeHash(T A)
 {
 	static_assert(sizeof(T) <= 16, "GetTypeHash only works with T up to 128 bits.");
 
-	if constexpr (sizeof(T) <=  8) return static_cast<size_t>(A);
-	if constexpr (sizeof(T) == 16) return static_cast<size_t>(A ^ (A >> 64));
-	else return INDEX_NONE;
+	if constexpr (sizeof(T) <= sizeof(size_t)) return static_cast<size_t>(A);
+	if constexpr (sizeof(T) ==  8) return GetTypeHash(static_cast<uint32>(A)) ^ GetTypeHash(static_cast<uint32>(A >> 32));
+	if constexpr (sizeof(T) == 16) return GetTypeHash(static_cast<uint64>(A)) ^ GetTypeHash(static_cast<uint64>(A >> 64));
+	else check_no_entry();
+	
+	return INDEX_NONE;
 }
 
 template <typename T> requires TIsFloatingPoint<T>::Value
@@ -47,7 +70,9 @@ constexpr size_t GetTypeHash(T A)
 	if constexpr (sizeof(T) ==  4) return GetTypeHash(*reinterpret_cast<uint32*>(&A));
 	if constexpr (sizeof(T) ==  8) return GetTypeHash(*reinterpret_cast<uint64*>(&A));
 	if constexpr (sizeof(T) == 16) return GetTypeHash(*reinterpret_cast<uint64*>(&A) + *(reinterpret_cast<uint64*>(&A) + 1));
-	else return INDEX_NONE;
+	else check_no_entry();
+	
+	return INDEX_NONE;
 }
 
 template <typename T> requires TIsEnum<T>::Value
@@ -56,24 +81,20 @@ constexpr size_t GetTypeHash(T A)
 	return GetTypeHash(static_cast<typename TUnderlyingType<T>::Type>(A));
 }
 
-constexpr size_t GetTypeHash(nullptr_t)
+template <typename T> requires TIsPointer<T>::Value || TIsSame<T, nullptr_t>::Value
+constexpr size_t GetTypeHash(T A)
 {
-	return GetTypeHash(2.7182818284590452353602874713527);
+	return GetTypeHash(reinterpret_cast<intptr>(A));
 }
 
-constexpr size_t GetTypeHash(const void* A)
-{
-	return GetTypeHash(reinterpret_cast<intptr_t>(A));
-}
-
-template <typename T> requires requires(T&& A) { { GetTypeHash(A.GetTypeHash()) } -> CSameAs<size_t>; }
-constexpr size_t GetTypeHash(T&& A)
+template <typename T> requires requires(const T& A) { { GetTypeHash(A.GetTypeHash()) } -> CSameAs<size_t>; }
+constexpr size_t GetTypeHash(const T& A)
 {
 	return GetTypeHash(A.GetTypeHash());
 }
 
 template <typename T>
-concept CHashable = requires(T&& A) { { GetTypeHash(A) } -> CSameAs<size_t>; };
+concept CHashable = requires(const T& A) { { GetTypeHash(A) } -> CSameAs<size_t>; };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

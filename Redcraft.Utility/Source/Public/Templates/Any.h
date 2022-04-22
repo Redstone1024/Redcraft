@@ -3,6 +3,7 @@
 #include "CoreTypes.h"
 #include "Memory/Memory.h"
 #include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -91,14 +92,33 @@ void AnyMoveAssign(void* Target, void* Source)
 
 using FAnyMoveAssignFunc = void(*)(void*, void*);
 
-template <typename T>
-void AnySwap(void* A, void* B)
-{
-	if constexpr (TIsSwappable<T>::Value) Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
-	else check_no_entry();
-}
-
-using FAnySwapFunc = void(*)(void*, void*);
+//template <typename T>
+//constexpr bool AnyEqualityOperator(const void* LHS, const void* RHS)
+//{
+//	if constexpr (!CEqualityComparable<T>) check_no_entry();
+//	else return *reinterpret_cast<const T*>(LHS) == *reinterpret_cast<const T*>(RHS);
+//	return false;
+//}
+//
+//using FAnyEqualityOperatorFunc = bool(*)(const void*, const void*);
+//
+//template <typename T>
+//void AnySwap(void* A, void* B)
+//{
+//	if constexpr (TIsSwappable<T>::Value) Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+//	else check_no_entry();
+//}
+//
+//using FAnySwapFunc = void(*)(void*, void*);
+//
+//template <typename T>
+//size_t AnyTypeHash(const void* InValue)
+//{
+//	if constexpr (CHashable<T>) return GetTypeHash(*reinterpret_cast<const T*>(InValue));
+//	else return 3516520171;
+//}
+//
+//using FAnyTypeHashFunc = size_t(*)(const void*);
 
 struct FAnyRTTI
 {
@@ -111,7 +131,9 @@ struct FAnyRTTI
 	FAnyMoveConstructFunc      MoveConstruct;
 	FAnyCopyAssignFunc         CopyAssign;
 	FAnyMoveAssignFunc         MoveAssign;
-	FAnySwapFunc               SwapObject;
+//	FAnyEqualityOperatorFunc   EqualityOperator;
+//	FAnySwapFunc               SwapObject;
+//	FAnyTypeHashFunc           TypeHash;
 };
 
 template <typename T, bool bInIsInline>
@@ -128,7 +150,9 @@ struct TAnyRTTIHelper
 		AnyMoveConstruct<T>,
 		AnyCopyAssign<T>,
 		AnyMoveAssign<T>,
-		AnySwap<T>,
+//		AnyEqualityOperator<T>,
+//		AnySwap<T>,
+//		AnyTypeHash<T>,
 	};
 };
 
@@ -326,34 +350,40 @@ struct TAny
 		ResetImpl();
 	}
 
-	constexpr void Swap(TAny& InValue)
-	{
-		if (!IsValid() && !InValue.IsValid()) return;
-
-		if (IsValid() && !InValue.IsValid())
-		{
-			InValue = MoveTemp(*this);
-			Reset();
-			return;
-		}
-
-		if (InValue.IsValid() && !IsValid())
-		{
-			*this = MoveTemp(InValue);
-			InValue.Reset();
-			return;
-		}
-
-		if (GetTypeInfo() == InValue.GetTypeInfo())
-		{
-			RTTI->SwapObject(GetData(), InValue.GetData());
-			return;
-		}
-		
-		TAny Temp = MoveTemp(*this);
-		*this = MoveTemp(InValue);
-		InValue = MoveTemp(Temp);
-	}
+//	constexpr size_t GetTypeHash() const
+//	{
+//		if (!IsValid()) return 20090007;
+//		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetTypeInfo()), RTTI->TypeHash(GetData()));
+//	}
+//
+//	constexpr void Swap(TAny& InValue)
+//	{
+//		if (!IsValid() && !InValue.IsValid()) return;
+//
+//		if (IsValid() && !InValue.IsValid())
+//		{
+//			InValue = MoveTemp(*this);
+//			Reset();
+//			return;
+//		}
+//
+//		if (InValue.IsValid() && !IsValid())
+//		{
+//			*this = MoveTemp(InValue);
+//			InValue.Reset();
+//			return;
+//		}
+//
+//		if (GetTypeInfo() == InValue.GetTypeInfo())
+//		{
+//			RTTI->SwapObject(GetData(), InValue.GetData());
+//			return;
+//		}
+//		
+//		TAny Temp = MoveTemp(*this);
+//		*this = MoveTemp(InValue);
+//		InValue = MoveTemp(Temp);
+//	}
 
 private:
 
@@ -394,6 +424,13 @@ private:
 		else if (IsInline()) RTTI->Destroy(&InlineValue);
 		else RTTI->Delete(DynamicValue);
 	}
+
+//	friend FORCEINLINE bool operator==(const TAny& LHS, const TAny& RHS)
+//	{
+//		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return false;
+//		if (LHS.IsValid() == false) return true;
+//		return LHS.RTTI->EqualityOperator(LHS.GetData(), RHS.GetData());
+//	}
 
 };
 

@@ -7,6 +7,7 @@
 #include "Templates/Tuple.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
 #include "Templates/Container.h"
 #include "Concepts/Comparable.h"
 #include "Concepts/Convertible.h"
@@ -434,7 +435,6 @@ constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
 	return !LHS;
 }
 
-static_assert(sizeof(TFunctionRef<void()>)    == 16, "The byte size of TFunctionRef is unexpected");
 static_assert(sizeof(TFunction<void()>)       == 64, "The byte size of TFunction is unexpected");
 static_assert(sizeof(TUniqueFunction<void()>) == 64, "The byte size of TUniqueFunction is unexpected");
 

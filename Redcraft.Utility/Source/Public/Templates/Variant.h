@@ -2,8 +2,8 @@
 
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
-#include "Templates/TypeHash.h"
 #include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -204,7 +204,7 @@ struct TVariantVisitHelper
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value))
+template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value)) && (sizeof...(Types) < 0xFF)
 struct TVariant
 {
 	static constexpr size_t AlternativeSize = sizeof...(Types);
@@ -212,20 +212,20 @@ struct TVariant
 	template <size_t I>   struct TAlternativeType  : NAMESPACE_PRIVATE::TVariantAlternativeType<I, Types...>  { };
 	template <typename T> struct TAlternativeIndex : NAMESPACE_PRIVATE::TVariantAlternativeIndex<T, Types...> { };
 
-	constexpr TVariant() : TypeIndex(INDEX_NONE) { };
+	constexpr TVariant() : TypeIndex(0xFF) { };
 
 	constexpr TVariant(FInvalid) : TVariant() { };
 
 	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
-		: TypeIndex(InValue.GetIndex())
+		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (GetIndex() != INDEX_NONE) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
-		: TypeIndex(InValue.GetIndex())
+		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (GetIndex() != INDEX_NONE) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
@@ -269,7 +269,7 @@ struct TVariant
 		{	
 			Reset();
 			FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
-			TypeIndex = InValue.GetIndex();
+			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
 		return *this;
@@ -290,7 +290,7 @@ struct TVariant
 		{
 			Reset();
 			FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
-			TypeIndex = InValue.GetIndex();
+			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
 		return *this;
@@ -332,9 +332,9 @@ struct TVariant
 		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr size_t GetIndex()        const { return TypeIndex; }
-	constexpr bool IsValid()           const { return GetIndex() != INDEX_NONE; }
-	constexpr explicit operator bool() const { return GetIndex() != INDEX_NONE; }
+	constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
+	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
+	constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
 
 	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                           : false; }
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TAlternativeIndex<T>::Value : false; }
@@ -418,12 +418,6 @@ struct TVariant
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
-	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
-	{
-		if (!IsValid()) return NAMESPACE_REDCRAFT::GetTypeHash(nullptr);
-		return Visit([](auto&& A) { return NAMESPACE_REDCRAFT::GetTypeHash(A); });
-	}
-
 	constexpr void Reset()
 	{
 		if (GetIndex() == INDEX_NONE) return;
@@ -433,9 +427,15 @@ struct TVariant
 			FHelper::DestroyFuncs[GetIndex()](&Value);
 		}
 
-		TypeIndex = INDEX_NONE;
+		TypeIndex = static_cast<uint8>(INDEX_NONE);
 	}
-	
+
+	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
+	{
+		if (!IsValid()) return 114514;
+		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetIndex()), Visit([](const auto& A) { return NAMESPACE_REDCRAFT::GetTypeHash(A); }));
+	}
+
 	constexpr void Swap(TVariant& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
@@ -470,7 +470,7 @@ private:
 	using FHelper = NAMESPACE_PRIVATE::TVariantHelper<Types...>;
 
 	TAlignedUnion<1, Types...>::Type Value;
-	size_t TypeIndex;
+	uint8 TypeIndex;
 
 	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Types>)
 	{

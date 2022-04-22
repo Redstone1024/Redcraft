@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/IntegerSequence.h"
 #include "Templates/ReferenceWrapper.h"
-#include "Templates/Invoke.h"
 
 #include <tuple>
 
@@ -373,8 +373,11 @@ public:
 	template <typename T> requires TIsConstructible<T, Types...>::Value constexpr T Construct() const         && { return Super::template Construct<T>(static_cast<const          TTuple&&>(*this)); }
 	template <typename T> requires TIsConstructible<T, Types...>::Value constexpr T Construct()       volatile&& { return Super::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
 	template <typename T> requires TIsConstructible<T, Types...>::Value constexpr T Construct() const volatile&& { return Super::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
-
-	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>);
+	
+	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
+	{
+		return [this]<size_t... Indices>(TIndexSequence<Indices...>) -> size_t { return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetValue<Indices>())...); } (TMakeIndexSequence<ElementSize>());
+	}
 
 	constexpr void Swap(TTuple& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value&& TIsSwappable<Types>::Value))
 	{
@@ -582,14 +585,6 @@ template <typename F, typename FirstTupleType, typename... TupleTypes>
 constexpr void VisitTuple(F&& Func, FirstTupleType&& FirstTuple, TupleTypes&&... Tuples)
 {
 	NAMESPACE_PRIVATE::TTupleVisitImpl<TMakeIndexSequence<TTupleElementSize<FirstTupleType>::Value>>::F(Forward<F>(Func), Forward<FirstTupleType>(FirstTuple), Forward<TupleTypes>(Tuples)...);
-}
-
-template <typename... Types>
-constexpr size_t TTuple<Types...>::GetTypeHash() const requires (true && ... && CHashable<Types>)
-{
-	size_t Result = 0;
-	VisitTuple([&Result](auto&& A) { Result = HashCombine(Result, NAMESPACE_REDCRAFT::GetTypeHash(A)); }, *this);
-	return Result;
 }
 
 NAMESPACE_MODULE_END(Utility)
