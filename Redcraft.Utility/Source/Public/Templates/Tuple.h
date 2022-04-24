@@ -58,8 +58,12 @@ struct TTupleElementType<0> { };
 template <typename T, size_t Index>
 struct TTupleElement
 {
+private:
+
 	using ValueType = T;
 	ValueType Value;
+
+public:
 
 	template <typename Type>
 	constexpr TTupleElement(Type&& Arg)
