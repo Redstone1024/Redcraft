@@ -179,9 +179,9 @@ struct TAny
 	{
 		if (!IsValid()) return;
 
-		if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-		else if (IsInline()) RTTI->CopyConstruct(GetData(), InValue.GetData());
-		else DynamicValue = RTTI->CopyNew(InValue.GetData());
+		if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+		else if (IsInline()) RTTI->CopyConstruct(GetStorage(), InValue.GetStorage());
+		else DynamicStorage = RTTI->CopyNew(InValue.GetStorage());
 	}
 
 	FORCEINLINE TAny(TAny&& InValue)
@@ -189,11 +189,11 @@ struct TAny
 	{
 		if (!IsValid()) return;
 
-		if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-		else if (IsInline()) RTTI->MoveConstruct(GetData(), InValue.GetData());
+		if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+		else if (IsInline()) RTTI->MoveConstruct(GetStorage(), InValue.GetStorage());
 		else
 		{
-			DynamicValue = InValue.DynamicValue;
+			DynamicStorage = InValue.DynamicStorage;
 			InValue.TypeInfo = nullptr;
 		}
 	}
@@ -228,8 +228,8 @@ struct TAny
 		}
 		else if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
-			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-			else RTTI->CopyAssign(GetData(), InValue.GetData());
+			if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+			else RTTI->CopyAssign(GetStorage(), InValue.GetStorage());
 		}
 		else
 		{
@@ -238,9 +238,9 @@ struct TAny
 			TypeInfo = InValue.TypeInfo;
 			RTTI = InValue.RTTI;
 
-			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-			else if (IsInline()) RTTI->CopyConstruct(GetData(), InValue.GetData());
-			else DynamicValue = RTTI->CopyNew(InValue.GetData());
+			if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+			else if (IsInline()) RTTI->CopyConstruct(GetStorage(), InValue.GetStorage());
+			else DynamicStorage = RTTI->CopyNew(InValue.GetStorage());
 		}
 
 		return *this;
@@ -256,12 +256,12 @@ struct TAny
 		}
 		else if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
-			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-			else if (IsInline()) RTTI->MoveAssign(GetData(), InValue.GetData());
+			if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+			else if (IsInline()) RTTI->MoveAssign(GetStorage(), InValue.GetStorage());
 			else
 			{
-				RTTI->Delete(DynamicValue);
-				DynamicValue = InValue.DynamicValue;
+				RTTI->Delete(DynamicStorage);
+				DynamicStorage = InValue.DynamicStorage;
 				InValue.TypeInfo = nullptr;
 			}
 		}
@@ -272,9 +272,9 @@ struct TAny
 			TypeInfo = InValue.TypeInfo;
 			RTTI = InValue.RTTI;
 
-			if (IsTrivial()) Memory::Memcpy(InlineValue, InValue.InlineValue);
-			else if (IsInline()) RTTI->MoveConstruct(GetData(), InValue.GetData());
-			else DynamicValue = RTTI->MoveNew(InValue.GetData());
+			if (IsTrivial()) Memory::Memcpy(InlineStorage, InValue.InlineStorage);
+			else if (IsInline()) RTTI->MoveConstruct(GetStorage(), InValue.GetStorage());
+			else DynamicStorage = RTTI->MoveNew(InValue.GetStorage());
 		}
 
 		return *this;
@@ -290,7 +290,7 @@ struct TAny
 		if (HoldsAlternative<SelectedType>())
 		{
 			if constexpr (TIsTriviallyStorable<SelectedType>::Value)
-				Memory::Memcpy(&InlineValue, &InValue, sizeof(SelectedType));
+				Memory::Memcpy(&InlineStorage, &InValue, sizeof(SelectedType));
 			else GetValue<SelectedType>() = Forward<T>(InValue);
 		}
 		else
@@ -323,20 +323,17 @@ struct TAny
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == Typeid(T) : false; }
 
-	constexpr       void* GetData()       { return IsInline() ? &InlineValue : DynamicValue; }
-	constexpr const void* GetData() const { return IsInline() ? &InlineValue : DynamicValue; }
+	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
+	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetStorage());  }
 	
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
-	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetData());  }
+	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetStorage())); }
 	
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
-	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetData())); }
+	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetStorage());  }
 	
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
-	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetData());  }
-	
-	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
-	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetData())); }
+	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetStorage())); }
 	
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
@@ -350,13 +347,13 @@ struct TAny
 		ResetImpl();
 	}
 
-//	constexpr size_t GetTypeHash() const
+//	FORCEINLINE size_t GetTypeHash() const
 //	{
 //		if (!IsValid()) return 20090007;
-//		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetTypeInfo()), RTTI->TypeHash(GetData()));
+//		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetTypeInfo()), RTTI->TypeHash(GetStorage()));
 //	}
 //
-//	constexpr void Swap(TAny& InValue)
+//	FORCEINLINE void Swap(TAny& InValue)
 //	{
 //		if (!IsValid() && !InValue.IsValid()) return;
 //
@@ -376,7 +373,7 @@ struct TAny
 //
 //		if (GetTypeInfo() == InValue.GetTypeInfo())
 //		{
-//			RTTI->SwapObject(GetData(), InValue.GetData());
+//			RTTI->SwapObject(GetStorage(), InValue.GetStorage());
 //			return;
 //		}
 //		
@@ -389,13 +386,16 @@ private:
 
 	union
 	{
-		TAlignedStorage<InlineSize, InlineAlignment>::Type InlineValue;
-		void* DynamicValue;
+		TAlignedStorage<InlineSize, InlineAlignment>::Type InlineStorage;
+		void* DynamicStorage;
 	};
 
 	const FTypeInfo* TypeInfo;
 	const NAMESPACE_PRIVATE::FAnyRTTI* RTTI;
-
+	
+	constexpr       void* GetStorage()       { return IsInline() ? &InlineStorage : DynamicStorage; }
+	constexpr const void* GetStorage() const { return IsInline() ? &InlineStorage : DynamicStorage; }
+	
 	template <typename SelectedType, typename... Types>
 	FORCEINLINE void EmplaceImpl(Types&&... Args)
 	{
@@ -403,17 +403,17 @@ private:
 
 		if constexpr (TIsTriviallyStorable<SelectedType>::Value)
 		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
+			new(&InlineStorage) SelectedType(Forward<Types>(Args)...);
 			RTTI = nullptr;
 		}
 		else if constexpr (TIsInlineStorable<SelectedType>::Value)
 		{
-			new(&InlineValue) SelectedType(Forward<Types>(Args)...);
+			new(&InlineStorage) SelectedType(Forward<Types>(Args)...);
 			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, true>::RTTI;
 		}
 		else
 		{
-			DynamicValue = new SelectedType(Forward<Types>(Args)...);
+			DynamicStorage = new SelectedType(Forward<Types>(Args)...);
 			RTTI = &NAMESPACE_PRIVATE::TAnyRTTIHelper<SelectedType, false>::RTTI;
 		}
 	}
@@ -421,15 +421,15 @@ private:
 	FORCEINLINE void ResetImpl()
 	{
 		if (!IsValid() || IsTrivial()) return;
-		else if (IsInline()) RTTI->Destroy(&InlineValue);
-		else RTTI->Delete(DynamicValue);
+		else if (IsInline()) RTTI->Destroy(&InlineStorage);
+		else RTTI->Delete(DynamicStorage);
 	}
 
 //	friend FORCEINLINE bool operator==(const TAny& LHS, const TAny& RHS)
 //	{
 //		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return false;
 //		if (LHS.IsValid() == false) return true;
-//		return LHS.RTTI->EqualityOperator(LHS.GetData(), RHS.GetData());
+//		return LHS.RTTI->EqualityOperator(LHS.GetStorage(), RHS.GetStorage());
 //	}
 
 };

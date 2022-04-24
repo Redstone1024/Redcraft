@@ -54,7 +54,7 @@ template <typename F, size_t I, size_t J, EFunctionSpecifiers S> struct TIsTFunc
 template <typename T>                                            struct TIsTUniqueFunction                                                   : FFalse { };
 template <typename F, size_t I, size_t J, EFunctionSpecifiers S> struct TIsTUniqueFunction<TFunctionImpl<F, I, J, S, EFunctionType::Unique>> : FTrue  { };
 
-struct FFunctionIsBoundImpl
+struct FFunctionIsBound
 {
 	template <typename T>
 	static constexpr bool F(const T& Func)
@@ -95,62 +95,13 @@ struct TIsInvocableResultWithSpecifiers<EFunctionSpecifiers::ConstLValue, R, F, 
 template <typename R, typename F, typename... Types>
 struct TIsInvocableResultWithSpecifiers<EFunctionSpecifiers::ConstRValue, R, F, Types...> : TIsInvocableResult<R, const F, Types...> { };
 
-template <EFunctionSpecifiers Specifiers, typename T, typename F>
-struct TFunctionCallImpl;
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::None, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(*reinterpret_cast<T*>(Func), Forward<Types>(Args)...);
-	}
-};
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::LValue, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(*reinterpret_cast<T*>(Func), Forward<Types>(Args)...);
-	}
-};
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::RValue, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(MoveTemp(*reinterpret_cast<T*>(Func)), Forward<Types>(Args)...);
-	}
-};
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::Const, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(AsConst(*reinterpret_cast<T*>(Func)), Forward<Types>(Args)...);
-	}
-};
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::ConstLValue, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(AsConst(*reinterpret_cast<T*>(Func)), Forward<Types>(Args)...);
-	}
-};
-
-template <typename T, typename R, typename... Types>
-struct TFunctionCallImpl<EFunctionSpecifiers::ConstRValue, T, R(Types...)>
-{
-	static inline R F(void* Func, Types&&... Args)
-	{
-		return InvokeResult<R>(MoveTemp(AsConst(*reinterpret_cast<T*>(Func))), Forward<Types>(Args)...);
-	}
-};
+template <typename T, EFunctionSpecifiers Specifiers> struct TFunctionCallSpecifiers;
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::None>        { using Type =       T& ; };
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::LValue>      { using Type =       T& ; };
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::RValue>      { using Type =       T&&; };
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::Const>       { using Type = const T& ; };
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::ConstLValue> { using Type = const T& ; };
+template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::ConstRValue> { using Type = const T&&; };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionSpecifiers Specifiers, EFunctionType FunctionType>
 struct TFunctionImpl<R(Types...), InlineSize, InlineAlignment, Specifiers, FunctionType>
@@ -160,14 +111,14 @@ public:
 	using ResultType = R;
 	using ArgumentType = TTuple<Types...>;
 
-	constexpr TFunctionImpl(nullptr_t = nullptr) requires (FunctionType != EFunctionType::Reference) : Call(nullptr) { }
+	constexpr TFunctionImpl(nullptr_t = nullptr) requires (FunctionType != EFunctionType::Reference) : Callable(nullptr) { }
 
 	TFunctionImpl(const TFunctionImpl& InValue) requires (FunctionType != EFunctionType::Unique)
-		: Call(InValue.Call), Storage(InValue.Storage)
+		: Callable(InValue.Callable), Storage(InValue.Storage)
 	{ }
 
 	TFunctionImpl(TFunctionImpl&& InValue)
-		: Call(InValue.Call), Storage(MoveTemp(InValue.Storage))
+		: Callable(InValue.Callable), Storage(MoveTemp(InValue.Storage))
 	{ if constexpr (FunctionType != EFunctionType::Reference) InValue.Reset(); }
 	
 	template <typename T> requires (!TIsTFunctionImpl<typename TDecay<T>::Type>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
@@ -182,10 +133,10 @@ public:
 
 		if constexpr (FunctionType == EFunctionType::Reference)
 		{
-			checkf(FFunctionIsBoundImpl::F(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
+			checkf(FFunctionIsBound::F(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
 		}
 
-		if (!FFunctionIsBoundImpl::F(InValue)) Call = nullptr;
+		if (!FFunctionIsBound::F(InValue)) Callable = nullptr;
 		else EmplaceImpl<DecayedFunctorType>(Forward<T>(InValue));
 	}
 
@@ -203,16 +154,16 @@ public:
 		requires (FunctionType == EFunctionType::Reference) && (OtherFunctionType != EFunctionType::Reference)
 	FORCEINLINE TFunctionImpl(const TFunctionImpl<R(Types...), OtherInlineSize, OtherInlineAlignment, Specifiers, OtherFunctionType>& InValue)
 	{
-		checkf(FFunctionIsBoundImpl::F(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
+		checkf(FFunctionIsBound::F(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
 		EmplaceImpl<TFunctionImpl<R(Types...), OtherInlineSize, OtherInlineAlignment, Specifiers, OtherFunctionType>>(InValue);
 	}
 	
 	FORCEINLINE TFunctionImpl(const TFunctionImpl<R(Types...), InlineSize, InlineAlignment, Specifiers, EFunctionType::Object>& InValue) requires (FunctionType == EFunctionType::Unique)
-		: Call((*reinterpret_cast<const TFunctionImpl*>(&InValue)).Call), Storage((*reinterpret_cast<const TFunctionImpl*>(&InValue)).Storage)
+		: Callable((*reinterpret_cast<const TFunctionImpl*>(&InValue)).Callable), Storage((*reinterpret_cast<const TFunctionImpl*>(&InValue)).Storage)
 	{ }
 
 	FORCEINLINE TFunctionImpl(TFunctionImpl<R(Types...), InlineSize, InlineAlignment, Specifiers, EFunctionType::Object>&& InValue) requires (FunctionType == EFunctionType::Unique)
-		: Call((*reinterpret_cast<TFunctionImpl*>(&InValue)).Call), Storage(MoveTemp((*reinterpret_cast<TFunctionImpl*>(&InValue)).Storage))
+		: Callable((*reinterpret_cast<TFunctionImpl*>(&InValue)).Callable), Storage(MoveTemp((*reinterpret_cast<TFunctionImpl*>(&InValue)).Storage))
 	{ InValue.Reset(); }
 
 	~TFunctionImpl() = default;
@@ -253,7 +204,7 @@ public:
 	{
 		using DecayedFunctorType = typename TDecay<T>::Type;
 
-		if (!FFunctionIsBoundImpl::F(InValue)) Reset();
+		if (!FFunctionIsBound::F(InValue)) Reset();
 		else EmplaceImpl<DecayedFunctorType>(Forward<T>(InValue));
 
 		return *this;
@@ -278,11 +229,8 @@ public:
 	FORCEINLINE ResultType operator()(Types... Args) const&  requires (Specifiers == EFunctionSpecifiers::ConstLValue) { return CallImpl(Forward<Types>(Args)...); }
 	FORCEINLINE ResultType operator()(Types... Args) const&& requires (Specifiers == EFunctionSpecifiers::ConstRValue) { return CallImpl(Forward<Types>(Args)...); }
 
-	constexpr bool           IsValid() const { return Call != nullptr; }
-	constexpr explicit operator bool() const { return Call != nullptr; }
-
-	FORCEINLINE       void* GetData()       { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
-	FORCEINLINE const void* GetData() const { if constexpr (FunctionType != EFunctionType::Reference) return Storage.GetData(); else return Storage; }
+	constexpr bool           IsValid() const { return Callable != nullptr; }
+	constexpr explicit operator bool() const { return Callable != nullptr; }
 
 	FORCEINLINE const FTypeInfo& TargetType() const requires (FunctionType != EFunctionType::Reference) { return IsValid() ? Storage.GetTypeInfo() : Typeid(void); };
 
@@ -291,7 +239,7 @@ public:
 	template <typename T> FORCEINLINE const T&  Target() const&  requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
 	template <typename T> FORCEINLINE const T&& Target() const&& requires (FunctionType != EFunctionType::Reference) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
 
-	constexpr void Reset() requires (FunctionType != EFunctionType::Reference) { Call = nullptr; }
+	constexpr void Reset() requires (FunctionType != EFunctionType::Reference) { Callable = nullptr; }
 
 	constexpr void Swap(TFunctionImpl& InValue) requires (FunctionType != EFunctionType::Reference)
 	{
@@ -311,37 +259,54 @@ public:
 			return;
 		}
 		
-		NAMESPACE_REDCRAFT::Swap(Call, InValue.Call);
+		NAMESPACE_REDCRAFT::Swap(Callable, InValue.Callable);
 		NAMESPACE_REDCRAFT::Swap(Storage, InValue.Storage);
 	}
 
 private:
 
-	using CallFunc = ResultType(*)(void*, Types&&...);
 	using StorageType = typename TConditional<FunctionType == EFunctionType::Reference, void*, TAny<InlineSize, InlineAlignment>>::Type;
+	using StorageRef = typename TConditional<FunctionType == EFunctionType::Reference, void*, typename TFunctionCallSpecifiers<StorageType, Specifiers>::Type&>::Type;
+	using CallFunc = ResultType(*)(StorageRef, Types&&...);
 
-	CallFunc Call;
 	StorageType Storage;
+	CallFunc Callable;
 
 	template <typename SelectedType, typename... ArgTypes>
 	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
 	{
 		if constexpr (FunctionType == EFunctionType::Reference) Storage = ((void*)&Args, ...);
 		else Storage.template Emplace<SelectedType>(Forward<ArgTypes>(Args)...);
-		Call = &TFunctionCallImpl<Specifiers, SelectedType, ResultType(Types...)>::F;
+
+		Callable = [](StorageRef Storage, Types&&... Args) -> ResultType
+		{
+			const auto GetFunc = [&Storage]() -> decltype(auto)
+			{
+				if constexpr (FunctionType == EFunctionType::Reference) return *reinterpret_cast<SelectedType*>(Storage);
+				else return Storage.template GetValue<SelectedType>();
+			};
+
+			return InvokeResult<R>(Forward<typename TFunctionCallSpecifiers<SelectedType, Specifiers>::Type>(GetFunc()), Forward<Types>(Args)...);
+		};
+	}
+
+	FORCEINLINE ResultType CallImpl(Types&&... Args)
+	{
+		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
+		return Callable(Storage, Forward<Types>(Args)...);
 	}
 
 	FORCEINLINE ResultType CallImpl(Types&&... Args) const
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		return Call(const_cast<TFunctionImpl&>(*this).GetData(), Forward<Types>(Args)...);
+		return Callable(Storage, Forward<Types>(Args)...);
 	}
 
 	FORCEINLINE void AssignImpl(const TFunctionImpl& InValue)
 	{
 		if (InValue.IsValid())
 		{
-			Call = InValue.Call;
+			Callable = InValue.Callable;
 			Storage = InValue.Storage;
 		}
 		else Reset();
@@ -351,7 +316,7 @@ private:
 	{
 		if (InValue.IsValid())
 		{
-			Call = InValue.Call;
+			Callable = InValue.Callable;
 			Storage = MoveTemp(InValue.Storage);
 			InValue.Reset();
 		}

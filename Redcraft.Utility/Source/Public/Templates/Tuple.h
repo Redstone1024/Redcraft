@@ -308,9 +308,6 @@ public:
 	TTuple& operator=(const TTuple&) = default;
 	TTuple& operator=(TTuple&&) = default;
 
-	constexpr       void* GetData()       { return this; }
-	constexpr const void* GetData() const { return this; }
-
 	template <size_t I> requires (I < ElementSize) constexpr                TElementType<I>::Type&  GetValue()               &  { return static_cast<               NAMESPACE_PRIVATE::TTupleElement<typename TElementType<I>::Type, I>& >(*this).GetValue(); }
 	template <size_t I> requires (I < ElementSize) constexpr const          TElementType<I>::Type&  GetValue() const         &  { return static_cast<const          NAMESPACE_PRIVATE::TTupleElement<typename TElementType<I>::Type, I>& >(*this).GetValue(); }
 	template <size_t I> requires (I < ElementSize) constexpr       volatile TElementType<I>::Type&  GetValue()       volatile&  { return static_cast<      volatile NAMESPACE_PRIVATE::TTupleElement<typename TElementType<I>::Type, I>& >(*this).GetValue(); }

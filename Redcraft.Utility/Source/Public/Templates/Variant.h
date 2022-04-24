@@ -338,9 +338,6 @@ struct TVariant
 
 	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                           : false; }
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TAlternativeIndex<T>::Value : false; }
-	
-	constexpr       void* GetData()       { return &Value; }
-	constexpr const void* GetData() const { return &Value; }
 
 	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&  GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TAlternativeType<I>::Type*>(&Value);  }
 	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&& GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TAlternativeType<I>::Type*>(&Value)); }
@@ -456,7 +453,7 @@ struct TVariant
 
 		if (GetIndex() == InValue.GetIndex())
 		{
-			FHelper::SwapFuncs[GetIndex()](GetData(), InValue.GetData());
+			FHelper::SwapFuncs[GetIndex()](&Value, &InValue.Value);
 			return;
 		}
 
