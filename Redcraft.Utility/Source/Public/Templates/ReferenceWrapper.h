@@ -40,6 +40,33 @@ private:
 template <typename T>
 TReferenceWrapper(T&) -> TReferenceWrapper<T>;
 
+template <typename T>
+void Ref(const T&&) = delete;
+
+template <typename T>
+constexpr TReferenceWrapper<T> Ref(T& InValue)
+{
+	return TReferenceWrapper<T>(InValue);
+}
+
+template <typename T>
+constexpr TReferenceWrapper<T> Ref(TReferenceWrapper<T> InValue)
+{
+	return Ref(InValue.Get());
+}
+
+template <typename T>
+constexpr TReferenceWrapper<const T> Ref(const T& InValue)
+{
+	return TReferenceWrapper<const T>(InValue);
+}
+
+template <typename T>
+constexpr TReferenceWrapper<const T> Ref(TReferenceWrapper<T> InValue)
+{
+	return Ref(InValue.Get());
+}
+
 template <typename T> struct TIsTReferenceWrapper                       : FFalse { };
 template <typename T> struct TIsTReferenceWrapper<TReferenceWrapper<T>> : FTrue  { };
 
