@@ -140,41 +140,46 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	define PRAGMA_ENABLE_OPTIMIZATION  PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
 #endif
 
-// Unsigned base types
+// Unsigned integral types
 
-typedef NAMESPACE_STD::uint8_t      uint8;
-typedef NAMESPACE_STD::uint16_t     uint16;
-typedef NAMESPACE_STD::uint32_t     uint32;
-typedef NAMESPACE_STD::uint64_t     uint64;
+using uint8  = NAMESPACE_STD::uint8_t;
+using uint16 = NAMESPACE_STD::uint16_t;
+using uint32 = NAMESPACE_STD::uint32_t;
+using uint64 = NAMESPACE_STD::uint64_t;
 
-// Signed base types
+// Signed integral types
 
-typedef NAMESPACE_STD::int8_t       int8;
-typedef NAMESPACE_STD::int16_t      int16;
-typedef NAMESPACE_STD::int32_t      int32;
-typedef NAMESPACE_STD::int64_t      int64;
+using int8  = NAMESPACE_STD::int8_t;
+using int16 = NAMESPACE_STD::int16_t;
+using int32 = NAMESPACE_STD::int32_t;
+using int64 = NAMESPACE_STD::int64_t;
+
+// Floating point types
+
+using float32 = float;
+using float64 = double;
 
 // Character types
 
-typedef char                        chara;
-typedef wchar_t                     charw;
-typedef charw                       chart;
-typedef char8_t                     char8;
-typedef char16_t                    char16;
-typedef char32_t                    char32;
+using chara  = char;
+using charw  = wchar_t;
+using chart  = charw;
+using char8  = char8_t;
+using char16 = char16_t;
+using char32 = char32_t;
 
 // Pointer types
 
-typedef NAMESPACE_STD::uintptr_t    uintptr;
-typedef NAMESPACE_STD::intptr_t     intptr;
-typedef NAMESPACE_STD::ptrdiff_t    ptrdiff;
-typedef NAMESPACE_STD::size_t       size_t;
-typedef intptr_t                    ssize_t;
+using uintptr = NAMESPACE_STD::uintptr_t;
+using intptr  = NAMESPACE_STD::intptr_t;
+using ptrdiff = NAMESPACE_STD::ptrdiff_t;
+using size_t  = NAMESPACE_STD::size_t;
+using ssize_t = intptr_t;
 
 // Null types
 
-typedef decltype(NULL)				null_t;
-typedef NAMESPACE_STD::nullptr_t	nullptr_t;
+using null_t    = decltype(NULL);
+using nullptr_t = NAMESPACE_STD::nullptr_t;
 
 #if PLATFORM_LINUX
 #	define PLATFORM_TCHAR_IS_CHAR16 1
