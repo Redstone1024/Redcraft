@@ -219,13 +219,13 @@ struct TVariant
 	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) Helper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) Helper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
@@ -264,11 +264,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) FHelper::CopyAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) Helper::CopyAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 		else
 		{	
 			Reset();
-			FHelper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+			Helper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -285,11 +285,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) FHelper::MoveAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) Helper::MoveAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 		else
 		{
 			Reset();
-			FHelper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+			Helper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -421,7 +421,7 @@ struct TVariant
 
 		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value))
 		{
-			FHelper::DestroyFuncs[GetIndex()](&Value);
+			Helper::DestroyFuncs[GetIndex()](&Value);
 		}
 
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
@@ -453,7 +453,7 @@ struct TVariant
 
 		if (GetIndex() == InValue.GetIndex())
 		{
-			FHelper::SwapFuncs[GetIndex()](&Value, &InValue.Value);
+			Helper::SwapFuncs[GetIndex()](&Value, &InValue.Value);
 			return;
 		}
 
@@ -464,7 +464,7 @@ struct TVariant
 
 private:
 
-	using FHelper = NAMESPACE_PRIVATE::TVariantHelper<Types...>;
+	using Helper = NAMESPACE_PRIVATE::TVariantHelper<Types...>;
 
 	TAlignedUnion<1, Types...>::Type Value;
 	uint8 TypeIndex;
@@ -473,7 +473,7 @@ private:
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
-		return FHelper::EqualityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
+		return Helper::EqualityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
 };
