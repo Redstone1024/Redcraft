@@ -3,8 +3,13 @@
 #include "CoreTypes.h"
 #include "Miscellaneous/PreprocessorHelpers.h"
 
+#ifdef NDEBUG
 #undef NDEBUG
 #include <cassert>
+#define NDEBUG 1
+#else
+#include <cassert>
+#endif
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -37,7 +42,7 @@ NAMESPACE_PRIVATE_END
 #define always_check_no_recursion()					static uint8 PREPROCESSOR_JOIN(RecursionCounter, __LINE__) = 0; always_checkf(PREPROCESSOR_JOIN(RecursionCounter, __LINE__) == 0, "Enclosing block was entered recursively."); const NAMESPACE_REDCRAFT::NAMESPACE_PRIVATE::FRecursionScopeMarker PREPROCESSOR_JOIN(ScopeMarker, __LINE__)(PREPROCESSOR_JOIN(RecursionCounter, __LINE__))
 #define always_unimplemented()						always_checkf(false, "Unimplemented function called.")
 
-#if BUILD_DEBUG
+#if BUILD_DEBUG || BUILD_DEVELOPMENT
 
 #	define check(InExpr)							always_check(InExpr)
 #	define checkf(InExpr, InFormat, ...)			always_checkf(InExpr, InFormat, ##__VA_ARGS__)

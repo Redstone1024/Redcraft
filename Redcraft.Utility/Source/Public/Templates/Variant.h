@@ -359,7 +359,7 @@ struct TVariant
 	constexpr auto Visit(F&& Func) &
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
@@ -367,7 +367,7 @@ struct TVariant
 	constexpr auto Visit(F&& Func) &&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
@@ -375,7 +375,7 @@ struct TVariant
 	constexpr auto Visit(F&& Func) const&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
@@ -383,35 +383,35 @@ struct TVariant
 	constexpr auto Visit(F&& Func) const&&
 	{
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) &
 	{
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) &&
 	{
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) const&
 	{
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
 	constexpr R Visit(F&& Func) const&&
 	{
-		checkf(IsValid(), "It is an error to call Visit() on an wrong TVariant. Please either check IsValid().");
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
 	}
 

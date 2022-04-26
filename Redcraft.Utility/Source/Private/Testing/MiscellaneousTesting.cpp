@@ -53,13 +53,13 @@ void TestAssertionMacros()
 {
 	check(true);
 	//check(false);
-	checkf(true, "True!");
-	//checkf(false, "False!");
+	checkf(true, TEXT("True!"));
+	//checkf(false, TEXT("False!"));
 
 	always_check(true);
 	//always_check(false);
-	always_checkf(true, "True!");
-	//always_checkf(false, "False!");
+	always_checkf(true, TEXT("True!"));
+	//always_checkf(false, TEXT("False!"));
 
 	//TestNoEntry();
 

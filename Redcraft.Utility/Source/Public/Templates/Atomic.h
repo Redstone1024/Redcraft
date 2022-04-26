@@ -31,12 +31,12 @@ FORCEINLINE void MemoryOrderCheck(EMemoryOrder Order, uint8 Require)
 {
 	switch (Order)
 	{
-	case EMemoryOrder::Relaxed:                checkf((Require) & 0x01, "Invalid memory order."); break;
-	case EMemoryOrder::Consume:                checkf((Require) & 0x02, "Invalid memory order."); break;
-	case EMemoryOrder::Acquire:                checkf((Require) & 0x04, "Invalid memory order."); break;
-	case EMemoryOrder::Release:                checkf((Require) & 0x08, "Invalid memory order."); break;
-	case EMemoryOrder::AcquireRelease:         checkf((Require) & 0x10, "Invalid memory order."); break;
-	case EMemoryOrder::SequentiallyConsistent: checkf((Require) & 0x20, "Invalid memory order."); break;
+	case EMemoryOrder::Relaxed:                checkf((Require) & 0x01, TEXT("Invalid memory order.")); break;
+	case EMemoryOrder::Consume:                checkf((Require) & 0x02, TEXT("Invalid memory order.")); break;
+	case EMemoryOrder::Acquire:                checkf((Require) & 0x04, TEXT("Invalid memory order.")); break;
+	case EMemoryOrder::Release:                checkf((Require) & 0x08, TEXT("Invalid memory order.")); break;
+	case EMemoryOrder::AcquireRelease:         checkf((Require) & 0x10, TEXT("Invalid memory order.")); break;
+	case EMemoryOrder::SequentiallyConsistent: checkf((Require) & 0x20, TEXT("Invalid memory order.")); break;
 	default: check_no_entry();
 	}
 }
