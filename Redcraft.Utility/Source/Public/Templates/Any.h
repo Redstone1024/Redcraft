@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Memory/Memory.h"
+#include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
@@ -161,7 +162,7 @@ NAMESPACE_PRIVATE_END
 inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 48;
 inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = 16;
 
-template <size_t InlineSize, size_t InlineAlignment = ANY_DEFAULT_INLINE_ALIGNMENT>
+template <size_t InlineSize, size_t InlineAlignment = ANY_DEFAULT_INLINE_ALIGNMENT> requires (Memory::IsValidAlignment(InlineAlignment))
 struct TAny
 {
 	template <typename T>

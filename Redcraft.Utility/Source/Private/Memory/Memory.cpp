@@ -1,6 +1,7 @@
 #include "Memory/Memory.h"
 
 #include "Memory/Alignment.h"
+#include "Miscellaneous/AssertionMacros.h"
 
 #if PLATFORM_WINDOWS
 #include <corecrt_malloc.h>
@@ -14,6 +15,8 @@ NAMESPACE_BEGIN(Memory)
 
 void* Malloc(size_t Count, size_t Alignment)
 {
+	checkf(IsValidAlignment(Alignment), TEXT("The alignment value must be an integer power of 2."));
+
 	const size_t MinimumAlignment = Count >= 16 ? 16 : 8;
 	Alignment = MinimumAlignment > Alignment ? MinimumAlignment : Alignment;
 
@@ -36,6 +39,8 @@ void* Malloc(size_t Count, size_t Alignment)
 
 void* Realloc(void* Ptr, size_t Count, size_t Alignment)
 {
+	checkf(IsValidAlignment(Alignment), TEXT("The alignment value must be an integer power of 2."));
+
 	const size_t MinimumAlignment = Count >= 16 ? 16 : 8;
 	Alignment = MinimumAlignment > Alignment ? MinimumAlignment : Alignment;
 

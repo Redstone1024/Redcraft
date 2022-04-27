@@ -31,7 +31,7 @@ private:
 };
 
 #define RS_CHECK_IMPL(InExpr)						assert(InExpr)
-#define RS_CHECK_F_IMPL(InExpr, InFormat, ...)		assert(InExpr)
+#define RS_CHECK_F_IMPL(InExpr, InFormat, ...)		assert((InFormat, InExpr))
 
 NAMESPACE_PRIVATE_END
 

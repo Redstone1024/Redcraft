@@ -6,6 +6,7 @@
 #include "Templates/Any.h"
 #include "Templates/Tuple.h"
 #include "Templates/Invoke.h"
+#include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Container.h"
@@ -39,7 +40,7 @@ enum class EFunctionSpecifiers
 	ConstRValue,
 };
 
-template <typename F, size_t InlineSize, size_t InlineAlignment, EFunctionSpecifiers Specifiers, EFunctionType FunctionType>
+template <typename F, size_t InlineSize, size_t InlineAlignment, EFunctionSpecifiers Specifiers, EFunctionType FunctionType> requires (Memory::IsValidAlignment(InlineAlignment))
 struct TFunctionImpl;
 
 template <typename T>                                                             struct TIsTFunctionImpl                               : FFalse { };
@@ -370,7 +371,7 @@ inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = 32;
 inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = 16;
 
 template <typename F>
-using TFunctionRef = typename NAMESPACE_PRIVATE::TFunctionSelect<F, INDEX_NONE, INDEX_NONE, NAMESPACE_PRIVATE::EFunctionType::Reference>::Type;
+using TFunctionRef = typename NAMESPACE_PRIVATE::TFunctionSelect<F, 0, 0, NAMESPACE_PRIVATE::EFunctionType::Reference>::Type;
 
 template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
 using TFunction = typename NAMESPACE_PRIVATE::TFunctionSelect<F, InlineSize, InlineAlignment, NAMESPACE_PRIVATE::EFunctionType::Object>::Type;
