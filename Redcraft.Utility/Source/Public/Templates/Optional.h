@@ -26,6 +26,10 @@ private:
 		|| TIsConvertible<const TOptional<T>&,  OptionalType>::Value
 		|| TIsConvertible<      TOptional<T>&&, OptionalType>::Value
 		|| TIsConvertible<const TOptional<T>&&, OptionalType>::Value
+		|| TIsAssignable<OptionalType&,       TOptional<T>& >::Value
+		|| TIsAssignable<OptionalType&, const TOptional<T>& >::Value
+		|| TIsAssignable<OptionalType&,       TOptional<T>&&>::Value
+		|| TIsAssignable<OptionalType&, const TOptional<T>&&>::Value
 	)> { };
 
 public:
@@ -120,11 +124,9 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType, const T&>::Value && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType&, const T&>::Value && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
-		if (&InValue == this) return *this;
-
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -141,11 +143,9 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType&, T&&>::Value && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
-		if (&InValue == this) return *this;
-
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -162,7 +162,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType, T&&>::Value
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType&, T&&>::Value
 	constexpr TOptional& operator=(T&& InValue)
 	{
 		if (IsValid()) GetValue() = Forward<T>(InValue);
