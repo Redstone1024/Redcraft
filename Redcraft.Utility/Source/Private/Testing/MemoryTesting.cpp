@@ -146,10 +146,10 @@ NAMESPACE_UNNAMED_BEGIN
 struct FTracker
 {
 	static int32 Status;
-	FTracker()                                               { always_check(Status == 0); Status = -1; }
-	FTracker(const FTracker&)                                { always_check(Status == 1); Status = -1; }
-	FTracker(FTracker&&)                                     { always_check(Status == 2); Status = -1; }
-	~FTracker()                                              { always_check(Status == 3); Status = -1; }
+	FTracker()                                               { always_check(Status == 0); Status = -1;               }
+	FTracker(const FTracker&)                                { always_check(Status == 1); Status = -1;               }
+	FTracker(FTracker&&)                                     { always_check(Status == 2); Status = -1;               }
+	~FTracker()                                              { always_check(Status == 3); Status = -1;               }
 	FTracker& operator=(const FTracker&)                     { always_check(Status == 4); Status = -1; return *this; }
 	FTracker& operator=(FTracker&&)                          { always_check(Status == 5); Status = -1; return *this; }
 	friend bool operator==(const FTracker&, const FTracker&) { always_check(Status == 6); Status = -1; return  true; }
@@ -171,6 +171,10 @@ void TestMemoryOperator()
 
 	FTracker::Status = 1;
 	Memory::Construct(PtrA, PtrB);
+	always_check(FTracker::Status == -1);
+
+	FTracker::Status = 1;
+	Memory::CopyConstruct(PtrA, PtrB);
 	always_check(FTracker::Status == -1);
 
 	FTracker::Status = 2;

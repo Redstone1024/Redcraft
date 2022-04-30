@@ -12,9 +12,9 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Memory)
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
 	requires (TIsDefaultConstructible<ElementType>::Value || TIsZeroConstructible<ElementType>::Value)
-FORCEINLINE void DefaultConstruct(ElementType* Address, SizeType Count = 1)
+FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 {
 	if constexpr (TIsZeroConstructible<ElementType>::Value)
 	{
@@ -32,9 +32,9 @@ FORCEINLINE void DefaultConstruct(ElementType* Address, SizeType Count = 1)
 	}
 }
 
-template <typename DestinationElementType, typename SourceElementType, typename SizeType = int32>
+template <typename DestinationElementType, typename SourceElementType>
 	requires (TIsConstructible<DestinationElementType, const SourceElementType&>::Value || TIsBitwiseConstructible<DestinationElementType, const SourceElementType&>::Value)
-FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, SizeType Count = 1)
+FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsBitwiseConstructible<DestinationElementType, const SourceElementType>::Value)
 	{
@@ -52,9 +52,29 @@ FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElem
 	}
 }
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
+	requires (TIsCopyConstructible<ElementType>::Value)
+FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Source, size_t Count = 1)
+{
+	if constexpr (TIsTriviallyCopyConstructible<ElementType>::Value)
+	{
+		Memory::Memcpy(Destination, Source, sizeof(ElementType) * Count);
+	}
+	else
+	{
+		while (Count)
+		{
+			new (Destination) ElementType(*Source);
+			++(ElementType*&)Destination;
+			++Source;
+			--Count;
+		}
+	}
+}
+
+template <typename ElementType>
 	requires (TIsMoveConstructible<ElementType>::Value)
-FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, SizeType Count = 1)
+FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsTriviallyMoveConstructible<ElementType>::Value)
 	{
@@ -72,9 +92,9 @@ FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, Si
 	}
 }
 
-template <typename DestinationElementType, typename SourceElementType, typename SizeType = int32>
+template <typename DestinationElementType, typename SourceElementType>
 	requires ((TIsConstructible<DestinationElementType, SourceElementType&&>::Value && TIsDestructible<SourceElementType>::Value) || TIsBitwiseRelocatable<DestinationElementType, SourceElementType>::Value)
-FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceElementType* Source, SizeType Count = 1)
+FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsBitwiseRelocatable<DestinationElementType, SourceElementType>::Value)
 	{
@@ -94,9 +114,9 @@ FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceEl
 	}
 }
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
 	requires (TIsDestructible<ElementType>::Value)
-FORCEINLINE void Destruct(ElementType* Element, SizeType Count = 1)
+FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 {
 	if constexpr (!TIsTriviallyDestructible<ElementType>::Value)
 	{
@@ -111,9 +131,9 @@ FORCEINLINE void Destruct(ElementType* Element, SizeType Count = 1)
 	}
 }
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
 	requires (TIsCopyAssignable<ElementType>::Value)
-FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source, SizeType Count = 1)
+FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsTriviallyCopyAssignable<ElementType>::Value)
 	{
@@ -131,9 +151,9 @@ FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source,
 	}
 }
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
 	requires (TIsMoveAssignable<ElementType>::Value)
-FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, SizeType Count = 1)
+FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsTriviallyCopyConstructible<ElementType>::Value)
 	{
@@ -151,9 +171,9 @@ FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, SizeT
 	}
 }
 
-template <typename ElementType, typename SizeType = int32>
+template <typename ElementType>
 	requires (CEqualityComparable<ElementType> || TIsBitwiseComparable<ElementType>::Value)
-FORCEINLINE bool Compare(const ElementType* LHS, const ElementType* RHS, SizeType Count = 1)
+FORCEINLINE bool Compare(const ElementType* LHS, const ElementType* RHS, size_t Count = 1)
 {
 	if constexpr (TIsBitwiseComparable<ElementType>::Value)
 	{
@@ -163,10 +183,7 @@ FORCEINLINE bool Compare(const ElementType* LHS, const ElementType* RHS, SizeTyp
 	{
 		while (Count)
 		{
-			if (!(*LHS == *RHS))
-			{
-				return false;
-			}
+			if (!(*LHS == *RHS)) return false;
 
 			++LHS;
 			++RHS;
