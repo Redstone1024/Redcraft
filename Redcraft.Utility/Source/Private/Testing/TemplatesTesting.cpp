@@ -355,7 +355,7 @@ void TestAny()
 		FTracker& operator=(const FTracker& InValue) { always_check_no_entry(); return *this; }
 		FTracker& operator=(FTracker&& InValue) { return *this; }
 	};
-
+	
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -399,7 +399,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(0 == TempA);
 	}
-
+	
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -443,7 +443,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(FIntegral(0) == TempA);
 	}
-
+	
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -451,16 +451,16 @@ void TestAny()
 		FAny TempD(InPlaceType<FFloating>, 0.0);
 		FAny TempG(TempA);
 		FAny TempH(TempC);
-
+		
 		FAny TempK, TempL, TempM, TempN;
 		TempK = TempA;
 		TempL = TempD;
 		TempM = FAny(FFloating(0.0));
 		TempN = FAny(Invalid);
-
+		
 		TempL = FFloating(303.0);
 		TempM = FFloating(404.0);
-
+		
 		FAny TempO;
 		TempO.Emplace<FFloating>(202.0);
 		TempO.Emplace<FFloating>(404.0);
@@ -487,7 +487,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(FFloating(0.0) == TempA);
 	}
-
+	
 	{
 		FAny TempA;
 		FAny TempB(InPlaceType<int32>, 0);

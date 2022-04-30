@@ -1,21 +1,19 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Memory/Memory.h"
-#include "Concepts/Same.h"
 #include "Templates/Any.h"
 #include "Templates/Tuple.h"
 #include "Templates/Invoke.h"
 #include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Templates/Container.h"
-#include "Concepts/Comparable.h"
-#include "Concepts/Convertible.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/TypeInfo.h"
 #include "Concepts/BooleanTestable.h"
 #include "Miscellaneous/AssertionMacros.h"
+
+// NOTE: Disable alignment limit warning
+#pragma warning(disable : 4359)
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -105,7 +103,7 @@ template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::Con
 template <typename T> struct TFunctionCallSpecifiers<T, EFunctionSpecifiers::ConstRValue> { using Type = const T&&; };
 
 template <typename R, typename... Types, size_t InlineSize, size_t InlineAlignment, EFunctionSpecifiers Specifiers, EFunctionType FunctionType>
-struct TFunctionImpl<R(Types...), InlineSize, InlineAlignment, Specifiers, FunctionType>
+struct alignas(InlineAlignment) TFunctionImpl<R(Types...), InlineSize, InlineAlignment, Specifiers, FunctionType>
 {
 public:
 
@@ -266,7 +264,7 @@ public:
 
 private:
 
-	using StorageType = typename TConditional<FunctionType == EFunctionType::Reference, void*, TAny<InlineSize, InlineAlignment>>::Type;
+	using StorageType = typename TConditional<FunctionType == EFunctionType::Reference, void*, TAny<InlineSize, 1>>::Type;
 	using StorageRef = typename TConditional<FunctionType == EFunctionType::Reference, void*, typename TFunctionCallSpecifiers<StorageType, Specifiers>::Type&>::Type;
 	using CallFunc = ResultType(*)(StorageRef, Types&&...);
 
@@ -367,8 +365,8 @@ struct TFunctionSelect<R(Types...) const&&, InlineSize, InlineAlignment, Functio
 
 NAMESPACE_PRIVATE_END
 
-inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = 32;
-inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = 16;
+inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = ANY_DEFAULT_INLINE_SIZE - sizeof(uintptr);
+inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = ANY_DEFAULT_INLINE_ALIGNMENT;
 
 template <typename F>
 using TFunctionRef = typename NAMESPACE_PRIVATE::TFunctionSelect<F, 0, 0, NAMESPACE_PRIVATE::EFunctionType::Reference>::Type;
