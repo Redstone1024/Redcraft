@@ -35,11 +35,9 @@ template <typename T, typename U> struct TIsBitwiseConstructible<const volatile 
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
 
-template <typename T> struct TIsBitwiseConstructible<T,  T> : TIsTriviallyCopyConstructible<T> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TIsConvertible<U*, T*> { };
 
-template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TBoolConstant<TIsSame<typename TRemoveCV<T>::Type, typename TRemoveCV<U>::Type>::Value> { };
-
-template <typename T, typename U> struct TIsBitwiseConstructible : FFalse { };
+template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<TIsSame<T, U>::Value ? TIsTriviallyCopyConstructible<T>::Value : false> { };
 
 template <> struct TIsBitwiseConstructible<uint8,   int8>  : FTrue { };
 template <> struct TIsBitwiseConstructible< int8,  uint8>  : FTrue { };
@@ -49,6 +47,11 @@ template <> struct TIsBitwiseConstructible<uint32,  int32> : FTrue { };
 template <> struct TIsBitwiseConstructible< int32, uint32> : FTrue { };
 template <> struct TIsBitwiseConstructible<uint64,  int64> : FTrue { };
 template <> struct TIsBitwiseConstructible< int64, uint64> : FTrue { };
+
+template <typename T> struct TIsBitwiseConstructible<T*,  intptr> : FTrue { };
+template <typename T> struct TIsBitwiseConstructible<T*, uintptr> : FTrue { };
+template <typename T> struct TIsBitwiseConstructible< intptr, T*> : FTrue { };
+template <typename T> struct TIsBitwiseConstructible<uintptr, T*> : FTrue { };
 
 // It is usually only necessary to specialize TIsBitwiseConstructible and not recommended to specialize TIsBitwiseRelocatable.
 template <typename T, typename U> struct TIsBitwiseRelocatable;
@@ -69,7 +72,7 @@ template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
 
-template <typename T> struct TIsBitwiseRelocatable<T, T> : FTrue { };
+template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<!TIsVoid<T>::Value> { };
 
 template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && TIsTriviallyDestructible<U>::Value> { };
 

@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "TypeTraits/HelperClasses.h"
+#include "TypeTraits/Miscellaneous.h"
 
 #include <type_traits>
 
@@ -25,18 +26,8 @@ template <typename T> struct TIsUnsigned                     : TBoolConstant<NAM
 template <typename T> struct TIsBoundedArray                 : TBoolConstant<NAMESPACE_STD::is_bounded_array_v<T>>                  { };
 template <typename T> struct TIsUnboundedArray               : TBoolConstant<NAMESPACE_STD::is_unbounded_array_v<T>>                { };
 
-NAMESPACE_PRIVATE_BEGIN
-
-uint8(&Resolve(int64))[2];
-uint8 Resolve(...);
-
 template <typename T>
-struct TIsEnumConvertibleToInt : TBoolConstant<sizeof(Resolve(T())) - 1> { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T>
-struct TIsScopedEnum : TBoolConstant<TIsEnum<T>::Value && !NAMESPACE_PRIVATE::TIsEnumConvertibleToInt<T>::Value> { };
+struct TIsScopedEnum : TBoolConstant<TIsEnum<T>::Value && !TIsConvertible<T, int64>::Value> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

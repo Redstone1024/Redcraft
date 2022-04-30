@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-// Warning: The test here is not a complete test, it is only used to determine whether the environment supports the traits
+// WARNING: The test here is not a complete test, it is only used to determine whether the environment supports the traits
 
 NAMESPACE_UNNAMED_BEGIN
 
