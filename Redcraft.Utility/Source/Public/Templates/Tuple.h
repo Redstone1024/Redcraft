@@ -501,7 +501,7 @@ struct TTupleThreeWay<R, TIndexSequence<I, Indices...>>
 	template <typename LHSTupleType, typename RHSTupleType>
 	static constexpr R F(const LHSTupleType& LHS, const RHSTupleType& RHS)
 	{
-		auto Result = TSynthThreeWay{}(LHS.template GetValue<I>(), RHS.template GetValue<I>());
+		auto Result = SynthThreeWayCompare(LHS.template GetValue<I>(), RHS.template GetValue<I>());
 		if (Result != 0) return Result;
 		return TTupleThreeWay<R, TIndexSequence<Indices...>>::F(LHS, RHS);
 	}

@@ -68,25 +68,6 @@ struct TCompareThreeWayResult<T, U>
 	using Type = decltype(DeclVal<const typename TRemoveReference<T>::Type&>() <=> DeclVal<const typename TRemoveReference<U>::Type&>());
 };
 
-template <typename T = void> requires (CSameAs<T, void> || CThreeWayComparable<T>)
-struct TCompareThreeWay
-{
-	constexpr auto operator()(T&& LHS, T&& RHS) const
-	{
-		return Forward<T>(LHS) <=> Forward<T>(RHS);
-	}
-};
-
-template <>
-struct TCompareThreeWay<void>
-{
-	template <typename T, typename U> requires CThreeWayComparableWith<T, U>
-	constexpr auto operator()(T&& LHS, U&& RHS) const
-	{
-		return Forward<T>(LHS) <=> Forward<U>(RHS);
-	}
-};
-
 template <typename T, typename OrderingType = partial_ordering>
 concept CSynthThreeWayComparable = CThreeWayComparable<T> ||
 	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<T>::Type& B)
@@ -103,55 +84,24 @@ concept CSynthThreeWayComparableWith = CThreeWayComparableWith<T, U> ||
 		{ B < A } -> CBooleanTestable;
 	};
 
-template <typename T = void> requires (CSameAs<T, void> || CSynthThreeWayComparable<T>)
-struct TSynthThreeWay
+template <typename T, typename U> requires CSynthThreeWayComparableWith<T, U>
+constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 {
-	constexpr auto operator()(T&& LHS, T&& RHS) const
+	if constexpr (CThreeWayComparableWith<T, U>)
 	{
-		if constexpr (CThreeWayComparable<T>)
-		{
-			return Forward<T>(LHS) <=> Forward<T>(RHS);
-		}
-		else
-		{
-			return Forward<T>(LHS) < Forward<T>(RHS) ? weak_ordering::less : Forward<T>(RHS) < Forward<T>(LHS) ? weak_ordering::greater : weak_ordering::equivalent;
-		}
+		return Forward<T>(LHS) <=> Forward<U>(RHS);
 	}
-};
-
-template <>
-struct TSynthThreeWay<void>
-{
-	template <typename T, typename U> requires CSynthThreeWayComparableWith<T, U>
-	constexpr auto operator()(T&& LHS, U&& RHS) const
+	else
 	{
-		if constexpr (CThreeWayComparableWith<T, U>)
-		{
-			return Forward<T>(LHS) <=> Forward<U>(RHS);
-		}
-		else
-		{
-			return Forward<T>(LHS) < Forward<U>(RHS) ? weak_ordering::less : Forward<U>(RHS) < Forward<T>(LHS) ? weak_ordering::greater : weak_ordering::equivalent;
-		}
+		return Forward<T>(LHS) < Forward<U>(RHS) ? weak_ordering::less : Forward<U>(RHS) < Forward<T>(LHS) ? weak_ordering::greater : weak_ordering::equivalent;
 	}
-};
+}
 
 template <typename T, typename U = T>
 struct TSynthThreeWayResult
 {
-	using Type = decltype(TSynthThreeWay{}(DeclVal<const typename TRemoveReference<T>::Type&>(), DeclVal<const typename TRemoveReference<U>::Type&>()));
+	using Type = decltype(SynthThreeWayCompare(DeclVal<const typename TRemoveReference<T>::Type&>(), DeclVal<const typename TRemoveReference<U>::Type&>()));
 };
-
-NAMESPACE_UNNAMED_BEGIN
-
-inline constexpr decltype(NAMESPACE_STD::strong_order)                   StrongOrder;
-inline constexpr decltype(NAMESPACE_STD::weak_order)                     WeakOrder;
-inline constexpr decltype(NAMESPACE_STD::partial_order)                  PartialOrder;
-inline constexpr decltype(NAMESPACE_STD::compare_strong_order_fallback)  CompareStrongOrderFallback;
-inline constexpr decltype(NAMESPACE_STD::compare_weak_order_fallback)    CompareWeakOrderFallback;
-inline constexpr decltype(NAMESPACE_STD::compare_partial_order_fallback) ComparePartialOrderFallback;
-
-NAMESPACE_UNNAMED_END
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

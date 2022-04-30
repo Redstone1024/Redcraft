@@ -205,27 +205,18 @@ void TestCompare()
 	always_check((TIsSame<TCompareThreeWayResult<FTestWeakOrdering   >::Type, weak_ordering   >::Value));
 	always_check((TIsSame<TCompareThreeWayResult<FTestStrongOrdering >::Type, strong_ordering >::Value));
 
-	always_check((TCompareThreeWay<int32>()(0, 0)   == strong_ordering::equal));
-	always_check((TCompareThreeWay<void>() (0, 0.0) == strong_ordering::equal));
+	always_check((SynthThreeWayCompare(0, 0)   == strong_ordering::equal));
+	always_check((SynthThreeWayCompare(0, 0.0) == strong_ordering::equal));
 
-	
-	always_check(TSynthThreeWay{}(FTestPartialOrdering(-1), FTestPartialOrdering( 0)) == partial_ordering::less);
-	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0), FTestPartialOrdering( 0)) == partial_ordering::equivalent);
-	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0), FTestPartialOrdering(-1)) == partial_ordering::greater);
+	always_check(SynthThreeWayCompare(FTestPartialOrdering(-1), FTestPartialOrdering( 0)) == partial_ordering::less);
+	always_check(SynthThreeWayCompare(FTestPartialOrdering( 0), FTestPartialOrdering( 0)) == partial_ordering::equivalent);
+	always_check(SynthThreeWayCompare(FTestPartialOrdering( 0), FTestPartialOrdering(-1)) == partial_ordering::greater);
 
-	always_check(TSynthThreeWay{}(FTestPartialOrdering( 0, true), FTestPartialOrdering( 0, false)) == partial_ordering::unordered);
+	always_check(SynthThreeWayCompare(FTestPartialOrdering( 0, true), FTestPartialOrdering( 0, false)) == partial_ordering::unordered);
 	
-	always_check(TSynthThreeWay{}(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
-	always_check(TSynthThreeWay{}(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
-	always_check(TSynthThreeWay{}(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
-	
-	always_check((StrongOrder(0, 0)                 == strong_ordering::equal));
-	always_check((WeakOrder(0, 0)                   == strong_ordering::equal));
-	always_check((PartialOrder(0, 0)                == strong_ordering::equal));
-	always_check((CompareStrongOrderFallback(0, 0)  == strong_ordering::equal));
-	always_check((CompareWeakOrderFallback(0, 0)    == strong_ordering::equal));
-	always_check((ComparePartialOrderFallback(0, 0) == strong_ordering::equal));
-
+	always_check(SynthThreeWayCompare(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
+	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
+	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
 }
 
 NAMESPACE_UNNAMED_BEGIN
