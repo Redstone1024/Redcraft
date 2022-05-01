@@ -1069,11 +1069,11 @@ void TestFunction()
 //		TFunction<void()>       ObjectE = MoveTemp(RefA);
 //		TUniqueFunction<void()> UniqueE = MoveTemp(RefA);
 
-		TFunctionRef<void()>       RefF = MoveTemp(ObjectA);
+//		TFunctionRef<void()>       RefF = MoveTemp(ObjectA);
 		TFunction<void()>       ObjectF = MoveTemp(ObjectA);
 		TUniqueFunction<void()> UniqueF = MoveTemp(ObjectA);
 
-		TFunctionRef<void()>       RefG = MoveTemp(UniqueA);
+//		TFunctionRef<void()>       RefG = MoveTemp(UniqueA);
 //		TFunction<void()>       ObjectG = MoveTemp(UniqueA);
 		TUniqueFunction<void()> UniqueG = MoveTemp(UniqueA);
 	}
