@@ -5,6 +5,7 @@
 #include "Templates/TypeHash.h"
 #include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -260,6 +261,14 @@ constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 	if (LHS.IsValid() != RHS.IsValid()) return false;
 	if (LHS.IsValid() == false) return true;
 	return *LHS == *RHS;
+}
+
+template <typename T, typename U> requires CSynthThreeWayComparableWith<T, U>
+constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
+{
+	if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
+	if (LHS.IsValid() == false) return partial_ordering::equivalent;
+	return SynthThreeWayCompare(*LHS, *RHS);
 }
 
 template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>

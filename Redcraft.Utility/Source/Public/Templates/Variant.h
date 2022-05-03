@@ -5,6 +5,8 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/Compare.h"
+#include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -74,85 +76,6 @@ struct TVariantSelectedType<T>
 	using Type = void;
 };
 
-template <typename T>
-constexpr void VariantDestroy(void* InValue)
-{
-	if constexpr (!TIsTriviallyDestructible<T>::Value)
-	{
-		typedef T DestructOptionalType;
-		reinterpret_cast<T*>(InValue)->DestructOptionalType::~DestructOptionalType();
-	}
-}
-
-using FVariantDestroyFunc = void(*)(void*);
-
-template <typename T>
-constexpr void VariantCopyConstruct(void* Target, const void* Source)
-{
-	if constexpr (!TIsCopyConstructible<T>::Value || TIsConst<T>::Value) check_no_entry();
-	else new(reinterpret_cast<T*>(Target)) T(*reinterpret_cast<const T*>(Source));
-}
-
-using FVariantCopyConstructFunc = void(*)(void*, const void*);
-
-template <typename T>
-constexpr void VariantMoveConstruct(void* Target, void* Source)
-{
-	if constexpr (!TIsMoveConstructible<T>::Value || TIsConst<T>::Value) check_no_entry();
-	else new(reinterpret_cast<T*>(Target)) T(MoveTemp(*reinterpret_cast<T*>(Source)));
-}
-
-using FVariantMoveConstructFunc = void(*)(void*, void*);
-
-template <typename T>
-constexpr void VariantCopyAssign(void* Target, const void* Source)
-{
-	if constexpr (!TIsCopyAssignable<T>::Value || TIsConst<T>::Value) check_no_entry();
-	else *reinterpret_cast<T*>(Target) = *reinterpret_cast<const T*>(Source);
-}
-
-using FVariantCopyAssignFunc = void(*)(void*, const void*);
-
-template <typename T>
-constexpr void VariantMoveAssign(void* Target, void* Source)
-{
-	if constexpr (!TIsMoveAssignable<T>::Value || TIsConst<T>::Value) check_no_entry();
-	else *reinterpret_cast<T*>(Target) = MoveTemp(*reinterpret_cast<T*>(Source));
-}
-
-using FVariantMoveAssignFunc = void(*)(void*, void*);
-
-template <typename T>
-constexpr bool VariantEqualityOperator(const void* LHS, const void* RHS)
-{
-	if constexpr (!CEqualityComparable<T>) check_no_entry();
-	else return *reinterpret_cast<const T*>(LHS) == *reinterpret_cast<const T*>(RHS);
-	return false;
-}
-
-using FVariantEqualityOperatorFunc = bool(*)(const void*, const void*);
-
-template <typename T>
-constexpr void VariantSwap(void* A, void* B)
-{
-	if constexpr (TIsSwappable<T>::Value) Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
-	else check_no_entry();
-}
-
-using FVariantSwapFunc = void(*)(void*, void*);
-
-template <typename... Types>
-struct TVariantHelper
-{
-	static constexpr FVariantDestroyFunc            DestroyFuncs[]            = { VariantDestroy<Types>...            };
-	static constexpr FVariantCopyConstructFunc      CopyConstructFuncs[]      = { VariantCopyConstruct<Types>...      };
-	static constexpr FVariantMoveConstructFunc      MoveConstructFuncs[]      = { VariantMoveConstruct<Types>...      };
-	static constexpr FVariantCopyAssignFunc         CopyAssignFuncs[]         = { VariantCopyAssign<Types>...         };
-	static constexpr FVariantMoveAssignFunc         MoveAssignFuncs[]         = { VariantMoveAssign<Types>...         };
-	static constexpr FVariantEqualityOperatorFunc   EqualityOperatorFuncs[]   = { VariantEqualityOperator<Types>...   };
-	static constexpr FVariantSwapFunc               SwapFuncs[]               = { VariantSwap<Types>...               };
-};
-
 template <typename R, typename F, typename T>
 constexpr R VariantVisitLValue(F&& Func, void* Arg)
 {
@@ -219,13 +142,13 @@ struct TVariant
 	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) Helper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) TypeInfos[InValue.GetIndex()]->CopyConstruct(&Value, &InValue.Value);
 	}
 
 	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) Helper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (IsValid()) TypeInfos[InValue.GetIndex()]->MoveConstruct(&Value, &InValue.Value);
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
@@ -264,11 +187,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) Helper::CopyAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) TypeInfos[InValue.GetIndex()]->CopyAssign(&Value, &InValue.Value);
 		else
 		{	
 			Reset();
-			Helper::CopyConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+			TypeInfos[InValue.GetIndex()]->CopyConstruct(&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -285,11 +208,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) Helper::MoveAssignFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) TypeInfos[InValue.GetIndex()]->MoveAssign(&Value, &InValue.Value);
 		else
 		{
 			Reset();
-			Helper::MoveConstructFuncs[InValue.GetIndex()](&Value, &InValue.Value);
+			TypeInfos[InValue.GetIndex()]->MoveConstruct(&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -331,6 +254,8 @@ struct TVariant
 	{
 		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
 	}
+
+	constexpr const FTypeInfo& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : Typeid(void); }
 
 	constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
 	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
@@ -421,7 +346,7 @@ struct TVariant
 
 		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value))
 		{
-			Helper::DestroyFuncs[GetIndex()](&Value);
+			TypeInfos[GetIndex()]->Destroy(&Value);
 		}
 
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
@@ -430,7 +355,7 @@ struct TVariant
 	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
 	{
 		if (!IsValid()) return 114514;
-		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetIndex()), Visit([](const auto& A) { return NAMESPACE_REDCRAFT::GetTypeHash(A); }));
+		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetIndex()), TypeInfos[GetIndex()]->HashItem(&Value));
 	}
 
 	constexpr void Swap(TVariant& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
@@ -453,7 +378,7 @@ struct TVariant
 
 		if (GetIndex() == InValue.GetIndex())
 		{
-			Helper::SwapFuncs[GetIndex()](&Value, &InValue.Value);
+			TypeInfos[GetIndex()]->SwapItem(&Value, &InValue.Value);
 			return;
 		}
 
@@ -463,8 +388,8 @@ struct TVariant
 	}
 
 private:
-
-	using Helper = NAMESPACE_PRIVATE::TVariantHelper<Types...>;
+	
+	static constexpr const FTypeInfo* TypeInfos[] = { &Typeid(Types)... };
 
 	TAlignedUnion<1, Types...>::Type Value;
 	uint8 TypeIndex;
@@ -473,7 +398,14 @@ private:
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
-		return Helper::EqualityOperatorFuncs[LHS.GetIndex()](&LHS.Value, &RHS.Value);
+		return TypeInfos[LHS.GetIndex()]->EqualityCompare(&LHS.Value, &RHS.Value);
+	}
+
+	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Types>)
+	{
+		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
+		if (LHS.IsValid() == false) return partial_ordering::equivalent;
+		return TypeInfos[LHS.GetIndex()]->SynthThreeWayCompare(&LHS.Value, &RHS.Value);
 	}
 
 };
