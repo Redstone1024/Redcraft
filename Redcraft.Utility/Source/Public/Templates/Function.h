@@ -390,7 +390,7 @@ inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = ANY_DEFAULT_INLINE_S
 inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = ANY_DEFAULT_INLINE_ALIGNMENT;
 
 template <typename F>
-using TFunctionRef = typename NAMESPACE_PRIVATE::TFunctionSelect<F, 0, 0, NAMESPACE_PRIVATE::EFunctionType::Reference>::Type;
+using TFunctionRef = typename NAMESPACE_PRIVATE::TFunctionSelect<F, FUNCTION_DEFAULT_INLINE_SIZE, FUNCTION_DEFAULT_INLINE_ALIGNMENT, NAMESPACE_PRIVATE::EFunctionType::Reference>::Type;
 
 template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
 using TFunction = typename NAMESPACE_PRIVATE::TFunctionSelect<F, InlineSize, InlineAlignment, NAMESPACE_PRIVATE::EFunctionType::Object>::Type;

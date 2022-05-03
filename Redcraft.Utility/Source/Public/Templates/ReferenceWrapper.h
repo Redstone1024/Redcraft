@@ -3,37 +3,69 @@
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
+#include "Templates/Optional.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename T>
-class TReferenceWrapper
+template <typename ReferencedType> requires (TIsObject<ReferencedType>::Value || TIsFunction<ReferencedType>::Value)
+struct TReferenceWrapper
 {
 public:
 
-	using Type = T;
+	using Type = ReferencedType;
 
-	template <typename U> requires (!TIsSame<TReferenceWrapper, typename TRemoveCVRef<U>::Type>::Value)
-	constexpr TReferenceWrapper(U&& Object) : Ptr(AddressOf(Forward<U>(Object))) { }
+	template <typename T = ReferencedType> requires TIsConvertible<T, ReferencedType&>::Value
+	constexpr TReferenceWrapper(T&& Object) : Pointer(AddressOf(Forward<T>(Object))) { }
 
 	TReferenceWrapper(const TReferenceWrapper&) = default;
-	TReferenceWrapper& operator=(const TReferenceWrapper& x) = default;
+	
+	template <typename T = ReferencedType> requires TIsConvertible<T&, ReferencedType&>::Value
+	constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
+		: Pointer(InValue.Pointer)
+	{ }
 
-	constexpr operator T&() const { return *Ptr; }
-	constexpr T& Get() const { return *Ptr; }
+	TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
+	
+	template <typename T = ReferencedType> requires TIsConvertible<T&, ReferencedType&>::Value
+	constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
+	{
+		Pointer = InValue.Pointer;
+		return *this;
+	}
+	
+	constexpr operator ReferencedType&() const { return *Pointer; }
+	constexpr ReferencedType& Get()      const { return *Pointer; }
 
 	template <typename... Types>
-	constexpr TInvokeResult<T&, Types...>::Type operator()(Types&&... Args) const
+	constexpr TInvokeResult<ReferencedType&, Types...>::Type operator()(Types&&... Args) const
 	{
 		return Invoke(Get(), Forward<Types>(Args)...);
 	}
+
+	constexpr size_t GetTypeHash() const requires CHashable<ReferencedType>
+	{
+		return NAMESPACE_REDCRAFT::GetTypeHash(Get());
+	}
 	
+	constexpr void Swap(TReferenceWrapper& InValue)
+	{
+		ReferencedType* Temp = Pointer;
+		Pointer = InValue.Pointer;
+		InValue.Pointer = Temp;
+	}
+
 private:
 
-	T* Ptr;
+	ReferencedType* Pointer;
+
+	template <typename T> requires (TIsObject<T>::Value || TIsFunction<T>::Value) friend struct TReferenceWrapper;
+
+	// Optimize TOptional with these hacking
+	constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
+	template <typename T> requires TIsObject<T>::Value && (!TIsArray<T>::Value) && TIsDestructible<T>::Value friend struct TOptional;
 
 };
 
@@ -74,6 +106,124 @@ template <typename T> struct TUnwrapReference                       { using Type
 template <typename T> struct TUnwrapReference<TReferenceWrapper<T>> { using Type = T&; };
 
 template <typename T> struct TUnwrapRefDecay { using Type = typename TUnwrapReference<typename TDecay<T>::Type>::Type; };
+
+template <typename ReferencedType>
+struct TOptional<TReferenceWrapper<ReferencedType>>
+{
+private:
+	
+	using OptionalType = TReferenceWrapper<ReferencedType>;
+
+	template <typename T>
+	struct TAllowUnwrapping : TBoolConstant<!(
+		   TIsConstructible<OptionalType,       TOptional<T>& >::Value
+		|| TIsConstructible<OptionalType, const TOptional<T>& >::Value
+		|| TIsConstructible<OptionalType,       TOptional<T>&&>::Value
+		|| TIsConstructible<OptionalType, const TOptional<T>&&>::Value
+		|| TIsConvertible<      TOptional<T>&,  OptionalType>::Value
+		|| TIsConvertible<const TOptional<T>&,  OptionalType>::Value
+		|| TIsConvertible<      TOptional<T>&&, OptionalType>::Value
+		|| TIsConvertible<const TOptional<T>&&, OptionalType>::Value
+		|| TIsAssignable<OptionalType&,       TOptional<T>& >::Value
+		|| TIsAssignable<OptionalType&, const TOptional<T>& >::Value
+		|| TIsAssignable<OptionalType&,       TOptional<T>&&>::Value
+		|| TIsAssignable<OptionalType&, const TOptional<T>&&>::Value
+	)> { };
+
+public:
+
+	using ValueType = OptionalType;
+
+	constexpr TOptional() : Reference(Invalid) { }
+
+	constexpr TOptional(FInvalid) : TOptional() { }
+
+	template <typename... Types> requires TIsConstructible<OptionalType, Types...>::Value
+	constexpr explicit TOptional(FInPlace, Types&&... Args)
+		: Reference(Forward<Types>(Args)...)
+	{ }
+
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value
+		&& (!TIsSame<typename TRemoveCVRef<T>::Type, FInPlace>::Value) && (!TIsSame<typename TRemoveCVRef<T>::Type, TOptional>::Value)
+	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(T&& InValue)
+		: TOptional(InPlace, Forward<T>(InValue))
+	{ }
+	
+	TOptional(const TOptional& InValue) = default;
+	TOptional(TOptional&& InValue) = default;
+
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TAllowUnwrapping<T>::Value
+	constexpr explicit (!TIsConvertible<const T&, OptionalType>::Value) TOptional(const TOptional<T>& InValue)
+		: Reference(InValue.Reference)
+	{ }
+
+	~TOptional() = default;
+
+	TOptional& operator=(const TOptional& InValue) = default;
+	TOptional& operator=(TOptional&& InValue) = default;
+
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, const T&>::Value && TIsAssignable<OptionalType&, const T&>::Value && TAllowUnwrapping<T>::Value
+	constexpr TOptional& operator=(const TOptional<T>& InValue)
+	{
+		Reference = InValue.Reference;
+		return *this;
+	}
+
+	template <typename T = OptionalType> requires TIsConstructible<OptionalType, T&&>::Value && TIsAssignable<OptionalType&, T&&>::Value
+	constexpr TOptional& operator=(T&& InValue)
+	{
+		Reference = InValue;
+		return *this;
+	}
+
+	template <typename... ArgTypes> requires TIsConstructible<OptionalType, ArgTypes...>::Value
+	constexpr OptionalType& Emplace(ArgTypes&&... Args)
+	{
+		Reference = TReferenceWrapper<ReferencedType>(Forward<ArgTypes>(Args)...);
+		return Reference;
+	}
+
+	constexpr bool           IsValid() const { return Reference.Pointer != nullptr; }
+	constexpr explicit operator bool() const { return Reference.Pointer != nullptr; }
+	
+	constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+
+	constexpr const OptionalType* operator->() const { return &GetValue(); }
+	constexpr       OptionalType* operator->()       { return &GetValue(); }
+
+	constexpr       OptionalType&  operator*() &       { return GetValue(); }
+	constexpr       OptionalType&& operator*() &&      { return GetValue(); }
+	constexpr const OptionalType&  operator*() const&  { return GetValue(); }
+	constexpr const OptionalType&& operator*() const&& { return GetValue(); }
+
+	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
+	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
+
+	constexpr void Reset()
+	{
+		Reference = Invalid;
+	}
+
+	constexpr size_t GetTypeHash() const requires CHashable<ReferencedType>
+	{
+		if (!IsValid()) return 2824517378;
+		return Reference.GetTypeHash();
+	}
+
+	constexpr void Swap(TOptional& InValue)
+	{
+		Reference.Swap(InValue.Reference);
+	}
+
+private:
+
+	TReferenceWrapper<ReferencedType> Reference;
+	template <typename T> requires TIsObject<T>::Value && (!TIsArray<T>::Value) && TIsDestructible<T>::Value friend struct TOptional;
+
+};
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
