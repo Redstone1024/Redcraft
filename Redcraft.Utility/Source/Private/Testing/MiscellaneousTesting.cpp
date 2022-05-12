@@ -1,7 +1,6 @@
 #include "Testing/MiscellaneousTesting.h"
 
 #include "Miscellaneous/AssertionMacros.h"
-#include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/Compare.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -14,7 +13,6 @@ void TestMiscellaneous()
 {
 	TestAssertionMacros();
 	TestCompare();
-	TestTypeInfo();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -217,35 +215,6 @@ void TestCompare()
 	always_check(SynthThreeWayCompare(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
-}
-
-NAMESPACE_UNNAMED_BEGIN
-
-template <typename...>
-struct TTestTemplateType { };
-
-NAMESPACE_UNNAMED_END
-
-void TestTypeInfo()
-{
-	const FTypeInfo& TempA = Typeid(void);
-	const FTypeInfo& TempB = Typeid(void);
-
-	always_check(TempA == TempB);
-	always_check(TempA == Typeid(void));
-
-	const FTypeInfo& TempC(Typeid(TTestTemplateType<int8, int16>));
-	const FTypeInfo& TempD = Typeid(TTestTemplateType<int8, int32>);
-
-	const FTypeInfo& TempE = TempC;
-	const FTypeInfo& TempF = TempD;
-
-	always_check(TempE != TempF);
-	always_check((TempE < TempF) == (TempF > TempE));
-	always_check((TempE > TempF) == (TempF < TempE));
-	always_check((TempE <= TempF) == (TempF >= TempE));
-	always_check((TempE >= TempF) == (TempF <= TempE));
-	always_check((TempE <=> TempF) != 0);
 }
 
 NAMESPACE_END(Testing)

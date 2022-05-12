@@ -2,6 +2,9 @@
 
 #include "Miscellaneous/CoreDefines.h"
 
+#include <typeinfo>
+#include <initializer_list>
+
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
@@ -34,6 +37,11 @@ template <size_t   I> struct TInPlaceIndex { explicit TInPlaceIndex() = default;
 
 template <typename T> inline constexpr TInPlaceType<T>  InPlaceType{ };
 template <size_t   I> inline constexpr TInPlaceIndex<I> InPlaceIndex{ };
+
+using type_info        = NAMESPACE_STD::type_info;
+
+template <typename T>
+using initializer_list = NAMESPACE_STD::initializer_list<T>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

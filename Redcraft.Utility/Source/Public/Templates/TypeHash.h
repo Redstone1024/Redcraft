@@ -93,6 +93,12 @@ constexpr size_t GetTypeHash(const T& A)
 	return GetTypeHash(A.GetTypeHash());
 }
 
+template <typename T> requires requires(const T& A) { { GetTypeHash(A.hash_code()) } -> CSameAs<size_t>; }
+constexpr size_t GetTypeHash(const T& A)
+{
+	return GetTypeHash(A.hash_code());
+}
+
 template <typename T>
 concept CHashable = requires(const T& A) { { GetTypeHash(A) } -> CSameAs<size_t>; };
 

@@ -14,8 +14,8 @@ NAMESPACE_MODULE_BEGIN(Utility)
 // Assume that all operands of bitwise operations have the same size
 
 // This type traits is allowed to be specialised.
-template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsEnum<T>::Value || TIsArithmetic<T>::Value || TIsPointer<T>::Value> { };
-
+template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsDefaultConstructible<T>::Value && (TIsEnum<T>::Value || TIsArithmetic<T>::Value || TIsPointer<T>::Value)> { };
+ 
 // This type traits is allowed to be specialised.
 template <typename T, typename U> struct TIsBitwiseConstructible;
 
@@ -48,11 +48,6 @@ template <> struct TIsBitwiseConstructible< int32, uint32> : FTrue { };
 template <> struct TIsBitwiseConstructible<uint64,  int64> : FTrue { };
 template <> struct TIsBitwiseConstructible< int64, uint64> : FTrue { };
 
-template <typename T> struct TIsBitwiseConstructible<T*,  intptr> : FTrue { };
-template <typename T> struct TIsBitwiseConstructible<T*, uintptr> : FTrue { };
-template <typename T> struct TIsBitwiseConstructible< intptr, T*> : FTrue { };
-template <typename T> struct TIsBitwiseConstructible<uintptr, T*> : FTrue { };
-
 // It is usually only necessary to specialize TIsBitwiseConstructible and not recommended to specialize TIsBitwiseRelocatable.
 template <typename T, typename U> struct TIsBitwiseRelocatable;
 
@@ -72,7 +67,7 @@ template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
 template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
 
-template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<!TIsVoid<T>::Value> { };
+template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<TIsObject<T>::Value> { };
 
 template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && TIsTriviallyDestructible<U>::Value> { };
 

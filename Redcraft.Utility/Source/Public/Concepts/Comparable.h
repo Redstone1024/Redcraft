@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T, typename U>
 concept CWeaklyEqualityComparableWith =
-	requires(const TRemoveReference<T>::Type & A, const TRemoveReference<U>::Type & B)
+	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<U>::Type& B)
 	{
 		{ A == B } -> CBooleanTestable;
 		{ A != B } -> CBooleanTestable;

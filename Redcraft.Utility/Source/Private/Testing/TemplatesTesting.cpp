@@ -339,11 +339,13 @@ void TestVariant()
 		const TVariant<int32> TempRD = TempLC;
 		auto ReturnRD = MoveTemp(TempRD).Visit<int32>(TestQualifiers);
 		always_check((TIsSame<int32, decltype(ReturnRD)>::Value));
-
+	}
+	
+	{
 		always_check(GetTypeHash(TVariant<int32, float>(114)) == GetTypeHash(TVariant<int32, float>(114)));
 		always_check(GetTypeHash(TVariant<int32, float>(114)) != GetTypeHash(TVariant<int32, float>(514)));
 	}
-	
+
 	{
 		TVariant<uint8, int16, int32> TempA = Invalid;
 		TVariant<uint8, int16, int32> TempB = static_cast<int16>(16);
@@ -559,6 +561,11 @@ void TestAny()
 		FAny TempZ(Invalid);
 		TempZ = FAny();
 		TempZ = FTracker();
+	}
+
+	{
+		always_check(GetTypeHash(FAny(114)) == GetTypeHash(FAny(114)));
+		always_check(GetTypeHash(FAny(114)) != GetTypeHash(FAny(514)));
 	}
 
 	{
@@ -1087,8 +1094,8 @@ void TestFunction()
 		always_check(TempC() == 0xEE);
 		always_check(TempD() == 0xFF);
 
-		always_check(TempC.TargetType() == Typeid(FFunctor));
-		always_check(TempD.TargetType() == Typeid(FFunctor));
+		always_check(TempC.TargetType() == typeid(FFunctor));
+		always_check(TempD.TargetType() == typeid(FFunctor));
 	}
 
 	{
@@ -1203,7 +1210,7 @@ void TestFunction()
 	{
 		TFunction<bool(bool)> Identity = [](bool In) { return In; };
 		TFunction<bool(bool)> NotIdentity = NotFn(Identity);
-	
+
 		always_check(Identity(true));
 		always_check(NotIdentity(false));
 	}

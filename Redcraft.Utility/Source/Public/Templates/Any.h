@@ -5,8 +5,8 @@
 #include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
+#include "Memory/MemoryOperator.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 // NOTE: Disable alignment limit warning
@@ -15,18 +15,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-
-NAMESPACE_PRIVATE_BEGIN
-
-enum class EAnyRepresentation : uint8
-{
-	Trivial, // Trivial
-//	Inline,  // InlineAllocation
-	Small,   // Trivial & Inline
-	Big,     // HeapAllocation
-};
-
-NAMESPACE_PRIVATE_END
 
 inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 64 - sizeof(uintptr);
 inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = 16;
@@ -45,15 +33,15 @@ struct alignas(InlineAlignment) TAny
 
 		switch (GetRepresentation())
 		{
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+		case EAnyRepresentation::Trivial:
 			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-			GetTypeInfo().CopyConstruct(GetAllocation(), InValue.GetAllocation());
+		case EAnyRepresentation::Small:
+			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
-			HeapAllocation = Memory::Malloc(GetTypeInfo().GetTypeSize(), GetTypeInfo().GetTypeAlignment());
-			GetTypeInfo().CopyConstruct(GetAllocation(), InValue.GetAllocation());
+		case EAnyRepresentation::Big:
+			HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
+			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
 		default: check_no_entry();
 		}
@@ -66,13 +54,13 @@ struct alignas(InlineAlignment) TAny
 
 		switch (GetRepresentation())
 		{
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+		case EAnyRepresentation::Trivial:
 			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-			GetTypeInfo().MoveConstruct(GetAllocation(), InValue.GetAllocation());
+		case EAnyRepresentation::Small:
+			GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
+		case EAnyRepresentation::Big:
 			HeapAllocation = InValue.HeapAllocation;
 			InValue.TypeInfo = 0;
 			break;
@@ -112,12 +100,12 @@ struct alignas(InlineAlignment) TAny
 		{
 			switch (GetRepresentation())
 			{
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+			case EAnyRepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
-				GetTypeInfo().CopyAssign(GetAllocation(), InValue.GetAllocation());
+			case EAnyRepresentation::Small:
+			case EAnyRepresentation::Big:
+				GetTypeInfoImpl().CopyAssignImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			default: check_no_entry();
 			}
@@ -130,15 +118,15 @@ struct alignas(InlineAlignment) TAny
 
 			switch (GetRepresentation())
 			{
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+			case EAnyRepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-				GetTypeInfo().CopyConstruct(GetAllocation(), InValue.GetAllocation());
+			case EAnyRepresentation::Small:
+				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
-				HeapAllocation = Memory::Malloc(GetTypeInfo().GetTypeSize(), GetTypeInfo().GetTypeAlignment());
-				GetTypeInfo().CopyConstruct(GetAllocation(), InValue.GetAllocation());
+			case EAnyRepresentation::Big:
+				HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
+				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			default: check_no_entry();
 			}
@@ -159,13 +147,13 @@ struct alignas(InlineAlignment) TAny
 		{
 			switch (GetRepresentation())
 			{
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+			case EAnyRepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-				GetTypeInfo().MoveAssign(GetAllocation(), InValue.GetAllocation());
+			case EAnyRepresentation::Small:
+				GetTypeInfoImpl().MoveAssignImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
+			case EAnyRepresentation::Big:
 				ResetImpl();
 				HeapAllocation = InValue.HeapAllocation;
 				InValue.TypeInfo = 0;
@@ -181,13 +169,13 @@ struct alignas(InlineAlignment) TAny
 
 			switch (GetRepresentation())
 			{
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+			case EAnyRepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-				GetTypeInfo().MoveConstruct(GetAllocation(), InValue.GetAllocation());
+			case EAnyRepresentation::Small:
+				GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
+			case EAnyRepresentation::Big:
 				HeapAllocation = InValue.HeapAllocation;
 				InValue.TypeInfo = 0;
 				break;
@@ -230,12 +218,12 @@ struct alignas(InlineAlignment) TAny
 		return GetValue<SelectedType>();
 	}
 
-	constexpr const FTypeInfo& GetTypeInfo() const { return IsValid() ? *reinterpret_cast<FTypeInfo*>(TypeInfo & ~RepresentationMask) : Typeid(void); }
+	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *GetTypeInfoImpl().TypeInfo : typeid(void); }
 
 	constexpr bool           IsValid() const { return TypeInfo != 0; }
 	constexpr explicit operator bool() const { return TypeInfo != 0; }
 
-	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == Typeid(T) : false; }
+	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
 	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
 	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetAllocation());  }
@@ -263,8 +251,9 @@ struct alignas(InlineAlignment) TAny
 
 	FORCEINLINE size_t GetTypeHash() const
 	{
+		using NAMESPACE_REDCRAFT::GetTypeHash;
 		if (!IsValid()) return 20090007;
-		return HashCombine(GetTypeInfo().GetTypeHash(), GetTypeInfo().HashItem(GetAllocation()));
+		return HashCombine(GetTypeHash(GetTypeInfo()), GetTypeInfoImpl().HashImpl(GetAllocation()));
 	}
 
 	FORCEINLINE void Swap(TAny& InValue)
@@ -287,7 +276,7 @@ struct alignas(InlineAlignment) TAny
 
 		if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
-			GetTypeInfo().SwapItem(GetAllocation(), InValue.GetAllocation());
+			GetTypeInfoImpl().SwapImpl(GetAllocation(), InValue.GetAllocation());
 			return;
 		}
 		
@@ -300,6 +289,64 @@ private:
 
 	static constexpr uintptr_t RepresentationMask = 3;
 
+	enum class EAnyRepresentation : uint8
+	{
+		Trivial, // Trivial
+	//	Inline,  // InlineAllocation
+		Small,   // Trivial & Inline
+		Big,     // HeapAllocation
+	};
+
+	struct FTypeInfoImpl
+	{
+		const type_info* TypeInfo;
+
+		const size_t TypeSize;
+		const size_t TypeAlignment;
+
+		using FCopyConstructImpl = void(*)(void*, const void*);
+		using FMoveConstructImpl = void(*)(void*,       void*);
+		using FCopyAssignImpl    = void(*)(void*, const void*);
+		using FMoveAssignImpl    = void(*)(void*,       void*);
+		using FDestroyImpl       = void(*)(void*             );
+		
+		using FEqualityCompareImpl      = bool             (*)(const void*, const void*);
+		using FSynthThreeWayCompareImpl = partial_ordering (*)(const void*, const void*);
+		using FHashImpl                 = size_t           (*)(const void*             );
+		using FSwapImpl                 = void             (*)(      void*,       void*);
+		
+		const FCopyConstructImpl CopyConstructImpl;
+		const FMoveConstructImpl MoveConstructImpl;
+		const FCopyAssignImpl    CopyAssignImpl;
+		const FMoveAssignImpl    MoveAssignImpl;
+		const FDestroyImpl       DestroyImpl;
+
+		const FEqualityCompareImpl      EqualityCompareImpl;
+		const FSynthThreeWayCompareImpl SynthThreeWayCompareImpl;
+		const FHashImpl                 HashImpl;
+		const FSwapImpl                 SwapImpl;
+
+		template <typename T>
+		constexpr FTypeInfoImpl(TInPlaceType<T>)
+			
+			: TypeInfo      (&typeid(T))
+			, TypeSize      ( sizeof(T))
+			, TypeAlignment (alignof(T))
+
+			, CopyConstructImpl ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Types).name()); })
+			, MoveConstructImpl ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Types).name()); })
+			, CopyAssignImpl    ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Types).name()); })
+			, MoveAssignImpl    ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Types).name()); })
+			, DestroyImpl       ([](void* A               ) { if constexpr (requires(T* A            ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<T*>(A)                               ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Types).name()); })
+			
+			, EqualityCompareImpl      ([](const void* A, const void* B) -> bool             { if constexpr (CEqualityComparable<T>     ) return                                          (*reinterpret_cast<const T*>(A) ==  *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not equality comparable."),        typeid(T).name()); return false;                       })
+			, SynthThreeWayCompareImpl ([](const void* A, const void* B) -> partial_ordering { if constexpr (CSynthThreeWayComparable<T>) return NAMESPACE_REDCRAFT::SynthThreeWayCompare (*reinterpret_cast<const T*>(A),    *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not synth three-way comparable."), typeid(T).name()); return partial_ordering::unordered; })
+			, HashImpl                 ([](const void* A               ) -> size_t           { if constexpr (CHashable<T>               ) return NAMESPACE_REDCRAFT::GetTypeHash          (*reinterpret_cast<const T*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not hashable."),                   typeid(T).name()); return 1080551797;                  })
+			, SwapImpl                 ([](      void* A,       void* B) -> void             { if constexpr (CSwappable<T>              )        NAMESPACE_REDCRAFT::Swap                 (*reinterpret_cast<      T*>(A),    *reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not swappable."),                  typeid(T).name());                                     })
+	
+		{ }
+	};
+
 	union
 	{
 		TAlignedStorage<InlineSize, 1>::Type InlineAllocation;
@@ -308,15 +355,17 @@ private:
 
 	uintptr TypeInfo;
 
-	constexpr NAMESPACE_PRIVATE::EAnyRepresentation GetRepresentation() const { return static_cast<NAMESPACE_PRIVATE::EAnyRepresentation>(TypeInfo & RepresentationMask); }
+	constexpr EAnyRepresentation   GetRepresentation() const { return         static_cast<EAnyRepresentation>(TypeInfo &  RepresentationMask); }
+	constexpr const FTypeInfoImpl& GetTypeInfoImpl()   const { return *reinterpret_cast<const FTypeInfoImpl*>(TypeInfo & ~RepresentationMask); }
 
-	constexpr       void* GetAllocation()       { return GetRepresentation() == NAMESPACE_PRIVATE::EAnyRepresentation::Trivial || GetRepresentation() == NAMESPACE_PRIVATE::EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
-	constexpr const void* GetAllocation() const { return GetRepresentation() == NAMESPACE_PRIVATE::EAnyRepresentation::Trivial || GetRepresentation() == NAMESPACE_PRIVATE::EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
+	constexpr       void* GetAllocation()       { return GetRepresentation() == EAnyRepresentation::Trivial || GetRepresentation() == EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
+	constexpr const void* GetAllocation() const { return GetRepresentation() == EAnyRepresentation::Trivial || GetRepresentation() == EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
 
 	template <typename SelectedType, typename... Types>
 	FORCEINLINE void EmplaceImpl(Types&&... Args)
 	{
-		TypeInfo = reinterpret_cast<uintptr>(&Typeid(SelectedType));
+		static constexpr const FTypeInfoImpl SelectedTypeInfo(InPlaceType<SelectedType>);
+		TypeInfo = reinterpret_cast<uintptr>(&SelectedTypeInfo);
 
 		constexpr bool bIsInlineStorable = sizeof(SelectedType) <= InlineSize && alignof(SelectedType) <= InlineAlignment;
 		constexpr bool bIsTriviallyStorable = bIsInlineStorable && TIsTrivial<SelectedType>::Value && TIsTriviallyCopyable<SelectedType>::Value;
@@ -324,17 +373,17 @@ private:
 		if constexpr (bIsTriviallyStorable)
 		{
 			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(NAMESPACE_PRIVATE::EAnyRepresentation::Trivial);
+			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Trivial);
 		}
 		else if constexpr (bIsInlineStorable)
 		{
 			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(NAMESPACE_PRIVATE::EAnyRepresentation::Small);
+			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Small);
 		}
 		else
 		{
 			HeapAllocation = new SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(NAMESPACE_PRIVATE::EAnyRepresentation::Big);
+			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Big);
 		}
 	}
 
@@ -344,13 +393,13 @@ private:
 
 		switch (GetRepresentation())
 		{
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Trivial:
+		case EAnyRepresentation::Trivial:
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Small:
-			GetTypeInfo().Destroy(GetAllocation());
+		case EAnyRepresentation::Small:
+			GetTypeInfoImpl().DestroyImpl(GetAllocation());
 			break;
-		case NAMESPACE_PRIVATE::EAnyRepresentation::Big:
-			GetTypeInfo().Destroy(GetAllocation());
+		case EAnyRepresentation::Big:
+			GetTypeInfoImpl().DestroyImpl(GetAllocation());
 			Memory::Free(HeapAllocation);
 			break;
 		default: check_no_entry();
@@ -361,14 +410,14 @@ private:
 	{
 		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return false;
 		if (LHS.IsValid() == false) return true;
-		return LHS.GetTypeInfo().EqualityCompare(LHS.GetAllocation(), RHS.GetAllocation());
+		return LHS.GetTypeInfoImpl().EqualityCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());
 	}
 
 	friend FORCEINLINE partial_ordering operator<=>(const TAny& LHS, const TAny& RHS)
 	{
 		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return partial_ordering::unordered;
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
-		return LHS.GetTypeInfo().SynthThreeWayCompare(LHS.GetAllocation(), RHS.GetAllocation());;
+		return LHS.GetTypeInfoImpl().SynthThreeWayCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());;
 	}
 
 };

@@ -5,8 +5,8 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Memory/MemoryOperator.h"
 #include "Miscellaneous/Compare.h"
-#include "Miscellaneous/TypeInfo.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -76,55 +76,6 @@ struct TVariantSelectedType<T>
 	using Type = void;
 };
 
-template <typename R, typename F, typename T>
-constexpr R VariantVisitLValue(F&& Func, void* Arg)
-{
-	if constexpr(TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<T*>(Arg));
-	else return InvokeResult<R>(Forward<F>(Func), *reinterpret_cast<T*>(Arg));
-}
-
-template <typename R, typename F>
-using FVariantVisitLValueFunc = R(*)(F&&, void*);
-
-template <typename R, typename F, typename T>
-constexpr R VariantVisitRValue(F&& Func, void* Arg)
-{
-	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<T*>(Arg)));
-	else return InvokeResult<R>(Forward<F>(Func), MoveTemp(*reinterpret_cast<T*>(Arg)));
-}
-
-template <typename R, typename F>
-using FVariantVisitRValueFunc = R(*)(F&&, void*);
-
-template <typename R, typename F, typename T>
-constexpr R VariantVisitConstLValue(F&& Func, const void* Arg)
-{
-	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), *reinterpret_cast<const T*>(Arg));
-	else return InvokeResult<R>(Forward<F>(Func), *reinterpret_cast<const T*>(Arg));
-}
-
-template <typename R, typename F>
-using FVariantVisitConstLValueFunc = R(*)(F&&, const void*);
-
-template <typename R, typename F, typename T>
-constexpr R VariantVisitConstRValue(F&& Func, const void* Arg)
-{
-	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), MoveTemp(*reinterpret_cast<const T*>(Arg)));
-	else return InvokeResult<R>(Forward<F>(Func), MoveTemp(*reinterpret_cast<const T*>(Arg)));
-}
-
-template <typename R, typename F>
-using FVariantVisitConstRValueFunc = R(*)(F&&, const void*);
-
-template <typename R, typename F, typename... Types>
-struct TVariantVisitHelper
-{
-	static constexpr FVariantVisitLValueFunc<R, F>      VisitLValueFuncs[]      = { VariantVisitLValue<R, F, Types>...      };
-	static constexpr FVariantVisitRValueFunc<R, F>      VisitRValueFuncs[]      = { VariantVisitRValue<R, F, Types>...      };
-	static constexpr FVariantVisitConstLValueFunc<R, F> VisitConstLValueFuncs[] = { VariantVisitConstLValue<R, F, Types>... };
-	static constexpr FVariantVisitConstRValueFunc<R, F> VisitConstRValueFuncs[] = { VariantVisitConstRValue<R, F, Types>... };
-};
-
 NAMESPACE_PRIVATE_END
 
 template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value)) && (sizeof...(Types) < 0xFF)
@@ -142,13 +93,13 @@ struct TVariant
 	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) TypeInfos[InValue.GetIndex()]->CopyConstruct(&Value, &InValue.Value);
+		if (IsValid()) CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
-		if (IsValid()) TypeInfos[InValue.GetIndex()]->MoveConstruct(&Value, &InValue.Value);
+		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
@@ -187,11 +138,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) TypeInfos[InValue.GetIndex()]->CopyAssign(&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) CopyAssignImpl[InValue.GetIndex()](&Value, &InValue.Value);
 		else
 		{	
 			Reset();
-			TypeInfos[InValue.GetIndex()]->CopyConstruct(&Value, &InValue.Value);
+			CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -208,11 +159,11 @@ struct TVariant
 			return *this;
 		}
 
-		if (GetIndex() == InValue.GetIndex()) TypeInfos[InValue.GetIndex()]->MoveAssign(&Value, &InValue.Value);
+		if (GetIndex() == InValue.GetIndex()) MoveAssignImpl[InValue.GetIndex()](&Value, &InValue.Value);
 		else
 		{
 			Reset();
-			TypeInfos[InValue.GetIndex()]->MoveConstruct(&Value, &InValue.Value);
+			MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
 		}
 
@@ -255,7 +206,7 @@ struct TVariant
 		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr const FTypeInfo& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : Typeid(void); }
+	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
 
 	constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
 	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
@@ -281,64 +232,68 @@ struct TVariant
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
-	constexpr auto Visit(F&& Func) &
+	FORCEINLINE decltype(auto) Visit(F&& Func) &
 	{
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
+
+		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+
+		using FInvokeImpl = ReturnType(*)(F&&, void*);
+		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<Types*>(This)); }... };
+
+		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
 	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
-	constexpr auto Visit(F&& Func) &&
+	FORCEINLINE decltype(auto) Visit(F&& Func) &&
 	{
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
+
+		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+
+		using FInvokeImpl = ReturnType(*)(F&&, void*);
+		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<Types*>(This))); }... };
+
+		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
 	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
-	constexpr auto Visit(F&& Func) const&
+	FORCEINLINE decltype(auto) Visit(F&& Func) const&
 	{
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
+
+		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+
+		using FInvokeImpl = ReturnType(*)(F&&, const void*);
+		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<const Types*>(This)); }... };
+
+		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
 	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
-	constexpr auto Visit(F&& Func) const&&
+	FORCEINLINE decltype(auto) Visit(F&& Func) const&&
 	{
+		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
+
 		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return ReturnType(NAMESPACE_PRIVATE::TVariantVisitHelper<ReturnType, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
+
+		using FInvokeImpl = ReturnType(*)(F&&, const void*);
+		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<const Types*>(This))); }... };
+
+		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
-	constexpr R Visit(F&& Func) &
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
-	}
+	FORCEINLINE R Visit(F&& Func) &       { return Visit(Forward<F>(Func)); }
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
-	constexpr R Visit(F&& Func) &&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
-	}
+	FORCEINLINE R Visit(F&& Func) &&      { return MoveTemp(*this).Visit(Forward<F>(Func)); }
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
-	constexpr R Visit(F&& Func) const&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstLValueFuncs[GetIndex()](Forward<F>(Func), &Value));
-	}
+	FORCEINLINE R Visit(F&& Func) const&  { return Visit(Forward<F>(Func)); }
 
 	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
-	constexpr R Visit(F&& Func) const&&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-		return R(NAMESPACE_PRIVATE::TVariantVisitHelper<R, F, Types...>::VisitConstRValueFuncs[GetIndex()](Forward<F>(Func), &Value));
-	}
+	FORCEINLINE R Visit(F&& Func) const&& { return MoveTemp(*this).Visit(Forward<F>(Func)); }
 
 	constexpr void Reset()
 	{
@@ -346,7 +301,7 @@ struct TVariant
 
 		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value))
 		{
-			TypeInfos[GetIndex()]->Destroy(&Value);
+			DestroyImpl[GetIndex()](&Value);
 		}
 
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
@@ -355,7 +310,13 @@ struct TVariant
 	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
 	{
 		if (!IsValid()) return 114514;
-		return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetIndex()), TypeInfos[GetIndex()]->HashItem(&Value));
+
+		using NAMESPACE_REDCRAFT::GetTypeHash;
+
+		using FHashImpl = size_t(*)(const void*);
+		constexpr FHashImpl HashImpl[] = { [](const void* This) -> size_t { return GetTypeHash(*reinterpret_cast<const Types*>(This)); }... };
+
+		return HashCombine(GetTypeHash(GetIndex()), HashImpl[GetIndex()](&Value));
 	}
 
 	constexpr void Swap(TVariant& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
@@ -378,7 +339,13 @@ struct TVariant
 
 		if (GetIndex() == InValue.GetIndex())
 		{
-			TypeInfos[GetIndex()]->SwapItem(&Value, &InValue.Value);
+			using NAMESPACE_REDCRAFT::Swap;
+
+			using FSwapImpl = void(*)(void*, void*);
+			constexpr FSwapImpl SwapImpl[] = { [](void* A, void* B) { Swap(*reinterpret_cast<Types*>(A), *reinterpret_cast<Types*>(B)); }... };
+
+			SwapImpl[GetIndex()](&Value, &InValue.Value);
+
 			return;
 		}
 
@@ -389,7 +356,19 @@ struct TVariant
 
 private:
 	
-	static constexpr const FTypeInfo* TypeInfos[] = { &Typeid(Types)... };
+	static constexpr const type_info* TypeInfos[] = { &typeid(Types)... };
+
+	using FCopyConstructImpl = void(*)(void*, const void*);
+	using FMoveConstructImpl = void(*)(void*,       void*);
+	using FCopyAssignImpl    = void(*)(void*, const void*);
+	using FMoveAssignImpl    = void(*)(void*,       void*);
+	using FDestroyImpl       = void(*)(void*             );
+
+	static constexpr FCopyConstructImpl CopyConstructImpl[] = { [](void* A, const void* B) { if constexpr (requires(Types* A, const Types* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<Types*>(A), reinterpret_cast<const Types*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Types).name()); }... };
+	static constexpr FMoveConstructImpl MoveConstructImpl[] = { [](void* A,       void* B) { if constexpr (requires(Types* A,       Types* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<Types*>(A), reinterpret_cast<      Types*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Types).name()); }... };
+	static constexpr FCopyAssignImpl    CopyAssignImpl[]    = { [](void* A, const void* B) { if constexpr (requires(Types* A, const Types* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<Types*>(A), reinterpret_cast<const Types*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Types).name()); }... };
+	static constexpr FMoveAssignImpl    MoveAssignImpl[]    = { [](void* A,       void* B) { if constexpr (requires(Types* A,       Types* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<Types*>(A), reinterpret_cast<      Types*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Types).name()); }... };
+	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Types* A                ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<Types*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Types).name()); }... };
 
 	TAlignedUnion<1, Types...>::Type Value;
 	uint8 TypeIndex;
@@ -398,14 +377,22 @@ private:
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
-		return TypeInfos[LHS.GetIndex()]->EqualityCompare(&LHS.Value, &RHS.Value);
+
+		using FCompareImpl = bool(*)(const void*, const void*);
+		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> bool { return *reinterpret_cast<const Types*>(LHS) == *reinterpret_cast<const Types*>(RHS); }... };
+
+		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
 	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Types>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
-		return TypeInfos[LHS.GetIndex()]->SynthThreeWayCompare(&LHS.Value, &RHS.Value);
+
+		using FCompareImpl = partial_ordering(*)(const void*, const void*);
+		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> partial_ordering { return SynthThreeWayCompare(*reinterpret_cast<const Types*>(LHS), *reinterpret_cast<const Types*>(RHS)); }...};
+
+		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
 };
