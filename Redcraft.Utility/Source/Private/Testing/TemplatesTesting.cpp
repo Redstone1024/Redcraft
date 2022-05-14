@@ -1159,6 +1159,30 @@ void TestFunction()
 	}
 
 	{
+		struct FFunctor
+		{
+			int32 A;
+			FFunctor(int32 InA) : A(InA) { }
+			int32 operator()() const { return A; }
+		};
+
+		FFunctor Functor(0xCC);
+
+//		TFunctionRef<void()>       RefA;
+		TFunction<void()>       ObjectA;
+		TUniqueFunction<void()> UniqueA;
+
+//		   RefA = Functor;
+		ObjectA = Functor;
+		UniqueA = Functor;
+
+//		   RefA.Emplace<FFunctor>(0xCC);
+		ObjectA.Emplace<FFunctor>(0xCC);
+		UniqueA.Emplace<FFunctor>(0xCC);
+
+	}
+
+	{
 		TFunction<void(int32)> Display = PrintNum;
 		Display(-9);
 
