@@ -99,25 +99,6 @@ void TestConcepts()
 	always_check(CCopyConstructible<FTestStructN>);
 	always_check(!CCopyConstructible<FTestStructO>);
 
-	// BuiltinType.h
-
-	always_check(CIntegral<bool>);
-	always_check(CIntegral<int32>);
-	always_check(!CIntegral<float>);
-
-	always_check(CSignedIntegral<signed>);
-	always_check(!CSignedIntegral<unsigned>);
-
-	always_check(!CUnsignedIntegral<signed>);
-	always_check(CUnsignedIntegral<unsigned>);
-
-	always_check(!CNonBooleanIntegral<bool>);
-	always_check(CNonBooleanIntegral<int32>);
-	always_check(!CNonBooleanIntegral<float>);
-
-	always_check(!CFloatingPoint<int32>);
-	always_check(CFloatingPoint<float>);
-
 	// BooleanTestable.h
 
 	always_check(CBooleanTestable<bool>);

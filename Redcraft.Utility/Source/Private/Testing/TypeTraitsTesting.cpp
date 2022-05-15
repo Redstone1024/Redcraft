@@ -120,43 +120,49 @@ void TestTypeTraits()
 
 	// CompositeType.h
 
-	always_check(!TIsFundamental<FTestStructA>::Value);
-	always_check(TIsFundamental<int32>::Value);
-	always_check(TIsFundamental<float>::Value);
-	always_check(!TIsFundamental<int32*>::Value);
-	always_check(TIsFundamental<void>::Value);
+	always_check(!CFundamental<FTestStructA>);
+	always_check(CFundamental<int32>);
+	always_check(CFundamental<float>);
+	always_check(!CFundamental<int32*>);
+	always_check(CFundamental<void>);
 
-	always_check(!TIsArithmetic<FTestStructA>::Value);
-	always_check(TIsArithmetic<int32>::Value);
-	always_check(TIsArithmetic<float>::Value);
-	always_check(!TIsArithmetic<int32*>::Value);
-	always_check(!TIsArithmetic<void>::Value);
+	always_check(!CArithmetic<FTestStructA>);
+	always_check(CArithmetic<int32>);
+	always_check(CArithmetic<float>);
+	always_check(!CArithmetic<int32*>);
+	always_check(!CArithmetic<void>);
 
-	always_check(!TIsScalar<FTestStructA>::Value);
-	always_check(TIsScalar<int32>::Value);
-	always_check(TIsScalar<float>::Value);
-	always_check(TIsScalar<int32*>::Value);
-	always_check(!TIsScalar<void>::Value);
+	always_check(!CScalar<FTestStructA>);
+	always_check(CScalar<int32>);
+	always_check(CScalar<float>);
+	always_check(CScalar<int32*>);
+	always_check(!CScalar<void>);
 
-	always_check(TIsObject<FTestStructA>::Value);
-	always_check(!TIsObject<FTestStructA&>::Value);
-	always_check(TIsObject<int32>::Value);
-	always_check(TIsObject<int32*>::Value);
-	always_check(!TIsObject<int32&>::Value);
+	always_check(CObject<FTestStructA>);
+	always_check(!CObject<FTestStructA&>);
+	always_check(CObject<int32>);
+	always_check(CObject<int32*>);
+	always_check(!CObject<int32&>);
 
-	always_check(TIsCompound<FTestStructA>::Value);
-	always_check(TIsCompound<FTestStructA&>::Value);
-	always_check(!TIsCompound<int32>::Value);
-	always_check(TIsCompound<int32*>::Value);
-	always_check(TIsCompound<int32&>::Value);
+	always_check(CCompound<FTestStructA>);
+	always_check(CCompound<FTestStructA&>);
+	always_check(!CCompound<int32>);
+	always_check(CCompound<int32*>);
+	always_check(CCompound<int32&>);
 
-	always_check(!TIsReference<int32>::Value);
-	always_check(!TIsReference<int32*>::Value);
-	always_check(TIsReference<int32&>::Value);
-	always_check(TIsReference<int32&&>::Value);
+	always_check(!CReference<int32>);
+	always_check(!CReference<int32*>);
+	always_check(CReference<int32&>);
+	always_check(CReference<int32&&>);
 
-	always_check(!TIsMemberPointer<FTestStructA>::Value);
-	always_check(TIsMemberPointer<int32(FTestStructA::*)>::Value);
+	always_check(!CMemberPointer<FTestStructA>);
+	always_check(CMemberPointer<int32(FTestStructA::*)>);
+
+	always_check(CSignedIntegral<signed>);
+	always_check(!CSignedIntegral<unsigned>);
+
+	always_check(!CUnsignedIntegral<signed>);
+	always_check(CUnsignedIntegral<unsigned>);
 
 	// TypeProperties.h
 

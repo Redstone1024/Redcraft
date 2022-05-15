@@ -88,13 +88,13 @@ constexpr T Exchange(T& A, U&& B)
 template <typename T>
 constexpr T&& DeclVal();
 
-template <typename T> requires TIsObject<T>::Value
+template <typename T> requires CObject<T>
 constexpr T* AddressOf(T& Object)
 {
 	return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(Object)));
 }
 
-template <typename T> requires (!TIsObject<T>::Value)
+template <typename T> requires (!CObject<T>)
 constexpr T* AddressOf(T& Object)
 {
 	return &Object;

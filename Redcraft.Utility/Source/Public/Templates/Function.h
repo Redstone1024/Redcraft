@@ -42,7 +42,7 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T>
 constexpr bool FunctionIsBound(const T& Func)
 {
-	if constexpr (CPointer<T> || TIsMemberPointer<T>::Value || TIsTFunctionRef<T>::Value || TIsTFunction<T>::Value || TIsTUniqueFunction<T>::Value)
+	if constexpr (CPointer<T> || CMemberPointer<T> || TIsTFunctionRef<T>::Value || TIsTFunction<T>::Value || TIsTUniqueFunction<T>::Value)
 	{
 		return !!Func;
 	}
@@ -171,7 +171,7 @@ protected:
 		Callable = [](StorageRef Storage, Types&&... Args) -> ResultType
 		{
 			using InvokeType = typename TConditional<
-				TIsReference<CVRef>::Value,
+				CReference<CVRef>,
 				typename TCopyCVRef<CVRef, CallableType>::Type,
 				typename TCopyCVRef<CVRef, CallableType>::Type&
 			>::Type;

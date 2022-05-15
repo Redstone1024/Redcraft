@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "TypeTraits/HelperClasses.h"
 
 #include <type_traits>
 

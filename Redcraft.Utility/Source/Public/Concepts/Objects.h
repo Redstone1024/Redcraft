@@ -13,7 +13,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T>
 concept CMovable =
-	TIsObject<T>::Value &&
+	CObject<T> &&
 	CMoveConstructible<T> &&
 	CAssignableFrom<T&, T> &&
 	CSwappable<T>;
