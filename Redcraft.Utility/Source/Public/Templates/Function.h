@@ -107,10 +107,10 @@ public:
 
 	FORCEINLINE const type_info& TargetType() const requires (!bIsRef) { return IsValid() ? Storage.GetTypeInfo() : typeid(void); };
 
-	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef) && TIsSame<T, typename TDecay<T>::Type>::Value && TIsObject<typename TDecay<T>::Type>::Value && (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
 
 	constexpr void Swap(TFunctionImpl& InValue) requires (!bIsRef)
 	{

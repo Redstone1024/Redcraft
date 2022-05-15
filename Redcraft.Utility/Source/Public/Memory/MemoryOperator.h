@@ -122,9 +122,7 @@ FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 	{
 		while (Count)
 		{
-			typedef ElementType DestructItemsElementTypeTypedef;
-
-			Element->DestructItemsElementTypeTypedef::~DestructItemsElementTypeTypedef();
+			Element->~ElementType();
 			++Element;
 			--Count;
 		}
