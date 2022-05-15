@@ -166,67 +166,67 @@ void TestTypeTraits()
 
 	// TypeProperties.h
 
-	always_check(!TIsConst<int32>::Value);
-	always_check(TIsConst<const int32>::Value);
-	always_check(!TIsConst<volatile int32>::Value);
-	always_check(TIsConst<const volatile int32>::Value);
+	always_check(!CConst<int32>);
+	always_check(CConst<const int32>);
+	always_check(!CConst<volatile int32>);
+	always_check(CConst<const volatile int32>);
 
-	always_check(!TIsVolatile<int32>::Value);
-	always_check(!TIsVolatile<const int32>::Value);
-	always_check(TIsVolatile<volatile int32>::Value);
-	always_check(TIsVolatile<const volatile int32>::Value);
+	always_check(!CVolatile<int32>);
+	always_check(!CVolatile<const int32>);
+	always_check(CVolatile<volatile int32>);
+	always_check(CVolatile<const volatile int32>);
 
-	always_check(TIsTrivial<FTestStructB>::Value);
-	always_check(!TIsTrivial<FTestStructC>::Value);
+	always_check(CTrivial<FTestStructB>);
+	always_check(!CTrivial<FTestStructC>);
 
-	always_check(TIsTriviallyCopyable<FTestStructB>::Value);
-	always_check(!TIsTriviallyCopyable<FTestStructD>::Value);
-	always_check(!TIsTriviallyCopyable<FTestStructE>::Value);
+	always_check(CTriviallyCopyable<FTestStructB>);
+	always_check(!CTriviallyCopyable<FTestStructD>);
+	always_check(!CTriviallyCopyable<FTestStructE>);
 
-	always_check(TIsStandardLayout<FTestStructB>::Value);
-	always_check(!TIsStandardLayout<FTestStructE>::Value);
-	always_check(!TIsStandardLayout<FTestStructF>::Value);
+	always_check(CStandardLayout<FTestStructB>);
+	always_check(!CStandardLayout<FTestStructE>);
+	always_check(!CStandardLayout<FTestStructF>);
 
-	always_check(THasUniqueObjectRepresentations<FTestStructF>::Value);
-	always_check(!THasUniqueObjectRepresentations<FTestStructG>::Value);
+	always_check(CUniqueObjectRepresentible<FTestStructF>);
+	always_check(!CUniqueObjectRepresentible<FTestStructG>);
 
-	always_check(TIsEmpty<FTestStructA>::Value);
-	always_check(!TIsEmpty<FTestStructB>::Value);
-	always_check(TIsEmpty<FTestStructC>::Value);
-	always_check(TIsEmpty<FTestStructD>::Value);
-	always_check(!TIsEmpty<FTestStructE>::Value);
-	always_check(!TIsEmpty<FTestStructF>::Value);
+	always_check(CEmpty<FTestStructA>);
+	always_check(!CEmpty<FTestStructB>);
+	always_check(CEmpty<FTestStructC>);
+	always_check(CEmpty<FTestStructD>);
+	always_check(!CEmpty<FTestStructE>);
+	always_check(!CEmpty<FTestStructF>);
 
-	always_check(TIsPolymorphic<FTestStructE>::Value);
-	always_check(!TIsPolymorphic<FTestStructF>::Value);
+	always_check(CPolymorphic<FTestStructE>);
+	always_check(!CPolymorphic<FTestStructF>);
 
-	always_check(TIsAbstract<FTestStructE>::Value);
-	always_check(!TIsAbstract<FTestStructH>::Value);
+	always_check(CAbstract<FTestStructE>);
+	always_check(!CAbstract<FTestStructH>);
 
-	always_check(!TIsFinal<FTestStructE>::Value);
-	always_check(TIsFinal<FTestStructH>::Value);
+	always_check(!CFinal<FTestStructE>);
+	always_check(CFinal<FTestStructH>);
 
-	always_check(!TIsAggregate<int32>::Value);
-	always_check(TIsAggregate<int32[64]>::Value);
-	always_check(TIsAggregate<FTestStructB>::Value);
-	always_check(!TIsAggregate<FTestStructF>::Value);
+	always_check(!CAggregate<int32>);
+	always_check(CAggregate<int32[64]>);
+	always_check(CAggregate<FTestStructB>);
+	always_check(!CAggregate<FTestStructF>);
 
-	always_check(TIsSigned<signed>::Value);
-	always_check(!TIsSigned<unsigned>::Value);
+	always_check(CSigned<signed>);
+	always_check(!CSigned<unsigned>);
 
-	always_check(!TIsUnsigned<signed>::Value);
-	always_check(TIsUnsigned<unsigned>::Value);
+	always_check(!CUnsigned<signed>);
+	always_check(CUnsigned<unsigned>);
 
-	always_check(!TIsBoundedArray<int32>::Value);
-	always_check(!TIsBoundedArray<int32[]>::Value);
-	always_check(TIsBoundedArray<int32[64]>::Value);
+	always_check(!CBoundedArray<int32>);
+	always_check(!CBoundedArray<int32[]>);
+	always_check(CBoundedArray<int32[64]>);
 
-	always_check(!TIsUnboundedArray<int32>::Value);
-	always_check(TIsUnboundedArray<int32[]>::Value);
-	always_check(!TIsUnboundedArray<int32[64]>::Value);
+	always_check(!CUnboundedArray<int32>);
+	always_check(CUnboundedArray<int32[]>);
+	always_check(!CUnboundedArray<int32[64]>);
 
-	always_check(!TIsScopedEnum<ETestEnum>::Value);
-	always_check(TIsScopedEnum<ETestEnumClass>::Value);
+	always_check(!CScopedEnum<ETestEnum>);
+	always_check(CScopedEnum<ETestEnumClass>);
 
 	// SupportedOperations.h
 

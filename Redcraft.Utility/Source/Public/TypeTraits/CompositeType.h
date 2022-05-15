@@ -18,8 +18,8 @@ template <typename T> concept CScalar        = NAMESPACE_STD::is_scalar_v<T>;
 template <typename T> concept CCompound      = NAMESPACE_STD::is_compound_v<T>;
 template <typename T> concept CMemberPointer = NAMESPACE_STD::is_member_pointer_v<T>;
 
-template <typename T> concept CSignedIntegral   = CIntegral<T> && TIsSigned<T>::Value;
-template <typename T> concept CUnsignedIntegral = CIntegral<T> && TIsUnsigned<T>::Value;
+template <typename T> concept CSignedIntegral   = CIntegral<T> && CSigned<T>;
+template <typename T> concept CUnsignedIntegral = CIntegral<T> && CUnsigned<T>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

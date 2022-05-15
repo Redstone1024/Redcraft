@@ -51,7 +51,7 @@ NAMESPACE_PRIVATE_END
 
 #endif
 
-template <typename T, bool bIsRef = false> requires TIsTriviallyCopyable<T>::Value
+template <typename T, bool bIsRef = false> requires CTriviallyCopyable<T>
 	&& TIsCopyConstructible<T>::Value && TIsMoveConstructible<T>::Value
 	&& TIsCopyAssignable<T>::Value && TIsMoveAssignable<T>::Value
 struct TAtomic : public FSingleton

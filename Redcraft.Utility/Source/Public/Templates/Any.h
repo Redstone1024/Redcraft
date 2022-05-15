@@ -364,7 +364,7 @@ private:
 		TypeInfo = reinterpret_cast<uintptr>(&SelectedTypeInfo);
 
 		constexpr bool bIsInlineStorable = sizeof(SelectedType) <= InlineSize && alignof(SelectedType) <= InlineAlignment;
-		constexpr bool bIsTriviallyStorable = bIsInlineStorable && TIsTrivial<SelectedType>::Value && TIsTriviallyCopyable<SelectedType>::Value;
+		constexpr bool bIsTriviallyStorable = bIsInlineStorable && CTrivial<SelectedType> && CTriviallyCopyable<SelectedType>;
 
 		if constexpr (bIsTriviallyStorable)
 		{

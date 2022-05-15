@@ -270,7 +270,7 @@ void TestVariant()
 		{
 			using T = decltype(Arg);
 			always_check(Arg == 10);
-			always_check(TIsConst<typename TRemoveReference<T>::Type>::Value == bIsConst);
+			always_check(CConst<typename TRemoveReference<T>::Type> == bIsConst);
 			always_check(CLValueReference<T> == bIsLValue);
 			always_check(CRValueReference<T> == bIsRValue);
 			return 0;
