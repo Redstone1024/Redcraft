@@ -14,7 +14,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 // Assume that all operands of bitwise operations have the same size
 
 // This type traits is allowed to be specialised.
-template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsDefaultConstructible<T>::Value && (TIsEnum<T>::Value || TIsArithmetic<T>::Value || TIsPointer<T>::Value)> { };
+template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsDefaultConstructible<T>::Value && (CEnum<T> || TIsArithmetic<T>::Value || CPointer<T>)> { };
  
 // This type traits is allowed to be specialised.
 template <typename T, typename U> struct TIsBitwiseConstructible;
@@ -72,7 +72,7 @@ template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<TIsObje
 template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && TIsTriviallyDestructible<U>::Value> { };
 
 // This type traits is allowed to be specialised.
-template <typename T> struct TIsBitwiseComparable : TBoolConstant<TIsEnum<T>::Value || TIsArithmetic<T>::Value || TIsPointer<T>::Value> { };
+template <typename T> struct TIsBitwiseComparable : TBoolConstant<CEnum<T> || TIsArithmetic<T>::Value || CPointer<T>> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

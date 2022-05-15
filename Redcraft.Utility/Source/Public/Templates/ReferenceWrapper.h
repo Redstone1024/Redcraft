@@ -10,7 +10,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename ReferencedType> requires (TIsObject<ReferencedType>::Value || TIsFunction<ReferencedType>::Value)
+template <typename ReferencedType> requires (TIsObject<ReferencedType>::Value || CFunction<ReferencedType>)
 struct TReferenceWrapper
 {
 public:
@@ -61,11 +61,11 @@ private:
 
 	ReferencedType* Pointer;
 
-	template <typename T> requires (TIsObject<T>::Value || TIsFunction<T>::Value) friend struct TReferenceWrapper;
+	template <typename T> requires (TIsObject<T>::Value || CFunction<T>) friend struct TReferenceWrapper;
 
 	// Optimize TOptional with these hacking
 	constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
-	template <typename T> requires TIsObject<T>::Value && (!TIsArray<T>::Value) && TIsDestructible<T>::Value friend struct TOptional;
+	template <typename T> requires TIsDestructible<T>::Value friend struct TOptional;
 
 };
 
@@ -221,7 +221,7 @@ public:
 private:
 
 	TReferenceWrapper<ReferencedType> Reference;
-	template <typename T> requires TIsObject<T>::Value && (!TIsArray<T>::Value) && TIsDestructible<T>::Value friend struct TOptional;
+	template <typename T> requires TIsDestructible<T>::Value friend struct TOptional;
 
 };
 

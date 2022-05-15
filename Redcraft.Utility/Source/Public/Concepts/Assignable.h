@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T, typename U>
 concept CAssignableFrom =
-	TIsLValueReference<T>::Value &&
+	CLValueReference<T> &&
 	CCommonReferenceWith<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&> &&
 	requires(T A, U&& B)
 	{

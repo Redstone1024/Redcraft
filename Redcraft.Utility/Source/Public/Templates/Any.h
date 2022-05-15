@@ -68,8 +68,7 @@ struct alignas(InlineAlignment) TAny
 		}
 	}
 
-	template <typename T, typename... Types> requires TIsObject<typename TDecay<T>::Type>::Value
-		&& (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T, typename... Types> requires TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, Types...>::Value
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
@@ -204,8 +203,7 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T, typename... Types> requires TIsObject<typename TDecay<T>::Type>::Value
-		&& (!TIsArray<typename TDecay<T>::Type>::Value) && TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T, typename... Types> requires TIsDestructible<typename TDecay<T>::Type>::Value
 		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
 	FORCEINLINE typename TDecay<T>::Type& Emplace(Types&&... Args)
 	{

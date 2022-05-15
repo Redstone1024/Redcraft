@@ -19,13 +19,13 @@ NAMESPACE_MODULE_BEGIN(Utility)
 inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = ANY_DEFAULT_INLINE_SIZE - sizeof(uintptr);
 inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = ANY_DEFAULT_INLINE_ALIGNMENT;
 
-template <typename F> requires TIsFunction<F>::Value
+template <typename F> requires CFunction<F>
 struct TFunctionRef;
 
-template <typename F, size_t InlineSize, size_t InlineAlignment> requires TIsFunction<F>::Value && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F, size_t InlineSize, size_t InlineAlignment> requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
 struct TFunction;
 
-template <typename F, size_t InlineSize, size_t InlineAlignment> requires TIsFunction<F>::Value && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F, size_t InlineSize, size_t InlineAlignment> requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
 struct TUniqueFunction;
 
 template <typename T> struct TIsTFunctionRef                  : FFalse { };
@@ -42,7 +42,7 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T>
 constexpr bool FunctionIsBound(const T& Func)
 {
-	if constexpr (TIsPointer<T>::Value || TIsMemberPointer<T>::Value || TIsTFunctionRef<T>::Value || TIsTFunction<T>::Value || TIsTUniqueFunction<T>::Value)
+	if constexpr (CPointer<T> || TIsMemberPointer<T>::Value || TIsTFunctionRef<T>::Value || TIsTFunction<T>::Value || TIsTUniqueFunction<T>::Value)
 	{
 		return !!Func;
 	}
@@ -213,7 +213,7 @@ protected:
 
 NAMESPACE_PRIVATE_END
 
-template <typename F> requires TIsFunction<F>::Value
+template <typename F> requires CFunction<F>
 struct TFunctionRef 
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
@@ -256,7 +256,7 @@ public:
 };
 
 template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
-	requires TIsFunction<F>::Value && (Memory::IsValidAlignment(InlineAlignment))
+	requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
 struct TFunction 
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
@@ -342,7 +342,7 @@ public:
 };
 
 template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
-	requires TIsFunction<F>::Value && (Memory::IsValidAlignment(InlineAlignment))
+	requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
 struct TUniqueFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,

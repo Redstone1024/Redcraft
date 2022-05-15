@@ -56,21 +56,21 @@ FORCEINLINE void* Memcpy(void* Destination, const void* Source, size_t Count)
 template <typename T>
 FORCEINLINE void Memset(T& Source, uint8 ValueToSet)
 {
-	static_assert(!TIsPointer<T>::Value, "For pointers use the three parameters function");
+	static_assert(!CPointer<T>, "For pointers use the three parameters function");
 	Memset(&Source, ValueToSet, sizeof(T));
 }
 
 template <typename T>
 FORCEINLINE void Memzero(T& Source)
 {
-	static_assert(!TIsPointer<T>::Value, "For pointers use the two parameters function");
+	static_assert(!CPointer<T>, "For pointers use the two parameters function");
 	Memzero(&Source, sizeof(T));
 }
 
 template <typename T>
 FORCEINLINE void Memcpy(T& Destination, const T& Source)
 {
-	static_assert(!TIsPointer<T>::Value, "For pointers use the three parameters function");
+	static_assert(!CPointer<T>, "For pointers use the three parameters function");
 	Memcpy(&Destination, &Source, sizeof(T));
 }
 

@@ -57,8 +57,8 @@ struct InvokeMemberObject
 template <typename F,
 	typename T,
 	typename Decayed = typename TDecay<F>::Type,
-	bool IsMemberFunction = TIsMemberFunctionPointer<Decayed>::Value,
-	bool IsMemberObject = TIsMemberObjectPointer<Decayed>::Value>
+	bool IsMemberFunction = CMemberFunctionPointer<Decayed>,
+	bool IsMemberObject = CMemberObjectPointer<Decayed>>
 	struct InvokeMember;
 
 template <typename F, typename T, typename Decayed>
@@ -91,8 +91,8 @@ constexpr auto Invoke(F&& Func, Types&&... Args)
 template <typename R, typename F, typename... Types> requires TIsInvocableResult<R, F, Types...>::Value
 constexpr R InvokeResult(F&& Func, Types&&... Args)
 {
-	if constexpr (TIsVoid<R>::Value) Invoke(Forward<F>(Func), Forward<Types>(Args)...);
-	else                      return Invoke(Forward<F>(Func), Forward<Types>(Args)...);
+	if constexpr (CVoid<R>) Invoke(Forward<F>(Func), Forward<Types>(Args)...);
+	else             return Invoke(Forward<F>(Func), Forward<Types>(Args)...);
 }
 
 NAMESPACE_MODULE_END(Utility)

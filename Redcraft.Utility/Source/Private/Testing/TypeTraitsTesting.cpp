@@ -64,59 +64,59 @@ void TestTypeTraits()
 
 	// PrimaryType.h
 
-	always_check(!TIsVoid<int32>::Value);
-	always_check(TIsVoid<void>::Value);
-	always_check(TIsVoid<const void>::Value);
-	always_check(TIsVoid<const volatile void>::Value);
-	always_check(TIsVoid<volatile void>::Value);
+	always_check(!CVoid<int32>);
+	always_check(CVoid<void>);
+	always_check(CVoid<const void>);
+	always_check(CVoid<const volatile void>);
+	always_check(CVoid<volatile void>);
 
-	always_check(!TIsNullPointer<int32>::Value);
-	always_check(TIsNullPointer<nullptr_t>::Value);
+	always_check(!CNullPointer<int32>);
+	always_check(CNullPointer<nullptr_t>);
 
-	always_check(TIsIntegral<int32>::Value);
-	always_check(!TIsIntegral<float>::Value);
+	always_check(CIntegral<int32>);
+	always_check(!CIntegral<float>);
 
-	always_check(!TIsFloatingPoint<int32>::Value);
-	always_check(TIsFloatingPoint<float>::Value);
+	always_check(!CFloatingPoint<int32>);
+	always_check(CFloatingPoint<float>);
 
-	always_check(!TIsArray<int32>::Value);
-	always_check(TIsArray<int32[]>::Value);
-	always_check(TIsArray<int32[10]>::Value);
+	always_check(!CArray<int32>);
+	always_check(CArray<int32[]>);
+	always_check(CArray<int32[10]>);
 
-	always_check(!TIsPointer<int32>::Value);
-	always_check(TIsPointer<int32*>::Value);
+	always_check(!CPointer<int32>);
+	always_check(CPointer<int32*>);
 
-	always_check(!TIsLValueReference<int32>::Value);
-	always_check(TIsLValueReference<int32&>::Value);
-	always_check(!TIsLValueReference<int32&&>::Value);
+	always_check(!CLValueReference<int32>);
+	always_check(CLValueReference<int32&>);
+	always_check(!CLValueReference<int32&&>);
 	
-	always_check(!TIsRValueReference<int32>::Value);
-	always_check(!TIsRValueReference<int32&>::Value);
-	always_check(TIsRValueReference<int32&&>::Value);
+	always_check(!CRValueReference<int32>);
+	always_check(!CRValueReference<int32&>);
+	always_check(CRValueReference<int32&&>);
 
-	always_check(TIsMemberObjectPointer<int32(FTestStructA::*)>::Value);
-	always_check(!TIsMemberObjectPointer<int32(FTestStructA::*)()>::Value);
+	always_check(CMemberObjectPointer<int32(FTestStructA::*)>);
+	always_check(!CMemberObjectPointer<int32(FTestStructA::*)()>);
 
-	always_check(!TIsMemberFunctionPointer<int32(FTestStructA::*)>::Value);
-	always_check(TIsMemberFunctionPointer<int32(FTestStructA::*)()>::Value);
+	always_check(!CMemberFunctionPointer<int32(FTestStructA::*)>);
+	always_check(CMemberFunctionPointer<int32(FTestStructA::*)()>);
 
-	always_check(!TIsEnum<int32>::Value);
-	always_check(!TIsEnum<FTestStructA>::Value);
-	always_check(TIsEnum<ETestEnum>::Value);
-	always_check(TIsEnum<ETestEnumClass>::Value);
+	always_check(!CEnum<int32>);
+	always_check(!CEnum<FTestStructA>);
+	always_check(CEnum<ETestEnum>);
+	always_check(CEnum<ETestEnumClass>);
 
-	always_check(!TIsUnion<int32>::Value);
-	always_check(!TIsUnion<FTestStructA>::Value);
-	always_check(TIsUnion<FTestUnion>::Value);
+	always_check(!CUnion<int32>);
+	always_check(!CUnion<FTestStructA>);
+	always_check(CUnion<FTestUnion>);
 
-	always_check(!TIsUnion<int32>::Value);
-	always_check(!TIsUnion<FTestStructA>::Value);
-	always_check(TIsUnion<FTestUnion>::Value);
+	always_check(!CUnion<int32>);
+	always_check(!CUnion<FTestStructA>);
+	always_check(CUnion<FTestUnion>);
 
-	always_check(!TIsFunction<int32>::Value);
-	always_check(!TIsFunction<FTestStructA>::Value);
-	always_check(!TIsFunction<FTestUnion>::Value);
-	always_check(TIsFunction<int32(int32)>::Value);
+	always_check(!CFunction<int32>);
+	always_check(!CFunction<FTestStructA>);
+	always_check(!CFunction<FTestUnion>);
+	always_check(CFunction<int32(int32)>);
 
 	// CompositeType.h
 

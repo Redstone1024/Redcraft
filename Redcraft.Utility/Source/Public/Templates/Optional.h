@@ -12,7 +12,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename OptionalType> requires TIsObject<OptionalType>::Value && (!TIsArray<OptionalType>::Value) && TIsDestructible<OptionalType>::Value
+template <typename OptionalType> requires TIsDestructible<OptionalType>::Value
 struct TOptional
 {
 private:
@@ -283,19 +283,19 @@ constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
 	return !LHS.IsValid();
 }
 
-template <typename T> requires (TIsObject<T>::Value && !TIsArray<T>::Value && TIsDestructible<T>::Value)
+template <typename T> requires TIsDestructible<T>::Value
 constexpr TOptional<typename TDecay<T>::Type> MakeOptional(FInvalid)
 {
 	return TOptional<typename TDecay<T>::Type>(Invalid);
 }
 
-template <typename T> requires (TIsObject<T>::Value && !TIsArray<T>::Value && TIsDestructible<T>::Value)
-constexpr TOptional<typename TDecay<T>::Type> MakeOptional(T&& InValue)
+template <typename T> requires TIsDestructible<T>::Value && TIsConstructible<T, T&&>::Value
+constexpr TOptional<T> MakeOptional(T&& InValue)
 {
-	return TOptional<typename TDecay<T>::Type>(Forward<T>(InValue));
+	return TOptional<T>(Forward<T>(InValue));
 }
 
-template <typename T, typename... Types> requires (TIsObject<T>::Value && !TIsArray<T>::Value && TIsDestructible<T>::Value)
+template <typename T, typename... Types> requires TIsDestructible<T>::Value && TIsConstructible<T, Types...>::Value
 constexpr TOptional<T> MakeOptional(Types&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);

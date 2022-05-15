@@ -137,89 +137,89 @@ public:
 		return Temp;
 	}
 
-	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsPointer<T>::Value                      { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsPointer<T>::Value && bIsAlwaysLockFree { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CPointer<T>                      { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CPointer<T> && bIsAlwaysLockFree { return Element.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsPointer<T>::Value                      { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsPointer<T>::Value && bIsAlwaysLockFree { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CPointer<T>                      { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CPointer<T> && bIsAlwaysLockFree { return Element.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
-	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
+	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
+	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
 	
-	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
-	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
+	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
+	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
 	
-	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
-	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
+	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
+	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
 	
-	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return Element.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return Element.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 		
-	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return Element.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return Element.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return Element.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return Element.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	
-	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
-	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
+	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
+	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
 	
-	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires TIsIntegral<T>::Value                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
-	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
+	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires CIntegral<T>                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
+	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
 	
-	FORCEINLINE ValueType operator++()          requires (TIsIntegral<T>::Value || TIsPointer<T>::Value)                      { return ++Element; }
-	FORCEINLINE ValueType operator++() volatile requires (TIsIntegral<T>::Value || TIsPointer<T>::Value) && bIsAlwaysLockFree { return ++Element; }
+	FORCEINLINE ValueType operator++()          requires (CIntegral<T> || CPointer<T>)                      { return ++Element; }
+	FORCEINLINE ValueType operator++() volatile requires (CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree { return ++Element; }
 	
-	FORCEINLINE ValueType operator++(int)          requires (TIsIntegral<T>::Value || TIsPointer<T>::Value)                      { return Element++; }
-	FORCEINLINE ValueType operator++(int) volatile requires (TIsIntegral<T>::Value || TIsPointer<T>::Value) && bIsAlwaysLockFree { return Element++; }
+	FORCEINLINE ValueType operator++(int)          requires (CIntegral<T> || CPointer<T>)                      { return Element++; }
+	FORCEINLINE ValueType operator++(int) volatile requires (CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree { return Element++; }
 	
-	FORCEINLINE ValueType operator--()          requires (TIsIntegral<T>::Value || TIsPointer<T>::Value)                      { return --Element; }
-	FORCEINLINE ValueType operator--() volatile requires (TIsIntegral<T>::Value || TIsPointer<T>::Value) && bIsAlwaysLockFree { return --Element; }
+	FORCEINLINE ValueType operator--()          requires (CIntegral<T> || CPointer<T>)                      { return --Element; }
+	FORCEINLINE ValueType operator--() volatile requires (CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree { return --Element; }
 	
-	FORCEINLINE ValueType operator--(int)          requires (TIsIntegral<T>::Value || TIsPointer<T>::Value)                      { return Element--; }
-	FORCEINLINE ValueType operator--(int) volatile requires (TIsIntegral<T>::Value || TIsPointer<T>::Value) && bIsAlwaysLockFree { return Element--; }
+	FORCEINLINE ValueType operator--(int)          requires (CIntegral<T> || CPointer<T>)                      { return Element--; }
+	FORCEINLINE ValueType operator--(int) volatile requires (CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree { return Element--; }
 	
-	FORCEINLINE ValueType operator+=(ValueType InValue)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return Element += InValue; }
-	FORCEINLINE ValueType operator+=(ValueType InValue) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return Element += InValue; }
+	FORCEINLINE ValueType operator+=(ValueType InValue)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return Element += InValue; }
+	FORCEINLINE ValueType operator+=(ValueType InValue) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return Element += InValue; }
 	
-	FORCEINLINE ValueType operator+=(ptrdiff InValue)          requires TIsPointer<T>::Value                      { return Element += InValue; }
-	FORCEINLINE ValueType operator+=(ptrdiff InValue) volatile requires TIsPointer<T>::Value && bIsAlwaysLockFree { return Element += InValue; }
+	FORCEINLINE ValueType operator+=(ptrdiff InValue)          requires CPointer<T>                      { return Element += InValue; }
+	FORCEINLINE ValueType operator+=(ptrdiff InValue) volatile requires CPointer<T> && bIsAlwaysLockFree { return Element += InValue; }
 	
-	FORCEINLINE ValueType operator-=(ValueType InValue)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return Element -= InValue; }
-	FORCEINLINE ValueType operator-=(ValueType InValue) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return Element -= InValue; }
+	FORCEINLINE ValueType operator-=(ValueType InValue)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return Element -= InValue; }
+	FORCEINLINE ValueType operator-=(ValueType InValue) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return Element -= InValue; }
 	
-	FORCEINLINE ValueType operator-=(ptrdiff InValue)          requires TIsPointer<T>::Value                      { return Element -= InValue; }
-	FORCEINLINE ValueType operator-=(ptrdiff InValue) volatile requires TIsPointer<T>::Value && bIsAlwaysLockFree { return Element -= InValue; }
+	FORCEINLINE ValueType operator-=(ptrdiff InValue)          requires CPointer<T>                      { return Element -= InValue; }
+	FORCEINLINE ValueType operator-=(ptrdiff InValue) volatile requires CPointer<T> && bIsAlwaysLockFree { return Element -= InValue; }
 	
-	FORCEINLINE ValueType operator*=(ValueType InValue)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return FetchMul(InValue) * InValue; }
-	FORCEINLINE ValueType operator*=(ValueType InValue) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return FetchMul(InValue) * InValue; }
+	FORCEINLINE ValueType operator*=(ValueType InValue)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchMul(InValue) * InValue; }
+	FORCEINLINE ValueType operator*=(ValueType InValue) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchMul(InValue) * InValue; }
 	
-	FORCEINLINE ValueType operator/=(ValueType InValue)          requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value)                      { return FetchDiv(InValue) / InValue; }
-	FORCEINLINE ValueType operator/=(ValueType InValue) volatile requires (TIsIntegral<T>::Value || TIsFloatingPoint<T>::Value) && bIsAlwaysLockFree { return FetchDiv(InValue) / InValue; }
+	FORCEINLINE ValueType operator/=(ValueType InValue)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchDiv(InValue) / InValue; }
+	FORCEINLINE ValueType operator/=(ValueType InValue) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchDiv(InValue) / InValue; }
 	
-	FORCEINLINE ValueType operator%=(ValueType InValue)          requires TIsIntegral<T>::Value                      { return FetchMod(InValue) % InValue; }
-	FORCEINLINE ValueType operator%=(ValueType InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchMod(InValue) % InValue; }
+	FORCEINLINE ValueType operator%=(ValueType InValue)          requires CIntegral<T>                      { return FetchMod(InValue) % InValue; }
+	FORCEINLINE ValueType operator%=(ValueType InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchMod(InValue) % InValue; }
 	
-	FORCEINLINE ValueType operator&=(ValueType InValue)          requires TIsIntegral<T>::Value                      { return Element &= InValue; }
-	FORCEINLINE ValueType operator&=(ValueType InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element &= InValue; }
+	FORCEINLINE ValueType operator&=(ValueType InValue)          requires CIntegral<T>                      { return Element &= InValue; }
+	FORCEINLINE ValueType operator&=(ValueType InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element &= InValue; }
 	
-	FORCEINLINE ValueType operator|=(ValueType InValue)          requires TIsIntegral<T>::Value                      { return Element |= InValue; }
-	FORCEINLINE ValueType operator|=(ValueType InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element |= InValue; }
+	FORCEINLINE ValueType operator|=(ValueType InValue)          requires CIntegral<T>                      { return Element |= InValue; }
+	FORCEINLINE ValueType operator|=(ValueType InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element |= InValue; }
 	
-	FORCEINLINE ValueType operator^=(ValueType InValue)          requires TIsIntegral<T>::Value                      { return Element ^= InValue; }
-	FORCEINLINE ValueType operator^=(ValueType InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return Element ^= InValue; }
+	FORCEINLINE ValueType operator^=(ValueType InValue)          requires CIntegral<T>                      { return Element ^= InValue; }
+	FORCEINLINE ValueType operator^=(ValueType InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return Element ^= InValue; }
 	
-	FORCEINLINE ValueType operator<<=(size_t InValue)          requires TIsIntegral<T>::Value                      { return FetchLsh(InValue) << InValue; }
-	FORCEINLINE ValueType operator<<=(size_t InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchLsh(InValue) << InValue; }
+	FORCEINLINE ValueType operator<<=(size_t InValue)          requires CIntegral<T>                      { return FetchLsh(InValue) << InValue; }
+	FORCEINLINE ValueType operator<<=(size_t InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchLsh(InValue) << InValue; }
 	
-	FORCEINLINE ValueType operator>>=(size_t InValue)          requires TIsIntegral<T>::Value                      { return FetchRsh(InValue) >> InValue; }
-	FORCEINLINE ValueType operator>>=(size_t InValue) volatile requires TIsIntegral<T>::Value && bIsAlwaysLockFree { return FetchRsh(InValue) >> InValue; }
+	FORCEINLINE ValueType operator>>=(size_t InValue)          requires CIntegral<T>                      { return FetchRsh(InValue) >> InValue; }
+	FORCEINLINE ValueType operator>>=(size_t InValue) volatile requires CIntegral<T> && bIsAlwaysLockFree { return FetchRsh(InValue) >> InValue; }
 	
 protected:
 

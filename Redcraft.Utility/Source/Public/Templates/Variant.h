@@ -78,7 +78,7 @@ struct TVariantSelectedType<T>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> requires (true && ... && (TIsObject<Types>::Value && !TIsArray<Types>::Value && TIsDestructible<Types>::Value)) && (sizeof...(Types) < 0xFF)
+template <typename... Types> requires (true && ... && TIsDestructible<Types>::Value) && (sizeof...(Types) < 0xFF)
 struct TVariant
 {
 	static constexpr size_t AlternativeSize = sizeof...(Types);

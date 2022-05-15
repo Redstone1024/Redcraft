@@ -47,7 +47,7 @@ constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
 	return HashCombine(B, InOther...);
 }
 
-template <typename T> requires TIsIntegral<T>::Value
+template <typename T> requires CIntegral<T>
 constexpr size_t GetTypeHash(T A)
 {
 	static_assert(sizeof(T) <= 16, "GetTypeHash only works with T up to 128 bits.");
@@ -60,7 +60,7 @@ constexpr size_t GetTypeHash(T A)
 	return INDEX_NONE;
 }
 
-template <typename T> requires TIsFloatingPoint<T>::Value
+template <typename T> requires CFloatingPoint<T>
 constexpr size_t GetTypeHash(T A)
 {
 	static_assert(sizeof(T) <= 16, "GetTypeHash only works with T up to 128 bits.");
@@ -75,13 +75,13 @@ constexpr size_t GetTypeHash(T A)
 	return INDEX_NONE;
 }
 
-template <typename T> requires TIsEnum<T>::Value
+template <typename T> requires CEnum<T>
 constexpr size_t GetTypeHash(T A)
 {
 	return GetTypeHash(static_cast<typename TUnderlyingType<T>::Type>(A));
 }
 
-template <typename T> requires TIsPointer<T>::Value || TIsSame<T, nullptr_t>::Value
+template <typename T> requires CPointer<T> || TIsSame<T, nullptr_t>::Value
 constexpr size_t GetTypeHash(T A)
 {
 	return GetTypeHash(reinterpret_cast<intptr>(A));

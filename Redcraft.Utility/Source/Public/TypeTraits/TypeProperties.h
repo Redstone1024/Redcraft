@@ -27,7 +27,7 @@ template <typename T> struct TIsBoundedArray                 : TBoolConstant<NAM
 template <typename T> struct TIsUnboundedArray               : TBoolConstant<NAMESPACE_STD::is_unbounded_array_v<T>>                { };
 
 template <typename T>
-struct TIsScopedEnum : TBoolConstant<TIsEnum<T>::Value && !TIsConvertible<T, int64>::Value> { };
+struct TIsScopedEnum : TBoolConstant<CEnum<T> && !TIsConvertible<T, int64>::Value> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

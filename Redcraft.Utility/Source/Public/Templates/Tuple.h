@@ -448,7 +448,7 @@ template <typename... RTypes, size_t... Indices>
 struct TTupleCatMake<TTuple<RTypes...>, TIndexSequence<Indices...>>
 {
 	template <typename T, typename U>
-	struct ForwardType { using Type = typename TConditional<TIsRValueReference<T>::Value, typename TRemoveReference<U>::Type&&, U>::Type; };
+	struct ForwardType { using Type = typename TConditional<CRValueReference<T>, typename TRemoveReference<U>::Type&&, U>::Type; };
 
 	template <typename TTupleType>
 	static constexpr TTuple<RTypes...> F(TTupleType&& InValue)
