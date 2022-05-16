@@ -31,9 +31,9 @@ template <typename... Types>
 struct TCommonComparisonCategory
 	: NAMESPACE_PRIVATE::TCommonComparisonCategory<(0u | ... |
 			(
-				TIsSame<Types, strong_ordering >::Value ? 0u :
-				TIsSame<Types, weak_ordering   >::Value ? 4u :
-				TIsSame<Types, partial_ordering>::Value ? 2u : 1u
+				CSameAs<Types, strong_ordering > ? 0u :
+				CSameAs<Types, weak_ordering   > ? 4u :
+				CSameAs<Types, partial_ordering> ? 2u : 1u
 			)
 		)> 
 { };

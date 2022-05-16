@@ -23,10 +23,10 @@ private:
 		|| CConstructible<OptionalType, const TOptional<T>& >
 		|| CConstructible<OptionalType,       TOptional<T>&&>
 		|| CConstructible<OptionalType, const TOptional<T>&&>
-		|| TIsConvertible<      TOptional<T>&,  OptionalType>::Value
-		|| TIsConvertible<const TOptional<T>&,  OptionalType>::Value
-		|| TIsConvertible<      TOptional<T>&&, OptionalType>::Value
-		|| TIsConvertible<const TOptional<T>&&, OptionalType>::Value
+		|| CConvertibleTo<      TOptional<T>&,  OptionalType>
+		|| CConvertibleTo<const TOptional<T>&,  OptionalType>
+		|| CConvertibleTo<      TOptional<T>&&, OptionalType>
+		|| CConvertibleTo<const TOptional<T>&&, OptionalType>
 		|| CAssignable<OptionalType&,       TOptional<T>& >
 		|| CAssignable<OptionalType&, const TOptional<T>& >
 		|| CAssignable<OptionalType&,       TOptional<T>&&>
@@ -49,8 +49,8 @@ public:
 	}
 
 	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&>
-		&& (!TIsSame<typename TRemoveCVRef<T>::Type, FInPlace>::Value) && (!TIsSame<typename TRemoveCVRef<T>::Type, TOptional>::Value)
-	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(T&& InValue)
+		&& (!CSameAs<typename TRemoveCVRef<T>::Type, FInPlace>) && (!CSameAs<typename TRemoveCVRef<T>::Type, TOptional>)
+	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
@@ -67,14 +67,14 @@ public:
 	}
 
 	template <typename T = OptionalType> requires CConstructible<OptionalType, const T&> && TAllowUnwrapping<T>::Value
-	constexpr explicit (!TIsConvertible<const T&, OptionalType>::Value) TOptional(const TOptional<T>& InValue)
+	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
 	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&> && TAllowUnwrapping<T>::Value
-	constexpr explicit (!TIsConvertible<T&&, OptionalType>::Value) TOptional(TOptional<T>&& InValue)
+	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));

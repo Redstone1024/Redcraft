@@ -32,7 +32,7 @@ struct TTupleElementIndex;
 
 template <typename T, typename U, typename... Types>
 struct TTupleElementIndex<T, U, Types...>
-	: TConstant<size_t, TIsSame<T, U>::Value ? 0 : (TTupleElementIndex<T, Types...>::Value == INDEX_NONE
+	: TConstant<size_t, CSameAs<T, U> ? 0 : (TTupleElementIndex<T, Types...>::Value == INDEX_NONE
 		? INDEX_NONE : TTupleElementIndex<T, Types...>::Value + 1)>
 { };
 
@@ -237,54 +237,54 @@ public:
 
 	template <typename... ArgTypes> requires (ElementSize > 0) && (sizeof...(ArgTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, ArgTypes&&>)
-		&& (true && ... && TIsConvertible<ArgTypes&&, Types>::Value)
+		&& (true && ... && CConvertibleTo<ArgTypes&&, Types>)
 	constexpr TTuple(ArgTypes&&... Args)
 		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<ArgTypes>(Args)...)
 	{ }
 
 	template <typename... ArgTypes> requires (ElementSize > 0) && (sizeof...(ArgTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, ArgTypes&&>)
-		&& (!(true && ... && TIsConvertible<ArgTypes&&, Types>::Value))
+		&& (!(true && ... && CConvertibleTo<ArgTypes&&, Types>))
 	constexpr explicit TTuple(ArgTypes&&... Args)
 		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<ArgTypes>(Args)...)
 	{ }
 	
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, const OtherTypes&>)
-		&& ((ElementSize != 1) || !(TIsConvertible<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>::Value
+		&& ((ElementSize != 1) || !(CConvertibleTo<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>
 			|| CConstructible<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
-			|| TIsSame<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>::Value))
-		&& (true && ... && TIsConvertible<OtherTypes&&, Types>::Value)
+			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
+		&& (true && ... && CConvertibleTo<OtherTypes&&, Types>)
 	constexpr TTuple(const TTuple<OtherTypes...>& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, InValue)
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, const OtherTypes&>)
-		&& ((ElementSize != 1) || !(TIsConvertible<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>::Value
+		&& ((ElementSize != 1) || !(CConvertibleTo<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>
 			|| CConstructible<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
-			|| TIsSame<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>::Value))
-		&& (!(true && ... && TIsConvertible<OtherTypes&&, Types>::Value))
+			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
+		&& (!(true && ... && CConvertibleTo<OtherTypes&&, Types>))
 	constexpr explicit TTuple(const TTuple<OtherTypes...>& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, InValue)
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, OtherTypes&&>)
-		&& ((ElementSize != 1) || !(TIsConvertible<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>::Value
+		&& ((ElementSize != 1) || !(CConvertibleTo<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>
 			|| CConstructible<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
-			|| TIsSame<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>::Value))
-		&& (true && ... && TIsConvertible<OtherTypes&&, Types>::Value)
+			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
+		&& (true && ... && CConvertibleTo<OtherTypes&&, Types>)
 	constexpr TTuple(TTuple<OtherTypes...>&& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, MoveTemp(InValue))
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
 		&& (true && ... && CConstructible<Types, OtherTypes&&>)
-		&& ((ElementSize != 1) || !(TIsConvertible<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>::Value
+		&& ((ElementSize != 1) || !(CConvertibleTo<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>
 			|| CConstructible<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
-			|| TIsSame<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>::Value))
-		&& (!(true && ... && TIsConvertible<OtherTypes&&, Types>::Value))
+			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
+		&& (!(true && ... && CConvertibleTo<OtherTypes&&, Types>))
 	constexpr explicit TTuple(TTuple<OtherTypes...>&& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, MoveTemp(InValue))
 	{ }
@@ -329,41 +329,41 @@ public:
 	template <typename T> requires (TElementIndex<T>::Value != INDEX_NONE) constexpr       volatile T&& GetValue()       volatile&& { return static_cast<      volatile TTuple&&>(*this).GetValue<TElementIndex<T>::Value>(); }
 	template <typename T> requires (TElementIndex<T>::Value != INDEX_NONE) constexpr const volatile T&& GetValue() const volatile&& { return static_cast<const volatile TTuple&&>(*this).GetValue<TElementIndex<T>::Value>(); }
 
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func)               &  { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func) const         &  { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func)       volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func) const volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func)               && { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func) const         && { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func)       volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
-	template <typename F> requires TIsInvocable<F, Types...>::Value constexpr auto Apply(F&& Func) const volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func)               &  { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func) const         &  { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func)       volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func) const volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func)               && { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func) const         && { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func)       volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
+	template <typename F> requires CInvocable<F, Types...> constexpr auto Apply(F&& Func) const volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, ArgTypes..., Types...>::Value constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, ArgTypes..., Types...> constexpr auto ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
 
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires TIsInvocable<F, Types..., ArgTypes...>::Value constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
+	template <typename F, typename... ArgTypes> requires CInvocable<F, Types..., ArgTypes...> constexpr auto ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
 	
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func)               &  { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func) const         &  { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func)       volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func) const volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func)               && { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func) const         && { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func)       volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (TIsInvocable<F, Types>::Value && !TIsSame<void, typename TInvokeResult<F, Types>::Type>::Value)) constexpr auto Transform(F&& Func) const volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func)               &  { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func) const         &  { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func)       volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func) const volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func)               && { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func) const         && { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func)       volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func) const volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
 	template <typename T> requires CConstructible<T, Types...> constexpr T Construct()               &  { return Helper::template Construct<T>(static_cast<               TTuple& >(*this)); }
 	template <typename T> requires CConstructible<T, Types...> constexpr T Construct() const         &  { return Helper::template Construct<T>(static_cast<const          TTuple& >(*this)); }
@@ -565,7 +565,7 @@ constexpr typename TCommonComparisonCategory<typename TSynthThreeWayResult<LHSTy
 	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::F(LHS, RHS);
 }
 
-template <typename F> requires TIsInvocable<F>::Value
+template <typename F> requires CInvocable<F>
 constexpr void VisitTuple(F&& Func) { }
 
 template <typename F, typename FirstTupleType, typename... TupleTypes>

@@ -56,19 +56,19 @@ template <typename Signature, typename F> struct TIsInvocableSignature : FFalse 
 
 template <typename Ret, typename... Types, typename F>
 struct TIsInvocableSignature<Ret(Types...), F>
-	: TBoolConstant<TIsInvocableResult<Ret, F, Types...>::Value && TIsInvocableResult<Ret, F&, Types...>::Value>
+	: TBoolConstant<CInvocableResult<Ret, F, Types...> && CInvocableResult<Ret, F&, Types...>>
 { };
 
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) & , F> : TIsInvocableResult<Ret, F&, Types...> { };
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) &&, F> : TIsInvocableResult<Ret, F , Types...> { };
+template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) & , F> : TBoolConstant<CInvocableResult<Ret, F&, Types...>> { };
+template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) &&, F> : TBoolConstant<CInvocableResult<Ret, F , Types...>> { };
 
 template <typename Ret, typename... Types, typename F>
 struct TIsInvocableSignature<Ret(Types...) const, F>
-	: TBoolConstant<TIsInvocableResult<Ret, const F, Types...>::Value && TIsInvocableResult<Ret, const F&, Types...>::Value>
+	: TBoolConstant<CInvocableResult<Ret, const F, Types...> && CInvocableResult<Ret, const F&, Types...>>
 { };
 
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const& , F> : TIsInvocableResult<Ret, const F&, Types...> { };
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const&&, F> : TIsInvocableResult<Ret, const F , Types...> { };
+template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const& , F> : TBoolConstant<CInvocableResult<Ret, const F&, Types...>> { };
+template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const&&, F> : TBoolConstant<CInvocableResult<Ret, const F , Types...>> { };
 
 template <typename F>                      struct TFunctionInfo;
 template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...)        > { using Fn = Ret(Types...); using CVRef =       int;   };
@@ -95,12 +95,12 @@ public:
 	TFunctionImpl& operator=(TFunctionImpl&&) = default;
 	~TFunctionImpl() = default;
 
-	FORCEINLINE ResultType operator()(Types... Args)         requires (TIsSame<CVRef,       int  >::Value) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) &       requires (TIsSame<CVRef,       int& >::Value) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) &&      requires (TIsSame<CVRef,       int&&>::Value) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const   requires (TIsSame<CVRef, const int  >::Value) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const&  requires (TIsSame<CVRef, const int& >::Value) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const&& requires (TIsSame<CVRef, const int&&>::Value) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args) const   requires (CSameAs<CVRef, const int  >) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Types... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Types>(Args)...); }
 
 	constexpr bool           IsValid() const { return Callable != nullptr; }
 	constexpr explicit operator bool() const { return Callable != nullptr; }
@@ -478,28 +478,28 @@ struct TNotFunction
 	template <typename InF>
 	constexpr TNotFunction(InF&& InFunc) : Storage(Forward<InF>(InFunc)) { }
 
-	template <typename... Types> requires TIsInvocable<F&, Types&&...>::Value
+	template <typename... Types> requires CInvocable<F&, Types&&...>
 	constexpr auto operator()(Types&&... Args) &
 		-> decltype(!Invoke(Storage, Forward<Types>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Types>(Args)...);
 	}
 
-	template <typename... Types> requires TIsInvocable<F&&, Types&&...>::Value
+	template <typename... Types> requires CInvocable<F&&, Types&&...>
 	constexpr auto operator()(Types&&... Args) &&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Types>(Args)...))
 	{
 		return !Invoke(MoveTemp(Storage), Forward<Types>(Args)...);
 	}
 
-	template <typename... Types> requires TIsInvocable<const F&, Types&&...>::Value
+	template <typename... Types> requires CInvocable<const F&, Types&&...>
 	constexpr auto operator()(Types&&... Args) const&
 		-> decltype(!Invoke(Storage, Forward<Types>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Types>(Args)...);
 	}
 
-	template <typename... Types> requires TIsInvocable<const F&&, Types&&...>::Value
+	template <typename... Types> requires CInvocable<const F&&, Types&&...>
 	constexpr auto operator()(Types&&... Args) const&&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Types>(Args)...))
 	{

@@ -301,105 +301,94 @@ void TestTypeTraits()
 
 	// Miscellaneous.h
 
-	always_check(TRank<int32[1][2][3]>::Value == 3);
-	always_check(TRank<int32[1][2][3][4]>::Value == 4);
-	always_check(TRank<int32>::Value == 0);
+	always_check(ArrayRank<int32[1][2][3]> == 3);
+	always_check(ArrayRank<int32[1][2][3][4]> == 4);
+	always_check(ArrayRank<int32> == 0);
 
-	always_check(TExtent<int32[1][2][3]>::Value == 1);
-	always_check((TExtent<int32[1][2][3][4], 1>::Value == 2));
-	always_check(TExtent<int32[]>::Value == 0);
+	always_check(ArrayExtent<int32[1][2][3]> == 1);
+	always_check((ArrayExtent<int32[1][2][3][4], 1> == 2));
+	always_check(ArrayExtent<int32[]> == 0);
 
-	always_check(!(TIsSame<int32, int64>::Value));
-	always_check((TIsSame<int32, int32>::Value));
+	always_check(!(CSameAs<int32, int64>));
+	always_check((CSameAs<int32, int32>));
 
-	always_check(!(TIsBaseOf<FTestStructH, FTestStructD>::Value));
-	always_check(!(TIsBaseOf<FTestStructH, FTestStructE>::Value));
-	always_check((TIsBaseOf<FTestStructE, FTestStructH>::Value));
+	always_check(!(CBaseOf<FTestStructH, FTestStructD>));
+	always_check(!(CBaseOf<FTestStructH, FTestStructE>));
+	always_check((CBaseOf<FTestStructE, FTestStructH>));
 
-	always_check((TIsConvertible<int32, uint32>::Value));
-	always_check(!(TIsConvertible<FTestStructH*, FTestStructD*>::Value));
-	always_check((TIsConvertible<FTestStructH*, FTestStructE*>::Value));
-	always_check(!(TIsConvertible<FTestStructE*, FTestStructH*>::Value));
-	always_check((TIsConvertible<FTestStructW, FTestStructV>::Value));
+	always_check((CConvertibleTo<int32, uint32>));
+	always_check(!(CConvertibleTo<FTestStructH*, FTestStructD*>));
+	always_check((CConvertibleTo<FTestStructH*, FTestStructE*>));
+	always_check(!(CConvertibleTo<FTestStructE*, FTestStructH*>));
+	always_check((CConvertibleTo<FTestStructW, FTestStructV>));
 
-	always_check((TIsInvocable<int32()>::Value));
-	always_check((TIsInvocable<int32(int32), int32>::Value));
-	always_check(!(TIsInvocable<int32(int32), FTestStructA>::Value));
-	always_check((TIsInvocable<int32(int32), int32>::Value));
+	always_check((CSameAs<int32, TRemoveConst<int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32*>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32&>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32&&>::Type>));
+	always_check((CSameAs<int32, TRemoveConst<const int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32&>::Type>));
 
-	always_check((TIsInvocableResult<void, int32()>::Value));
-	always_check((TIsInvocableResult<int32, int32()>::Value));
-	always_check((TIsInvocableResult<int32, int32(int32), int32>::Value));
-	always_check(!(TIsInvocableResult<int32, int32(int32), FTestStructA>::Value));
-	always_check(!(TIsInvocableResult<FTestStructA, int32(int32), int32>::Value));
+	always_check((CSameAs<int32, TRemoveVolatile<int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32*>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32&>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32&&>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const int32>::Type>));
+	always_check((CSameAs<int32, TRemoveVolatile<volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TRemoveConst<int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<int32*>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<int32&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<int32&&>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveConst<const int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<const volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveConst<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemoveCV<int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32*>::Type>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32&>::Type>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32&&>::Type>));
+	always_check((CSameAs<int32, TRemoveCV<const int32>::Type>));
+	always_check((CSameAs<int32, TRemoveCV<volatile int32>::Type>));
+	always_check((CSameAs<int32, TRemoveCV<const volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveCV<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TRemoveVolatile<int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<int32*>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<int32&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<int32&&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<const int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveVolatile<volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<const volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveVolatile<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemovePointer<int32>::Type>));
+	always_check((CSameAs<int32, TRemovePointer<int32*>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<int32&>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<int32&&>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<const int32>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TRemoveCV<int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveCV<int32*>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveCV<int32&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveCV<int32&&>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCV<const int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCV<volatile int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCV<const volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveCV<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemoveReference<int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveReference<int32*>::Type>));
+	always_check((CSameAs<int32, TRemoveReference<int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveReference<int32&&>::Type>));
+	always_check(!(CSameAs<int32, TRemoveReference<const int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveReference<volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TRemovePointer<int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemovePointer<int32*>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<int32&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<int32&&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<const int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<const volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemovePointer<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemoveCVRef<int32>::Type>));
+	always_check(!(CSameAs<int32, TRemoveCVRef<int32*>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<int32&&>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<const int32>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<volatile int32>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TRemoveReference<int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveReference<int32*>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveReference<int32&>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveReference<int32&&>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveReference<const int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveReference<volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveReference<const volatile int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveReference<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemoveExtent<int32[1]>::Type>));
+	always_check(!(CSameAs<int32, TRemoveExtent<int32[1][2]>::Type>));
+	always_check((CSameAs<int32[2][3], TRemoveExtent<int32[1][2][3]>::Type>));
 
-	always_check((TIsSame<int32, TRemoveCVRef<int32>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveCVRef<int32*>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<int32&>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<int32&&>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<const int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<volatile int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<const volatile int32>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveCVRef<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1]>::Type>));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2]>::Type>));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2][3]>::Type>));
 
-	always_check((TIsSame<int32, TRemoveExtent<int32[1]>::Type>::Value));
-	always_check(!(TIsSame<int32, TRemoveExtent<int32[1][2]>::Type>::Value));
-	always_check((TIsSame<int32[2][3], TRemoveExtent<int32[1][2][3]>::Type>::Value));
+	always_check((CSameAs<int32, TMakeSigned<int32>::Type>));
+	always_check((CSameAs<int32, TMakeSigned<uint32>::Type>));
 
-	always_check((TIsSame<int32, TRemoveAllExtents<int32[1]>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveAllExtents<int32[1][2]>::Type>::Value));
-	always_check((TIsSame<int32, TRemoveAllExtents<int32[1][2][3]>::Type>::Value));
-
-	always_check((TIsSame<int32, TMakeSigned<int32>::Type>::Value));
-	always_check((TIsSame<int32, TMakeSigned<uint32>::Type>::Value));
-
-	always_check((TIsSame<uint32, TMakeUnsigned<int32>::Type>::Value));
-	always_check((TIsSame<uint32, TMakeUnsigned<uint32>::Type>::Value));
+	always_check((CSameAs<uint32, TMakeUnsigned<int32>::Type>));
+	always_check((CSameAs<uint32, TMakeUnsigned<uint32>::Type>));
 
 	TAlignedStorage<32, 4>::Type Aligned4;
 	TAlignedStorage<32, 8>::Type Aligned8;
@@ -415,40 +404,60 @@ void TestTypeTraits()
 	always_check(sizeof(TAlignedUnion<0, int32, int64>::Type) == 8);
 	always_check(sizeof(TAlignedUnion<0, int32, double>::Type) == 8);
 
-	always_check((TIsSame<int32, TDecay<int32>::Type>::Value));
-	always_check((TIsSame<int32*, TDecay<int32*>::Type>::Value));
-	always_check((TIsSame<int32*, TDecay<int32[]>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<int32&>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<int32&&>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<const int32>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<volatile int32>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<const volatile int32>::Type>::Value));
-	always_check((TIsSame<int32, TDecay<const volatile int32&>::Type>::Value));
+	always_check((CSameAs<int32, TDecay<int32>::Type>));
+	always_check((CSameAs<int32*, TDecay<int32*>::Type>));
+	always_check((CSameAs<int32*, TDecay<int32[]>::Type>));
+	always_check((CSameAs<int32, TDecay<int32&>::Type>));
+	always_check((CSameAs<int32, TDecay<int32&&>::Type>));
+	always_check((CSameAs<int32, TDecay<const int32>::Type>));
+	always_check((CSameAs<int32, TDecay<volatile int32>::Type>));
+	always_check((CSameAs<int32, TDecay<const volatile int32>::Type>));
+	always_check((CSameAs<int32, TDecay<const volatile int32&>::Type>));
 
-	always_check((TIsSame<int32, TConditional<true, int32, int64>::Type>::Value));
-	always_check((TIsSame<int64, TConditional<false, int32, int64>::Type>::Value));
+	always_check((CSameAs<int32, TConditional<true, int32, int64>::Type>));
+	always_check((CSameAs<int64, TConditional<false, int32, int64>::Type>));
 
-	always_check((TIsSame<int, TUnderlyingType<ETestEnumClass>::Type>::Value));
-	always_check((TIsSame<uint8, TUnderlyingType<ETestEnumClass8>::Type>::Value));
-	always_check((TIsSame<uint32, TUnderlyingType<ETestEnumClass32>::Type>::Value));
-	always_check((TIsSame<uint64, TUnderlyingType<ETestEnumClass64>::Type>::Value));
+	always_check((CSameAs<int, TUnderlyingType<ETestEnumClass>::Type>));
+	always_check((CSameAs<uint8, TUnderlyingType<ETestEnumClass8>::Type>));
+	always_check((CSameAs<uint32, TUnderlyingType<ETestEnumClass32>::Type>));
+	always_check((CSameAs<uint64, TUnderlyingType<ETestEnumClass64>::Type>));
 
-	always_check((TIsSame<int32, TInvokeResult<int32()>::Type>::Value));
-	always_check((TIsSame<int32, TInvokeResult<int32(int32), int32>::Type>::Value));
-//	always_check((TIsSame<char(&)[2], TInvokeResult<char(&())[2]>::Type>::Value));
+	always_check((CSameAs<void, TVoid<int32>::Type>));
+	always_check((CSameAs<void, TVoid<int32, int64>::Type>));
+	
+	// Invocable.h
+	
+	always_check((CInvocable<int32()>));
+	always_check((CInvocable<int32(int32), int32>));
+	always_check(!(CInvocable<int32(int32), FTestStructA>));
+	always_check((CInvocable<int32(int32), int32>));
 
-	always_check((TIsSame<void, TVoid<int32>::Type>::Value));
-	always_check((TIsSame<void, TVoid<int32, int64>::Type>::Value));
+	always_check((CInvocableResult<void, int32()>));
+	always_check((CInvocableResult<int32, int32()>));
+	always_check((CInvocableResult<int32, int32(int32), int32>));
+	always_check(!(CInvocableResult<int32, int32(int32), FTestStructA>));
+	always_check(!(CInvocableResult<FTestStructA, int32(int32), int32>));
+
+	always_check((CSameAs<int32, TInvokeResult<int32()>::Type>));
+	always_check((CSameAs<int32, TInvokeResult<int32(int32), int32>::Type>));
+//	always_check((CSameAs<char(&)[2], TInvokeResult<char(&())[2]>::Type>));
+
+	always_check((CInvocable          <decltype([](                         ) -> void  {                          })                      >));
+	always_check((CRegularInvocable   <decltype([](int32 A                  ) -> int32 { return A;                }), int32               >));
+	always_check((CPredicate          <decltype([](int32 A, int32 B, int32 C) -> bool  { return (A + B + C) == 0; }), int32, int32, int32 >));
+	always_check((CRelation           <decltype([](int32 A, int32 B         ) -> bool  { return (A ^ B) == 0;     }), int32, int32        >));
+	always_check((CEquivalenceRelation<decltype([](int32 A, int32 B         ) -> bool  { return A == B;           }), int32, int32        >));
+	always_check((CStrictWeakOrder    <decltype([](int32 A, int32 B         ) -> bool  { return A < B;            }), int32, int32        >));
 
 	// Common.h
 
-	always_check((TIsSame<int32, TCommonType<int8, int32>::Type>::Value));
-	always_check((TIsSame<int64, TCommonType<int8, int32, int64>::Type>::Value));
-	always_check((TIsSame<double, TCommonType<float, double>::Type>::Value));
+	always_check((CSameAs<int32, TCommonType<int8, int32>::Type>));
+	always_check((CSameAs<int64, TCommonType<int8, int32, int64>::Type>));
+	always_check((CSameAs<double, TCommonType<float, double>::Type>));
 
-	always_check((TIsSame<int32, TCommonReference<int8, int32>::Type>::Value));
-	always_check((TIsSame<int64, TCommonReference<int8, int32, int64>::Type>::Value));
-	always_check((TIsSame<double, TCommonReference<float, double>::Type>::Value));
+	always_check((CSameAs<int32, TCommonReference<int8, int32>::Type>));
+	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>::Type>));
+	always_check((CSameAs<double, TCommonReference<float, double>::Type>));
 
 	// Swappable.h
 
@@ -461,81 +470,88 @@ void TestTypeTraits()
 
 	// CopyQualifiers.h
 
-	always_check((TIsSame<               int32, TCopyConst<               int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyConst<const          int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyConst<const volatile int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyConst<               int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyConst<const          int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyConst<const volatile int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyConst<               int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyConst<const          int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyConst<const volatile int32, const volatile int32>::Type>::Value));
+	always_check((CSameAs<               int32, TCopyConst<               int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyConst<const          int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyConst<const volatile int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyConst<               int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyConst<const          int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyConst<const volatile int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyConst<               int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyConst<const          int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyConst<const volatile int32, const volatile int32>::Type>));
 	
-	always_check((TIsSame<               int32, TCopyVolatile<               int32,                int32>::Type>::Value));
-	always_check((TIsSame<               int32, TCopyVolatile<const          int32,                int32>::Type>::Value));
-	always_check((TIsSame<      volatile int32, TCopyVolatile<const volatile int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyVolatile<               int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyVolatile<const          int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyVolatile<const volatile int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyVolatile<               int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyVolatile<const          int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyVolatile<const volatile int32, const volatile int32>::Type>::Value));
+	always_check((CSameAs<               int32, TCopyVolatile<               int32,                int32>::Type>));
+	always_check((CSameAs<               int32, TCopyVolatile<const          int32,                int32>::Type>));
+	always_check((CSameAs<      volatile int32, TCopyVolatile<const volatile int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyVolatile<               int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyVolatile<const          int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyVolatile<const volatile int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyVolatile<               int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyVolatile<const          int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyVolatile<const volatile int32, const volatile int32>::Type>));
 	
-	always_check((TIsSame<               int32, TCopyCV<               int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCV<const          int32,                int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCV<               int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCV<const          int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCV<               int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCV<const          int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCV<const volatile int32, const volatile int32>::Type>::Value));
+	always_check((CSameAs<               int32, TCopyCV<               int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCV<const          int32,                int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCV<const volatile int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCV<               int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCV<const          int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCV<const volatile int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCV<               int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCV<const          int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCV<const volatile int32, const volatile int32>::Type>));
 	
-	always_check((TIsSame<int32,   TCopyReference<int32,   int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyReference<int32,   int32& >::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyReference<int32,   int32&&>::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32& >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyReference<int32&,  int32&&>::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyReference<int32&&, int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyReference<int32&&, int32& >::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyReference<int32&&, int32&&>::Type>::Value));
+	always_check((CSameAs<int32,   TCopyReference<int32,   int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyReference<int32,   int32& >::Type>));
+	always_check((CSameAs<int32&&, TCopyReference<int32,   int32&&>::Type>));
+	always_check((CSameAs<int32&,  TCopyReference<int32&,  int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyReference<int32&,  int32& >::Type>));
+	always_check((CSameAs<int32&,  TCopyReference<int32&,  int32&&>::Type>));
+	always_check((CSameAs<int32&&, TCopyReference<int32&&, int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyReference<int32&&, int32& >::Type>));
+	always_check((CSameAs<int32&&, TCopyReference<int32&&, int32&&>::Type>));
 
-	always_check((TIsSame<               int32, TCopyCVRef<               int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<const          int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<               int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<const          int32, const          int32>::Type>::Value));
-	always_check((TIsSame<      volatile int32, TCopyCVRef<      volatile int32,                int32>::Type>::Value));
-	always_check((TIsSame<      volatile int32, TCopyCVRef<               int32,       volatile int32>::Type>::Value));
-	always_check((TIsSame<      volatile int32, TCopyCVRef<      volatile int32,       volatile int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<const          int32,                int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32,                int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<               int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const          int32, TCopyCVRef<const          int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32, const          int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCVRef<               int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCVRef<const          int32, const volatile int32>::Type>::Value));
-	always_check((TIsSame<const volatile int32, TCopyCVRef<const volatile int32, const volatile int32>::Type>::Value));
+	always_check((CSameAs<               int32, TCopyCVRef<               int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<const          int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<               int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<const          int32, const          int32>::Type>));
+	always_check((CSameAs<      volatile int32, TCopyCVRef<      volatile int32,                int32>::Type>));
+	always_check((CSameAs<      volatile int32, TCopyCVRef<               int32,       volatile int32>::Type>));
+	always_check((CSameAs<      volatile int32, TCopyCVRef<      volatile int32,       volatile int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<const          int32,                int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCVRef<const volatile int32,                int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<               int32, const          int32>::Type>));
+	always_check((CSameAs<const          int32, TCopyCVRef<const          int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCVRef<const volatile int32, const          int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCVRef<               int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCVRef<const          int32, const volatile int32>::Type>));
+	always_check((CSameAs<const volatile int32, TCopyCVRef<const volatile int32, const volatile int32>::Type>));
 	
-	always_check((TIsSame<int32,   TCopyCVRef<int32,   int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyCVRef<int32,   int32& >::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyCVRef<int32,   int32&&>::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32& >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyCVRef<int32&,  int32&&>::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyCVRef<int32&&, int32  >::Type>::Value));
-	always_check((TIsSame<int32&,  TCopyCVRef<int32&&, int32& >::Type>::Value));
-	always_check((TIsSame<int32&&, TCopyCVRef<int32&&, int32&&>::Type>::Value));
+	always_check((CSameAs<int32,   TCopyCVRef<int32,   int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyCVRef<int32,   int32& >::Type>));
+	always_check((CSameAs<int32&&, TCopyCVRef<int32,   int32&&>::Type>));
+	always_check((CSameAs<int32&,  TCopyCVRef<int32&,  int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyCVRef<int32&,  int32& >::Type>));
+	always_check((CSameAs<int32&,  TCopyCVRef<int32&,  int32&&>::Type>));
+	always_check((CSameAs<int32&&, TCopyCVRef<int32&&, int32  >::Type>));
+	always_check((CSameAs<int32&,  TCopyCVRef<int32&&, int32& >::Type>));
+	always_check((CSameAs<int32&&, TCopyCVRef<int32&&, int32&&>::Type>));
 
-	always_check((TIsSame<const           int32,   TCopyCVRef<const          int32,         int32  >::Type>::Value));
-	always_check((TIsSame<const           int32&,  TCopyCVRef<               int32,   const int32& >::Type>::Value));
-	always_check((TIsSame<const volatile  int32&&, TCopyCVRef<const volatile int32,   const int32&&>::Type>::Value));
-	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&,        int32  >::Type>::Value));
-	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&,  const int32& >::Type>::Value));
-	always_check((TIsSame<const volatile  int32&,  TCopyCVRef<      volatile int32&,  const int32&&>::Type>::Value));
-	always_check((TIsSame<const           int32&&, TCopyCVRef<const          int32&&,       int32  >::Type>::Value));
-	always_check((TIsSame<const           int32&,  TCopyCVRef<const          int32&&, const int32& >::Type>::Value));
-	always_check((TIsSame<const volatile  int32&&, TCopyCVRef<const volatile int32&&, const int32&&>::Type>::Value));
+	always_check((CSameAs<const           int32,   TCopyCVRef<const          int32,         int32  >::Type>));
+	always_check((CSameAs<const           int32&,  TCopyCVRef<               int32,   const int32& >::Type>));
+	always_check((CSameAs<const volatile  int32&&, TCopyCVRef<const volatile int32,   const int32&&>::Type>));
+	always_check((CSameAs<const           int32&,  TCopyCVRef<const          int32&,        int32  >::Type>));
+	always_check((CSameAs<const           int32&,  TCopyCVRef<const          int32&,  const int32& >::Type>));
+	always_check((CSameAs<const volatile  int32&,  TCopyCVRef<      volatile int32&,  const int32&&>::Type>));
+	always_check((CSameAs<const           int32&&, TCopyCVRef<const          int32&&,       int32  >::Type>));
+	always_check((CSameAs<const           int32&,  TCopyCVRef<const          int32&&, const int32& >::Type>));
+	always_check((CSameAs<const volatile  int32&&, TCopyCVRef<const volatile int32&&, const int32&&>::Type>));
+
+	// BooleanTestable.h
+
+	always_check(CBooleanTestable<bool>);
+	always_check(CBooleanTestable<int32>);
+	always_check(CBooleanTestable<float>);
+	always_check(!CBooleanTestable<FTestStructA>);
 
 }
 

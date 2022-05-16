@@ -35,9 +35,9 @@ template <typename T, typename U> struct TIsBitwiseConstructible<const volatile 
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
 template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
 
-template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TIsConvertible<U*, T*> { };
+template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TBoolConstant<CConvertibleTo<U*, T*>> { };
 
-template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<TIsSame<T, U>::Value ? CTriviallyCopyConstructible<T> : false> { };
+template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<CSameAs<T, U> ? CTriviallyCopyConstructible<T> : false> { };
 
 template <> struct TIsBitwiseConstructible<uint8,   int8>  : FTrue { };
 template <> struct TIsBitwiseConstructible< int8,  uint8>  : FTrue { };

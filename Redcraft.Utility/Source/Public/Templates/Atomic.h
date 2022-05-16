@@ -121,7 +121,7 @@ public:
 	FORCEINLINE void Notify(bool bIsAll = false)          { if (bIsAll) Element.notify_all(); else Element.notify_one(); }
 	FORCEINLINE void Notify(bool bIsAll = false) volatile { if (bIsAll) Element.notify_all(); else Element.notify_one(); }
 	
-	template <typename F> requires TIsInvocableResult<ValueType, F, ValueType>::Value
+	template <typename F> requires CInvocableResult<ValueType, F, ValueType>
 	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)
 	{
 		ValueType Temp(Load(EMemoryOrder::Relaxed));
@@ -129,7 +129,7 @@ public:
 		return Temp;
 	}
 
-	template <typename F> requires TIsInvocableResult<ValueType, F, ValueType>::Value && bIsAlwaysLockFree
+	template <typename F> requires CInvocableResult<ValueType, F, ValueType> && bIsAlwaysLockFree
 	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile
 	{
 		ValueType Temp(Load(EMemoryOrder::Relaxed));

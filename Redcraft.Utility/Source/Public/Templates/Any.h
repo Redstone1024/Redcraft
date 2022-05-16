@@ -76,7 +76,7 @@ struct alignas(InlineAlignment) TAny
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 	}
 
-	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
+	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
 	{ }
@@ -184,7 +184,7 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
+	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
@@ -233,10 +233,10 @@ struct alignas(InlineAlignment) TAny
 	template <typename T> requires CDestructible<typename TDecay<T>::Type>
 	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetAllocation())); }
 	
-	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CSameAs<T, typename TDecay<T>::Type>&& CDestructible<typename TDecay<T>::Type>
 	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
-	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CSameAs<T, typename TDecay<T>::Type>&& CDestructible<typename TDecay<T>::Type>
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	FORCEINLINE void Reset()

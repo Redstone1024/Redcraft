@@ -25,7 +25,7 @@ template <typename T> concept CSigned                    = NAMESPACE_STD::is_sig
 template <typename T> concept CUnsigned                  = NAMESPACE_STD::is_unsigned_v<T>;
 template <typename T> concept CBoundedArray              = NAMESPACE_STD::is_bounded_array_v<T>;
 template <typename T> concept CUnboundedArray            = NAMESPACE_STD::is_unbounded_array_v<T>;
-template <typename T> concept CScopedEnum                = CEnum<T> && !TIsConvertible<T, int64>::Value;
+template <typename T> concept CScopedEnum                = CEnum<T> && !CConvertibleTo<T, int64>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

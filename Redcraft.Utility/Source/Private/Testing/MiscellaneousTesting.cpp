@@ -185,9 +185,9 @@ void TestCompare()
 	always_check((FTestStrongOrdering( 0) == FTestStrongOrdering( 0)));
 	always_check((FTestStrongOrdering( 0) >  FTestStrongOrdering(-1)));
 
-	always_check((TIsSame<TCommonComparisonCategory<strong_ordering                                 >::Type, strong_ordering >::Value));
-	always_check((TIsSame<TCommonComparisonCategory<strong_ordering, weak_ordering                  >::Type, weak_ordering   >::Value));
-	always_check((TIsSame<TCommonComparisonCategory<strong_ordering, weak_ordering, partial_ordering>::Type, partial_ordering>::Value));
+	always_check((CSameAs<TCommonComparisonCategory<strong_ordering                                 >::Type, strong_ordering >));
+	always_check((CSameAs<TCommonComparisonCategory<strong_ordering, weak_ordering                  >::Type, weak_ordering   >));
+	always_check((CSameAs<TCommonComparisonCategory<strong_ordering, weak_ordering, partial_ordering>::Type, partial_ordering>));
 
 	always_check(CThreeWayComparable<int32>);
 	always_check(CThreeWayComparable<FTestPartialOrdering>);
@@ -197,11 +197,11 @@ void TestCompare()
 	always_check((CThreeWayComparableWith<bool, bool>));
 	always_check((CThreeWayComparableWith<int16, int32>));
 
-	always_check((TIsSame<TCompareThreeWayResult<int32               >::Type, strong_ordering >::Value));
-	always_check((TIsSame<TCompareThreeWayResult<float               >::Type, partial_ordering>::Value));
-	always_check((TIsSame<TCompareThreeWayResult<FTestPartialOrdering>::Type, partial_ordering>::Value));
-	always_check((TIsSame<TCompareThreeWayResult<FTestWeakOrdering   >::Type, weak_ordering   >::Value));
-	always_check((TIsSame<TCompareThreeWayResult<FTestStrongOrdering >::Type, strong_ordering >::Value));
+	always_check((CSameAs<TCompareThreeWayResult<int32               >::Type, strong_ordering >));
+	always_check((CSameAs<TCompareThreeWayResult<float               >::Type, partial_ordering>));
+	always_check((CSameAs<TCompareThreeWayResult<FTestPartialOrdering>::Type, partial_ordering>));
+	always_check((CSameAs<TCompareThreeWayResult<FTestWeakOrdering   >::Type, weak_ordering   >));
+	always_check((CSameAs<TCompareThreeWayResult<FTestStrongOrdering >::Type, strong_ordering >));
 
 	always_check((SynthThreeWayCompare(0, 0)   == strong_ordering::equal));
 	always_check((SynthThreeWayCompare(0, 0.0) == strong_ordering::equal));

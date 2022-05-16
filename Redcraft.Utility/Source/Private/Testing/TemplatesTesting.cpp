@@ -79,8 +79,8 @@ void TestReferenceWrapper()
 	always_check(ArrayA[1] == 4);
 	always_check(ArrayA[2] == 6);
 
-	always_check((TIsSame<int32,  TUnwrapRefDecay<int32>::Type>::Value));
-	always_check((TIsSame<int32&, TUnwrapRefDecay<TReferenceWrapper<int32>>::Type>::Value));
+	always_check((CSameAs<int32,  TUnwrapRefDecay<int32>::Type>));
+	always_check((CSameAs<int32&, TUnwrapRefDecay<TReferenceWrapper<int32>>::Type>));
 }
 
 void TestOptional()
@@ -255,9 +255,9 @@ void TestVariant()
 		TempZ = TVariant<FTracker>();
 		TempZ = FTracker();
 
-		always_check((TIsSame<int32, TVariantAlternativeType<0, TVariant<int32, float>>::Type>::Value));
-		always_check((TIsSame<float, TVariantAlternativeType<1, TVariant<int32, float>>::Type>::Value));
-		always_check((TIsSame<const int32, TVariantAlternativeType<0, const TVariant<int32, float>>::Type>::Value));
+		always_check((CSameAs<int32, TVariantAlternativeType<0, TVariant<int32, float>>::Type>));
+		always_check((CSameAs<float, TVariantAlternativeType<1, TVariant<int32, float>>::Type>));
+		always_check((CSameAs<const int32, TVariantAlternativeType<0, const TVariant<int32, float>>::Type>));
 
 		always_check((TVariantAlternativeIndex<int32, TVariant<int32, float>>::Value == 0));
 		always_check((TVariantAlternativeIndex<float, TVariant<int32, float>>::Value == 1));
@@ -282,7 +282,7 @@ void TestVariant()
 
 		TVariant<int32> TempLA = 10;
 		auto ReturnLA = TempLA.Visit(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnLA)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnLA)>));
 
 		bIsConst = true;
 		bIsLValue = true;
@@ -290,7 +290,7 @@ void TestVariant()
 
 		const TVariant<int32> TempLB = TempLA;
 		auto ReturnLB = TempLB.Visit(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnLB)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnLB)>));
 
 		bIsConst = false;
 		bIsLValue = false;
@@ -298,7 +298,7 @@ void TestVariant()
 
 		TVariant<int32> TempRA = 10;
 		auto ReturnRA = MoveTemp(TempRA).Visit(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnRA)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnRA)>));
 
 		bIsConst = true;
 		bIsLValue = false;
@@ -306,7 +306,7 @@ void TestVariant()
 
 		const TVariant<int32> TempRB = TempLA;
 		auto ReturnRB = MoveTemp(TempRB).Visit(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnRB)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnRB)>));
 
 		bIsConst = false;
 		bIsLValue = true;
@@ -314,7 +314,7 @@ void TestVariant()
 
 		TVariant<int32> TempLC = 10;
 		auto ReturnLC = TempLC.Visit<int32>(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnLC)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnLC)>));
 
 		bIsConst = true;
 		bIsLValue = true;
@@ -322,7 +322,7 @@ void TestVariant()
 
 		const TVariant<int32> TempLD = TempLC;
 		auto ReturnLD = TempLD.Visit<int32>(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnLD)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnLD)>));
 
 		bIsConst = false;
 		bIsLValue = false;
@@ -330,7 +330,7 @@ void TestVariant()
 
 		TVariant<int32> TempRC = 10;
 		auto ReturnRC = MoveTemp(TempRC).Visit<int32>(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnRC)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnRC)>));
 
 		bIsConst = true;
 		bIsLValue = false;
@@ -338,7 +338,7 @@ void TestVariant()
 
 		const TVariant<int32> TempRD = TempLC;
 		auto ReturnRD = MoveTemp(TempRD).Visit<int32>(TestQualifiers);
-		always_check((TIsSame<int32, decltype(ReturnRD)>::Value));
+		always_check((CSameAs<int32, decltype(ReturnRD)>));
 	}
 	
 	{
@@ -584,120 +584,120 @@ void TestAny()
 
 void TestTuple()
 {
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32, char>&>().GetValue<0>()), const volatile int32&>));
 
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32, char>&&>().GetValue<0>()),                int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32, char>&&>().GetValue<0>()),                int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
 	
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32&, char>&>().GetValue<0>()), const volatile int32&>));
 
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32&, char>&&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32&, char>&&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32&, char>&&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32&, char>&&>().GetValue<0>()), const volatile int32&>));
 
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32&&, char>&>().GetValue<0>()),                int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32&&, char>&>().GetValue<0>()), const          int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32&&, char>&>().GetValue<0>()),       volatile int32&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32&&, char>&>().GetValue<0>()), const volatile int32&>));
 
-	always_check((TIsSame<decltype(DeclVal<               TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<               TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const          TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<      volatile TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>::Value));
-	always_check((TIsSame<decltype(DeclVal<const volatile TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>::Value));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<               TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const          TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<      volatile TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<               int32&&, char>&&>().GetValue<0>()),                int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32&&, char>&&>().GetValue<0>()), const          int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>));
+	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>));
 
-	always_check((TIsSame<TTupleElementType<0,                TTuple<double, float&, char&&>>::Type,                double>::Value));
-	always_check((TIsSame<TTupleElementType<1,                TTuple<double, float&, char&&>>::Type,                float&>::Value));
-	always_check((TIsSame<TTupleElementType<2,                TTuple<double, float&, char&&>>::Type,                char&&>::Value));
-	always_check((TIsSame<TTupleElementType<0, const          TTuple<double, float&, char&&>>::Type, const          double>::Value));
-	always_check((TIsSame<TTupleElementType<1, const          TTuple<double, float&, char&&>>::Type, const          float&>::Value));
-	always_check((TIsSame<TTupleElementType<2, const          TTuple<double, float&, char&&>>::Type, const          char&&>::Value));
-	always_check((TIsSame<TTupleElementType<0,       volatile TTuple<double, float&, char&&>>::Type,       volatile double>::Value));
-	always_check((TIsSame<TTupleElementType<1,       volatile TTuple<double, float&, char&&>>::Type,       volatile float&>::Value));
-	always_check((TIsSame<TTupleElementType<2,       volatile TTuple<double, float&, char&&>>::Type,       volatile char&&>::Value));
-	always_check((TIsSame<TTupleElementType<0, const volatile TTuple<double, float&, char&&>>::Type, const volatile double>::Value));
-	always_check((TIsSame<TTupleElementType<1, const volatile TTuple<double, float&, char&&>>::Type, const volatile float&>::Value));
-	always_check((TIsSame<TTupleElementType<2, const volatile TTuple<double, float&, char&&>>::Type, const volatile char&&>::Value));
+	always_check((CSameAs<TTupleElementType<0,                TTuple<double, float&, char&&>>::Type,                double>));
+	always_check((CSameAs<TTupleElementType<1,                TTuple<double, float&, char&&>>::Type,                float&>));
+	always_check((CSameAs<TTupleElementType<2,                TTuple<double, float&, char&&>>::Type,                char&&>));
+	always_check((CSameAs<TTupleElementType<0, const          TTuple<double, float&, char&&>>::Type, const          double>));
+	always_check((CSameAs<TTupleElementType<1, const          TTuple<double, float&, char&&>>::Type, const          float&>));
+	always_check((CSameAs<TTupleElementType<2, const          TTuple<double, float&, char&&>>::Type, const          char&&>));
+	always_check((CSameAs<TTupleElementType<0,       volatile TTuple<double, float&, char&&>>::Type,       volatile double>));
+	always_check((CSameAs<TTupleElementType<1,       volatile TTuple<double, float&, char&&>>::Type,       volatile float&>));
+	always_check((CSameAs<TTupleElementType<2,       volatile TTuple<double, float&, char&&>>::Type,       volatile char&&>));
+	always_check((CSameAs<TTupleElementType<0, const volatile TTuple<double, float&, char&&>>::Type, const volatile double>));
+	always_check((CSameAs<TTupleElementType<1, const volatile TTuple<double, float&, char&&>>::Type, const volatile float&>));
+	always_check((CSameAs<TTupleElementType<2, const volatile TTuple<double, float&, char&&>>::Type, const volatile char&&>));
 	
 	always_check((TTupleElementIndex<double,                TTuple<double, float&, char&&>>::Value == 0));
 	always_check((TTupleElementIndex<float&,                TTuple<double, float&, char&&>>::Value == 1));
@@ -714,11 +714,11 @@ void TestTuple()
 
 	always_check((TTupleElementIndex<int32, TTuple<double, float&, char&&>>::Value == INDEX_NONE));
 
-//	always_check((TIsSame<TTupleElementType<0, int32>::Type, double>::Value));
+//	always_check((CSameAs<TTupleElementType<0, int32>::Type, double>));
 
 //	always_check((TTupleElementIndex<int32, int32>::Value == 0));
 
-//	always_check((TIsSame<TTupleElementType<4, TTuple<double, float&, char&&>>::Type, double>::Value));
+//	always_check((CSameAs<TTupleElementType<4, TTuple<double, float&, char&&>>::Type, double>));
 
 	{
 		using Type = TTuple<int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64,
@@ -801,8 +801,8 @@ void TestTuple()
 		always_check(TempE.GetValue<int32>() == 404);
 		always_check(TempE.GetValue<double>() == 3.14);
 		always_check(TempE.GetValue<float>() == 1.42f);
-		always_check((TIsSame<decltype(TempE), TTuple<int32, FTracker, double, FTracker, float, FTracker>>::Value));
-		always_check((TIsSame<decltype(TempE), typename TTupleCatResult<TTuple<int32, FTracker>, TTuple<double, FTracker>, TTuple<float, FTracker>>::Type>::Value));
+		always_check((CSameAs<decltype(TempE), TTuple<int32, FTracker, double, FTracker, float, FTracker>>));
+		always_check((CSameAs<decltype(TempE), typename TTupleCatResult<TTuple<int32, FTracker>, TTuple<double, FTracker>, TTuple<float, FTracker>>::Type>));
 	}
 
 	{
@@ -826,8 +826,8 @@ void TestTuple()
 		always_check(TempB == 3.14);
 		always_check(TempG.GetValue<0>() == 10);
 		always_check(TempG.GetValue<2>() == 10);
-		always_check((TIsSame<decltype(TempG), TTuple<int32, double&, int16&, FTracker&&>>::Value));
-		always_check((TIsSame<decltype(TempG), typename TTupleCatResult<TTuple<int32, double&>, TTuple<int16&, FTracker&&>>::Type>::Value));
+		always_check((CSameAs<decltype(TempG), TTuple<int32, double&, int16&, FTracker&&>>));
+		always_check((CSameAs<decltype(TempG), typename TTupleCatResult<TTuple<int32, double&>, TTuple<int16&, FTracker&&>>::Type>));
 	}
 
 	{
@@ -839,8 +839,8 @@ void TestTuple()
 			{
 				always_check(A == 15);
 				always_check(B == 514);
-				always_check((TIsSame<T&&, int32&>::Value));
-				always_check((TIsSame<U&&, const int64&>::Value));
+				always_check((CSameAs<T&&, int32&>));
+				always_check((CSameAs<U&&, const int64&>));
 			}
 		);
 		
@@ -849,8 +849,8 @@ void TestTuple()
 			{
 				always_check(A == 15);
 				always_check(B == 514);
-				always_check((TIsSame<T&&, int32&&>::Value));
-				always_check((TIsSame<U&&, const int64&&>::Value));
+				always_check((CSameAs<T&&, int32&&>));
+				always_check((CSameAs<U&&, const int64&&>));
 			}
 		);
 		
@@ -860,9 +860,9 @@ void TestTuple()
 				always_check(A == '-');
 				always_check(B == 15);
 				always_check(C == 514);
-				always_check((TIsSame<T&&, char&&>::Value));
-				always_check((TIsSame<U&&, int32&>::Value));
-				always_check((TIsSame<V&&, const int64&>::Value));
+				always_check((CSameAs<T&&, char&&>));
+				always_check((CSameAs<U&&, int32&>));
+				always_check((CSameAs<V&&, const int64&>));
 			},
 			'-'
 		);
@@ -873,9 +873,9 @@ void TestTuple()
 				always_check(A == '-');
 				always_check(B == 15);
 				always_check(C == 514);
-				always_check((TIsSame<T&&, char&&>::Value));
-				always_check((TIsSame<U&&, int32&&>::Value));
-				always_check((TIsSame<V&&, const int64&&>::Value));
+				always_check((CSameAs<T&&, char&&>));
+				always_check((CSameAs<U&&, int32&&>));
+				always_check((CSameAs<V&&, const int64&&>));
 			},
 			'-'
 		);
@@ -886,9 +886,9 @@ void TestTuple()
 				always_check(A == 15);
 				always_check(B == 514);
 				always_check(C == '-');
-				always_check((TIsSame<T&&, int32&>::Value));
-				always_check((TIsSame<U&&, const int64&>::Value));
-				always_check((TIsSame<V&&, char&&>::Value));
+				always_check((CSameAs<T&&, int32&>));
+				always_check((CSameAs<U&&, const int64&>));
+				always_check((CSameAs<V&&, char&&>));
 			},
 			'-'
 		);
@@ -899,9 +899,9 @@ void TestTuple()
 				always_check(A == 15);
 				always_check(B == 514);
 				always_check(C == '-');
-				always_check((TIsSame<T&&, int32&&>::Value));
-				always_check((TIsSame<U&&, const int64&&>::Value));
-				always_check((TIsSame<V&&, char&&>::Value));
+				always_check((CSameAs<T&&, int32&&>));
+				always_check((CSameAs<U&&, const int64&&>));
+				always_check((CSameAs<V&&, char&&>));
 			},
 			'-'
 		);
@@ -914,8 +914,8 @@ void TestTuple()
 		VisitTuple(
 			[]<typename T> (T&& A)
 			{
-				if constexpr (TIsSame<T&&, int32&>::Value) always_check(A == 2);
-				else if constexpr (TIsSame<T&&, char&>::Value) always_check(A == 'B');
+				if constexpr (CSameAs<T&&, int32&>) always_check(A == 2);
+				else if constexpr (CSameAs<T&&, char&>) always_check(A == 'B');
 				else always_check_no_entry();
 			},
 			TempB
@@ -926,8 +926,8 @@ void TestTuple()
 		VisitTuple(
 			[]<typename T> (T&& A)
 			{
-				if constexpr (TIsSame<T&&, int32&>::Value) always_check(A == 3);
-				else if constexpr (TIsSame<T&&, char&>::Value) always_check(A == 'C');
+				if constexpr (CSameAs<T&&, int32&>) always_check(A == 3);
+				else if constexpr (CSameAs<T&&, char&>) always_check(A == 'C');
 				else always_check_no_entry();
 			},
 			TempB
@@ -953,7 +953,7 @@ void TestTuple()
 		always_check(A == 1);
 		always_check(B == 2.3);
 		always_check(C == 'A');
-		always_check((TIsSame<decltype(C), char>::Value));
+		always_check((CSameAs<decltype(C), char>));
 	}
 
 	always_check(GetTypeHash(MakeTuple(114, 1.0f)) == GetTypeHash(MakeTuple(114, 1.0f)));

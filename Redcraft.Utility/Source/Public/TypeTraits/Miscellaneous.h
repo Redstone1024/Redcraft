@@ -25,14 +25,12 @@ struct TMaximum<First, Second, Others...> : TMaximum<(First < Second ? Second : 
 
 NAMESPACE_PRIVATE_END
 
-template <typename T>               struct TRank   : TConstant<size_t, NAMESPACE_STD::rank_v<T>>      { };
-template <typename T, size_t I = 0> struct TExtent : TConstant<size_t, NAMESPACE_STD::extent_v<T, I>> { };
+template <typename T>               inline constexpr size_t ArrayRank   =  NAMESPACE_STD::rank_v<T>;
+template <typename T, size_t I = 0> inline constexpr size_t ArrayExtent =  NAMESPACE_STD::extent_v<T, I>;
 
-template <typename T, typename U> struct TIsSame                              : TBoolConstant<NAMESPACE_STD::is_same_v<T, U>>                 { };
-template <typename T, typename U> struct TIsBaseOf                            : TBoolConstant<NAMESPACE_STD::is_base_of_v<T, U>>              { };
-template <typename T, typename U> struct TIsConvertible                       : TBoolConstant<NAMESPACE_STD::is_convertible_v<T, U>>          { };
-template <typename F, typename... Args> struct TIsInvocable                   : TBoolConstant<NAMESPACE_STD::is_invocable_v<F, Args...>>      { };
-template <typename R, typename F, typename... Args> struct TIsInvocableResult : TBoolConstant<NAMESPACE_STD::is_invocable_r_v<R, F, Args...>> { }; // FIXME: The result for char(&())[2] is wrong on MSVC
+template <typename T, typename U>                   concept CSameAs          = NAMESPACE_STD::is_same_v<T, U>;
+template <typename T, typename U>                   concept CBaseOf          = NAMESPACE_STD::is_base_of_v<T, U>;
+template <typename T, typename U>                   concept CConvertibleTo   = NAMESPACE_STD::is_convertible_v<T, U>;
 
 template <typename T> struct TRemoveConst      { using Type = NAMESPACE_STD::remove_const_t<T>;       };
 template <typename T> struct TRemoveVolatile   { using Type = NAMESPACE_STD::remove_volatile_t<T>;    };
@@ -52,7 +50,6 @@ template <typename T>                     struct TDecay           { using Type =
 template <bool B, typename T = void>      struct TEnableIf        { using Type = NAMESPACE_STD::enable_if_t<B, T>;               };
 template <bool B, typename T, typename F> struct TConditional     { using Type = NAMESPACE_STD::conditional_t<B, T, F>;          };
 template <typename T>                     struct TUnderlyingType  { using Type = NAMESPACE_STD::underlying_type_t<T>;            };
-template <typename F, typename... Args>   struct TInvokeResult    { using Type = NAMESPACE_STD::invoke_result_t<F, Args...>;     }; // FIXME: The result for char(&())[2] is wrong on MSVC
 template <typename... Types>              struct TVoid            { using Type = void;                                           };
 
 NAMESPACE_MODULE_END(Utility)

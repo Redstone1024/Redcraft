@@ -40,7 +40,7 @@ constexpr size_t HashCombine(size_t A, size_t C)
 	return C;
 }
 
-template <typename... Ts> requires (true && ... && TIsConvertible<Ts, size_t>::Value)
+template <typename... Ts> requires (true && ... && CConvertibleTo<Ts, size_t>)
 constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
 {
 	size_t B = HashCombine(A, C);
@@ -81,7 +81,7 @@ constexpr size_t GetTypeHash(T A)
 	return GetTypeHash(static_cast<typename TUnderlyingType<T>::Type>(A));
 }
 
-template <typename T> requires CPointer<T> || TIsSame<T, nullptr_t>::Value
+template <typename T> requires CPointer<T> || CSameAs<T, nullptr_t>
 constexpr size_t GetTypeHash(T A)
 {
 	return GetTypeHash(reinterpret_cast<intptr>(A));

@@ -53,31 +53,11 @@ NAMESPACE_UNNAMED_END
 
 void TestConcepts()
 {
-	// Same.h
-
-	always_check(!(CSameAs<int32, int64>));
-	always_check((CSameAs<int32, int32>));
-
 	// Derived.h
 
 	always_check(!(CDerivedFrom<FTestStructH, FTestStructD>));
 	always_check((CDerivedFrom<FTestStructH, FTestStructE>));
 	always_check(!(CDerivedFrom<FTestStructE, FTestStructH>));
-
-	// Convertible.h
-
-	always_check((CConvertibleTo<int32, uint32>));
-	always_check(!(CConvertibleTo<FTestStructH*, FTestStructD*>));
-	always_check((CConvertibleTo<FTestStructH*, FTestStructE*>));
-	always_check(!(CConvertibleTo<FTestStructE*, FTestStructH*>));
-	always_check((CConvertibleTo<FTestStructW, FTestStructV>));
-
-	// BooleanTestable.h
-
-	always_check(CBooleanTestable<bool>);
-	always_check(CBooleanTestable<int32>);
-	always_check(CBooleanTestable<float>);
-	always_check(!CBooleanTestable<FTestStructA>);
 
 	// Common.h
 
@@ -132,15 +112,6 @@ void TestConcepts()
 	always_check(!CSwappable<FSingleton>);
 
 	always_check((CSwappableWith<int32&, int32&>));
-
-	// Invocable.h
-
-	always_check((CInvocable          <decltype([](                         ) -> void  {                          })                      >));
-	always_check((CRegularInvocable   <decltype([](int32 A                  ) -> int32 { return A;                }), int32               >));
-	always_check((CPredicate          <decltype([](int32 A, int32 B, int32 C) -> bool  { return (A + B + C) == 0; }), int32, int32, int32 >));
-	always_check((CRelation           <decltype([](int32 A, int32 B         ) -> bool  { return (A ^ B) == 0;     }), int32, int32        >));
-	always_check((CEquivalenceRelation<decltype([](int32 A, int32 B         ) -> bool  { return A == B;           }), int32, int32        >));
-	always_check((CStrictWeakOrder    <decltype([](int32 A, int32 B         ) -> bool  { return A < B;            }), int32, int32        >));
 
 }
 

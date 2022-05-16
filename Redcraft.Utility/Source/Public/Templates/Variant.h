@@ -20,7 +20,7 @@ struct TVariantAlternativeIndex;
 
 template <typename T, typename U, typename... Types>
 struct TVariantAlternativeIndex<T, U, Types...>
-	: TConstant<size_t, TIsSame<T, U>::Value ? 0 : (TVariantAlternativeIndex<T, Types...>::Value == INDEX_NONE
+	: TConstant<size_t, CSameAs<T, U> ? 0 : (TVariantAlternativeIndex<T, Types...>::Value == INDEX_NONE
 	? INDEX_NONE : TVariantAlternativeIndex<T, Types...>::Value + 1)>
 { };
 
@@ -52,18 +52,18 @@ struct TVariantSelectedType<T, U, Types...>
 	using TypeAlternativeA = typename TConditional<CConstructible<U, T&&>, U, void>::Type;
 	using TypeAlternativeB = typename TVariantSelectedType<T, Types...>::Type;
 
-	using Type = typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, void>::Value, TypeAlternativeB,
-				 typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeB>::Type, void>::Value, TypeAlternativeA, 
-				 typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeB>::Type, typename TRemoveCVRef<T>::Type>::Value, TypeAlternativeB, TypeAlternativeA>::Type>::Type>::Type;
+	using Type = typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, void>, TypeAlternativeB,
+				 typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeB>::Type, void>, TypeAlternativeA, 
+				 typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeB>::Type, typename TRemoveCVRef<T>::Type>, TypeAlternativeB, TypeAlternativeA>::Type>::Type>::Type;
 
 	// 0 - Type not found
 	// 1 - Same type found
 	// 2 - Multiple types found
 	// 3 - The type found
-	static constexpr uint8 Flag = TIsSame<typename TRemoveCVRef<Type>::Type, void>::Value ? 0 :
-								  TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, typename TRemoveCVRef<TypeAlternativeB>::Type>::Value ? 2 :
-								  TIsSame<typename TRemoveCVRef<            Type>::Type, typename TRemoveCVRef<               T>::Type>::Value ? 1 :
-								 !TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, void>::Value && !TIsSame<TypeAlternativeB, void>::Value ? 2 : 3;
+	static constexpr uint8 Flag = CSameAs<typename TRemoveCVRef<Type>::Type, void> ? 0 :
+								  CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, typename TRemoveCVRef<TypeAlternativeB>::Type> ? 2 :
+								  CSameAs<typename TRemoveCVRef<            Type>::Type, typename TRemoveCVRef<               T>::Type> ? 1 :
+								 !CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, void> && !CSameAs<TypeAlternativeB, void> ? 2 : 3;
 
 	static constexpr bool Value = Flag & 1;
 
@@ -119,7 +119,7 @@ struct TVariant
 
 	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Value
 		&& (!TIsTInPlaceType<typename TRemoveCVRef<T>::Type>::Value) && (!TIsTInPlaceIndex<typename TRemoveCVRef<T>::Type>::Value)
-		&& (!TIsSame<typename TRemoveCVRef<T>::Type, TVariant>::Value)
+		&& (!CSameAs<typename TRemoveCVRef<T>::Type, TVariant>)
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Type>, Forward<T>(InValue))
 	{ }
 
@@ -231,7 +231,7 @@ struct TVariant
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T& Get(T& DefaultValue)&             { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
-	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
+	template <typename F> requires (true && ... && CInvocable<F, Types>)
 	FORCEINLINE decltype(auto) Visit(F&& Func) &
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
@@ -244,7 +244,7 @@ struct TVariant
 		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
-	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
+	template <typename F> requires (true && ... && CInvocable<F, Types>)
 	FORCEINLINE decltype(auto) Visit(F&& Func) &&
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
@@ -257,7 +257,7 @@ struct TVariant
 		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
-	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
+	template <typename F> requires (true && ... && CInvocable<F, Types>)
 	FORCEINLINE decltype(auto) Visit(F&& Func) const&
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
@@ -270,7 +270,7 @@ struct TVariant
 		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
-	template <typename F> requires (true && ... && TIsInvocable<F, Types>::Value)
+	template <typename F> requires (true && ... && CInvocable<F, Types>)
 	FORCEINLINE decltype(auto) Visit(F&& Func) const&&
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
@@ -283,16 +283,16 @@ struct TVariant
 		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
 	}
 
-	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
+	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Types>)
 	FORCEINLINE R Visit(F&& Func) &       { return Visit(Forward<F>(Func)); }
 
-	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
+	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Types>)
 	FORCEINLINE R Visit(F&& Func) &&      { return MoveTemp(*this).Visit(Forward<F>(Func)); }
 
-	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
+	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Types>)
 	FORCEINLINE R Visit(F&& Func) const&  { return Visit(Forward<F>(Func)); }
 
-	template <typename R, typename F> requires (true && ... && TIsInvocableResult<R, F, Types>::Value)
+	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Types>)
 	FORCEINLINE R Visit(F&& Func) const&& { return MoveTemp(*this).Visit(Forward<F>(Func)); }
 
 	constexpr void Reset()
@@ -397,7 +397,7 @@ private:
 
 };
 
-template <typename T, typename... Types> requires (!TIsSame<T, TVariant<Types...>>::Value) && CEqualityComparable<T>
+template <typename T, typename... Types> requires (!CSameAs<T, TVariant<Types...>>) && CEqualityComparable<T>
 constexpr bool operator==(const TVariant<Types...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
