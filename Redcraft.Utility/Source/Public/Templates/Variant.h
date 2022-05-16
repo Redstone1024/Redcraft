@@ -49,7 +49,7 @@ struct TVariantSelectedType;
 template <typename T, typename U, typename... Types>
 struct TVariantSelectedType<T, U, Types...>
 {
-	using TypeAlternativeA = typename TConditional<TIsConstructible<U, T&&>::Value, U, void>::Type;
+	using TypeAlternativeA = typename TConditional<CConstructible<U, T&&>, U, void>::Type;
 	using TypeAlternativeB = typename TVariantSelectedType<T, Types...>::Type;
 
 	using Type = typename TConditional<TIsSame<typename TRemoveCVRef<TypeAlternativeA>::Type, void>::Value, TypeAlternativeB,
@@ -78,7 +78,7 @@ struct TVariantSelectedType<T>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> requires (true && ... && TIsDestructible<Types>::Value) && (sizeof...(Types) < 0xFF)
+template <typename... Types> requires (true && ... && CDestructible<Types>) && (sizeof...(Types) < 0xFF)
 struct TVariant
 {
 	static constexpr size_t AlternativeSize = sizeof...(Types);
@@ -90,20 +90,20 @@ struct TVariant
 
 	constexpr TVariant(FInvalid) : TVariant() { };
 
-	constexpr TVariant(const TVariant& InValue) requires (true && ... && TIsCopyConstructible<Types>::Value)
+	constexpr TVariant(const TVariant& InValue) requires (true && ... && CCopyConstructible<Types>)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	constexpr TVariant(TVariant&& InValue) requires (true && ... && TIsMoveConstructible<Types>::Value)
+	constexpr TVariant(TVariant&& InValue) requires (true && ... && CMoveConstructible<Types>)
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& TIsConstructible<typename TAlternativeType<I>::Type, ArgTypes...>::Value
+		&& CConstructible<typename TAlternativeType<I>::Type, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
 	{
@@ -112,7 +112,7 @@ struct TVariant
 	}
 
 	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& TIsConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>::Value
+		&& CConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
 	{ }
@@ -125,10 +125,10 @@ struct TVariant
 
 	constexpr ~TVariant()
 	{
-		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value)) Reset();
+		if constexpr (!(true && ... && CTriviallyDestructible<Types>)) Reset();
 	}
 
-	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (TIsCopyConstructible<Types>::Value && TIsCopyAssignable<Types>::Value))
+	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CCopyConstructible<Types> && CCopyAssignable<Types>))
 	{
 		if (&InValue == this) return *this;
 
@@ -149,7 +149,7 @@ struct TVariant
 		return *this;
 	}
 
-	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsMoveAssignable<Types>::Value))
+	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CMoveConstructible<Types> && CMoveAssignable<Types>))
 	{
 		if (&InValue == this) return *this;
 
@@ -187,7 +187,7 @@ struct TVariant
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& TIsConstructible<typename TAlternativeType<I>::Type, ArgTypes...>::Value
+		&& CConstructible<typename TAlternativeType<I>::Type, ArgTypes...>
 	constexpr typename TAlternativeType<I>::Type& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
@@ -200,7 +200,7 @@ struct TVariant
 	}
 
 	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& TIsConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>::Value
+		&& CConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
 	constexpr T& Emplace(ArgTypes&&... Args)
 	{
 		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
@@ -299,7 +299,7 @@ struct TVariant
 	{
 		if (GetIndex() == INDEX_NONE) return;
 
-		if constexpr (!(true && ... && TIsTriviallyDestructible<Types>::Value))
+		if constexpr (!(true && ... && CTriviallyDestructible<Types>))
 		{
 			DestroyImpl[GetIndex()](&Value);
 		}
@@ -319,7 +319,7 @@ struct TVariant
 		return HashCombine(GetTypeHash(GetIndex()), HashImpl[GetIndex()](&Value));
 	}
 
-	constexpr void Swap(TVariant& InValue) requires (true && ... && (TIsMoveConstructible<Types>::Value && TIsSwappable<Types>::Value))
+	constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Types> && TIsSwappable<Types>::Value))
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
 

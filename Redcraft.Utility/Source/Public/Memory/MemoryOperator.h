@@ -13,7 +13,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_BEGIN(Memory)
 
 template <typename ElementType>
-	requires TIsDefaultConstructible<ElementType>::Value
+	requires CDefaultConstructible<ElementType>
 FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 {
 	if constexpr (TIsZeroConstructible<ElementType>::Value)
@@ -33,7 +33,7 @@ FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 }
 
 template <typename DestinationElementType, typename SourceElementType>
-	requires TIsConstructible<DestinationElementType, const SourceElementType&>::Value
+	requires CConstructible<DestinationElementType, const SourceElementType&>
 FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsBitwiseConstructible<DestinationElementType, const SourceElementType>::Value)
@@ -53,10 +53,10 @@ FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElem
 }
 
 template <typename ElementType>
-	requires TIsCopyConstructible<ElementType>::Value
+	requires CCopyConstructible<ElementType>
 FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsTriviallyCopyConstructible<ElementType>::Value)
+	if constexpr (CTriviallyCopyConstructible<ElementType>)
 	{
 		Memory::Memcpy(Destination, Source, sizeof(ElementType) * Count);
 	}
@@ -73,10 +73,10 @@ FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Sour
 }
 
 template <typename ElementType>
-	requires TIsMoveConstructible<ElementType>::Value
+	requires CMoveConstructible<ElementType>
 FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsTriviallyMoveConstructible<ElementType>::Value)
+	if constexpr (CTriviallyMoveConstructible<ElementType>)
 	{
 		Memory::Memmove(Destination, Source, sizeof(ElementType) * Count);
 	}
@@ -93,7 +93,7 @@ FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, si
 }
 
 template <typename DestinationElementType, typename SourceElementType>
-	requires TIsConstructible<DestinationElementType, SourceElementType&&>::Value && TIsDestructible<SourceElementType>::Value
+	requires CConstructible<DestinationElementType, SourceElementType&&> && CDestructible<SourceElementType>
 FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (TIsBitwiseRelocatable<DestinationElementType, SourceElementType>::Value)
@@ -115,10 +115,10 @@ FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceEl
 }
 
 template <typename ElementType>
-	requires TIsDestructible<ElementType>::Value
+	requires CDestructible<ElementType>
 FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 {
-	if constexpr (!TIsTriviallyDestructible<ElementType>::Value)
+	if constexpr (!CTriviallyDestructible<ElementType>)
 	{
 		while (Count)
 		{
@@ -130,10 +130,10 @@ FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 }
 
 template <typename ElementType>
-	requires TIsCopyAssignable<ElementType>::Value
+	requires CCopyAssignable<ElementType>
 FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsTriviallyCopyAssignable<ElementType>::Value)
+	if constexpr (CTriviallyCopyAssignable<ElementType>)
 	{
 		Memory::Memcpy(Destination, Source, sizeof(ElementType) * Count);
 	}
@@ -150,10 +150,10 @@ FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source,
 }
 
 template <typename ElementType>
-	requires TIsMoveAssignable<ElementType>::Value
+	requires CMoveAssignable<ElementType>
 FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsTriviallyCopyConstructible<ElementType>::Value)
+	if constexpr (CTriviallyCopyConstructible<ElementType>)
 	{
 		Memory::Memmove(Destination, Source, sizeof(ElementType) * Count);
 	}

@@ -52,8 +52,8 @@ NAMESPACE_PRIVATE_END
 #endif
 
 template <typename T, bool bIsRef = false> requires CTriviallyCopyable<T>
-	&& TIsCopyConstructible<T>::Value && TIsMoveConstructible<T>::Value
-	&& TIsCopyAssignable<T>::Value && TIsMoveAssignable<T>::Value
+	&& CCopyConstructible<T> && CMoveConstructible<T>
+	&& CCopyAssignable<T> && CMoveAssignable<T>
 struct TAtomic : public FSingleton
 {
 protected:

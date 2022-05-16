@@ -230,74 +230,74 @@ void TestTypeTraits()
 
 	// SupportedOperations.h
 
-	always_check(!TIsDefaultConstructible<FTestStructI>::Value);
-	always_check(TIsDefaultConstructible<FTestStructJ>::Value);
-	always_check(TIsDefaultConstructible<FTestStructK>::Value);
-	always_check(!TIsDefaultConstructible<FTestStructL>::Value);
+	always_check(!CDefaultConstructible<FTestStructI>);
+	always_check(CDefaultConstructible<FTestStructJ>);
+	always_check(CDefaultConstructible<FTestStructK>);
+	always_check(!CDefaultConstructible<FTestStructL>);
 
-	always_check(!TIsTriviallyDefaultConstructible<FTestStructI>::Value);
-	always_check(!TIsTriviallyDefaultConstructible<FTestStructJ>::Value);
-	always_check(TIsTriviallyDefaultConstructible<FTestStructK>::Value);
-	always_check(!TIsTriviallyDefaultConstructible<FTestStructL>::Value);
+	always_check(!CTriviallyDefaultConstructible<FTestStructI>);
+	always_check(!CTriviallyDefaultConstructible<FTestStructJ>);
+	always_check(CTriviallyDefaultConstructible<FTestStructK>);
+	always_check(!CTriviallyDefaultConstructible<FTestStructL>);
 
-	always_check(!(TIsConstructible<FTestStructI, int32>::Value));
-	always_check((TIsConstructible<FTestStructI, FTestStructI&>::Value));
-	always_check((TIsConstructible<FTestStructI, int32, double>::Value));
+	always_check(!(CConstructible<FTestStructI, int32>));
+	always_check((CConstructible<FTestStructI, FTestStructI&>));
+	always_check((CConstructible<FTestStructI, int32, double>));
 
-	always_check(!(TIsTriviallyConstructible<FTestStructI, int32>::Value));
-	always_check((TIsTriviallyConstructible<FTestStructI, FTestStructI&>::Value));
-	always_check(!(TIsTriviallyConstructible<FTestStructI, int32, double>::Value));
+	always_check(!(CTriviallyConstructible<FTestStructI, int32>));
+	always_check((CTriviallyConstructible<FTestStructI, FTestStructI&>));
+	always_check(!(CTriviallyConstructible<FTestStructI, int32, double>));
 
-	always_check(TIsCopyConstructible<FTestStructM>::Value);
-	always_check(TIsCopyConstructible<FTestStructN>::Value);
-	always_check(!TIsCopyConstructible<FTestStructO>::Value);
+	always_check(CCopyConstructible<FTestStructM>);
+	always_check(CCopyConstructible<FTestStructN>);
+	always_check(!CCopyConstructible<FTestStructO>);
 
-	always_check(!TIsTriviallyCopyConstructible<FTestStructM>::Value);
-	always_check(TIsTriviallyCopyConstructible<FTestStructN>::Value);
-	always_check(!TIsTriviallyCopyConstructible<FTestStructO>::Value);
+	always_check(!CTriviallyCopyConstructible<FTestStructM>);
+	always_check(CTriviallyCopyConstructible<FTestStructN>);
+	always_check(!CTriviallyCopyConstructible<FTestStructO>);
 
-	always_check(TIsMoveConstructible<FTestStructP>::Value);
-	always_check(TIsMoveConstructible<FTestStructQ>::Value);
-	always_check(!TIsMoveConstructible<FTestStructR>::Value);
+	always_check(CMoveConstructible<FTestStructP>);
+	always_check(CMoveConstructible<FTestStructQ>);
+	always_check(!CMoveConstructible<FTestStructR>);
 
-	always_check(!TIsTriviallyMoveConstructible<FTestStructP>::Value);
-	always_check(TIsTriviallyMoveConstructible<FTestStructQ>::Value);
-	always_check(!TIsTriviallyMoveConstructible<FTestStructR>::Value);
+	always_check(!CTriviallyMoveConstructible<FTestStructP>);
+	always_check(CTriviallyMoveConstructible<FTestStructQ>);
+	always_check(!CTriviallyMoveConstructible<FTestStructR>);
 
-	always_check(!(TIsAssignable<FTestStructI, FTestStructH>::Value));
-	always_check((TIsAssignable<FTestStructI, FTestStructI&>::Value));
-	always_check((TIsAssignable<FTestStructI, int32>::Value));
+	always_check(!(CAssignable<FTestStructI, FTestStructH>));
+	always_check((CAssignable<FTestStructI, FTestStructI&>));
+	always_check((CAssignable<FTestStructI, int32>));
 
-	always_check(!(TIsTriviallyAssignable<FTestStructI, FTestStructH>::Value));
-	always_check((TIsTriviallyAssignable<FTestStructI, FTestStructI&>::Value));
-	always_check(!(TIsTriviallyAssignable<FTestStructI, int32>::Value));
+	always_check(!(CTriviallyAssignable<FTestStructI, FTestStructH>));
+	always_check((CTriviallyAssignable<FTestStructI, FTestStructI&>));
+	always_check(!(CTriviallyAssignable<FTestStructI, int32>));
 
-	always_check(TIsCopyAssignable<FTestStructM>::Value);
-	always_check(TIsCopyAssignable<FTestStructN>::Value);
-	always_check(!TIsCopyAssignable<FTestStructO>::Value);
+	always_check(CCopyAssignable<FTestStructM>);
+	always_check(CCopyAssignable<FTestStructN>);
+	always_check(!CCopyAssignable<FTestStructO>);
 
-	always_check(!TIsTriviallyCopyAssignable<FTestStructM>::Value);
-	always_check(TIsTriviallyCopyAssignable<FTestStructN>::Value);
-	always_check(!TIsTriviallyCopyAssignable<FTestStructO>::Value);
+	always_check(!CTriviallyCopyAssignable<FTestStructM>);
+	always_check(CTriviallyCopyAssignable<FTestStructN>);
+	always_check(!CTriviallyCopyAssignable<FTestStructO>);
 
-	always_check(TIsMoveAssignable<FTestStructP>::Value);
-	always_check(TIsMoveAssignable<FTestStructQ>::Value);
-	always_check(!TIsMoveAssignable<FTestStructR>::Value);
+	always_check(CMoveAssignable<FTestStructP>);
+	always_check(CMoveAssignable<FTestStructQ>);
+	always_check(!CMoveAssignable<FTestStructR>);
 
-	always_check(!TIsTriviallyMoveAssignable<FTestStructP>::Value);
-	always_check(TIsTriviallyMoveAssignable<FTestStructQ>::Value);
-	always_check(!TIsTriviallyMoveAssignable<FTestStructR>::Value);
+	always_check(!CTriviallyMoveAssignable<FTestStructP>);
+	always_check(CTriviallyMoveAssignable<FTestStructQ>);
+	always_check(!CTriviallyMoveAssignable<FTestStructR>);
 
-	always_check(TIsDestructible<FTestStructS>::Value);
-	always_check(TIsDestructible<FTestStructT>::Value);
-	always_check(!TIsDestructible<FTestStructU>::Value);
+	always_check(CDestructible<FTestStructS>);
+	always_check(CDestructible<FTestStructT>);
+	always_check(!CDestructible<FTestStructU>);
 
-	always_check(!TIsTriviallyDestructible<FTestStructS>::Value);
-	always_check(TIsTriviallyDestructible<FTestStructT>::Value);
-	always_check(!TIsTriviallyDestructible<FTestStructU>::Value);
+	always_check(!CTriviallyDestructible<FTestStructS>);
+	always_check(CTriviallyDestructible<FTestStructT>);
+	always_check(!CTriviallyDestructible<FTestStructU>);
 
-	always_check(!THasVirtualDestructor<FTestStructT>::Value);
-	always_check(THasVirtualDestructor<FTestStructV>::Value);
+	always_check(!CVirtualDestructible<FTestStructT>);
+	always_check(CVirtualDestructible<FTestStructV>);
 
 	// Miscellaneous.h
 

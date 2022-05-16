@@ -68,8 +68,8 @@ struct alignas(InlineAlignment) TAny
 		}
 	}
 
-	template <typename T, typename... Types> requires TIsDestructible<typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, Types...>::Value
+	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
+		&& CConstructible<typename TDecay<T>::Type, Types...>
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
 		using SelectedType = typename TDecay<T>::Type;
@@ -77,7 +77,7 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& TIsDestructible<typename TDecay<T>::Type>::Value && TIsConstructible<typename TDecay<T>::Type, T&&>::Value
+		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
 	{ }
 
@@ -185,7 +185,7 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T> requires (!TIsSame<typename TDecay<T>::Type, TAny>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& TIsDestructible<typename TDecay<T>::Type>::Value && TIsConstructible<typename TDecay<T>::Type, T&&>::Value
+		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
 		using SelectedType = typename TDecay<T>::Type;
@@ -203,8 +203,8 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T, typename... Types> requires TIsDestructible<typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value
+	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
+		&& CConstructible<typename TDecay<T>::Type, T&&>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(Types&&... Args)
 	{
 		ResetImpl();
@@ -221,22 +221,22 @@ struct alignas(InlineAlignment) TAny
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
-	template <typename T> requires TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires CDestructible<typename TDecay<T>::Type>
 	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetAllocation());  }
 	
-	template <typename T> requires TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires CDestructible<typename TDecay<T>::Type>
 	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetAllocation())); }
 	
-	template <typename T> requires TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires CDestructible<typename TDecay<T>::Type>
 	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetAllocation());  }
 	
-	template <typename T> requires TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires CDestructible<typename TDecay<T>::Type>
 	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetAllocation())); }
 	
-	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& CDestructible<typename TDecay<T>::Type>
 	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
-	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& TIsDestructible<typename TDecay<T>::Type>::Value
+	template <typename T> requires TIsSame<T, typename TDecay<T>::Type>::Value&& CDestructible<typename TDecay<T>::Type>
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	FORCEINLINE void Reset()

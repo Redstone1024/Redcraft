@@ -58,12 +58,6 @@ void TestConcepts()
 	always_check(!(CSameAs<int32, int64>));
 	always_check((CSameAs<int32, int32>));
 
-	// Destructible.h
-
-	always_check(CDestructible<FTestStructS>);
-	always_check(CDestructible<FTestStructT>);
-	always_check(!CDestructible<FTestStructU>);
-
 	// Derived.h
 
 	always_check(!(CDerivedFrom<FTestStructH, FTestStructD>));
@@ -78,41 +72,12 @@ void TestConcepts()
 	always_check(!(CConvertibleTo<FTestStructE*, FTestStructH*>));
 	always_check((CConvertibleTo<FTestStructW, FTestStructV>));
 
-	// Constructible.h
-
-	always_check((CConstructibleFrom<FTestStructJ>));
-	always_check((CConstructibleFrom<FTestStructK>));
-	always_check(!(CConstructibleFrom<FTestStructI, int32>));
-	always_check((CConstructibleFrom<FTestStructI, FTestStructI&>));
-	always_check((CConstructibleFrom<FTestStructI, int32, double>));
-
-	always_check(!CDefaultInitializable<FTestStructI>);
-	always_check(CDefaultInitializable<FTestStructJ>);
-	always_check(CDefaultInitializable<FTestStructK>);
-	always_check(!CDefaultInitializable<FTestStructL>);
-
-	always_check(CMoveConstructible<FTestStructP>);
-	always_check(CMoveConstructible<FTestStructQ>);
-	always_check(!CMoveConstructible<FTestStructR>);
-
-	always_check(CCopyConstructible<FTestStructM>);
-	always_check(CCopyConstructible<FTestStructN>);
-	always_check(!CCopyConstructible<FTestStructO>);
-
 	// BooleanTestable.h
 
 	always_check(CBooleanTestable<bool>);
 	always_check(CBooleanTestable<int32>);
 	always_check(CBooleanTestable<float>);
 	always_check(!CBooleanTestable<FTestStructA>);
-
-	// Assignable.h
-
-	always_check((CAssignableFrom<int32&, int64>));
-	always_check((CAssignableFrom<int32&, int32>));
-	always_check((CAssignableFrom<int32&, int8>));
-	always_check(!(CAssignableFrom<FTestStructI&, int32>));
-	always_check(!(CAssignableFrom<FTestStructA&, void>));
 
 	// Common.h
 

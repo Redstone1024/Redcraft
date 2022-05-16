@@ -14,7 +14,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 // Assume that all operands of bitwise operations have the same size
 
 // This type traits is allowed to be specialised.
-template <typename T> struct TIsZeroConstructible : TBoolConstant<TIsDefaultConstructible<T>::Value && (CEnum<T> || CArithmetic<T> || CPointer<T>)> { };
+template <typename T> struct TIsZeroConstructible : TBoolConstant<CDefaultConstructible<T> && (CEnum<T> || CArithmetic<T> || CPointer<T>)> { };
  
 // This type traits is allowed to be specialised.
 template <typename T, typename U> struct TIsBitwiseConstructible;
@@ -37,7 +37,7 @@ template <typename T, typename U> struct TIsBitwiseConstructible<const volatile 
 
 template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TIsConvertible<U*, T*> { };
 
-template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<TIsSame<T, U>::Value ? TIsTriviallyCopyConstructible<T>::Value : false> { };
+template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<TIsSame<T, U>::Value ? CTriviallyCopyConstructible<T> : false> { };
 
 template <> struct TIsBitwiseConstructible<uint8,   int8>  : FTrue { };
 template <> struct TIsBitwiseConstructible< int8,  uint8>  : FTrue { };
@@ -69,7 +69,7 @@ template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,
 
 template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<CObject<T>> { };
 
-template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && TIsTriviallyDestructible<U>::Value> { };
+template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && CTriviallyDestructible<U>> { };
 
 // This type traits is allowed to be specialised.
 template <typename T> struct TIsBitwiseComparable : TBoolConstant<CEnum<T> || CArithmetic<T> || CPointer<T>> { };

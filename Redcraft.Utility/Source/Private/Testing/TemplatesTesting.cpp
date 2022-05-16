@@ -744,20 +744,20 @@ void TestTuple()
 		Temp.Fifteenth = 0;
 		Temp.Sixteenth = 0;
 		
-		always_check(TIsDefaultConstructible<Type>::Value);
-		always_check(TIsTriviallyDefaultConstructible<Type>::Value);
-		always_check(TIsConstructible<Type>::Value);
-		always_check(TIsTriviallyConstructible<Type>::Value);
-		always_check(TIsCopyConstructible<Type>::Value);
-		always_check(TIsTriviallyCopyConstructible<Type>::Value);
-		always_check(TIsMoveConstructible<Type>::Value);
-		always_check(TIsTriviallyMoveConstructible<Type>::Value);
-		always_check(TIsCopyAssignable<Type>::Value);
-		always_check(TIsTriviallyCopyAssignable<Type>::Value);
-		always_check(TIsMoveAssignable<Type>::Value);
-		always_check(TIsTriviallyMoveAssignable<Type>::Value);
-		always_check(TIsDestructible<Type>::Value);
-		always_check(TIsTriviallyDestructible<Type>::Value);
+		always_check(CDefaultConstructible<Type>);
+		always_check(CTriviallyDefaultConstructible<Type>);
+		always_check(CConstructible<Type>);
+		always_check(CTriviallyConstructible<Type>);
+		always_check(CCopyConstructible<Type>);
+		always_check(CTriviallyCopyConstructible<Type>);
+		always_check(CMoveConstructible<Type>);
+		always_check(CTriviallyMoveConstructible<Type>);
+		always_check(CCopyAssignable<Type>);
+		always_check(CTriviallyCopyAssignable<Type>);
+		always_check(CMoveAssignable<Type>);
+		always_check(CTriviallyMoveAssignable<Type>);
+		always_check(CDestructible<Type>);
+		always_check(CTriviallyDestructible<Type>);
 	}
 
 	{

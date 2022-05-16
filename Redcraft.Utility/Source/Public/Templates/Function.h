@@ -107,10 +107,10 @@ public:
 
 	FORCEINLINE const type_info& TargetType() const requires (!bIsRef) { return IsValid() ? Storage.GetTypeInfo() : typeid(void); };
 
-	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef) && TIsDestructible<typename TDecay<T>::Type>::Value { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef) && CDestructible<typename TDecay<T>::Type> { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef) && CDestructible<typename TDecay<T>::Type> { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef) && CDestructible<typename TDecay<T>::Type> { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef) && CDestructible<typename TDecay<T>::Type> { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
 
 	constexpr void Swap(TFunctionImpl& InValue) requires (!bIsRef)
 	{
@@ -296,7 +296,7 @@ public:
 
 	template <typename T> requires (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value && TIsCopyConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 	FORCEINLINE TFunction(T&& InValue)
 	{
@@ -306,7 +306,7 @@ public:
 	}
 	
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, ArgTypes...>::Value && TIsCopyConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, ArgTypes...> && CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -317,7 +317,7 @@ public:
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value && TIsCopyConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TFunction& operator=(T&& InValue)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -329,7 +329,7 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, ArgTypes...>::Value&& TIsCopyConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, ArgTypes...>&& CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -399,7 +399,7 @@ public:
 
 	template <typename T> requires (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
 		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value && TIsMoveConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, T&&> && CMoveConstructible<typename TDecay<T>::Type>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
@@ -409,7 +409,7 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, ArgTypes...>::Value && TIsMoveConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, ArgTypes...> && CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -420,7 +420,7 @@ public:
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& TIsConstructible<typename TDecay<T>::Type, T&&>::Value&& TIsMoveConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, T&&>&& CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TUniqueFunction& operator=(T&& InValue)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -432,7 +432,7 @@ public:
 	}
 	
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& TIsConstructible<typename TDecay<T>::Type, ArgTypes...>::Value&& TIsMoveConstructible<typename TDecay<T>::Type>::Value
+		&& CConstructible<typename TDecay<T>::Type, ArgTypes...>&& CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
