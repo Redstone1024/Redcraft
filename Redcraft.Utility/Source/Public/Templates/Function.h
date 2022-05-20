@@ -28,6 +28,8 @@ struct TFunction;
 template <typename F, size_t InlineSize, size_t InlineAlignment> requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
 struct TUniqueFunction;
 
+NAMESPACE_PRIVATE_BEGIN
+
 template <typename T> struct TIsTFunctionRef                  : FFalse { };
 template <typename F> struct TIsTFunctionRef<TFunctionRef<F>> : FTrue  { };
 
@@ -37,12 +39,18 @@ template <typename F, size_t I, size_t J> struct TIsTFunction<TFunction<F, I, J>
 template <typename T>                     struct TIsTUniqueFunction                           : FFalse { };
 template <typename F, size_t I, size_t J> struct TIsTUniqueFunction<TUniqueFunction<F, I, J>> : FTrue  { };
 
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTFunctionRef    = NAMESPACE_PRIVATE::TIsTFunctionRef<T>::Value;
+template <typename T> concept CTFunction       = NAMESPACE_PRIVATE::TIsTFunction<T>::Value;
+template <typename T> concept CTUniqueFunction = NAMESPACE_PRIVATE::TIsTUniqueFunction<T>::Value;
+
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename T>
 constexpr bool FunctionIsBound(const T& Func)
 {
-	if constexpr (CPointer<T> || CMemberPointer<T> || TIsTFunctionRef<T>::Value || TIsTFunction<T>::Value || TIsTUniqueFunction<T>::Value)
+	if constexpr (CPointer<T> || CMemberPointer<T> || CTFunctionRef<T> || CTFunction<T> || CTUniqueFunction<T>)
 	{
 		return !!Func;
 	}
@@ -241,7 +249,7 @@ public:
 	TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
 	TFunctionRef& operator=(TFunctionRef&& InValue) = delete;
 
-	template <typename T> requires (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
+	template <typename T> requires (!CTFunctionRef<typename TDecay<T>::Type>) && (!CTInPlaceType<typename TDecay<T>::Type>)
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 	FORCEINLINE TFunctionRef(T&& InValue)
 	{
@@ -294,9 +302,9 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& CConstructible<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
+	template <typename T> requires (!CTInPlaceType<typename TDecay<T>::Type>)
+		&& (!CTFunctionRef<typename TDecay<T>::Type>) && (!CTFunction<typename TDecay<T>::Type>) && (!CTUniqueFunction<typename TDecay<T>::Type>)
+		&& CConstructibleFrom<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 	FORCEINLINE TFunction(T&& InValue)
 	{
@@ -306,7 +314,7 @@ public:
 	}
 	
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& CConstructible<typename TDecay<T>::Type, ArgTypes...> && CCopyConstructible<typename TDecay<T>::Type>
+		&& CConstructibleFrom<typename TDecay<T>::Type, ArgTypes...> && CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -316,8 +324,8 @@ public:
 	constexpr TFunction& operator=(nullptr_t) { Super::ResetImpl(); return *this; }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& CConstructible<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
+		&& (!CTFunctionRef<typename TDecay<T>::Type>) && (!CTFunction<typename TDecay<T>::Type>) && (!CTUniqueFunction<typename TDecay<T>::Type>)
+		&& CConstructibleFrom<typename TDecay<T>::Type, T&&> && CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TFunction& operator=(T&& InValue)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -329,7 +337,7 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& CConstructible<typename TDecay<T>::Type, ArgTypes...>&& CCopyConstructible<typename TDecay<T>::Type>
+		&& CConstructibleFrom<typename TDecay<T>::Type, ArgTypes...>&& CCopyConstructible<typename TDecay<T>::Type>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -397,9 +405,9 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& CConstructible<typename TDecay<T>::Type, T&&> && CMoveConstructible<typename TDecay<T>::Type>
+	template <typename T> requires (!CTInPlaceType<typename TDecay<T>::Type>)
+		&& (!CTFunctionRef<typename TDecay<T>::Type>) && (!CTFunction<typename TDecay<T>::Type>) && (!CTUniqueFunction<typename TDecay<T>::Type>)
+		&& CConstructibleFrom<typename TDecay<T>::Type, T&&> && CMoveConstructible<typename TDecay<T>::Type>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
@@ -409,7 +417,7 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& CConstructible<typename TDecay<T>::Type, ArgTypes...> && CMoveConstructible<typename TDecay<T>::Type>
+		&& CConstructibleFrom<typename TDecay<T>::Type, ArgTypes...> && CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -419,8 +427,8 @@ public:
 	constexpr TUniqueFunction& operator=(nullptr_t) { Super::ResetImpl(); return *this; }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& (!TIsTFunctionRef<typename TDecay<T>::Type>::Value) && (!TIsTFunction<typename TDecay<T>::Type>::Value) && (!TIsTUniqueFunction<typename TDecay<T>::Type>::Value)
-		&& CConstructible<typename TDecay<T>::Type, T&&>&& CMoveConstructible<typename TDecay<T>::Type>
+		&& (!CTFunctionRef<typename TDecay<T>::Type>) && (!CTFunction<typename TDecay<T>::Type>) && (!CTUniqueFunction<typename TDecay<T>::Type>)
+		&& CConstructibleFrom<typename TDecay<T>::Type, T&&>&& CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE TUniqueFunction& operator=(T&& InValue)
 	{
 		using DecayedType = typename TDecay<T>::Type;
@@ -432,7 +440,7 @@ public:
 	}
 	
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, typename TDecay<T>::Type>::Value
-		&& CConstructible<typename TDecay<T>::Type, ArgTypes...>&& CMoveConstructible<typename TDecay<T>::Type>
+		&& CConstructibleFrom<typename TDecay<T>::Type, ArgTypes...>&& CMoveConstructible<typename TDecay<T>::Type>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = typename TDecay<T>::Type;

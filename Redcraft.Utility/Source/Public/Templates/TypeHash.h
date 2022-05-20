@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Concepts/Same.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/PrimaryType.h"
 #include "TypeTraits/Miscellaneous.h"

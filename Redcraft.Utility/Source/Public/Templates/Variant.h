@@ -49,7 +49,7 @@ struct TVariantSelectedType;
 template <typename T, typename U, typename... Types>
 struct TVariantSelectedType<T, U, Types...>
 {
-	using TypeAlternativeA = typename TConditional<CConstructible<U, T&&>, U, void>::Type;
+	using TypeAlternativeA = typename TConditional<CConstructibleFrom<U, T&&>, U, void>::Type;
 	using TypeAlternativeB = typename TVariantSelectedType<T, Types...>::Type;
 
 	using Type = typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, void>, TypeAlternativeB,
@@ -103,7 +103,7 @@ struct TVariant
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& CConstructible<typename TAlternativeType<I>::Type, ArgTypes...>
+		&& CConstructibleFrom<typename TAlternativeType<I>::Type, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
 	{
@@ -112,13 +112,13 @@ struct TVariant
 	}
 
 	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& CConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
+		&& CConstructibleFrom<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
 	{ }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Value
-		&& (!TIsTInPlaceType<typename TRemoveCVRef<T>::Type>::Value) && (!TIsTInPlaceIndex<typename TRemoveCVRef<T>::Type>::Value)
+		&& (!CTInPlaceType<typename TRemoveCVRef<T>::Type>) && (!CTInPlaceIndex<typename TRemoveCVRef<T>::Type>)
 		&& (!CSameAs<typename TRemoveCVRef<T>::Type, TVariant>)
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Type>, Forward<T>(InValue))
 	{ }
@@ -187,7 +187,7 @@ struct TVariant
 	}
 
 	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& CConstructible<typename TAlternativeType<I>::Type, ArgTypes...>
+		&& CConstructibleFrom<typename TAlternativeType<I>::Type, ArgTypes...>
 	constexpr typename TAlternativeType<I>::Type& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
@@ -200,7 +200,7 @@ struct TVariant
 	}
 
 	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& CConstructible<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
+		&& CConstructibleFrom<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
 	constexpr T& Emplace(ArgTypes&&... Args)
 	{
 		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
@@ -319,7 +319,7 @@ struct TVariant
 		return HashCombine(GetTypeHash(GetIndex()), HashImpl[GetIndex()](&Value));
 	}
 
-	constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Types> && TIsSwappable<Types>::Value))
+	constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Types> && CSwappable<Types>))
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
 
@@ -409,16 +409,22 @@ constexpr bool operator==(const TVariant<Types...>& LHS, FInvalid)
 	return !LHS.IsValid();
 }
 
+NAMESPACE_PRIVATE_BEGIN
+
 template <typename    T    > struct TIsTVariant                     : FFalse { };
 template <typename... Types> struct TIsTVariant<TVariant<Types...>> : FTrue  { };
 
-template <typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<T>::Value;
+
+template <typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
 struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
 
-template <size_t I, typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
+template <size_t I, typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
 struct TVariantAlternativeType { using Type = typename TCopyCV<typename TRemoveReference<VariantType>::Type, typename TRemoveCVRef<VariantType>::Type::template TAlternativeType<I>::Type>::Type; };
 
-template <typename T, typename VariantType> requires TIsTVariant<typename TRemoveCVRef<VariantType>::Type>::Value
+template <typename T, typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
 struct TVariantAlternativeIndex : VariantType::template TAlternativeIndex<T> { };
 
 NAMESPACE_MODULE_END(Utility)

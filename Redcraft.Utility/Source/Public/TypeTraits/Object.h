@@ -1,11 +1,10 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Concepts/Swappable.h"
-#include "Concepts/Assignable.h"
-#include "Concepts/Comparable.h"
-#include "TypeTraits/TypeTraits.h"
-#include "Concepts/Constructible.h"
+#include "TypeTraits/Swappable.h"
+#include "TypeTraits/Comparable.h"
+#include "TypeTraits/CompositeType.h"
+#include "TypeTraits/SupportedOperations.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -15,18 +14,16 @@ template <typename T>
 concept CMovable =
 	CObject<T> &&
 	CMoveConstructible<T> &&
-	CAssignableFrom<T&, T> &&
+	CMoveAssignable<T> &&
 	CSwappable<T>;
 
 template <typename T>
 concept CCopyable = CMovable<T> &&
 	CCopyConstructible<T> &&
-	CAssignableFrom<T&, T&> &&
-	CAssignableFrom<T&, const T&> &&
-	CAssignableFrom<T&, const T>;
+	CCopyAssignable<T>;
 
 template <typename T>
-concept CSemiregular = CCopyable<T> && CDefaultInitializable<T>;
+concept CSemiregular = CCopyable<T> && CDefaultConstructible<T>;
 
 template <typename T>
 concept CRegular = CSemiregular<T> && CEqualityComparable<T>;

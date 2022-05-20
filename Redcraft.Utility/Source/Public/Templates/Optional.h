@@ -3,7 +3,6 @@
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -19,18 +18,18 @@ private:
 	
 	template <typename T>
 	struct TAllowUnwrapping : TBoolConstant<!(
-		   CConstructible<OptionalType,       TOptional<T>& >
-		|| CConstructible<OptionalType, const TOptional<T>& >
-		|| CConstructible<OptionalType,       TOptional<T>&&>
-		|| CConstructible<OptionalType, const TOptional<T>&&>
+		   CConstructibleFrom<OptionalType,       TOptional<T>& >
+		|| CConstructibleFrom<OptionalType, const TOptional<T>& >
+		|| CConstructibleFrom<OptionalType,       TOptional<T>&&>
+		|| CConstructibleFrom<OptionalType, const TOptional<T>&&>
 		|| CConvertibleTo<      TOptional<T>&,  OptionalType>
 		|| CConvertibleTo<const TOptional<T>&,  OptionalType>
 		|| CConvertibleTo<      TOptional<T>&&, OptionalType>
 		|| CConvertibleTo<const TOptional<T>&&, OptionalType>
-		|| CAssignable<OptionalType&,       TOptional<T>& >
-		|| CAssignable<OptionalType&, const TOptional<T>& >
-		|| CAssignable<OptionalType&,       TOptional<T>&&>
-		|| CAssignable<OptionalType&, const TOptional<T>&&>
+		|| CAssignableFrom<OptionalType&,       TOptional<T>& >
+		|| CAssignableFrom<OptionalType&, const TOptional<T>& >
+		|| CAssignableFrom<OptionalType&,       TOptional<T>&&>
+		|| CAssignableFrom<OptionalType&, const TOptional<T>&&>
 	)> { };
 
 public:
@@ -41,14 +40,14 @@ public:
 
 	constexpr TOptional(FInvalid) : TOptional() { }
 
-	template <typename... Types> requires CConstructible<OptionalType, Types...>
+	template <typename... Types> requires CConstructibleFrom<OptionalType, Types...>
 	constexpr explicit TOptional(FInPlace, Types&&... Args)
 		: bIsValid(true)
 	{
 		new(&Value) OptionalType(Forward<Types>(Args)...);
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&>
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
 		&& (!CSameAs<typename TRemoveCVRef<T>::Type, FInPlace>) && (!CSameAs<typename TRemoveCVRef<T>::Type, TOptional>)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
@@ -66,14 +65,14 @@ public:
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value
 	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
@@ -125,7 +124,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, const T&> && CAssignable<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&> && CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (!InValue.IsValid())
@@ -144,7 +143,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&> && CAssignable<OptionalType&, T&&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (!InValue.IsValid())
@@ -163,7 +162,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructible<OptionalType, T&&> && CAssignable<OptionalType&, T&&>
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>
 	constexpr TOptional& operator=(T&& InValue)
 	{
 		if (IsValid()) GetValue() = Forward<T>(InValue);
@@ -176,7 +175,7 @@ public:
 		return *this;
 	}
 
-	template <typename... ArgTypes> requires CConstructible<OptionalType, ArgTypes...>
+	template <typename... ArgTypes> requires CConstructibleFrom<OptionalType, ArgTypes...>
 	constexpr OptionalType& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
@@ -223,7 +222,7 @@ public:
 		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
 	}
 
-	template <typename T> requires CMoveConstructible<OptionalType> && TIsSwappable<OptionalType>::Value
+	template <typename T> requires CMoveConstructible<OptionalType> && CSwappable<OptionalType>
 	constexpr void Swap(TOptional& InValue)
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
@@ -289,20 +288,26 @@ constexpr TOptional<typename TDecay<T>::Type> MakeOptional(FInvalid)
 	return TOptional<typename TDecay<T>::Type>(Invalid);
 }
 
-template <typename T> requires CDestructible<T> && CConstructible<T, T&&>
+template <typename T> requires CDestructible<T> && CConstructibleFrom<T, T&&>
 constexpr TOptional<T> MakeOptional(T&& InValue)
 {
 	return TOptional<T>(Forward<T>(InValue));
 }
 
-template <typename T, typename... Types> requires CDestructible<T> && CConstructible<T, Types...>
+template <typename T, typename... Types> requires CDestructible<T> && CConstructibleFrom<T, Types...>
 constexpr TOptional<T> MakeOptional(Types&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
 }
 
+NAMESPACE_PRIVATE_BEGIN
+
 template <typename T> struct TIsTOptional               : FFalse { };
 template <typename T> struct TIsTOptional<TOptional<T>> : FTrue  { };
+
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<T>::Value;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

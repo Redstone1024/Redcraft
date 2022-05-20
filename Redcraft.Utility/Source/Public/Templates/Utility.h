@@ -77,7 +77,7 @@ constexpr void Swap(T& A, T& B)
 	}
 }
 
-template <typename T, typename U = T> requires CMoveConstructible<T> && CAssignable<T&, U>
+template <typename T, typename U = T> requires CMoveConstructible<T> && CAssignableFrom<T&, U>
 constexpr T Exchange(T& A, U&& B)
 {
 	T Temp = MoveTemp(A);

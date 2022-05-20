@@ -240,13 +240,13 @@ void TestTypeTraits()
 	always_check(CTriviallyDefaultConstructible<FTestStructK>);
 	always_check(!CTriviallyDefaultConstructible<FTestStructL>);
 
-	always_check(!(CConstructible<FTestStructI, int32>));
-	always_check((CConstructible<FTestStructI, FTestStructI&>));
-	always_check((CConstructible<FTestStructI, int32, double>));
+	always_check(!(CConstructibleFrom<FTestStructI, int32>));
+	always_check((CConstructibleFrom<FTestStructI, FTestStructI&>));
+	always_check((CConstructibleFrom<FTestStructI, int32, double>));
 
-	always_check(!(CTriviallyConstructible<FTestStructI, int32>));
-	always_check((CTriviallyConstructible<FTestStructI, FTestStructI&>));
-	always_check(!(CTriviallyConstructible<FTestStructI, int32, double>));
+	always_check(!(CTriviallyConstructibleFrom<FTestStructI, int32>));
+	always_check((CTriviallyConstructibleFrom<FTestStructI, FTestStructI&>));
+	always_check(!(CTriviallyConstructibleFrom<FTestStructI, int32, double>));
 
 	always_check(CCopyConstructible<FTestStructM>);
 	always_check(CCopyConstructible<FTestStructN>);
@@ -264,13 +264,13 @@ void TestTypeTraits()
 	always_check(CTriviallyMoveConstructible<FTestStructQ>);
 	always_check(!CTriviallyMoveConstructible<FTestStructR>);
 
-	always_check(!(CAssignable<FTestStructI, FTestStructH>));
-	always_check((CAssignable<FTestStructI, FTestStructI&>));
-	always_check((CAssignable<FTestStructI, int32>));
+	always_check(!(CAssignableFrom<FTestStructI, FTestStructH>));
+	always_check((CAssignableFrom<FTestStructI, FTestStructI&>));
+	always_check((CAssignableFrom<FTestStructI, int32>));
 
-	always_check(!(CTriviallyAssignable<FTestStructI, FTestStructH>));
-	always_check((CTriviallyAssignable<FTestStructI, FTestStructI&>));
-	always_check(!(CTriviallyAssignable<FTestStructI, int32>));
+	always_check(!(CTriviallyAssignableFrom<FTestStructI, FTestStructH>));
+	always_check((CTriviallyAssignableFrom<FTestStructI, FTestStructI&>));
+	always_check(!(CTriviallyAssignableFrom<FTestStructI, int32>));
 
 	always_check(CCopyAssignable<FTestStructM>);
 	always_check(CCopyAssignable<FTestStructN>);
@@ -458,15 +458,25 @@ void TestTypeTraits()
 	always_check((CSameAs<int32, TCommonReference<int8, int32>::Type>));
 	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>::Type>));
 	always_check((CSameAs<double, TCommonReference<float, double>::Type>));
+	
+	always_check((CCommonWith<int32, int32>));
+	always_check((CCommonWith<int8, int32>));
+	always_check((CCommonWith<float, double>));
+	always_check(!(CCommonWith<FTestStructA, int32>));
+
+	always_check((CCommonReferenceWith<int8, int32>));
+	always_check((CCommonReferenceWith<float, int32>));
+	always_check((CCommonReferenceWith<float, double>));
+	always_check(!(CCommonReferenceWith<FTestStructA, double>));
 
 	// Swappable.h
 
-	always_check(TIsSwappable<int32>::Value);
-	always_check(TIsSwappable<FTestStructG>::Value);
-	always_check(TIsSwappable<FTestStructN>::Value);
-	always_check(!TIsSwappable<FSingleton>::Value);
+	always_check(CSwappable<int32>);
+	always_check(CSwappable<FTestStructG>);
+	always_check(CSwappable<FTestStructN>);
+	always_check(!CSwappable<FSingleton>);
 
-	always_check((TIsSwappableWith<int32&, int32&>::Value));
+	always_check((CSwappableWith<int32&, int32&>));
 
 	// CopyQualifiers.h
 
@@ -552,6 +562,39 @@ void TestTypeTraits()
 	always_check(CBooleanTestable<int32>);
 	always_check(CBooleanTestable<float>);
 	always_check(!CBooleanTestable<FTestStructA>);
+
+	// Objects.h
+
+	always_check(CMovable<int32>);
+	always_check(CCopyable<int32>);
+	always_check(CSemiregular<int32>);
+	always_check(CRegular<int32>);
+
+	always_check(CMovable<FTestStructQ>);
+	always_check(!CCopyable<FTestStructQ>);
+	always_check(!CSemiregular<FTestStructQ>);
+	always_check(!CRegular<FTestStructQ>);
+
+	always_check(CMovable<FTestStructN>);
+	always_check(CCopyable<FTestStructN>);
+	always_check(!CSemiregular<FTestStructN>);
+	always_check(!CRegular<FTestStructN>);
+
+	// Comparable.h
+
+	always_check((CEqualityComparable<int32>));
+	always_check(!(CEqualityComparable<FTestStructA>));
+
+	always_check((CEqualityComparableWith<int32, int32>));
+	always_check((CEqualityComparableWith<int32, int64>));
+	always_check(!(CEqualityComparableWith<FTestStructA, FTestStructA>));
+
+	always_check((CTotallyOrdered<int32>));
+	always_check(!(CTotallyOrdered<FTestStructA>));
+
+	always_check((CTotallyOrderedWith<int32, int32>));
+	always_check((CTotallyOrderedWith<int32, int64>));
+	always_check(!(CTotallyOrderedWith<FTestStructA, FTestStructA>));
 
 }
 

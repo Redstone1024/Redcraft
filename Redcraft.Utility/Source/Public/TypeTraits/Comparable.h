@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Concepts/Common.h"
-#include "TypeTraits/TypeTraits.h"
-#include "Concepts/BooleanTestable.h"
+#include "TypeTraits/Common.h"
+#include "TypeTraits/Miscellaneous.h"
+#include "TypeTraits/BooleanTestable.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T, typename U>
 concept CWeaklyEqualityComparableWith =
-	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<U>::Type& B)
+	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
 	{
 		{ A == B } -> CBooleanTestable;
 		{ A != B } -> CBooleanTestable;
@@ -32,7 +32,7 @@ concept CEqualityComparableWith =
 
 template <typename T, typename U>
 concept CPartiallyOrderedWith =
-	requires(const TRemoveReference<T>::Type& A, const TRemoveReference<U>::Type& B)
+	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
 	{
 		{ A <  B } -> CBooleanTestable;
 		{ A >  B } -> CBooleanTestable;

@@ -13,32 +13,34 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // Assume that all operands of bitwise operations have the same size
 
-// This type traits is allowed to be specialised.
-template <typename T> struct TIsZeroConstructible : TBoolConstant<CDefaultConstructible<T> && (CEnum<T> || CArithmetic<T> || CPointer<T>)> { };
- 
-// This type traits is allowed to be specialised.
+// Specialize these template classes for user-defined types
+template <typename T>             struct TIsZeroConstructible;
 template <typename T, typename U> struct TIsBitwiseConstructible;
+template <typename T, typename U> struct TIsBitwiseRelocatable;
+template <typename T>             struct TIsBitwiseComparable;
 
-template <typename T, typename U> struct TIsBitwiseConstructible<               T, const          U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<               T,       volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<               T, const volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const          T,                U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const          T, const          U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const          T,       volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const          T, const volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T,                U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T, const          U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<      volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,                U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const          U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T,       volatile U> : TIsBitwiseConstructible<T, U> { };
-template <typename T, typename U> struct TIsBitwiseConstructible<const volatile T, const volatile U> : TIsBitwiseConstructible<T, U> { };
+// Normal use of these concepts
+template <typename T>                 concept CZeroConstructible    = TIsZeroConstructible<T>::Value;
+template <typename T, typename U = T> concept CBitwiseConstructible = TIsBitwiseConstructible<T, U>::Value;
+template <typename T, typename U = T> concept CBitwiseRelocatable   = TIsBitwiseRelocatable<T, U>::Value;
+template <typename T>                 concept CBitwiseComparable    = TIsBitwiseComparable<T>::Value;
 
-template <typename T, typename U> struct TIsBitwiseConstructible<T*, U*> : TBoolConstant<CConvertibleTo<U*, T*>> { };
+// Default constructible enum, arithmetic and pointer are zero constructible
+template <typename T> struct TIsZeroConstructible : TBoolConstant<CDefaultConstructible<T> && (CEnum<T> || CArithmetic<T> || CPointer<T>)> { };
 
+// Constructing a const T is the same as constructing a T
+template <typename T> struct TIsZeroConstructible<const T> : TIsZeroConstructible<T> { };
+
+// T can always be bitwise constructed from itself if it is trivially copy constructible
 template <typename T, typename U> struct TIsBitwiseConstructible : TBoolConstant<CSameAs<T, U> ? CTriviallyCopyConstructible<T> : false> { };
 
+// Constructing a const T is the same as constructing a T
+template <typename T, typename U> struct TIsBitwiseConstructible<const T, U> : TIsBitwiseConstructible<T, U> { };
+
+// Const pointers can be bitwise constructed from non-const pointers
+template <typename T> struct TIsBitwiseConstructible<const T*, T*> : FTrue { };
+
+// Unsigned types can be bitwise converted to their signed equivalents, and vice versa
 template <> struct TIsBitwiseConstructible<uint8,   int8>  : FTrue { };
 template <> struct TIsBitwiseConstructible< int8,  uint8>  : FTrue { };
 template <> struct TIsBitwiseConstructible<uint16,  int16> : FTrue { };
@@ -48,31 +50,18 @@ template <> struct TIsBitwiseConstructible< int32, uint32> : FTrue { };
 template <> struct TIsBitwiseConstructible<uint64,  int64> : FTrue { };
 template <> struct TIsBitwiseConstructible< int64, uint64> : FTrue { };
 
-// It is usually only necessary to specialize TIsBitwiseConstructible and not recommended to specialize TIsBitwiseRelocatable.
-template <typename T, typename U> struct TIsBitwiseRelocatable;
+// WARNING: T is bitwise relocatable from itself by default
+// T is bitwise relocatable from U, if U is trivially destructible and can be constructed bitwise to T
+template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<CSameAs<T, U> ? true : CTriviallyDestructible<U> && CBitwiseConstructible<T, U>> { };
 
-template <typename T, typename U> struct TIsBitwiseRelocatable<               T, const          U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<               T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<               T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const          T,                U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const          T, const          U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const          T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const          T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T,                U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T, const          U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<      volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,                U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const          U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T,       volatile U> : TIsBitwiseRelocatable<T, U> { };
-template <typename T, typename U> struct TIsBitwiseRelocatable<const volatile T, const volatile U> : TIsBitwiseRelocatable<T, U> { };
+// Constructing a const T is the same as constructing a T
+template <typename T, typename U> struct TIsBitwiseRelocatable<const T, U> : TIsBitwiseRelocatable<T, U> { };
 
-template <typename T> struct TIsBitwiseRelocatable<T, T> : TBoolConstant<CObject<T>> { };
-
-template <typename T, typename U> struct TIsBitwiseRelocatable : TBoolConstant<TIsBitwiseConstructible<T, U>::Value && CTriviallyDestructible<U>> { };
-
-// This type traits is allowed to be specialised.
+// Enum, arithmetic and pointer are zero constructible
 template <typename T> struct TIsBitwiseComparable : TBoolConstant<CEnum<T> || CArithmetic<T> || CPointer<T>> { };
+
+// Constructing a const T is the same as constructing a T
+template <typename T> struct TIsBitwiseComparable<const T> : TIsBitwiseComparable<T> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

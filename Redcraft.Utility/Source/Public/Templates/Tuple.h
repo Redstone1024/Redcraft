@@ -236,23 +236,23 @@ public:
 	TTuple() = default;
 
 	template <typename... ArgTypes> requires (ElementSize > 0) && (sizeof...(ArgTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, ArgTypes&&>)
+		&& (true && ... && CConstructibleFrom<Types, ArgTypes&&>)
 		&& (true && ... && CConvertibleTo<ArgTypes&&, Types>)
 	constexpr TTuple(ArgTypes&&... Args)
 		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<ArgTypes>(Args)...)
 	{ }
 
 	template <typename... ArgTypes> requires (ElementSize > 0) && (sizeof...(ArgTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, ArgTypes&&>)
+		&& (true && ... && CConstructibleFrom<Types, ArgTypes&&>)
 		&& (!(true && ... && CConvertibleTo<ArgTypes&&, Types>))
 	constexpr explicit TTuple(ArgTypes&&... Args)
 		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<ArgTypes>(Args)...)
 	{ }
 	
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, const OtherTypes&>)
+		&& (true && ... && CConstructibleFrom<Types, const OtherTypes&>)
 		&& ((ElementSize != 1) || !(CConvertibleTo<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>
-			|| CConstructible<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
+			|| CConstructibleFrom<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
 			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
 		&& (true && ... && CConvertibleTo<OtherTypes&&, Types>)
 	constexpr TTuple(const TTuple<OtherTypes...>& InValue)
@@ -260,9 +260,9 @@ public:
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, const OtherTypes&>)
+		&& (true && ... && CConstructibleFrom<Types, const OtherTypes&>)
 		&& ((ElementSize != 1) || !(CConvertibleTo<const TTuple<OtherTypes...>&, typename TElementType<0>::Type>
-			|| CConstructible<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
+			|| CConstructibleFrom<typename TElementType<0>::Type, const TTuple<OtherTypes...>&>
 			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
 		&& (!(true && ... && CConvertibleTo<OtherTypes&&, Types>))
 	constexpr explicit TTuple(const TTuple<OtherTypes...>& InValue)
@@ -270,9 +270,9 @@ public:
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, OtherTypes&&>)
+		&& (true && ... && CConstructibleFrom<Types, OtherTypes&&>)
 		&& ((ElementSize != 1) || !(CConvertibleTo<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>
-			|| CConstructible<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
+			|| CConstructibleFrom<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
 			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
 		&& (true && ... && CConvertibleTo<OtherTypes&&, Types>)
 	constexpr TTuple(TTuple<OtherTypes...>&& InValue)
@@ -280,9 +280,9 @@ public:
 	{ }
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CConstructible<Types, OtherTypes&&>)
+		&& (true && ... && CConstructibleFrom<Types, OtherTypes&&>)
 		&& ((ElementSize != 1) || !(CConvertibleTo<TTuple<OtherTypes...>&&, typename TElementType<0>::Type>
-			|| CConstructible<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
+			|| CConstructibleFrom<typename TElementType<0>::Type, TTuple<OtherTypes...>&&>
 			|| CSameAs<typename TElementType<0>::Type, typename TTuple<OtherTypes...>::template TElementType<0>::Type>))
 		&& (!(true && ... && CConvertibleTo<OtherTypes&&, Types>))
 	constexpr explicit TTuple(TTuple<OtherTypes...>&& InValue)
@@ -293,7 +293,7 @@ public:
 	TTuple(TTuple&&) = default;
 	
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CAssignable<Types&, const OtherTypes&>)
+		&& (true && ... && CAssignableFrom<Types&, const OtherTypes&>)
 	constexpr TTuple& operator=(const TTuple<OtherTypes...>& InValue)
 	{
 		Helper::Assign(*this, InValue);
@@ -301,7 +301,7 @@ public:
 	}
 
 	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == ElementSize)
-		&& (true && ... && CAssignable<Types&, OtherTypes&&>)
+		&& (true && ... && CAssignableFrom<Types&, OtherTypes&&>)
 	constexpr TTuple& operator=(TTuple<OtherTypes...>&& InValue)
 	{
 		Helper::Assign(*this, MoveTemp(InValue));
@@ -365,21 +365,21 @@ public:
 	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func)       volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
 	template <typename F> requires (true && ... && (CInvocable<F, Types> && !CSameAs<void, typename TInvokeResult<F, Types>::Type>)) constexpr auto Transform(F&& Func) const volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct()               &  { return Helper::template Construct<T>(static_cast<               TTuple& >(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct() const         &  { return Helper::template Construct<T>(static_cast<const          TTuple& >(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct()       volatile&  { return Helper::template Construct<T>(static_cast<      volatile TTuple& >(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct() const volatile&  { return Helper::template Construct<T>(static_cast<const volatile TTuple& >(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct()               && { return Helper::template Construct<T>(static_cast<               TTuple&&>(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct() const         && { return Helper::template Construct<T>(static_cast<const          TTuple&&>(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct()       volatile&& { return Helper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
-	template <typename T> requires CConstructible<T, Types...> constexpr T Construct() const volatile&& { return Helper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct()               &  { return Helper::template Construct<T>(static_cast<               TTuple& >(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct() const         &  { return Helper::template Construct<T>(static_cast<const          TTuple& >(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct()       volatile&  { return Helper::template Construct<T>(static_cast<      volatile TTuple& >(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct() const volatile&  { return Helper::template Construct<T>(static_cast<const volatile TTuple& >(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct()               && { return Helper::template Construct<T>(static_cast<               TTuple&&>(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct() const         && { return Helper::template Construct<T>(static_cast<const          TTuple&&>(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct()       volatile&& { return Helper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
+	template <typename T> requires CConstructibleFrom<T, Types...> constexpr T Construct() const volatile&& { return Helper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
 	
 	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Types>)
 	{
 		return [this]<size_t... Indices>(TIndexSequence<Indices...>) -> size_t { return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetValue<Indices>())...); } (TMakeIndexSequence<ElementSize>());
 	}
 
-	constexpr void Swap(TTuple& InValue) requires (true && ... && (CMoveConstructible<Types>&& TIsSwappable<Types>::Value))
+	constexpr void Swap(TTuple& InValue) requires (true && ... && (CMoveConstructible<Types>&& CSwappable<Types>))
 	{
 		[&A = *this, &B = InValue]<size_t... Indices>(TIndexSequence<Indices...>) { ((NAMESPACE_REDCRAFT::Swap(A.template GetValue<Indices>(), B.template GetValue<Indices>())), ...); } (TMakeIndexSequence<ElementSize>());
 	}
@@ -392,16 +392,22 @@ TTuple(Types...) -> TTuple<Types...>;
 template <typename T, typename U>
 using TPair = TTuple<T, U>;
 
+NAMESPACE_PRIVATE_BEGIN
+
 template <typename    T    > struct TIsTTuple                   : FFalse { };
 template <typename... Types> struct TIsTTuple<TTuple<Types...>> : FTrue  { };
 
-template <typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTTuple = NAMESPACE_PRIVATE::TIsTTuple<T>::Value;
+
+template <typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
 struct TTupleElementSize : TConstant<size_t, TRemoveCVRef<TupleType>::Type::ElementSize> { };
 
-template <size_t I, typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
+template <size_t I, typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
 struct TTupleElementType { using Type = typename TCopyCVRef<typename TRemoveReference<TupleType>::Type, typename TRemoveCVRef<TupleType>::Type::template TElementType<I>::Type>::Type; };
 
-template <typename T, typename TupleType> requires TIsTTuple<typename TRemoveCVRef<TupleType>::Type>::Value
+template <typename T, typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
 struct TTupleElementIndex : TupleType::template TElementIndex<T> { };
 
 template <typename... Types>
@@ -540,10 +546,10 @@ struct TTupleVisitImpl<TIndexSequence<>>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... TTupleTypes> requires (true && ... && (TIsTTuple<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
+template <typename... TTupleTypes> requires (true && ... && (CTTuple<typename TRemoveCVRef<TTupleTypes>::Type>))
 struct TTupleCatResult { using Type = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<typename TRemoveReference<TTupleTypes>::Type..., NAMESPACE_PRIVATE::FTupleEndFlag>::Type; };
 
-template <typename... TTupleTypes> requires (true && ... && (TIsTTuple<typename TRemoveCVRef<TTupleTypes>::Type>::Value))
+template <typename... TTupleTypes> requires (true && ... && (CTTuple<typename TRemoveCVRef<TTupleTypes>::Type>))
 constexpr auto TupleCat(TTupleTypes&&... Args)
 {
 	using R = typename TTupleCatResult<TTupleTypes...>::Type;

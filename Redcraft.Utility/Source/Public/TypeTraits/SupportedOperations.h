@@ -37,17 +37,17 @@ template <typename T> concept CVirtualDestructible           = CDestructible<T> 
 //template <typename T> concept CNothrowMoveAssignable;
 //template <typename T> concept CNothrowDestructible;
 
-template <typename T, typename U> concept CAssignable = NAMESPACE_STD::is_assignable_v<T, U>;
+template <typename T, typename U> concept CAssignableFrom = NAMESPACE_STD::is_assignable_v<T, U>;
 
-template <typename T, typename U> concept CTriviallyAssignable = CAssignable<T, U> && NAMESPACE_STD::is_trivially_assignable_v<T, U>;
+template <typename T, typename U> concept CTriviallyAssignableFrom = CAssignableFrom<T, U> && NAMESPACE_STD::is_trivially_assignable_v<T, U>;
 
-//template <typename T, typename U> concept CNothrowAssignable;
+//template <typename T, typename U> concept CNothrowAssignableFrom;
 
-template <typename T, typename... Args> concept CConstructible = NAMESPACE_STD::is_constructible_v<T, Args...>;
+template <typename T, typename... Args> concept CConstructibleFrom = NAMESPACE_STD::is_constructible_v<T, Args...>;
 
-template <typename T, typename... Args> concept CTriviallyConstructible = CConstructible<T, Args...> && NAMESPACE_STD::is_trivially_constructible_v<T, Args...>;
+template <typename T, typename... Args> concept CTriviallyConstructibleFrom = CConstructibleFrom<T, Args...> && NAMESPACE_STD::is_trivially_constructible_v<T, Args...>;
 
-//template <typename T, typename... Args> concept CNothrowConstructible;
+//template <typename T, typename... Args> concept CNothrowConstructibleFrom;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

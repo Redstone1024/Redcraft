@@ -69,15 +69,15 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
-		&& CConstructible<typename TDecay<T>::Type, Types...>
+		&& CConstructibleFrom<typename TDecay<T>::Type, Types...>
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
 		using SelectedType = typename TDecay<T>::Type;
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 	}
 
-	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
+	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!CTInPlaceType<typename TDecay<T>::Type>)
+		&& CDestructible<typename TDecay<T>::Type> && CConstructibleFrom<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
 	{ }
 
@@ -184,8 +184,8 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!TIsTInPlaceType<typename TDecay<T>::Type>::Value)
-		&& CDestructible<typename TDecay<T>::Type> && CConstructible<typename TDecay<T>::Type, T&&>
+	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!CTInPlaceType<typename TDecay<T>::Type>)
+		&& CDestructible<typename TDecay<T>::Type> && CConstructibleFrom<typename TDecay<T>::Type, T&&>
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
 		using SelectedType = typename TDecay<T>::Type;
@@ -204,7 +204,7 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
-		&& CConstructible<typename TDecay<T>::Type, T&&>
+		&& CConstructibleFrom<typename TDecay<T>::Type, T&&>
 	FORCEINLINE typename TDecay<T>::Type& Emplace(Types&&... Args)
 	{
 		ResetImpl();
@@ -430,8 +430,14 @@ constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, FInvalid
 	return !LHS.IsValid();
 }
 
+NAMESPACE_PRIVATE_BEGIN
+
 template <typename T>                                struct TIsTAny                                    : FFalse { };
 template <size_t InlineSize, size_t InlineAlignment> struct TIsTAny<TAny<InlineSize, InlineAlignment>> : FTrue  { };
+
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTAny = NAMESPACE_PRIVATE::TIsTAny<T>::Value;
 
 using FAny = TAny<ANY_DEFAULT_INLINE_SIZE>;
 

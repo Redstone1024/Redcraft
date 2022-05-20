@@ -3,7 +3,6 @@
 #include "CoreTypes.h"
 #include "Memory/Memory.h"
 #include "Templates/Utility.h"
-#include "Concepts/Comparable.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -16,7 +15,7 @@ template <typename ElementType>
 	requires CDefaultConstructible<ElementType>
 FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 {
-	if constexpr (TIsZeroConstructible<ElementType>::Value)
+	if constexpr (CZeroConstructible<ElementType>)
 	{
 		Memory::Memset(Address, 0, sizeof(ElementType) * Count);
 	}
@@ -32,11 +31,11 @@ FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 	}
 }
 
-template <typename DestinationElementType, typename SourceElementType>
-	requires CConstructible<DestinationElementType, const SourceElementType&>
+template <typename DestinationElementType, typename SourceElementType = DestinationElementType>
+	requires CConstructibleFrom<DestinationElementType, const SourceElementType&>
 FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsBitwiseConstructible<DestinationElementType, const SourceElementType>::Value)
+	if constexpr (CBitwiseConstructible<DestinationElementType, const SourceElementType>)
 	{
 		Memory::Memcpy(Destination, Source, sizeof(SourceElementType) * Count);
 	}
@@ -92,11 +91,11 @@ FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, si
 	}
 }
 
-template <typename DestinationElementType, typename SourceElementType>
-	requires CConstructible<DestinationElementType, SourceElementType&&> && CDestructible<SourceElementType>
+template <typename DestinationElementType, typename SourceElementType = DestinationElementType>
+	requires CConstructibleFrom<DestinationElementType, SourceElementType&&> && CDestructible<SourceElementType>
 FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceElementType* Source, size_t Count = 1)
 {
-	if constexpr (TIsBitwiseRelocatable<DestinationElementType, SourceElementType>::Value)
+	if constexpr (CBitwiseRelocatable<DestinationElementType, SourceElementType>)
 	{
 		Memory::Memmove(Destination, Source, sizeof(SourceElementType) * Count);
 	}
@@ -173,7 +172,7 @@ template <typename ElementType>
 	requires CEqualityComparable<ElementType>
 FORCEINLINE bool Compare(const ElementType* LHS, const ElementType* RHS, size_t Count = 1)
 {
-	if constexpr (TIsBitwiseComparable<ElementType>::Value)
+	if constexpr (CBitwiseComparable<ElementType>)
 	{
 		return !Memory::Memcmp(LHS, RHS, sizeof(ElementType) * Count);
 	}

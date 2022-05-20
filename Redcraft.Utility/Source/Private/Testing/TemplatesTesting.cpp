@@ -746,8 +746,8 @@ void TestTuple()
 		
 		always_check(CDefaultConstructible<Type>);
 		always_check(CTriviallyDefaultConstructible<Type>);
-		always_check(CConstructible<Type>);
-		always_check(CTriviallyConstructible<Type>);
+		always_check(CConstructibleFrom<Type>);
+		always_check(CTriviallyConstructibleFrom<Type>);
 		always_check(CCopyConstructible<Type>);
 		always_check(CTriviallyCopyConstructible<Type>);
 		always_check(CMoveConstructible<Type>);

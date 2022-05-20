@@ -2,19 +2,17 @@
 
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
-#include "TypeTraits/HelperClasses.h"
+#include "TypeTraits/Common.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_PRIVATE_BEGIN
-
 template <typename T>
-concept CSwappable = requires(T & A, T & B) { Swap(A, B); };
+concept CSwappable = requires(T& A, T& B) { Swap(A, B); };
 
 template <typename T, typename U>
-concept CSwappableWith =
+concept CSwappableWith = CCommonReferenceWith<T, U> &&
 	requires(T&& A, U&& B)
 	{
 		Swap(Forward<T>(A), Forward<T>(A));
@@ -23,13 +21,8 @@ concept CSwappableWith =
 		Swap(Forward<U>(B), Forward<T>(A));
 	};
 
-NAMESPACE_PRIVATE_END
-
-template <typename T>             struct TIsSwappable     : TBoolConstant<NAMESPACE_PRIVATE::CSwappable<T>>        { };
-template <typename T, typename U> struct TIsSwappableWith : TBoolConstant<NAMESPACE_PRIVATE::CSwappableWith<T, U>> { };
-
-//template <typename T>             struct TIsNothrowSwappable;
-//template <typename T, typename U> struct TIsNothrowSwappableWith;
+//template <typename T>             concept CNothrowSwappable;
+//template <typename T, typename U> concept CNothrowSwappableWith;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

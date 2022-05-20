@@ -51,6 +51,7 @@ template <bool B, typename T = void>      struct TEnableIf        { using Type =
 template <bool B, typename T, typename F> struct TConditional     { using Type = NAMESPACE_STD::conditional_t<B, T, F>;          };
 template <typename T>                     struct TUnderlyingType  { using Type = NAMESPACE_STD::underlying_type_t<T>;            };
 template <typename... Types>              struct TVoid            { using Type = void;                                           };
+template <typename T>                     struct TIdentity        { using Type = T;                                              };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
