@@ -9,8 +9,8 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T>
-concept CBooleanTestable = CConvertibleTo<T, bool> &&
-	requires(T && B) { { !Forward<T>(B) } -> CConvertibleTo<bool>; };
+concept CBooleanTestable = CConvertibleTo<T, bool>
+	&& requires(T && B) { { !Forward<T>(B) } -> CConvertibleTo<bool>; };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -12,7 +12,6 @@
 #include "TypeTraits/Common.h"
 #include "TypeTraits/CopyQualifiers.h"
 #include "TypeTraits/InPlaceSpecialization.h"
-#include "TypeTraits/BitwiseOperations.h"
 #include "TypeTraits/BooleanTestable.h"
 #include "TypeTraits/Object.h"
 #include "TypeTraits/Comparable.h"

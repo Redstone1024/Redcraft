@@ -9,8 +9,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename T, typename U>
-concept CWeaklyEqualityComparableWith =
+template <typename T, typename U = T>
+concept CWeaklyEqualityComparable =
 	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
 	{
 		{ A == B } -> CBooleanTestable;
@@ -19,19 +19,13 @@ concept CWeaklyEqualityComparableWith =
 		{ B != A } -> CBooleanTestable;
 	};
 
-template <typename T>
-concept CEqualityComparable = CWeaklyEqualityComparableWith<T, T>;
+template <typename T, typename U = T>
+concept CEqualityComparable = CWeaklyEqualityComparable<T> && CWeaklyEqualityComparable<U> && CWeaklyEqualityComparable<T, U>
+	&& CCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>
+	&& CWeaklyEqualityComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>;
 
-template <typename T, typename U>
-concept CEqualityComparableWith =
-	CEqualityComparable<T> &&
-	CEqualityComparable<U> &&
-	CWeaklyEqualityComparableWith<T, U> &&
-	CCommonReferenceWith<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&> &&
-	CEqualityComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&,  const typename TRemoveReference<U>::Type&>::Type>;
-
-template <typename T, typename U>
-concept CPartiallyOrderedWith =
+template <typename T, typename U = T>
+concept CPartiallyOrdered =
 	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
 	{
 		{ A <  B } -> CBooleanTestable;
@@ -44,15 +38,13 @@ concept CPartiallyOrderedWith =
 		{ B >= A } -> CBooleanTestable;
 	};
 
-template <typename T>
-concept CTotallyOrdered = CEqualityComparable<T> && CPartiallyOrderedWith<T, T>;
-
-template <typename T, typename U>
-concept CTotallyOrderedWith =
-	CTotallyOrdered<T> && CTotallyOrdered<U> &&
-	CPartiallyOrderedWith<T, U> &&
-	CEqualityComparableWith<T, U> &&
-	CTotallyOrdered<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>;
+template <typename T, typename U = T>
+concept CTotallyOrdered =
+	CPartiallyOrdered<T> && CPartiallyOrdered<U>
+	&& CEqualityComparable<T> && CEqualityComparable<U>
+	&& CPartiallyOrdered<T, U> && CEqualityComparable<T, U>
+	&& CPartiallyOrdered<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>
+	&& CEqualityComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

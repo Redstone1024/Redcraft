@@ -459,15 +459,15 @@ void TestTypeTraits()
 	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>::Type>));
 	always_check((CSameAs<double, TCommonReference<float, double>::Type>));
 	
-	always_check((CCommonWith<int32, int32>));
-	always_check((CCommonWith<int8, int32>));
-	always_check((CCommonWith<float, double>));
-	always_check(!(CCommonWith<FTestStructA, int32>));
+	always_check((CCommonType<int32, int32>));
+	always_check((CCommonType<int8, int32>));
+	always_check((CCommonType<float, double>));
+	always_check(!(CCommonType<FTestStructA, int32>));
 
-	always_check((CCommonReferenceWith<int8, int32>));
-	always_check((CCommonReferenceWith<float, int32>));
-	always_check((CCommonReferenceWith<float, double>));
-	always_check(!(CCommonReferenceWith<FTestStructA, double>));
+	always_check((CCommonReference<int8, int32>));
+	always_check((CCommonReference<float, int32>));
+	always_check((CCommonReference<float, double>));
+	always_check(!(CCommonReference<FTestStructA, double>));
 
 	// Swappable.h
 
@@ -476,7 +476,7 @@ void TestTypeTraits()
 	always_check(CSwappable<FTestStructN>);
 	always_check(!CSwappable<FSingleton>);
 
-	always_check((CSwappableWith<int32&, int32&>));
+	always_check((CSwappable<int32&, int32&>));
 
 	// CopyQualifiers.h
 
@@ -585,16 +585,16 @@ void TestTypeTraits()
 	always_check((CEqualityComparable<int32>));
 	always_check(!(CEqualityComparable<FTestStructA>));
 
-	always_check((CEqualityComparableWith<int32, int32>));
-	always_check((CEqualityComparableWith<int32, int64>));
-	always_check(!(CEqualityComparableWith<FTestStructA, FTestStructA>));
+	always_check((CEqualityComparable<int32, int32>));
+	always_check((CEqualityComparable<int32, int64>));
+	always_check(!(CEqualityComparable<FTestStructA, FTestStructA>));
 
 	always_check((CTotallyOrdered<int32>));
 	always_check(!(CTotallyOrdered<FTestStructA>));
 
-	always_check((CTotallyOrderedWith<int32, int32>));
-	always_check((CTotallyOrderedWith<int32, int64>));
-	always_check(!(CTotallyOrderedWith<FTestStructA, FTestStructA>));
+	always_check((CTotallyOrdered<int32, int32>));
+	always_check((CTotallyOrdered<int32, int64>));
+	always_check(!(CTotallyOrdered<FTestStructA, FTestStructA>));
 
 }
 

@@ -152,7 +152,6 @@ struct FTracker
 	~FTracker()                                              { always_check(Status == 3); Status = -1;               }
 	FTracker& operator=(const FTracker&)                     { always_check(Status == 4); Status = -1; return *this; }
 	FTracker& operator=(FTracker&&)                          { always_check(Status == 5); Status = -1; return *this; }
-	friend bool operator==(const FTracker&, const FTracker&) { always_check(Status == 6); Status = -1; return  true; }
 };
 
 int32 FTracker::Status = -1;
@@ -181,10 +180,6 @@ void TestMemoryOperator()
 	Memory::MoveConstruct(PtrA, PtrB);
 	always_check(FTracker::Status == -1);
 
-	FTracker::Status = -1;
-	Memory::RelocateConstruct(PtrA, PtrB);
-	always_check(FTracker::Status == -1);
-
 	FTracker::Status = 3;
 	Memory::Destruct(PtrA);
 	always_check(FTracker::Status == -1);
@@ -195,11 +190,6 @@ void TestMemoryOperator()
 
 	FTracker::Status = 5;
 	Memory::MoveAssign(PtrA, PtrB);
-	always_check(FTracker::Status == -1);
-
-	FTracker::Status = 6;
-	const bool bResult = Memory::Compare(PtrA, PtrB);
-	always_check(bResult);
 	always_check(FTracker::Status == -1);
 
 	Memory::Free(PtrA);

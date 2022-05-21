@@ -110,8 +110,11 @@ struct FTestSynth
 {
 	int32 A;
 	FTestSynth(int32 InA) : A(InA) { }
-	friend bool operator==(FTestSynth LHS, FTestSynth RHS) { return LHS.A == RHS.A; }
 	friend bool operator< (FTestSynth LHS, FTestSynth RHS) { return LHS.A <  RHS.A; }
+	friend bool operator<=(FTestSynth LHS, FTestSynth RHS) { return LHS.A <= RHS.A; }
+	friend bool operator==(FTestSynth LHS, FTestSynth RHS) { return LHS.A == RHS.A; }
+	friend bool operator>=(FTestSynth LHS, FTestSynth RHS) { return LHS.A >= RHS.A; }
+	friend bool operator> (FTestSynth LHS, FTestSynth RHS) { return LHS.A >  RHS.A; }
 };
 
 NAMESPACE_UNNAMED_END
@@ -194,8 +197,8 @@ void TestCompare()
 	always_check(CThreeWayComparable<FTestWeakOrdering>);
 	always_check(CThreeWayComparable<FTestStrongOrdering>);
 
-	always_check((CThreeWayComparableWith<bool, bool>));
-	always_check((CThreeWayComparableWith<int16, int32>));
+	always_check((CThreeWayComparable<bool, bool>));
+	always_check((CThreeWayComparable<int16, int32>));
 
 	always_check((CSameAs<TCompareThreeWayResult<int32               >::Type, strong_ordering >));
 	always_check((CSameAs<TCompareThreeWayResult<float               >::Type, partial_ordering>));

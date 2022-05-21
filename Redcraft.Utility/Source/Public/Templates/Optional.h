@@ -254,7 +254,7 @@ private:
 template <typename T>
 TOptional(T) -> TOptional<T>;
 
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
+template <typename T, typename U> requires CWeaklyEqualityComparable<T, U>
 constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return false;
@@ -262,7 +262,7 @@ constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 	return *LHS == *RHS;
 }
 
-template <typename T, typename U> requires CSynthThreeWayComparableWith<T, U>
+template <typename T, typename U> requires CSynthThreeWayComparable<T, U>
 constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
@@ -270,7 +270,7 @@ constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<
 	return SynthThreeWayCompare(*LHS, *RHS);
 }
 
-template <typename T, typename U> requires CWeaklyEqualityComparableWith<T, U>
+template <typename T, typename U> requires CWeaklyEqualityComparable<T, U>
 constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
 {
 	return LHS.IsValid() ? *LHS == RHS : false;

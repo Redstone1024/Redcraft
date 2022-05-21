@@ -15,13 +15,9 @@ template <typename ElementType>
 	requires CDefaultConstructible<ElementType>
 FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 {
-	if constexpr (CZeroConstructible<ElementType>)
+	if constexpr (!CTriviallyDefaultConstructible<ElementType>)
 	{
-		Memory::Memset(Address, 0, sizeof(ElementType) * Count);
-	}
-	else
-	{
-		ElementType* Element = (ElementType*)Address;
+		ElementType* Element = Address;
 		while (Count)
 		{
 			new (Element) ElementType;
@@ -35,7 +31,7 @@ template <typename DestinationElementType, typename SourceElementType = Destinat
 	requires CConstructibleFrom<DestinationElementType, const SourceElementType&>
 FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, size_t Count = 1)
 {
-	if constexpr (CBitwiseConstructible<DestinationElementType, const SourceElementType>)
+	if constexpr (CTriviallyConstructibleFrom<DestinationElementType, const SourceElementType> && sizeof(DestinationElementType) == sizeof(SourceElementType))
 	{
 		Memory::Memcpy(Destination, Source, sizeof(SourceElementType) * Count);
 	}
@@ -91,43 +87,6 @@ FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, si
 	}
 }
 
-template <typename DestinationElementType, typename SourceElementType = DestinationElementType>
-	requires CConstructibleFrom<DestinationElementType, SourceElementType&&> && CDestructible<SourceElementType>
-FORCEINLINE void RelocateConstruct(DestinationElementType* Destination, SourceElementType* Source, size_t Count = 1)
-{
-	if constexpr (CBitwiseRelocatable<DestinationElementType, SourceElementType>)
-	{
-		Memory::Memmove(Destination, Source, sizeof(SourceElementType) * Count);
-	}
-	else
-	{
-		while (Count)
-		{
-			typedef SourceElementType RelocateConstructItemsElementTypeTypedef;
-
-			new (Destination) DestinationElementType(MoveTemp(*Source));
-			++(DestinationElementType*&)Destination;
-			(Source++)->RelocateConstructItemsElementTypeTypedef::~RelocateConstructItemsElementTypeTypedef();
-			--Count;
-		}
-	}
-}
-
-template <typename ElementType>
-	requires CDestructible<ElementType>
-FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
-{
-	if constexpr (!CTriviallyDestructible<ElementType>)
-	{
-		while (Count)
-		{
-			Element->~ElementType();
-			++Element;
-			--Count;
-		}
-	}
-}
-
 template <typename ElementType>
 	requires CCopyAssignable<ElementType>
 FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source, size_t Count = 1)
@@ -152,7 +111,7 @@ template <typename ElementType>
 	requires CMoveAssignable<ElementType>
 FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
-	if constexpr (CTriviallyCopyConstructible<ElementType>)
+	if constexpr (CTriviallyMoveAssignable<ElementType>)
 	{
 		Memory::Memmove(Destination, Source, sizeof(ElementType) * Count);
 	}
@@ -169,25 +128,17 @@ FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_
 }
 
 template <typename ElementType>
-	requires CEqualityComparable<ElementType>
-FORCEINLINE bool Compare(const ElementType* LHS, const ElementType* RHS, size_t Count = 1)
+	requires CDestructible<ElementType>
+FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 {
-	if constexpr (CBitwiseComparable<ElementType>)
-	{
-		return !Memory::Memcmp(LHS, RHS, sizeof(ElementType) * Count);
-	}
-	else
+	if constexpr (!CTriviallyDestructible<ElementType>)
 	{
 		while (Count)
 		{
-			if (!(*LHS == *RHS)) return false;
-
-			++LHS;
-			++RHS;
+			Element->~ElementType();
+			++Element;
 			--Count;
 		}
-
-		return true;
 	}
 }
 

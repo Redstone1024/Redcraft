@@ -11,16 +11,15 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T>
-concept CMovable =
-	CObject<T> &&
-	CMoveConstructible<T> &&
-	CMoveAssignable<T> &&
-	CSwappable<T>;
+concept CMovable = CObject<T>
+	&& CMoveConstructible<T>
+	&& CMoveAssignable<T>
+	&& CSwappable<T>;
 
 template <typename T>
-concept CCopyable = CMovable<T> &&
-	CCopyConstructible<T> &&
-	CCopyAssignable<T>;
+concept CCopyable = CMovable<T>
+	&& CCopyConstructible<T>
+	&& CCopyAssignable<T>;
 
 template <typename T>
 concept CSemiregular = CCopyable<T> && CDefaultConstructible<T>;

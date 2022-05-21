@@ -557,14 +557,14 @@ constexpr auto TupleCat(TTupleTypes&&... Args)
 	else return NAMESPACE_PRIVATE::TTupleCatImpl<R>::F(Forward<TTupleTypes>(Args)...);
 }
 
-template <typename... LHSTypes, typename... RHSTypes> requires ((sizeof...(LHSTypes) != sizeof...(RHSTypes)) || (true && ... && CWeaklyEqualityComparableWith<LHSTypes, RHSTypes>))
+template <typename... LHSTypes, typename... RHSTypes> requires ((sizeof...(LHSTypes) != sizeof...(RHSTypes)) || (true && ... && CWeaklyEqualityComparable<LHSTypes, RHSTypes>))
 constexpr bool operator==(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
 {
 	if constexpr (sizeof...(LHSTypes) != sizeof...(RHSTypes)) return false;
 	return[&LHS, &RHS]<size_t... Indices>(TIndexSequence<Indices...>) -> bool {	return (true && ... && (LHS.template GetValue<Indices>() == RHS.template GetValue<Indices>())); } (TMakeIndexSequence<sizeof...(LHSTypes)>());
 }
 
-template <typename... LHSTypes, typename... RHSTypes> requires ((sizeof...(LHSTypes) == sizeof...(RHSTypes)) && (true && ... && (CSynthThreeWayComparableWith<LHSTypes, RHSTypes>)))
+template <typename... LHSTypes, typename... RHSTypes> requires ((sizeof...(LHSTypes) == sizeof...(RHSTypes)) && (true && ... && (CSynthThreeWayComparable<LHSTypes, RHSTypes>)))
 constexpr typename TCommonComparisonCategory<typename TSynthThreeWayResult<LHSTypes, RHSTypes>::Type...>::Type operator<=>(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
 {
 	using R = typename TCommonComparisonCategory<typename TSynthThreeWayResult<LHSTypes, RHSTypes>::Type...>::Type;
