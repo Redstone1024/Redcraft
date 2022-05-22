@@ -42,9 +42,9 @@ concept CThreeWayComparesAs = CSameAs<typename TCommonComparisonCategory<T, Orde
 
 template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrdered<T, U>
-	&& CCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>
-	&& requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B,
-		const typename TRemoveReference<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>::Type& C)
+	&& CCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>
+	&& requires(const TRemoveReference<T>& A, const TRemoveReference<U>& B,
+		const TRemoveReference<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>& C)
 		{
 			{ A <=> A } -> CThreeWayComparesAs<OrderingType>;
 			{ B <=> B } -> CThreeWayComparesAs<OrderingType>;
@@ -53,13 +53,10 @@ concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrder
 			{ C <=> C } -> CThreeWayComparesAs<OrderingType>;
 		};
 
-template <typename T, typename U = T>
-struct TCompareThreeWayResult { };
-
-template <typename T, typename U> requires CThreeWayComparable<T, U>
-struct TCompareThreeWayResult<T, U>
+template <typename T, typename U = T> requires CThreeWayComparable<T, U>
+struct TCompareThreeWayResult
 {
-	using Type = decltype(DeclVal<const typename TRemoveReference<T>::Type&>() <=> DeclVal<const typename TRemoveReference<U>::Type&>());
+	using Type = decltype(DeclVal<const TRemoveReference<T>&>() <=> DeclVal<const TRemoveReference<U>&>());
 };
 
 template <typename T, typename U = T, typename OrderingType = partial_ordering>
@@ -81,7 +78,7 @@ constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 template <typename T, typename U = T>
 struct TSynthThreeWayResult
 {
-	using Type = decltype(SynthThreeWayCompare(DeclVal<const typename TRemoveReference<T>::Type&>(), DeclVal<const typename TRemoveReference<U>::Type&>()));
+	using Type = decltype(SynthThreeWayCompare(DeclVal<const TRemoveReference<T>&>(), DeclVal<const TRemoveReference<U>&>()));
 };
 
 NAMESPACE_MODULE_END(Utility)

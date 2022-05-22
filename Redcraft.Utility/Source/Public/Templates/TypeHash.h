@@ -77,7 +77,7 @@ constexpr size_t GetTypeHash(T A)
 template <typename T> requires CEnum<T>
 constexpr size_t GetTypeHash(T A)
 {
-	return GetTypeHash(static_cast<typename TUnderlyingType<T>::Type>(A));
+	return GetTypeHash(static_cast<TUnderlyingType<T>>(A));
 }
 
 template <typename T> requires CPointer<T> || CSameAs<T, nullptr_t>

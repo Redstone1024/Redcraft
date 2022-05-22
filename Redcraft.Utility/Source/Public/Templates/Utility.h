@@ -25,9 +25,9 @@ constexpr const T(&AsConst(T(&Array)[N]))[N]
 }
 
 template <typename T>
-constexpr typename TRemoveReference<T>::Type&& MoveTemp(T&& Obj)
+constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
 {
-	typedef typename TRemoveReference<T>::Type CastType;
+	typedef TRemoveReference<T> CastType;
 	return (CastType&&)Obj;
 }
 
@@ -50,13 +50,13 @@ constexpr T&& CopyTemp(T&& Val)
 }
 
 template <typename T>
-constexpr T&& Forward(typename TRemoveReference<T>::Type& Obj)
+constexpr T&& Forward(TRemoveReference<T>& Obj)
 {
 	return (T&&)Obj;
 }
 
 template <typename T>
-constexpr T&& Forward(typename TRemoveReference<T>::Type&& Obj)
+constexpr T&& Forward(TRemoveReference<T>&& Obj)
 {
 	return (T&&)Obj;
 }

@@ -21,8 +21,8 @@ template <typename... Types> struct TCommonReference { using Type = NAMESPACE_ST
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> struct TCommonType      : TConditional<NAMESPACE_PRIVATE::CCommonType<Types...>,      NAMESPACE_PRIVATE::TCommonType<Types...>,      NAMESPACE_PRIVATE::FNoopStruct>::Type { };
-template <typename... Types> struct TCommonReference : TConditional<NAMESPACE_PRIVATE::CCommonReference<Types...>, NAMESPACE_PRIVATE::TCommonReference<Types...>, NAMESPACE_PRIVATE::FNoopStruct>::Type { };
+template <typename... Types> struct TCommonType      : TConditional<NAMESPACE_PRIVATE::CCommonType<Types...>,      NAMESPACE_PRIVATE::TCommonType<Types...>,      NAMESPACE_PRIVATE::FNoopStruct> { };
+template <typename... Types> struct TCommonReference : TConditional<NAMESPACE_PRIVATE::CCommonReference<Types...>, NAMESPACE_PRIVATE::TCommonReference<Types...>, NAMESPACE_PRIVATE::FNoopStruct> { };
 
 template <typename... Ts>
 concept CCommonReference =

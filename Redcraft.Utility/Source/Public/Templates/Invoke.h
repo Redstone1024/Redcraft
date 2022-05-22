@@ -56,7 +56,7 @@ struct InvokeMemberObject
 
 template <typename F,
 	typename T,
-	typename Decayed = typename TDecay<F>::Type,
+	typename Decayed = TDecay<F>,
 	bool IsMemberFunction = CMemberFunctionPointer<Decayed>,
 	bool IsMemberObject = CMemberObjectPointer<Decayed>>
 	struct InvokeMember;

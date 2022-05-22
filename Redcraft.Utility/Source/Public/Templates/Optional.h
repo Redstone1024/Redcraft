@@ -48,7 +48,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
-		&& (!CSameAs<typename TRemoveCVRef<T>::Type, FInPlace>) && (!CSameAs<typename TRemoveCVRef<T>::Type, TOptional>)
+		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CSameAs<TRemoveCVRef<T>, TOptional>)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
@@ -246,7 +246,7 @@ public:
 
 private:
 
-	TAlignedStorage<sizeof(OptionalType), alignof(OptionalType)>::Type Value;
+	TAlignedStorage<sizeof(OptionalType), alignof(OptionalType)> Value;
 	bool bIsValid;
 
 };
@@ -283,9 +283,9 @@ constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
 }
 
 template <typename T> requires CDestructible<T>
-constexpr TOptional<typename TDecay<T>::Type> MakeOptional(FInvalid)
+constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
 {
-	return TOptional<typename TDecay<T>::Type>(Invalid);
+	return TOptional<TDecay<T>>(Invalid);
 }
 
 template <typename T> requires CDestructible<T> && CConstructibleFrom<T, T&&>

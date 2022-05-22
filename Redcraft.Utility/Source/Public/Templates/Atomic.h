@@ -15,12 +15,12 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 enum class EMemoryOrder : uint8
 {
-	Relaxed                = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_relaxed),
-	Consume                = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_consume),
-	Acquire                = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_acquire),
-	Release                = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_release),
-	AcquireRelease         = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_acq_rel),
-	SequentiallyConsistent = static_cast<typename TUnderlyingType<NAMESPACE_STD::memory_order>::Type>(NAMESPACE_STD::memory_order_seq_cst),
+	Relaxed                = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_relaxed),
+	Consume                = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_consume),
+	Acquire                = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_acquire),
+	Release                = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_release),
+	AcquireRelease         = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_acq_rel),
+	SequentiallyConsistent = static_cast<TUnderlyingType<NAMESPACE_STD::memory_order>>(NAMESPACE_STD::memory_order_seq_cst),
 };
 
 #if BUILD_DEBUG
@@ -58,7 +58,7 @@ struct TAtomic : public FSingleton
 {
 protected:
 
-	using ElementType = typename TConditional<bIsRef, NAMESPACE_STD::atomic_ref<T>, NAMESPACE_STD::atomic<T>>::Type;
+	using ElementType = TConditional<bIsRef, NAMESPACE_STD::atomic_ref<T>, NAMESPACE_STD::atomic<T>>;
 
 public:
 

@@ -68,17 +68,17 @@ struct alignas(InlineAlignment) TAny
 		}
 	}
 
-	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
-		&& CConstructibleFrom<typename TDecay<T>::Type, Types...>
+	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, Types...>
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
-		using SelectedType = typename TDecay<T>::Type;
+		using SelectedType = TDecay<T>;
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 	}
 
-	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!CTInPlaceType<typename TDecay<T>::Type>)
-		&& CDestructible<typename TDecay<T>::Type> && CConstructibleFrom<typename TDecay<T>::Type, T&&>
-	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<typename TDecay<T>::Type>, Forward<T>(InValue))
+	template <typename T> requires (!CSameAs<TDecay<T>, TAny>) && (!CTInPlaceType<TDecay<T>>)
+		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
+	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
 
 	FORCEINLINE ~TAny()
@@ -184,11 +184,11 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T> requires (!CSameAs<typename TDecay<T>::Type, TAny>) && (!CTInPlaceType<typename TDecay<T>::Type>)
-		&& CDestructible<typename TDecay<T>::Type> && CConstructibleFrom<typename TDecay<T>::Type, T&&>
+	template <typename T> requires (!CSameAs<TDecay<T>, TAny>) && (!CTInPlaceType<TDecay<T>>)
+		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
-		using SelectedType = typename TDecay<T>::Type;
+		using SelectedType = TDecay<T>;
 
 		if (HoldsAlternative<SelectedType>())
 		{
@@ -203,13 +203,13 @@ struct alignas(InlineAlignment) TAny
 		return *this;
 	}
 
-	template <typename T, typename... Types> requires CDestructible<typename TDecay<T>::Type>
-		&& CConstructibleFrom<typename TDecay<T>::Type, T&&>
-	FORCEINLINE typename TDecay<T>::Type& Emplace(Types&&... Args)
+	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, T&&>
+	FORCEINLINE TDecay<T>& Emplace(Types&&... Args)
 	{
 		ResetImpl();
 		
-		using SelectedType = typename TDecay<T>::Type;
+		using SelectedType = TDecay<T>;
 		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
 		return GetValue<SelectedType>();
 	}
@@ -221,22 +221,22 @@ struct alignas(InlineAlignment) TAny
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
-	template <typename T> requires CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CDestructible<TDecay<T>>
 	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetAllocation());  }
 	
-	template <typename T> requires CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CDestructible<TDecay<T>>
 	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetAllocation())); }
 	
-	template <typename T> requires CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CDestructible<TDecay<T>>
 	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetAllocation());  }
 	
-	template <typename T> requires CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CDestructible<TDecay<T>>
 	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetAllocation())); }
 	
-	template <typename T> requires CSameAs<T, typename TDecay<T>::Type>&& CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>
 	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
-	template <typename T> requires CSameAs<T, typename TDecay<T>::Type>&& CDestructible<typename TDecay<T>::Type>
+	template <typename T> requires CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	FORCEINLINE void Reset()
@@ -345,7 +345,7 @@ private:
 
 	union
 	{
-		TAlignedStorage<InlineSize, 1>::Type InlineAllocation;
+		TAlignedStorage<InlineSize, 1> InlineAllocation;
 		void* HeapAllocation;
 	};
 

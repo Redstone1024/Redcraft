@@ -401,13 +401,13 @@ NAMESPACE_PRIVATE_END
 
 template <typename T> concept CTTuple = NAMESPACE_PRIVATE::TIsTTuple<T>::Value;
 
-template <typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
-struct TTupleElementSize : TConstant<size_t, TRemoveCVRef<TupleType>::Type::ElementSize> { };
+template <typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
+struct TTupleElementSize : TConstant<size_t, TRemoveCVRef<TupleType>::ElementSize> { };
 
-template <size_t I, typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
-struct TTupleElementType { using Type = typename TCopyCVRef<typename TRemoveReference<TupleType>::Type, typename TRemoveCVRef<TupleType>::Type::template TElementType<I>::Type>::Type; };
+template <size_t I, typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
+struct TTupleElementType { using Type = typename TCopyCVRef<TRemoveReference<TupleType>, typename TRemoveCVRef<TupleType>::template TElementType<I>::Type>::Type; };
 
-template <typename T, typename TupleType> requires CTTuple<typename TRemoveCVRef<TupleType>::Type>
+template <typename T, typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
 struct TTupleElementIndex : TupleType::template TElementIndex<T> { };
 
 template <typename... Types>
@@ -454,7 +454,7 @@ template <typename... RTypes, size_t... Indices>
 struct TTupleCatMake<TTuple<RTypes...>, TIndexSequence<Indices...>>
 {
 	template <typename T, typename U>
-	struct ForwardType { using Type = typename TConditional<CRValueReference<T>, typename TRemoveReference<U>::Type&&, U>::Type; };
+	struct ForwardType { using Type = TConditional<CRValueReference<T>, TRemoveReference<U>&&, U>; };
 
 	template <typename TTupleType>
 	static constexpr TTuple<RTypes...> F(TTupleType&& InValue)
@@ -546,10 +546,10 @@ struct TTupleVisitImpl<TIndexSequence<>>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... TTupleTypes> requires (true && ... && (CTTuple<typename TRemoveCVRef<TTupleTypes>::Type>))
-struct TTupleCatResult { using Type = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<typename TRemoveReference<TTupleTypes>::Type..., NAMESPACE_PRIVATE::FTupleEndFlag>::Type; };
+template <typename... TTupleTypes> requires (true && ... && (CTTuple<TRemoveCVRef<TTupleTypes>>))
+struct TTupleCatResult { using Type = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<TRemoveReference<TTupleTypes>..., NAMESPACE_PRIVATE::FTupleEndFlag>::Type; };
 
-template <typename... TTupleTypes> requires (true && ... && (CTTuple<typename TRemoveCVRef<TTupleTypes>::Type>))
+template <typename... TTupleTypes> requires (true && ... && (CTTuple<TRemoveCVRef<TTupleTypes>>))
 constexpr auto TupleCat(TTupleTypes&&... Args)
 {
 	using R = typename TTupleCatResult<TTupleTypes...>::Type;

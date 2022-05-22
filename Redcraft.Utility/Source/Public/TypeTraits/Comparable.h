@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T, typename U = T>
 concept CWeaklyEqualityComparable =
-	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
+	requires(const TRemoveReference<T>& A, const TRemoveReference<U>& B)
 	{
 		{ A == B } -> CBooleanTestable;
 		{ A != B } -> CBooleanTestable;
@@ -21,12 +21,12 @@ concept CWeaklyEqualityComparable =
 
 template <typename T, typename U = T>
 concept CEqualityComparable = CWeaklyEqualityComparable<T> && CWeaklyEqualityComparable<U> && CWeaklyEqualityComparable<T, U>
-	&& CCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>
-	&& CWeaklyEqualityComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>;
+	&& CCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>
+	&& CWeaklyEqualityComparable<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>;
 
 template <typename T, typename U = T>
 concept CPartiallyOrdered =
-	requires(const typename TRemoveReference<T>::Type& A, const typename TRemoveReference<U>::Type& B)
+	requires(const TRemoveReference<T>& A, const TRemoveReference<U>& B)
 	{
 		{ A <  B } -> CBooleanTestable;
 		{ A >  B } -> CBooleanTestable;
@@ -43,8 +43,8 @@ concept CTotallyOrdered =
 	CPartiallyOrdered<T> && CPartiallyOrdered<U>
 	&& CEqualityComparable<T> && CEqualityComparable<U>
 	&& CPartiallyOrdered<T, U> && CEqualityComparable<T, U>
-	&& CPartiallyOrdered<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>
-	&& CEqualityComparable<typename TCommonReference<const typename TRemoveReference<T>::Type&, const typename TRemoveReference<U>::Type&>::Type>;
+	&& CPartiallyOrdered<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>
+	&& CEqualityComparable<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

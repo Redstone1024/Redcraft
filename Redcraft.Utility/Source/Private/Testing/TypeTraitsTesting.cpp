@@ -322,108 +322,108 @@ void TestTypeTraits()
 	always_check(!(CConvertibleTo<FTestStructE*, FTestStructH*>));
 	always_check((CConvertibleTo<FTestStructW, FTestStructV>));
 
-	always_check((CSameAs<int32, TRemoveConst<int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<int32*>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<int32&>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<int32&&>::Type>));
-	always_check((CSameAs<int32, TRemoveConst<const int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveConst<int32>>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32*>>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32&>>));
+	always_check(!(CSameAs<int32, TRemoveConst<int32&&>>));
+	always_check((CSameAs<int32, TRemoveConst<const int32>>));
+	always_check(!(CSameAs<int32, TRemoveConst<volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveConst<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemoveVolatile<int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<int32*>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<int32&>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<int32&&>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<const int32>::Type>));
-	always_check((CSameAs<int32, TRemoveVolatile<volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveVolatile<int32>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32*>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32&>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<int32&&>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const int32>>));
+	always_check((CSameAs<int32, TRemoveVolatile<volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveVolatile<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemoveCV<int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveCV<int32*>::Type>));
-	always_check(!(CSameAs<int32, TRemoveCV<int32&>::Type>));
-	always_check(!(CSameAs<int32, TRemoveCV<int32&&>::Type>));
-	always_check((CSameAs<int32, TRemoveCV<const int32>::Type>));
-	always_check((CSameAs<int32, TRemoveCV<volatile int32>::Type>));
-	always_check((CSameAs<int32, TRemoveCV<const volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveCV<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveCV<int32>>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32*>>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32&>>));
+	always_check(!(CSameAs<int32, TRemoveCV<int32&&>>));
+	always_check((CSameAs<int32, TRemoveCV<const int32>>));
+	always_check((CSameAs<int32, TRemoveCV<volatile int32>>));
+	always_check((CSameAs<int32, TRemoveCV<const volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveCV<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemovePointer<int32>::Type>));
-	always_check((CSameAs<int32, TRemovePointer<int32*>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<int32&>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<int32&&>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<const int32>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemovePointer<int32>>));
+	always_check((CSameAs<int32, TRemovePointer<int32*>>));
+	always_check(!(CSameAs<int32, TRemovePointer<int32&>>));
+	always_check(!(CSameAs<int32, TRemovePointer<int32&&>>));
+	always_check(!(CSameAs<int32, TRemovePointer<const int32>>));
+	always_check(!(CSameAs<int32, TRemovePointer<volatile int32>>));
+	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32>>));
+	always_check(!(CSameAs<int32, TRemovePointer<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemoveReference<int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveReference<int32*>::Type>));
-	always_check((CSameAs<int32, TRemoveReference<int32&>::Type>));
-	always_check((CSameAs<int32, TRemoveReference<int32&&>::Type>));
-	always_check(!(CSameAs<int32, TRemoveReference<const int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveReference<volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveReference<int32>>));
+	always_check(!(CSameAs<int32, TRemoveReference<int32*>>));
+	always_check((CSameAs<int32, TRemoveReference<int32&>>));
+	always_check((CSameAs<int32, TRemoveReference<int32&&>>));
+	always_check(!(CSameAs<int32, TRemoveReference<const int32>>));
+	always_check(!(CSameAs<int32, TRemoveReference<volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32>>));
+	always_check(!(CSameAs<int32, TRemoveReference<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemoveCVRef<int32>::Type>));
-	always_check(!(CSameAs<int32, TRemoveCVRef<int32*>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<int32&>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<int32&&>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<const int32>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<volatile int32>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32>::Type>));
-	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TRemoveCVRef<int32>>));
+	always_check(!(CSameAs<int32, TRemoveCVRef<int32*>>));
+	always_check((CSameAs<int32, TRemoveCVRef<int32&>>));
+	always_check((CSameAs<int32, TRemoveCVRef<int32&&>>));
+	always_check((CSameAs<int32, TRemoveCVRef<const int32>>));
+	always_check((CSameAs<int32, TRemoveCVRef<volatile int32>>));
+	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32>>));
+	always_check((CSameAs<int32, TRemoveCVRef<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TRemoveExtent<int32[1]>::Type>));
-	always_check(!(CSameAs<int32, TRemoveExtent<int32[1][2]>::Type>));
-	always_check((CSameAs<int32[2][3], TRemoveExtent<int32[1][2][3]>::Type>));
+	always_check((CSameAs<int32, TRemoveExtent<int32[1]>>));
+	always_check(!(CSameAs<int32, TRemoveExtent<int32[1][2]>>));
+	always_check((CSameAs<int32[2][3], TRemoveExtent<int32[1][2][3]>>));
 
-	always_check((CSameAs<int32, TRemoveAllExtents<int32[1]>::Type>));
-	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2]>::Type>));
-	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2][3]>::Type>));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1]>>));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2]>>));
+	always_check((CSameAs<int32, TRemoveAllExtents<int32[1][2][3]>>));
 
-	always_check((CSameAs<int32, TMakeSigned<int32>::Type>));
-	always_check((CSameAs<int32, TMakeSigned<uint32>::Type>));
+	always_check((CSameAs<int32, TMakeSigned<int32>>));
+	always_check((CSameAs<int32, TMakeSigned<uint32>>));
 
-	always_check((CSameAs<uint32, TMakeUnsigned<int32>::Type>));
-	always_check((CSameAs<uint32, TMakeUnsigned<uint32>::Type>));
+	always_check((CSameAs<uint32, TMakeUnsigned<int32>>));
+	always_check((CSameAs<uint32, TMakeUnsigned<uint32>>));
 
-	TAlignedStorage<32, 4>::Type Aligned4;
-	TAlignedStorage<32, 8>::Type Aligned8;
-	TAlignedStorage<32, 16>::Type Aligned16;
-	TAlignedStorage<32, 32>::Type Aligned32;
+	TAlignedStorage<32, 4> Aligned4;
+	TAlignedStorage<32, 8> Aligned8;
+	TAlignedStorage<32, 16> Aligned16;
+	TAlignedStorage<32, 32> Aligned32;
 	always_check((int64)(&Aligned4) % 4 == 0);
 	always_check((int64)(&Aligned8) % 8 == 0);
 	always_check((int64)(&Aligned16) % 16 == 0);
 	always_check((int64)(&Aligned32) % 32 == 0);
 
-	always_check(sizeof(TAlignedUnion<8, int32, int32>::Type) == 8);
-	always_check(sizeof(TAlignedUnion<0, int8, int32>::Type) == 4);
-	always_check(sizeof(TAlignedUnion<0, int32, int64>::Type) == 8);
-	always_check(sizeof(TAlignedUnion<0, int32, double>::Type) == 8);
+	always_check(sizeof(TAlignedUnion<8, int32, int32>) == 8);
+	always_check(sizeof(TAlignedUnion<0, int8, int32>) == 4);
+	always_check(sizeof(TAlignedUnion<0, int32, int64>) == 8);
+	always_check(sizeof(TAlignedUnion<0, int32, double>) == 8);
 
-	always_check((CSameAs<int32, TDecay<int32>::Type>));
-	always_check((CSameAs<int32*, TDecay<int32*>::Type>));
-	always_check((CSameAs<int32*, TDecay<int32[]>::Type>));
-	always_check((CSameAs<int32, TDecay<int32&>::Type>));
-	always_check((CSameAs<int32, TDecay<int32&&>::Type>));
-	always_check((CSameAs<int32, TDecay<const int32>::Type>));
-	always_check((CSameAs<int32, TDecay<volatile int32>::Type>));
-	always_check((CSameAs<int32, TDecay<const volatile int32>::Type>));
-	always_check((CSameAs<int32, TDecay<const volatile int32&>::Type>));
+	always_check((CSameAs<int32, TDecay<int32>>));
+	always_check((CSameAs<int32*, TDecay<int32*>>));
+	always_check((CSameAs<int32*, TDecay<int32[]>>));
+	always_check((CSameAs<int32, TDecay<int32&>>));
+	always_check((CSameAs<int32, TDecay<int32&&>>));
+	always_check((CSameAs<int32, TDecay<const int32>>));
+	always_check((CSameAs<int32, TDecay<volatile int32>>));
+	always_check((CSameAs<int32, TDecay<const volatile int32>>));
+	always_check((CSameAs<int32, TDecay<const volatile int32&>>));
 
-	always_check((CSameAs<int32, TConditional<true, int32, int64>::Type>));
-	always_check((CSameAs<int64, TConditional<false, int32, int64>::Type>));
+	always_check((CSameAs<int32, TConditional<true, int32, int64>>));
+	always_check((CSameAs<int64, TConditional<false, int32, int64>>));
 
-	always_check((CSameAs<int, TUnderlyingType<ETestEnumClass>::Type>));
-	always_check((CSameAs<uint8, TUnderlyingType<ETestEnumClass8>::Type>));
-	always_check((CSameAs<uint32, TUnderlyingType<ETestEnumClass32>::Type>));
-	always_check((CSameAs<uint64, TUnderlyingType<ETestEnumClass64>::Type>));
+	always_check((CSameAs<int, TUnderlyingType<ETestEnumClass>>));
+	always_check((CSameAs<uint8, TUnderlyingType<ETestEnumClass8>>));
+	always_check((CSameAs<uint32, TUnderlyingType<ETestEnumClass32>>));
+	always_check((CSameAs<uint64, TUnderlyingType<ETestEnumClass64>>));
 
-	always_check((CSameAs<void, TVoid<int32>::Type>));
-	always_check((CSameAs<void, TVoid<int32, int64>::Type>));
+	always_check((CSameAs<void, TVoid<int32>>));
+	always_check((CSameAs<void, TVoid<int32, int64>>));
 	
 	// Invocable.h
 	

@@ -111,7 +111,7 @@ template <typename T> concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTRefere
 template <typename T> struct TUnwrapReference                       { using Type = T;  };
 template <typename T> struct TUnwrapReference<TReferenceWrapper<T>> { using Type = T&; };
 
-template <typename T> struct TUnwrapRefDecay { using Type = typename TUnwrapReference<typename TDecay<T>::Type>::Type; };
+template <typename T> struct TUnwrapRefDecay { using Type = typename TUnwrapReference<TDecay<T>>::Type; };
 
 template <typename ReferencedType>
 struct TOptional<TReferenceWrapper<ReferencedType>>
@@ -150,7 +150,7 @@ public:
 	{ }
 
 	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
-		&& (!CSameAs<typename TRemoveCVRef<T>::Type, FInPlace>) && (!CSameAs<typename TRemoveCVRef<T>::Type, TOptional>)
+		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CSameAs<TRemoveCVRef<T>, TOptional>)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }

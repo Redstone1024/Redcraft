@@ -49,21 +49,21 @@ struct TVariantSelectedType;
 template <typename T, typename U, typename... Types>
 struct TVariantSelectedType<T, U, Types...>
 {
-	using TypeAlternativeA = typename TConditional<CConstructibleFrom<U, T&&>, U, void>::Type;
+	using TypeAlternativeA = TConditional<CConstructibleFrom<U, T&&>, U, void>;
 	using TypeAlternativeB = typename TVariantSelectedType<T, Types...>::Type;
 
-	using Type = typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, void>, TypeAlternativeB,
-				 typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeB>::Type, void>, TypeAlternativeA, 
-				 typename TConditional<CSameAs<typename TRemoveCVRef<TypeAlternativeB>::Type, typename TRemoveCVRef<T>::Type>, TypeAlternativeB, TypeAlternativeA>::Type>::Type>::Type;
+	using Type = TConditional<CSameAs<TRemoveCVRef<TypeAlternativeA>, void>, TypeAlternativeB,
+				 TConditional<CSameAs<TRemoveCVRef<TypeAlternativeB>, void>, TypeAlternativeA, 
+				 TConditional<CSameAs<TRemoveCVRef<TypeAlternativeB>, TRemoveCVRef<T>>, TypeAlternativeB, TypeAlternativeA>>>;
 
 	// 0 - Type not found
 	// 1 - Same type found
 	// 2 - Multiple types found
 	// 3 - The type found
-	static constexpr uint8 Flag = CSameAs<typename TRemoveCVRef<Type>::Type, void> ? 0 :
-								  CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, typename TRemoveCVRef<TypeAlternativeB>::Type> ? 2 :
-								  CSameAs<typename TRemoveCVRef<            Type>::Type, typename TRemoveCVRef<               T>::Type> ? 1 :
-								 !CSameAs<typename TRemoveCVRef<TypeAlternativeA>::Type, void> && !CSameAs<TypeAlternativeB, void> ? 2 : 3;
+	static constexpr uint8 Flag = CSameAs<TRemoveCVRef<Type>, void> ? 0 :
+								  CSameAs<TRemoveCVRef<TypeAlternativeA>, TRemoveCVRef<TypeAlternativeB>> ? 2 :
+								  CSameAs<TRemoveCVRef<            Type>, TRemoveCVRef<               T>> ? 1 :
+								 !CSameAs<TRemoveCVRef<TypeAlternativeA>, void> && !CSameAs<TypeAlternativeB, void> ? 2 : 3;
 
 	static constexpr bool Value = Flag & 1;
 
@@ -117,10 +117,10 @@ struct TVariant
 		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
 	{ }
 
-	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Value
-		&& (!CTInPlaceType<typename TRemoveCVRef<T>::Type>) && (!CTInPlaceIndex<typename TRemoveCVRef<T>::Type>)
-		&& (!CSameAs<typename TRemoveCVRef<T>::Type, TVariant>)
-	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Type>, Forward<T>(InValue))
+	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Value
+		&& (!CTInPlaceType<TRemoveCVRef<T>>) && (!CTInPlaceIndex<TRemoveCVRef<T>>)
+		&& (!CSameAs<TRemoveCVRef<T>, TVariant>)
+	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Type>, Forward<T>(InValue))
 	{ }
 
 	constexpr ~TVariant()
@@ -170,10 +170,10 @@ struct TVariant
 		return *this;
 	}
 
-	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Value
+	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Value
 	constexpr TVariant& operator=(T&& InValue)
 	{
-		using SelectedType = typename NAMESPACE_PRIVATE::TVariantSelectedType<typename TRemoveReference<T>::Type, Types...>::Type;
+		using SelectedType = typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Type;
 
 		if (GetIndex() == TAlternativeIndex<SelectedType>::Value) GetValue<SelectedType>() = Forward<T>(InValue);
 		else
@@ -370,7 +370,7 @@ private:
 	static constexpr FMoveAssignImpl    MoveAssignImpl[]    = { [](void* A,       void* B) { if constexpr (requires(Types* A,       Types* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<Types*>(A), reinterpret_cast<      Types*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Types).name()); }... };
 	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Types* A                ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<Types*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Types).name()); }... };
 
-	TAlignedUnion<1, Types...>::Type Value;
+	TAlignedUnion<1, Types...> Value;
 	uint8 TypeIndex;
 
 	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Types>)
@@ -418,13 +418,13 @@ NAMESPACE_PRIVATE_END
 
 template <typename T> concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<T>::Value;
 
-template <typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
+template <typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
 struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
 
-template <size_t I, typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
-struct TVariantAlternativeType { using Type = typename TCopyCV<typename TRemoveReference<VariantType>::Type, typename TRemoveCVRef<VariantType>::Type::template TAlternativeType<I>::Type>::Type; };
+template <size_t I, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
+struct TVariantAlternativeType { using Type = typename TCopyCV<TRemoveReference<VariantType>, typename TRemoveCVRef<VariantType>::template TAlternativeType<I>::Type>::Type; };
 
-template <typename T, typename VariantType> requires CTVariant<typename TRemoveCVRef<VariantType>::Type>
+template <typename T, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
 struct TVariantAlternativeIndex : VariantType::template TAlternativeIndex<T> { };
 
 NAMESPACE_MODULE_END(Utility)
