@@ -236,7 +236,7 @@ struct TVariant
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+		using ReturnType = typename TCommonType<TInvokeResult<F, Types>...>::Type;
 
 		using FInvokeImpl = ReturnType(*)(F&&, void*);
 		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<Types*>(This)); }... };
@@ -249,7 +249,7 @@ struct TVariant
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+		using ReturnType = typename TCommonType<TInvokeResult<F, Types>...>::Type;
 
 		using FInvokeImpl = ReturnType(*)(F&&, void*);
 		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<Types*>(This))); }... };
@@ -262,7 +262,7 @@ struct TVariant
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+		using ReturnType = typename TCommonType<TInvokeResult<F, Types>...>::Type;
 
 		using FInvokeImpl = ReturnType(*)(F&&, const void*);
 		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<const Types*>(This)); }... };
@@ -275,7 +275,7 @@ struct TVariant
 	{
 		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 
-		using ReturnType = typename TCommonType<typename TInvokeResult<F, Types>::Type...>::Type;
+		using ReturnType = typename TCommonType<TInvokeResult<F, Types>...>::Type;
 
 		using FInvokeImpl = ReturnType(*)(F&&, const void*);
 		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<const Types*>(This))); }... };

@@ -438,9 +438,9 @@ void TestTypeTraits()
 	always_check(!(CInvocableResult<int32, int32(int32), FTestStructA>));
 	always_check(!(CInvocableResult<FTestStructA, int32(int32), int32>));
 
-	always_check((CSameAs<int32, TInvokeResult<int32()>::Type>));
-	always_check((CSameAs<int32, TInvokeResult<int32(int32), int32>::Type>));
-//	always_check((CSameAs<char(&)[2], TInvokeResult<char(&())[2]>::Type>));
+	always_check((CSameAs<int32, TInvokeResult<int32()>>));
+	always_check((CSameAs<int32, TInvokeResult<int32(int32), int32>>));
+//	always_check((CSameAs<char(&)[2], TInvokeResult<char(&())[2]>>));
 
 	always_check((CInvocable          <decltype([](                         ) -> void  {                          })                      >));
 	always_check((CRegularInvocable   <decltype([](int32 A                  ) -> int32 { return A;                }), int32               >));
