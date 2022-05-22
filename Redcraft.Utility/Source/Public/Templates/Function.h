@@ -146,8 +146,8 @@ public:
 
 private:
 
-	using StorageType = TConditional<bIsRef, typename TCopyConst<CVRef, void>::Type*, TAny<InlineSize, 1>>;
-	using StorageRef  = TConditional<bIsRef, typename TCopyConst<CVRef, void>::Type*, typename TCopyCVRef<CVRef, StorageType>::Type&>;
+	using StorageType = TConditional<bIsRef, TCopyConst<CVRef, void>*, TAny<InlineSize, 1>>;
+	using StorageRef  = TConditional<bIsRef, TCopyConst<CVRef, void>*, TCopyCVRef<CVRef, StorageType>&>;
 
 	using CallFunc = ResultType(*)(StorageRef, Types&&...);
 
@@ -171,7 +171,7 @@ protected:
 	template <typename DecayedType, typename... ArgTypes>
 	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
 	{
-		using CallableType = typename TCopyConst<TRemoveReference<CVRef>, DecayedType>::Type;
+		using CallableType = TCopyConst<TRemoveReference<CVRef>, DecayedType>;
 
 		if constexpr (bIsRef) Storage = ((reinterpret_cast<StorageType>(AddressOf(Args))), ...);
 		else Storage.template Emplace<DecayedType>(Forward<ArgTypes>(Args)...);
@@ -180,8 +180,8 @@ protected:
 		{
 			using InvokeType = TConditional<
 				CReference<CVRef>,
-				typename TCopyCVRef<CVRef, CallableType>::Type,
-				typename TCopyCVRef<CVRef, CallableType>::Type&
+				TCopyCVRef<CVRef, CallableType>,
+				TCopyCVRef<CVRef, CallableType>&
 			>;
 
 			const auto GetFunc = [&Storage]() -> InvokeType

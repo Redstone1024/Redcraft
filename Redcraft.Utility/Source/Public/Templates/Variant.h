@@ -422,7 +422,7 @@ template <typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
 struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
 
 template <size_t I, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
-struct TVariantAlternativeType { using Type = typename TCopyCV<TRemoveReference<VariantType>, typename TRemoveCVRef<VariantType>::template TAlternativeType<I>::Type>::Type; };
+struct TVariantAlternativeType { using Type = TCopyCV<TRemoveReference<VariantType>, typename TRemoveCVRef<VariantType>::template TAlternativeType<I>::Type>; };
 
 template <typename T, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
 struct TVariantAlternativeIndex : VariantType::template TAlternativeIndex<T> { };

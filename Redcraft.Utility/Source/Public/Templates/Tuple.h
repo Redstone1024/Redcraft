@@ -405,7 +405,7 @@ template <typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
 struct TTupleElementSize : TConstant<size_t, TRemoveCVRef<TupleType>::ElementSize> { };
 
 template <size_t I, typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
-struct TTupleElementType { using Type = typename TCopyCVRef<TRemoveReference<TupleType>, typename TRemoveCVRef<TupleType>::template TElementType<I>::Type>::Type; };
+struct TTupleElementType { using Type = TCopyCVRef<TRemoveReference<TupleType>, typename TRemoveCVRef<TupleType>::template TElementType<I>::Type>; };
 
 template <typename T, typename TupleType> requires CTTuple<TRemoveCVRef<TupleType>>
 struct TTupleElementIndex : TupleType::template TElementIndex<T> { };
