@@ -39,8 +39,8 @@ constexpr size_t HashCombine(size_t A, size_t C)
 	return C;
 }
 
-template <typename... Ts> requires (true && ... && CConvertibleTo<Ts, size_t>)
-constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
+template <typename... Types> requires (true && ... && CConvertibleTo<Types, size_t>)
+constexpr size_t HashCombine(size_t A, size_t C, Types... InOther)
 {
 	size_t B = HashCombine(A, C);
 	return HashCombine(B, InOther...);

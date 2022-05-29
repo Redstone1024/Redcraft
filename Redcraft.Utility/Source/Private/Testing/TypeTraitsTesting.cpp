@@ -451,13 +451,13 @@ void TestTypeTraits()
 
 	// Common.h
 
-	always_check((CSameAs<int32, TCommonType<int8, int32>::Type>));
-	always_check((CSameAs<int64, TCommonType<int8, int32, int64>::Type>));
-	always_check((CSameAs<double, TCommonType<float, double>::Type>));
+	always_check((CSameAs<int32, TCommonType<int8, int32>>));
+	always_check((CSameAs<int64, TCommonType<int8, int32, int64>>));
+	always_check((CSameAs<double, TCommonType<float, double>>));
 
-	always_check((CSameAs<int32, TCommonReference<int8, int32>::Type>));
-	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>::Type>));
-	always_check((CSameAs<double, TCommonReference<float, double>::Type>));
+	always_check((CSameAs<int32, TCommonReference<int8, int32>>));
+	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>>));
+	always_check((CSameAs<double, TCommonReference<float, double>>));
 	
 	always_check((CCommonType<int32, int32>));
 	always_check((CCommonType<int8, int32>));

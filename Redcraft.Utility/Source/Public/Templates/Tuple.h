@@ -580,6 +580,19 @@ constexpr void VisitTuple(F&& Func, FirstTupleType&& FirstTuple, TupleTypes&&...
 	NAMESPACE_PRIVATE::TTupleVisitImpl<TMakeIndexSequence<TTupleElementSize<FirstTupleType>::Value>>::F(Forward<F>(Func), Forward<FirstTupleType>(FirstTuple), Forward<TupleTypes>(Tuples)...);
 }
 
+template <typename... Ts, typename... Us> requires requires { typename TTuple<TCommonType<Ts, Us>...>; }
+struct TBasicCommonType<TTuple<Ts...>, TTuple<Us...>>
+{
+	using Type = TTuple<TCommonType<Ts, Us>...>;
+};
+
+template <typename... Ts, typename... Us, template<typename> typename TQualifiers, template<typename> typename UQualifiers>
+	requires requires { typename TTuple<TCommonReference<TQualifiers<Ts>, UQualifiers<Us>>...>; }
+struct TBasicCommonReference<TTuple<Ts...>, TTuple<Us...>, TQualifiers, UQualifiers>
+{
+	using Type = TTuple<TCommonReference<TQualifiers<Ts>, UQualifiers<Us>>...>;
+};
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

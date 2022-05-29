@@ -22,7 +22,7 @@ concept CWeaklyEqualityComparable =
 template <typename T, typename U = T>
 concept CEqualityComparable = CWeaklyEqualityComparable<T> && CWeaklyEqualityComparable<U> && CWeaklyEqualityComparable<T, U>
 	&& CCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>
-	&& CWeaklyEqualityComparable<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>;
+	&& CWeaklyEqualityComparable<TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>>;
 
 template <typename T, typename U = T>
 concept CPartiallyOrdered =
@@ -43,8 +43,8 @@ concept CTotallyOrdered =
 	CPartiallyOrdered<T> && CPartiallyOrdered<U>
 	&& CEqualityComparable<T> && CEqualityComparable<U>
 	&& CPartiallyOrdered<T, U> && CEqualityComparable<T, U>
-	&& CPartiallyOrdered<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>
-	&& CEqualityComparable<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>;
+	&& CPartiallyOrdered<TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>>
+	&& CEqualityComparable<TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -10,7 +10,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// The result of the three-way comparison operator is the built-in type of the compiler, which is directly introduced here.
+// The result of the three-way comparison operator is the built-in type of the compiler, which is directly introduced here
 
 typedef NAMESPACE_STD::partial_ordering partial_ordering;
 typedef NAMESPACE_STD::weak_ordering    weak_ordering;
@@ -44,7 +44,7 @@ template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrdered<T, U>
 	&& CCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>
 	&& requires(const TRemoveReference<T>& A, const TRemoveReference<U>& B,
-		const TRemoveReference<typename TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>::Type>& C)
+		const TRemoveReference<TCommonReference<const TRemoveReference<T>&, const TRemoveReference<U>&>>& C)
 		{
 			{ A <=> A } -> CThreeWayComparesAs<OrderingType>;
 			{ B <=> B } -> CThreeWayComparesAs<OrderingType>;

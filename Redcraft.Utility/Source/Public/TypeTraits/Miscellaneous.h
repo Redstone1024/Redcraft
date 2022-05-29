@@ -41,6 +41,13 @@ template <typename T> using TRemoveCVRef      = NAMESPACE_STD::remove_cvref_t<T>
 template <typename T> using TRemoveExtent     = NAMESPACE_STD::remove_extent_t<T>;
 template <typename T> using TRemoveAllExtents = NAMESPACE_STD::remove_all_extents_t<T>;
 
+template <typename T> using TAddConst           = NAMESPACE_STD::add_const_t<T>;
+template <typename T> using TAddVolatile        = NAMESPACE_STD::add_volatile_t<T>;
+template <typename T> using TAddCV              = NAMESPACE_STD::add_cv_t<T>;
+template <typename T> using TAddLValueReference = NAMESPACE_STD::add_lvalue_reference_t<T>;
+template <typename T> using TAddRValueReference = NAMESPACE_STD::add_rvalue_reference_t<T>;
+template <typename T> using TAddPointer         = NAMESPACE_STD::add_pointer_t<T>;
+
 template <typename T> using TMakeSigned   = NAMESPACE_STD::make_signed_t<T>;
 template <typename T> using TMakeUnsigned = NAMESPACE_STD::make_unsigned_t<T>;
 
