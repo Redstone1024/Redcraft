@@ -13,15 +13,14 @@ NAMESPACE_BEGIN(Memory)
 
 template <typename ElementType>
 	requires CDefaultConstructible<ElementType>
-FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
+FORCEINLINE void DefaultConstruct(void* Address, size_t Count = 1)
 {
 	if constexpr (!CTriviallyDefaultConstructible<ElementType>)
 	{
-		ElementType* Element = Address;
 		while (Count)
 		{
-			new (Element) ElementType;
-			++Element;
+			new (Address) ElementType;
+			++reinterpret_cast<ElementType*&>(Address);
 			--Count;
 		}
 	}
@@ -29,7 +28,7 @@ FORCEINLINE void DefaultConstruct(ElementType* Address, size_t Count = 1)
 
 template <typename DestinationElementType, typename SourceElementType = DestinationElementType>
 	requires CConstructibleFrom<DestinationElementType, const SourceElementType&>
-FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElementType* Source, size_t Count = 1)
+FORCEINLINE void Construct(void* Destination, const SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyConstructibleFrom<DestinationElementType, const SourceElementType> && sizeof(DestinationElementType) == sizeof(SourceElementType))
 	{
@@ -40,7 +39,7 @@ FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElem
 		while (Count)
 		{
 			new (Destination) DestinationElementType(*Source);
-			++(DestinationElementType*&)Destination;
+			++reinterpret_cast<DestinationElementType*&>(Destination);
 			++Source;
 			--Count;
 		}
@@ -49,7 +48,7 @@ FORCEINLINE void Construct(DestinationElementType* Destination, const SourceElem
 
 template <typename ElementType>
 	requires CCopyConstructible<ElementType>
-FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Source, size_t Count = 1)
+FORCEINLINE void CopyConstruct(void* Destination, const ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyCopyConstructible<ElementType>)
 	{
@@ -60,7 +59,7 @@ FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Sour
 		while (Count)
 		{
 			new (Destination) ElementType(*Source);
-			++(ElementType*&)Destination;
+			++reinterpret_cast<ElementType*&>(Destination);
 			++Source;
 			--Count;
 		}
@@ -69,7 +68,7 @@ FORCEINLINE void CopyConstruct(ElementType* Destination, const ElementType* Sour
 
 template <typename ElementType>
 	requires CMoveConstructible<ElementType>
-FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, size_t Count = 1)
+FORCEINLINE void MoveConstruct(void* Destination, ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyMoveConstructible<ElementType>)
 	{
@@ -80,7 +79,7 @@ FORCEINLINE void MoveConstruct(ElementType* Destination, ElementType* Source, si
 		while (Count)
 		{
 			new (Destination) ElementType(MoveTemp(*Source));
-			++(ElementType*&)Destination;
+			++reinterpret_cast<ElementType*&>(Destination);
 			++Source;
 			--Count;
 		}
@@ -120,7 +119,7 @@ FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_
 		while (Count)
 		{
 			*Destination = MoveTemp(*Source);
-			++(ElementType*&)Destination;
+			++Destination;
 			++Source;
 			--Count;
 		}

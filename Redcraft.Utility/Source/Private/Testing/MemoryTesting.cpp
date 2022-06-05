@@ -165,11 +165,11 @@ void TestMemoryOperator()
 	FTracker* PtrB = reinterpret_cast<FTracker*>(Memory::Malloc(sizeof(FTracker)));
 
 	FTracker::Status = 0;
-	Memory::DefaultConstruct(PtrA);
+	Memory::DefaultConstruct<FTracker>(PtrA);
 	always_check(FTracker::Status == -1);
 
 	FTracker::Status = 1;
-	Memory::Construct(PtrA, PtrB);
+	Memory::Construct<FTracker>(PtrA, PtrB);
 	always_check(FTracker::Status == -1);
 
 	FTracker::Status = 1;
