@@ -79,8 +79,8 @@ void TestReferenceWrapper()
 	always_check(ArrayA[1] == 4);
 	always_check(ArrayA[2] == 6);
 
-	always_check((CSameAs<int32,  TUnwrapRefDecay<int32>::Type>));
-	always_check((CSameAs<int32&, TUnwrapRefDecay<TReferenceWrapper<int32>>::Type>));
+	always_check((CSameAs<int32,  TUnwrapRefDecay<int32>>));
+	always_check((CSameAs<int32&, TUnwrapRefDecay<TReferenceWrapper<int32>>>));
 }
 
 void TestOptional()
@@ -255,12 +255,12 @@ void TestVariant()
 		TempZ = TVariant<FTracker>();
 		TempZ = FTracker();
 
-		always_check((CSameAs<int32, TVariantAlternativeType<0, TVariant<int32, float>>::Type>));
-		always_check((CSameAs<float, TVariantAlternativeType<1, TVariant<int32, float>>::Type>));
-		always_check((CSameAs<const int32, TVariantAlternativeType<0, const TVariant<int32, float>>::Type>));
+		always_check((CSameAs<int32, TVariantAlternative<0, TVariant<int32, float>>>));
+		always_check((CSameAs<float, TVariantAlternative<1, TVariant<int32, float>>>));
+		always_check((CSameAs<const int32, TVariantAlternative<0, const TVariant<int32, float>>>));
 
-		always_check((TVariantAlternativeIndex<int32, TVariant<int32, float>>::Value == 0));
-		always_check((TVariantAlternativeIndex<float, TVariant<int32, float>>::Value == 1));
+		always_check((TVariantIndex<int32, TVariant<int32, float>> == 0));
+		always_check((TVariantIndex<float, TVariant<int32, float>> == 1));
 
 		bool bIsConst;
 		bool bIsLValue;
@@ -686,39 +686,37 @@ void TestTuple()
 	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32&&, char>&&>().GetValue<0>()),       volatile int32&&>));
 	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32&&, char>&&>().GetValue<0>()), const volatile int32&&>));
 
-	always_check((CSameAs<TTupleElementType<0,                TTuple<double, float&, char&&>>::Type,                double>));
-	always_check((CSameAs<TTupleElementType<1,                TTuple<double, float&, char&&>>::Type,                float&>));
-	always_check((CSameAs<TTupleElementType<2,                TTuple<double, float&, char&&>>::Type,                char&&>));
-	always_check((CSameAs<TTupleElementType<0, const          TTuple<double, float&, char&&>>::Type, const          double>));
-	always_check((CSameAs<TTupleElementType<1, const          TTuple<double, float&, char&&>>::Type, const          float&>));
-	always_check((CSameAs<TTupleElementType<2, const          TTuple<double, float&, char&&>>::Type, const          char&&>));
-	always_check((CSameAs<TTupleElementType<0,       volatile TTuple<double, float&, char&&>>::Type,       volatile double>));
-	always_check((CSameAs<TTupleElementType<1,       volatile TTuple<double, float&, char&&>>::Type,       volatile float&>));
-	always_check((CSameAs<TTupleElementType<2,       volatile TTuple<double, float&, char&&>>::Type,       volatile char&&>));
-	always_check((CSameAs<TTupleElementType<0, const volatile TTuple<double, float&, char&&>>::Type, const volatile double>));
-	always_check((CSameAs<TTupleElementType<1, const volatile TTuple<double, float&, char&&>>::Type, const volatile float&>));
-	always_check((CSameAs<TTupleElementType<2, const volatile TTuple<double, float&, char&&>>::Type, const volatile char&&>));
+	always_check((CSameAs<TTupleElement<0,                TTuple<double, float&, char&&>>,                double>));
+	always_check((CSameAs<TTupleElement<1,                TTuple<double, float&, char&&>>,                float&>));
+	always_check((CSameAs<TTupleElement<2,                TTuple<double, float&, char&&>>,                char&&>));
+	always_check((CSameAs<TTupleElement<0, const          TTuple<double, float&, char&&>>, const          double>));
+	always_check((CSameAs<TTupleElement<1, const          TTuple<double, float&, char&&>>,                float&>));
+	always_check((CSameAs<TTupleElement<2, const          TTuple<double, float&, char&&>>,                char&&>));
+	always_check((CSameAs<TTupleElement<0,       volatile TTuple<double, float&, char&&>>,       volatile double>));
+	always_check((CSameAs<TTupleElement<1,       volatile TTuple<double, float&, char&&>>,                float&>));
+	always_check((CSameAs<TTupleElement<2,       volatile TTuple<double, float&, char&&>>,                char&&>));
+	always_check((CSameAs<TTupleElement<0, const volatile TTuple<double, float&, char&&>>, const volatile double>));
+	always_check((CSameAs<TTupleElement<1, const volatile TTuple<double, float&, char&&>>,                float&>));
+	always_check((CSameAs<TTupleElement<2, const volatile TTuple<double, float&, char&&>>,                char&&>));
 	
-	always_check((TTupleElementIndex<double,                TTuple<double, float&, char&&>>::Value == 0));
-	always_check((TTupleElementIndex<float&,                TTuple<double, float&, char&&>>::Value == 1));
-	always_check((TTupleElementIndex<char&&,                TTuple<double, float&, char&&>>::Value == 2));
-	always_check((TTupleElementIndex<double, const          TTuple<double, float&, char&&>>::Value == 0));
-	always_check((TTupleElementIndex<float&, const          TTuple<double, float&, char&&>>::Value == 1));
-	always_check((TTupleElementIndex<char&&, const          TTuple<double, float&, char&&>>::Value == 2));
-	always_check((TTupleElementIndex<double,       volatile TTuple<double, float&, char&&>>::Value == 0));
-	always_check((TTupleElementIndex<float&,       volatile TTuple<double, float&, char&&>>::Value == 1));
-	always_check((TTupleElementIndex<char&&,       volatile TTuple<double, float&, char&&>>::Value == 2));
-	always_check((TTupleElementIndex<double, const volatile TTuple<double, float&, char&&>>::Value == 0));
-	always_check((TTupleElementIndex<float&, const volatile TTuple<double, float&, char&&>>::Value == 1));
-	always_check((TTupleElementIndex<char&&, const volatile TTuple<double, float&, char&&>>::Value == 2));
+	always_check((TTupleIndex<double,                TTuple<double, float&, char&&>> == 0));
+	always_check((TTupleIndex<float&,                TTuple<double, float&, char&&>> == 1));
+	always_check((TTupleIndex<char&&,                TTuple<double, float&, char&&>> == 2));
+	always_check((TTupleIndex<double, const          TTuple<double, float&, char&&>> == 0));
+	always_check((TTupleIndex<float&, const          TTuple<double, float&, char&&>> == 1));
+	always_check((TTupleIndex<char&&, const          TTuple<double, float&, char&&>> == 2));
+	always_check((TTupleIndex<double, volatile       TTuple<double, float&, char&&>> == 0));
+	always_check((TTupleIndex<float&, volatile       TTuple<double, float&, char&&>> == 1));
+	always_check((TTupleIndex<char&&, volatile       TTuple<double, float&, char&&>> == 2));
+	always_check((TTupleIndex<double, const volatile TTuple<double, float&, char&&>> == 0));
+	always_check((TTupleIndex<float&, const volatile TTuple<double, float&, char&&>> == 1));
+	always_check((TTupleIndex<char&&, const volatile TTuple<double, float&, char&&>> == 2));
 
-	always_check((TTupleElementIndex<int32, TTuple<double, float&, char&&>>::Value == INDEX_NONE));
+//	always_check((CSameAs<TTupleElement<0, int32>, double>));
 
-//	always_check((CSameAs<TTupleElementType<0, int32>::Type, double>));
+//	always_check((TTupleIndex<int32, int32> == 0));
 
-//	always_check((TTupleElementIndex<int32, int32>::Value == 0));
-
-//	always_check((CSameAs<TTupleElementType<4, TTuple<double, float&, char&&>>::Type, double>));
+//	always_check((CSameAs<TTupleElement<4, TTuple<double, float&, char&&>>, double>));
 
 	{
 		using Type = TTuple<int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64,
@@ -802,7 +800,7 @@ void TestTuple()
 		always_check(TempE.GetValue<double>() == 3.14);
 		always_check(TempE.GetValue<float>() == 1.42f);
 		always_check((CSameAs<decltype(TempE), TTuple<int32, FTracker, double, FTracker, float, FTracker>>));
-		always_check((CSameAs<decltype(TempE), typename TTupleCatResult<TTuple<int32, FTracker>, TTuple<double, FTracker>, TTuple<float, FTracker>>::Type>));
+		always_check((CSameAs<decltype(TempE), TTupleCatResult<TTuple<int32, FTracker>, TTuple<double, FTracker>, TTuple<float, FTracker>>>));
 	}
 
 	{
@@ -827,7 +825,7 @@ void TestTuple()
 		always_check(TempG.GetValue<0>() == 10);
 		always_check(TempG.GetValue<2>() == 10);
 		always_check((CSameAs<decltype(TempG), TTuple<int32, double&, int16&, FTracker&&>>));
-		always_check((CSameAs<decltype(TempG), typename TTupleCatResult<TTuple<int32, double&>, TTuple<int16&, FTracker&&>>::Type>));
+		always_check((CSameAs<decltype(TempG), TTupleCatResult<TTuple<int32, double&>, TTuple<int16&, FTracker&&>>>));
 	}
 
 	{

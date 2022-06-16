@@ -124,7 +124,8 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&> && CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&>
+		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (!InValue.IsValid())
@@ -143,7 +144,8 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
+		&& CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (!InValue.IsValid())

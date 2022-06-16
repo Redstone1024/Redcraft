@@ -437,7 +437,8 @@ template <size_t InlineSize, size_t InlineAlignment> struct TIsTAny<TAny<InlineS
 
 NAMESPACE_PRIVATE_END
 
-template <typename T> concept CTAny = NAMESPACE_PRIVATE::TIsTAny<T>::Value;
+template <typename T>
+concept CTAny = NAMESPACE_PRIVATE::TIsTAny<T>::Value;
 
 using FAny = TAny<ANY_DEFAULT_INLINE_SIZE>;
 

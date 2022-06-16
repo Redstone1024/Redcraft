@@ -301,13 +301,13 @@ void TestTypeTraits()
 
 	// Miscellaneous.h
 
-	always_check(ArrayRank<int32[1][2][3]> == 3);
-	always_check(ArrayRank<int32[1][2][3][4]> == 4);
-	always_check(ArrayRank<int32> == 0);
+	always_check(TRank<int32[1][2][3]> == 3);
+	always_check(TRank<int32[1][2][3][4]> == 4);
+	always_check(TRank<int32> == 0);
 
-	always_check(ArrayExtent<int32[1][2][3]> == 1);
-	always_check((ArrayExtent<int32[1][2][3][4], 1> == 2));
-	always_check(ArrayExtent<int32[]> == 0);
+	always_check(TExtent<int32[1][2][3]> == 1);
+	always_check((TExtent<int32[1][2][3][4], 1> == 2));
+	always_check(TExtent<int32[]> == 0);
 
 	always_check(!(CSameAs<int32, int64>));
 	always_check((CSameAs<int32, int32>));

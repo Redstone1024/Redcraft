@@ -18,17 +18,15 @@ typedef NAMESPACE_STD::strong_ordering  strong_ordering;
 
 NAMESPACE_PRIVATE_BEGIN
 
-template<int32> struct TCommonComparisonCategory    { using Type = void;             };
-template<>      struct TCommonComparisonCategory<0> { using Type = strong_ordering;  };
-template<>      struct TCommonComparisonCategory<2> { using Type = partial_ordering; };
-template<>      struct TCommonComparisonCategory<4> { using Type = weak_ordering;    };
-template<>      struct TCommonComparisonCategory<6> { using Type = partial_ordering; };
-
-NAMESPACE_PRIVATE_END
+template<int32> struct TCommonComparisonCategoryBasic    {                                };
+template<>      struct TCommonComparisonCategoryBasic<0> { using Type = strong_ordering;  };
+template<>      struct TCommonComparisonCategoryBasic<2> { using Type = partial_ordering; };
+template<>      struct TCommonComparisonCategoryBasic<4> { using Type = weak_ordering;    };
+template<>      struct TCommonComparisonCategoryBasic<6> { using Type = partial_ordering; };
 
 template <typename... Types>
-struct TCommonComparisonCategory
-	: NAMESPACE_PRIVATE::TCommonComparisonCategory<(0u | ... |
+struct TCommonComparisonCategoryImpl
+	: TCommonComparisonCategoryBasic <(0u | ... |
 			(
 				CSameAs<Types, strong_ordering > ? 0u :
 				CSameAs<Types, weak_ordering   > ? 4u :
@@ -37,8 +35,13 @@ struct TCommonComparisonCategory
 		)> 
 { };
 
+NAMESPACE_PRIVATE_END
+
+template <typename... Types>
+using TCommonComparisonCategory = typename NAMESPACE_PRIVATE::TCommonComparisonCategoryImpl<Types...>::Type;
+
 template <typename T, typename OrderingType>
-concept CThreeWayComparesAs = CSameAs<typename TCommonComparisonCategory<T, OrderingType>::Type, OrderingType>;
+concept CThreeWayComparesAs = CSameAs<TCommonComparisonCategory<T, OrderingType>, OrderingType>;
 
 template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrdered<T, U>
@@ -54,10 +57,7 @@ concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrder
 		};
 
 template <typename T, typename U = T> requires CThreeWayComparable<T, U>
-struct TCompareThreeWayResult
-{
-	using Type = decltype(DeclVal<const TRemoveReference<T>&>() <=> DeclVal<const TRemoveReference<U>&>());
-};
+using TCompareThreeWayResult = decltype(DeclVal<const TRemoveReference<T>&>() <=> DeclVal<const TRemoveReference<U>&>());
 
 template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CSynthThreeWayComparable = CThreeWayComparable<T, U> || CTotallyOrdered<T, U>;
@@ -75,11 +75,8 @@ constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 	}
 }
 
-template <typename T, typename U = T>
-struct TSynthThreeWayResult
-{
-	using Type = decltype(SynthThreeWayCompare(DeclVal<const TRemoveReference<T>&>(), DeclVal<const TRemoveReference<U>&>()));
-};
+template <typename T, typename U = T> requires CSynthThreeWayComparable<T, U>
+using TSynthThreeWayResult = decltype(SynthThreeWayCompare(DeclVal<const TRemoveReference<T>&>(), DeclVal<const TRemoveReference<U>&>()));
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

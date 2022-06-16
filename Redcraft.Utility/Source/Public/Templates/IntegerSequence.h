@@ -18,7 +18,7 @@ NAMESPACE_PRIVATE_BEGIN
 #ifdef _MSC_VER
 
 template <unsigned N, typename T>
-struct TMakeIntegerSequence
+struct TMakeIntegerSequenceImpl
 {
 	using Type = typename __make_integer_seq<TIntegerSequence, T, N>;
 };
@@ -26,7 +26,7 @@ struct TMakeIntegerSequence
 #elif __has_builtin(__make_integer_seq)
 
 template <unsigned N, typename T>
-struct TMakeIntegerSequence
+struct TMakeIntegerSequenceImpl
 {
 	using Type = typename __make_integer_seq<TIntegerSequence, T, N>;
 };
@@ -34,13 +34,13 @@ struct TMakeIntegerSequence
 #else
 
 template <unsigned N, typename T, T... Ints>
-struct TMakeIntegerSequence
+struct TMakeIntegerSequenceImpl
 {
-	using Type = typename TMakeIntegerSequence<N - 1, T, T(N - 1), Ints...>::Type;
+	using Type = typename TMakeIntegerSequenceImpl<N - 1, T, T(N - 1), Ints...>::Type;
 };
 
 template <typename T, T... Ints>
-struct TMakeIntegerSequence<0, T, Ints...>
+struct TMakeIntegerSequenceImpl<0, T, Ints...>
 {
 	using Type = TIntegerSequence<T, Ints...>;
 };
@@ -53,7 +53,7 @@ template <size_t... Ints>
 using TIndexSequence = TIntegerSequence<size_t, Ints...>;
 
 template<typename T, T N>
-using TMakeIntegerSequence = typename NAMESPACE_PRIVATE::TMakeIntegerSequence<N, T>::Type;
+using TMakeIntegerSequence = typename NAMESPACE_PRIVATE::TMakeIntegerSequenceImpl<N, T>::Type;
 
 template<size_t N>
 using TMakeIndexSequence = TMakeIntegerSequence<size_t, N>;

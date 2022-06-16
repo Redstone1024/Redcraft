@@ -25,8 +25,8 @@ struct TMaximum<First, Second, Others...> : TMaximum<(First < Second ? Second : 
 
 NAMESPACE_PRIVATE_END
 
-template <typename T>               inline constexpr size_t ArrayRank   =  NAMESPACE_STD::rank_v<T>;
-template <typename T, size_t I = 0> inline constexpr size_t ArrayExtent =  NAMESPACE_STD::extent_v<T, I>;
+template <typename T>               inline constexpr size_t TRank   =  NAMESPACE_STD::rank_v<T>;
+template <typename T, size_t I = 0> inline constexpr size_t TExtent =  NAMESPACE_STD::extent_v<T, I>;
 
 template <typename T, typename U> concept CSameAs        = NAMESPACE_STD::is_same_v<T, U>;
 template <typename T, typename U> concept CBaseOf        = NAMESPACE_STD::is_base_of_v<T, U>;

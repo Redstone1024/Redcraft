@@ -13,35 +13,83 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+template <typename... Types> requires (true && ... && CDestructible<Types>)
+struct TVariant;
+
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename T, typename... Types>
-struct TVariantAlternativeIndex;
+template <typename    T    > struct TIsTVariant                     : FFalse { };
+template <typename... Types> struct TIsTVariant<TVariant<Types...>> : FTrue  { };
+
+template <typename TupleType>
+struct TVariantNumImpl;
+
+template <typename... Types>
+struct TVariantNumImpl<TVariant<Types...>> : TConstant<size_t, sizeof...(Types)> { };
+
+template <typename... Types>
+struct TVariantNumImpl<const TVariant<Types...>> : TConstant<size_t, sizeof...(Types)> { };
+
+template <typename... Types>
+struct TVariantNumImpl<volatile TVariant<Types...>> : TConstant<size_t, sizeof...(Types)> { };
+
+template <typename... Types>
+struct TVariantNumImpl<const volatile TVariant<Types...>> : TConstant<size_t, sizeof...(Types)> { };
+
+template <typename T, typename TupleType>
+struct TVariantIndexImpl;
 
 template <typename T, typename U, typename... Types>
-struct TVariantAlternativeIndex<T, U, Types...>
-	: TConstant<size_t, CSameAs<T, U> ? 0 : (TVariantAlternativeIndex<T, Types...>::Value == INDEX_NONE
-	? INDEX_NONE : TVariantAlternativeIndex<T, Types...>::Value + 1)>
-{ };
-
-template <typename T>
-struct TVariantAlternativeIndex<T> : TConstant<size_t, INDEX_NONE> { };
-
-template <size_t I, typename... Types>
-struct TVariantAlternativeType;
-
-template <size_t I, typename T, typename... Types>
-struct TVariantAlternativeType<I, T, Types...>
+struct TVariantIndexImpl<T, TVariant<U, Types...>> : TConstant<size_t, TVariantIndexImpl<T, TVariant<Types...>>::Value + 1>
 {
-	static_assert(I < sizeof...(Types) + 1, "Variant type index is invalid");
-	using Type = TVariantAlternativeType<I - 1, Types...>::Type;
+	static_assert(sizeof...(Types) != 0, "Non-existent types in variant");
 };
 
 template <typename T, typename... Types>
-struct TVariantAlternativeType<0, T, Types...> { using Type = T; };
+struct TVariantIndexImpl<T, TVariant<T, Types...>> : TConstant<size_t, 0>
+{
+	static_assert((true && ... && !CSameAs<T, Types>), "Duplicate type in variant");
+};
+
+template <typename T>
+struct TVariantIndexImpl<T, TVariant<>> : TConstant<size_t, INDEX_NONE> { };
+
+template <typename T, typename... Types>
+struct TVariantIndexImpl<T, const TVariant<Types...>> : TVariantIndexImpl<T, TVariant<Types...>> { };
+
+template <typename T, typename... Types>
+struct TVariantIndexImpl<T, volatile TVariant<Types...>> : TVariantIndexImpl<T, TVariant<Types...>> { };
+
+template <typename T, typename... Types>
+struct TVariantIndexImpl<T, const volatile TVariant<Types...>> : TVariantIndexImpl<T, TVariant<Types...>> { };
+
+template <size_t I, typename TupleType>
+struct TVariantAlternativeImpl;
+
+template <size_t I, typename T, typename... Types>
+struct TVariantAlternativeImpl<I, TVariant<T, Types...>>
+{
+	static_assert(I < sizeof...(Types) + 1, "Invalid index in variant");
+	using Type = TVariantAlternativeImpl<I - 1, TVariant<Types...>>::Type;
+};
+
+template <typename T, typename... Types>
+struct TVariantAlternativeImpl<0, TVariant<T, Types...>> { using Type = T; };
+
+template <size_t I, typename... Types>
+struct TVariantAlternativeImpl<I, TVariant<Types...>> { };
 
 template <>
-struct TVariantAlternativeType<0> { };
+struct TVariantAlternativeImpl<0, TVariant<>> { };
+
+template <size_t I, typename... Types>
+struct TVariantAlternativeImpl<I, const TVariant<Types...>> { using Type = TAddConst<typename TVariantAlternativeImpl<I, TVariant<Types...>>::Type>; };
+
+template <size_t I, typename... Types>
+struct TVariantAlternativeImpl<I, volatile TVariant<Types...>> { using Type = TAddVolatile<typename TVariantAlternativeImpl<I, TVariant<Types...>>::Type>; };
+
+template <size_t I, typename... Types>
+struct TVariantAlternativeImpl<I, const volatile TVariant<Types...>> { using Type = TAddCV<typename TVariantAlternativeImpl<I, TVariant<Types...>>::Type>; };
 
 template <typename T, typename... Types>
 struct TVariantSelectedType;
@@ -78,14 +126,21 @@ struct TVariantSelectedType<T>
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> requires (true && ... && CDestructible<Types>) && (sizeof...(Types) < 0xFF)
+template <typename T>
+concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<T>::Value;
+
+template <typename VariantType>
+inline constexpr size_t TVariantNum = NAMESPACE_PRIVATE::TVariantNumImpl<VariantType>::Value;
+
+template <typename T, typename VariantType>
+inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, VariantType>::Value;
+
+template <size_t I, typename VariantType>
+using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, VariantType>::Type;
+
+template <typename... Types> requires (true && ... && CDestructible<Types>)
 struct TVariant
 {
-	static constexpr size_t AlternativeSize = sizeof...(Types);
-
-	template <size_t I>   struct TAlternativeType  : NAMESPACE_PRIVATE::TVariantAlternativeType<I, Types...>  { };
-	template <typename T> struct TAlternativeIndex : NAMESPACE_PRIVATE::TVariantAlternativeIndex<T, Types...> { };
-
 	constexpr TVariant() : TypeIndex(0xFF) { };
 
 	constexpr TVariant(FInvalid) : TVariant() { };
@@ -102,19 +157,18 @@ struct TVariant
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& CConstructibleFrom<typename TAlternativeType<I>::Type, ArgTypes...>
+	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Types))
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Types...>>, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
 	{
-		using SelectedType = typename TAlternativeType<I>::Type;
+		using SelectedType = TVariantAlternative<I, TVariant<Types...>>;
 		new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
 	}
 
-	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& CConstructibleFrom<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
+	template <typename T, typename... ArgTypes> requires CConstructibleFrom<T, ArgTypes...>
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
-		: TVariant(InPlaceIndex<TAlternativeIndex<T>::Value>, Forward<ArgTypes>(Args)...)
+		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Types...>>>, Forward<ArgTypes>(Args)...)
 	{ }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Value
@@ -175,35 +229,34 @@ struct TVariant
 	{
 		using SelectedType = typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Types...>::Type;
 
-		if (GetIndex() == TAlternativeIndex<SelectedType>::Value) GetValue<SelectedType>() = Forward<T>(InValue);
+		if (GetIndex() == TVariantIndex<SelectedType, TVariant<Types...>>) GetValue<SelectedType>() = Forward<T>(InValue);
 		else
 		{
 			Reset();
 			new(&Value) SelectedType(Forward<T>(InValue));
-			TypeIndex = TAlternativeIndex<SelectedType>::Value;
+			TypeIndex = TVariantIndex<SelectedType, TVariant<Types...>>;
 		}
 
 		return *this;
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < AlternativeSize)
-		&& CConstructibleFrom<typename TAlternativeType<I>::Type, ArgTypes...>
-	constexpr typename TAlternativeType<I>::Type& Emplace(ArgTypes&&... Args)
+	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Types))
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Types...>>, ArgTypes...>
+	constexpr TVariantAlternative<I, TVariant<Types...>>& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
 
-		using SelectedType = typename TAlternativeType<I>::Type;
+		using SelectedType = TVariantAlternative<I, TVariant<Types...>>;
 		SelectedType* Result = new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
 		TypeIndex = I;
 
 		return *Result;
 	}
 
-	template <typename T, typename... ArgTypes> requires (TAlternativeIndex<T>::Value != INDEX_NONE)
-		&& CConstructibleFrom<typename TAlternativeType<TAlternativeIndex<T>::Value>::Type, ArgTypes...>
+	template <typename T, typename... ArgTypes> requires CConstructibleFrom<T, ArgTypes...>
 	constexpr T& Emplace(ArgTypes&&... Args)
 	{
-		return Emplace<TAlternativeIndex<T>::Value>(Forward<ArgTypes>(Args)...);
+		return Emplace<TVariantIndex<T, TVariant<Types...>>>(Forward<ArgTypes>(Args)...);
 	}
 
 	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
@@ -212,24 +265,24 @@ struct TVariant
 	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
 	constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
 
-	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                           : false; }
-	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TAlternativeIndex<T>::Value : false; }
+	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                    : false; }
+	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Types...>> : false; }
 
-	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&  GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TAlternativeType<I>::Type*>(&Value);  }
-	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type&& GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TAlternativeType<I>::Type*>(&Value)); }
-	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type&  GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TAlternativeType<I>::Type*>(&Value);  }
-	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type&& GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TAlternativeType<I>::Type*>(&Value)); }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Types...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TVariantAlternative<I, TVariant<Types...>>*>(&Value)); }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TVariantAlternative<I, TVariant<Types...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TVariantAlternative<I, TVariant<Types...>>*>(&Value)); }
 
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
+	template <typename T> constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
+	template <typename T> constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
+	template <typename T> constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
+	template <typename T> constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
 
-	template <size_t I> requires (I < AlternativeSize) constexpr       typename TAlternativeType<I>::Type& Get(      typename TAlternativeType<I>::Type& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
-	template <size_t I> requires (I < AlternativeSize) constexpr const typename TAlternativeType<I>::Type& Get(const typename TAlternativeType<I>::Type& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) Get(      TVariantAlternative<I, TVariant<Types...>>& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < sizeof...(Types)) constexpr decltype(auto) Get(const TVariantAlternative<I, TVariant<Types...>>& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr       T& Get(T& DefaultValue)&             { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	template <typename T> requires (TAlternativeIndex<T>::Value != INDEX_NONE) constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	template <typename F> requires (true && ... && CInvocable<F, Types>)
 	FORCEINLINE decltype(auto) Visit(F&& Func) &
@@ -408,24 +461,6 @@ constexpr bool operator==(const TVariant<Types...>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
 }
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename    T    > struct TIsTVariant                     : FFalse { };
-template <typename... Types> struct TIsTVariant<TVariant<Types...>> : FTrue  { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T> concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<T>::Value;
-
-template <typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
-struct TVariantAlternativeSize : TConstant<size_t, VariantType::AlternativeSize> { };
-
-template <size_t I, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
-struct TVariantAlternativeType { using Type = TCopyCV<TRemoveReference<VariantType>, typename TRemoveCVRef<VariantType>::template TAlternativeType<I>::Type>; };
-
-template <typename T, typename VariantType> requires CTVariant<TRemoveCVRef<VariantType>>
-struct TVariantAlternativeIndex : VariantType::template TAlternativeIndex<T> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

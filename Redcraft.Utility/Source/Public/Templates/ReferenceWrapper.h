@@ -40,7 +40,7 @@ public:
 	constexpr ReferencedType& Get()      const { return *Pointer; }
 
 	template <typename... Types>
-	constexpr TInvokeResult<ReferencedType&, Types...>::Type operator()(Types&&... Args) const
+	constexpr TInvokeResult<ReferencedType&, Types...> operator()(Types&&... Args) const
 	{
 		return Invoke(Get(), Forward<Types>(Args)...);
 	}
@@ -101,17 +101,24 @@ constexpr TReferenceWrapper<const T> Ref(TReferenceWrapper<T> InValue)
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename T> struct TIsTReferenceWrapper                       : FFalse { };
-template <typename T> struct TIsTReferenceWrapper<TReferenceWrapper<T>> : FTrue  { };
+template <typename T> struct TIsTReferenceWrapperImpl                       : FFalse { };
+template <typename T> struct TIsTReferenceWrapperImpl<TReferenceWrapper<T>> : FTrue  { };
+
+template <typename T> struct TUnwrapReferenceImpl                       { using Type = T;  };
+template <typename T> struct TUnwrapReferenceImpl<TReferenceWrapper<T>> { using Type = T&; };
+
+template <typename T> struct TUnwrapRefDecayImpl { using Type = typename TUnwrapReferenceImpl<TDecay<T>>::Type; };
 
 NAMESPACE_PRIVATE_END
 
-template <typename T> concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTReferenceWrapper<T>::Value;
+template <typename T>
+concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTReferenceWrapperImpl<T>::Value;
 
-template <typename T> struct TUnwrapReference                       { using Type = T;  };
-template <typename T> struct TUnwrapReference<TReferenceWrapper<T>> { using Type = T&; };
+template <typename T>
+using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::Type;
 
-template <typename T> struct TUnwrapRefDecay { using Type = typename TUnwrapReference<TDecay<T>>::Type; };
+template <typename T>
+using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::Type;
 
 template <typename ReferencedType>
 struct TOptional<TReferenceWrapper<ReferencedType>>
@@ -168,7 +175,8 @@ public:
 	TOptional& operator=(const TOptional& InValue) = default;
 	TOptional& operator=(TOptional&& InValue) = default;
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&> && CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&>
+		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		Reference = InValue.Reference;
