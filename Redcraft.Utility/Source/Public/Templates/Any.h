@@ -9,9 +9,6 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
-// NOTE: Disable alignment limit warning
-#pragma warning(disable : 4359)
-
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
@@ -33,13 +30,13 @@ struct alignas(InlineAlignment) TAny
 
 		switch (GetRepresentation())
 		{
-		case EAnyRepresentation::Trivial:
+		case ERepresentation::Trivial:
 			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 			break;
-		case EAnyRepresentation::Small:
+		case ERepresentation::Small:
 			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
-		case EAnyRepresentation::Big:
+		case ERepresentation::Big:
 			HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
 			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
@@ -54,13 +51,13 @@ struct alignas(InlineAlignment) TAny
 
 		switch (GetRepresentation())
 		{
-		case EAnyRepresentation::Trivial:
+		case ERepresentation::Trivial:
 			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 			break;
-		case EAnyRepresentation::Small:
+		case ERepresentation::Small:
 			GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
-		case EAnyRepresentation::Big:
+		case ERepresentation::Big:
 			HeapAllocation = InValue.HeapAllocation;
 			InValue.TypeInfo = 0;
 			break;
@@ -69,7 +66,7 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Types...>
+		&& CConstructibleFrom<TDecay<T>, Types&&...>
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
 	{
 		using SelectedType = TDecay<T>;
@@ -98,11 +95,11 @@ struct alignas(InlineAlignment) TAny
 		{
 			switch (GetRepresentation())
 			{
-			case EAnyRepresentation::Trivial:
+			case ERepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case EAnyRepresentation::Small:
-			case EAnyRepresentation::Big:
+			case ERepresentation::Small:
+			case ERepresentation::Big:
 				GetTypeInfoImpl().CopyAssignImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			default: check_no_entry();
@@ -116,13 +113,13 @@ struct alignas(InlineAlignment) TAny
 
 			switch (GetRepresentation())
 			{
-			case EAnyRepresentation::Trivial:
+			case ERepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case EAnyRepresentation::Small:
+			case ERepresentation::Small:
 				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case EAnyRepresentation::Big:
+			case ERepresentation::Big:
 				HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
 				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
@@ -145,13 +142,13 @@ struct alignas(InlineAlignment) TAny
 		{
 			switch (GetRepresentation())
 			{
-			case EAnyRepresentation::Trivial:
+			case ERepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case EAnyRepresentation::Small:
+			case ERepresentation::Small:
 				GetTypeInfoImpl().MoveAssignImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case EAnyRepresentation::Big:
+			case ERepresentation::Big:
 				ResetImpl();
 				HeapAllocation = InValue.HeapAllocation;
 				InValue.TypeInfo = 0;
@@ -167,13 +164,13 @@ struct alignas(InlineAlignment) TAny
 
 			switch (GetRepresentation())
 			{
-			case EAnyRepresentation::Trivial:
+			case ERepresentation::Trivial:
 				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
 				break;
-			case EAnyRepresentation::Small:
+			case ERepresentation::Small:
 				GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
-			case EAnyRepresentation::Big:
+			case ERepresentation::Big:
 				HeapAllocation = InValue.HeapAllocation;
 				InValue.TypeInfo = 0;
 				break;
@@ -204,7 +201,7 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, T&&>
+		&& CConstructibleFrom<TDecay<T>, Types&&...>
 	FORCEINLINE TDecay<T>& Emplace(Types&&... Args)
 	{
 		ResetImpl();
@@ -285,11 +282,10 @@ private:
 
 	static constexpr uintptr_t RepresentationMask = 3;
 
-	enum class EAnyRepresentation : uint8
+	enum class ERepresentation : uint8
 	{
-		Trivial, // Trivial
-	//	Inline,  // InlineAllocation
-		Small,   // Trivial & Inline
+		Trivial, // Trivial & Inline
+		Small,   // InlineAllocation
 		Big,     // HeapAllocation
 	};
 
@@ -351,11 +347,11 @@ private:
 
 	uintptr TypeInfo;
 
-	constexpr EAnyRepresentation   GetRepresentation() const { return         static_cast<EAnyRepresentation>(TypeInfo &  RepresentationMask); }
-	constexpr const FTypeInfoImpl& GetTypeInfoImpl()   const { return *reinterpret_cast<const FTypeInfoImpl*>(TypeInfo & ~RepresentationMask); }
+	constexpr ERepresentation    GetRepresentation() const { return            static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
+	constexpr const FTypeInfoImpl& GetTypeInfoImpl() const { return *reinterpret_cast<const FTypeInfoImpl*>(TypeInfo & ~RepresentationMask); }
 
-	constexpr       void* GetAllocation()       { return GetRepresentation() == EAnyRepresentation::Trivial || GetRepresentation() == EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
-	constexpr const void* GetAllocation() const { return GetRepresentation() == EAnyRepresentation::Trivial || GetRepresentation() == EAnyRepresentation::Small ? &InlineAllocation : HeapAllocation; }
+	constexpr       void* GetAllocation()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? &InlineAllocation : HeapAllocation; }
+	constexpr const void* GetAllocation() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? &InlineAllocation : HeapAllocation; }
 
 	template <typename SelectedType, typename... Types>
 	FORCEINLINE void EmplaceImpl(Types&&... Args)
@@ -369,17 +365,17 @@ private:
 		if constexpr (bIsTriviallyStorable)
 		{
 			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Trivial);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsInlineStorable)
 		{
 			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Small);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
 			HeapAllocation = new SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(EAnyRepresentation::Big);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
 		}
 	}
 
@@ -389,12 +385,12 @@ private:
 
 		switch (GetRepresentation())
 		{
-		case EAnyRepresentation::Trivial:
+		case ERepresentation::Trivial:
 			break;
-		case EAnyRepresentation::Small:
+		case ERepresentation::Small:
 			GetTypeInfoImpl().DestroyImpl(GetAllocation());
 			break;
-		case EAnyRepresentation::Big:
+		case ERepresentation::Big:
 			GetTypeInfoImpl().DestroyImpl(GetAllocation());
 			Memory::Free(HeapAllocation);
 			break;
