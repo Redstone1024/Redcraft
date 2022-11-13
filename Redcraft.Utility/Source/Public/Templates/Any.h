@@ -13,31 +13,73 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-inline constexpr size_t ANY_DEFAULT_INLINE_SIZE      = 64 - sizeof(uintptr);
-inline constexpr size_t ANY_DEFAULT_INLINE_ALIGNMENT = 16;
+// TAny's CustomStorage concept, see FAnyDefaultStorage.
+template <typename T>
+concept CAnyStorage = true; // TODO
 
-template <size_t InlineSize, size_t InlineAlignment = ANY_DEFAULT_INLINE_ALIGNMENT> requires (Memory::IsValidAlignment(InlineAlignment))
-struct alignas(InlineAlignment) TAny
+// TAny's default storage structure.
+struct alignas(16) FAnyDefaultStorage
 {
-	constexpr TAny() : TypeInfo(0) { }
+	// The built-in copy/move operators are disabled and CopyCustom/MoveCustom is used instead of them.
+
+	// You can add custom variables like this.
+	//Type Variable;
+
+	//~ Begin CAnyStorage Interface
+	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr);
+	inline static constexpr size_t InlineAlignment = 16;
+	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
+	constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
+	constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
+	constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
+	constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
+	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
+	constexpr void CopyCustom(const FAnyDefaultStorage&  InValue) { /* Variable =          InValue.Variable;  */ } // You just need to copy the custom variables.
+	constexpr void MoveCustom(      FAnyDefaultStorage&& InValue) { /* Variable = MoveTemp(InValue.Variable); */ } // You just need to move the custom variables.
+	//~ End CAnyStorage Interface
+
+	union
+	{
+		uint8 InlineAllocationImpl[InlineSize];
+		void* HeapAllocationImpl;
+	};
+
+	uintptr TypeInfoImpl;
+
+};
+
+static_assert(CAnyStorage<FAnyDefaultStorage>);
+
+// You can add custom storage area through CustomStorage, such as TFunction.
+// It is not recommended to use this, FAny is recommended.
+template <CAnyStorage CustomStorage = FAnyDefaultStorage>
+struct TAny
+{
+	inline static constexpr size_t InlineSize      = CustomStorage::InlineSize;
+	inline static constexpr size_t InlineAlignment = CustomStorage::InlineAlignment;
+
+	constexpr TAny() { Storage.TypeInfo() = 0; }
 
 	constexpr TAny(FInvalid) : TAny() { }
-
+	
 	FORCEINLINE TAny(const TAny& InValue)
-		: TypeInfo(InValue.TypeInfo)
 	{
+		Storage.CopyCustom(InValue.Storage);
+
+		Storage.TypeInfo() = InValue.Storage.TypeInfo();
+
 		if (!IsValid()) return;
 
 		switch (GetRepresentation())
 		{
 		case ERepresentation::Trivial:
-			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+			Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 			break;
 		case ERepresentation::Small:
 			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
 		case ERepresentation::Big:
-			HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
+			Storage.HeapAllocation() = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
 			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
 		default: check_no_entry();
@@ -45,21 +87,24 @@ struct alignas(InlineAlignment) TAny
 	}
 
 	FORCEINLINE TAny(TAny&& InValue)
-		: TypeInfo(InValue.TypeInfo)
 	{
+		Storage.MoveCustom(MoveTemp(InValue.Storage));
+
+		Storage.TypeInfo() = InValue.Storage.TypeInfo();
+
 		if (!IsValid()) return;
 
 		switch (GetRepresentation())
 		{
 		case ERepresentation::Trivial:
-			Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+			Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 			break;
 		case ERepresentation::Small:
 			GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 			break;
 		case ERepresentation::Big:
-			HeapAllocation = InValue.HeapAllocation;
-			InValue.TypeInfo = 0;
+			Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
+			InValue.Storage.TypeInfo() = 0;
 			break;
 		default: check_no_entry();
 		}
@@ -87,6 +132,8 @@ struct alignas(InlineAlignment) TAny
 	{
 		if (&InValue == this) return *this;
 
+		Storage.CopyCustom(InValue.Storage);
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -96,7 +143,7 @@ struct alignas(InlineAlignment) TAny
 			switch (GetRepresentation())
 			{
 			case ERepresentation::Trivial:
-				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 				break;
 			case ERepresentation::Small:
 			case ERepresentation::Big:
@@ -109,18 +156,18 @@ struct alignas(InlineAlignment) TAny
 		{
 			ResetImpl();
 
-			TypeInfo = InValue.TypeInfo;
+			Storage.TypeInfo() = InValue.Storage.TypeInfo();
 
 			switch (GetRepresentation())
 			{
 			case ERepresentation::Trivial:
-				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 				break;
 			case ERepresentation::Small:
 				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			case ERepresentation::Big:
-				HeapAllocation = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
+				Storage.HeapAllocation() = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
 				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			default: check_no_entry();
@@ -134,6 +181,8 @@ struct alignas(InlineAlignment) TAny
 	{
 		if (&InValue == this) return *this;
 
+		Storage.MoveCustom(MoveTemp(InValue.Storage));
+
 		if (!InValue.IsValid())
 		{
 			Reset();
@@ -143,15 +192,15 @@ struct alignas(InlineAlignment) TAny
 			switch (GetRepresentation())
 			{
 			case ERepresentation::Trivial:
-				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 				break;
 			case ERepresentation::Small:
 				GetTypeInfoImpl().MoveAssignImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			case ERepresentation::Big:
 				ResetImpl();
-				HeapAllocation = InValue.HeapAllocation;
-				InValue.TypeInfo = 0;
+				Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
+				InValue.Storage.TypeInfo() = 0;
 				break;
 			default: check_no_entry();
 			}
@@ -160,19 +209,19 @@ struct alignas(InlineAlignment) TAny
 		{
 			ResetImpl();
 
-			TypeInfo = InValue.TypeInfo;
+			Storage.TypeInfo() = InValue.Storage.TypeInfo();
 
 			switch (GetRepresentation())
 			{
 			case ERepresentation::Trivial:
-				Memory::Memcpy(InlineAllocation, InValue.InlineAllocation);
+				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
 				break;
 			case ERepresentation::Small:
 				GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
 				break;
 			case ERepresentation::Big:
-				HeapAllocation = InValue.HeapAllocation;
-				InValue.TypeInfo = 0;
+				Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
+				InValue.Storage.TypeInfo() = 0;
 				break;
 			default: check_no_entry();
 			}
@@ -211,10 +260,10 @@ struct alignas(InlineAlignment) TAny
 		return GetValue<SelectedType>();
 	}
 
-	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *GetTypeInfoImpl().TypeInfo : typeid(void); }
+	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *GetTypeInfoImpl().NativeTypeInfo : typeid(void); }
 
-	constexpr bool           IsValid() const { return TypeInfo != 0; }
-	constexpr explicit operator bool() const { return TypeInfo != 0; }
+	constexpr bool           IsValid() const { return Storage.TypeInfo() != 0; }
+	constexpr explicit operator bool() const { return Storage.TypeInfo() != 0; }
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
@@ -236,10 +285,13 @@ struct alignas(InlineAlignment) TAny
 	template <typename T> requires CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
+	constexpr       CustomStorage& GetCustomStorage()       requires (!CSameAs<CustomStorage, FAnyDefaultStorage>) { return Storage; }
+	constexpr const CustomStorage& GetCustomStorage() const requires (!CSameAs<CustomStorage, FAnyDefaultStorage>) { return Storage; }
+
 	FORCEINLINE void Reset()
 	{
 		ResetImpl();
-		TypeInfo = 0;
+		Storage.TypeInfo() = 0;
 	}
 
 	FORCEINLINE size_t GetTypeHash() const
@@ -280,6 +332,8 @@ struct alignas(InlineAlignment) TAny
 
 private:
 
+	CustomStorage Storage;
+
 	static constexpr uintptr_t RepresentationMask = 3;
 
 	enum class ERepresentation : uint8
@@ -291,7 +345,7 @@ private:
 
 	struct FTypeInfoImpl
 	{
-		const type_info* TypeInfo;
+		const type_info* NativeTypeInfo;
 
 		const size_t TypeSize;
 		const size_t TypeAlignment;
@@ -321,9 +375,9 @@ private:
 		template <typename T>
 		constexpr FTypeInfoImpl(TInPlaceType<T>)
 			
-			: TypeInfo      (&typeid(T))
-			, TypeSize      ( sizeof(T))
-			, TypeAlignment (alignof(T))
+			: NativeTypeInfo (&typeid(T))
+			, TypeSize       ( sizeof(T))
+			, TypeAlignment  (alignof(T))
 
 			, CopyConstructImpl ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Types).name()); })
 			, MoveConstructImpl ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Types).name()); })
@@ -339,43 +393,35 @@ private:
 		{ }
 	};
 
-	union
-	{
-		TAlignedStorage<InlineSize, 1> InlineAllocation;
-		void* HeapAllocation;
-	};
+	constexpr ERepresentation    GetRepresentation() const { return            static_cast<ERepresentation>(Storage.TypeInfo() &  RepresentationMask); }
+	constexpr const FTypeInfoImpl& GetTypeInfoImpl() const { return *reinterpret_cast<const FTypeInfoImpl*>(Storage.TypeInfo() & ~RepresentationMask); }
 
-	uintptr TypeInfo;
-
-	constexpr ERepresentation    GetRepresentation() const { return            static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
-	constexpr const FTypeInfoImpl& GetTypeInfoImpl() const { return *reinterpret_cast<const FTypeInfoImpl*>(TypeInfo & ~RepresentationMask); }
-
-	constexpr       void* GetAllocation()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? &InlineAllocation : HeapAllocation; }
-	constexpr const void* GetAllocation() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? &InlineAllocation : HeapAllocation; }
+	constexpr       void* GetAllocation()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
+	constexpr const void* GetAllocation() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
 
 	template <typename SelectedType, typename... Types>
 	FORCEINLINE void EmplaceImpl(Types&&... Args)
 	{
 		static constexpr const FTypeInfoImpl SelectedTypeInfo(InPlaceType<SelectedType>);
-		TypeInfo = reinterpret_cast<uintptr>(&SelectedTypeInfo);
+		Storage.TypeInfo() = reinterpret_cast<uintptr>(&SelectedTypeInfo);
 
-		constexpr bool bIsInlineStorable = sizeof(SelectedType) <= InlineSize && alignof(SelectedType) <= InlineAlignment;
+		constexpr bool bIsInlineStorable = sizeof(SelectedType) <= Storage.InlineSize && alignof(SelectedType) <= Storage.InlineAlignment;
 		constexpr bool bIsTriviallyStorable = bIsInlineStorable && CTrivial<SelectedType> && CTriviallyCopyable<SelectedType>;
 
 		if constexpr (bIsTriviallyStorable)
 		{
-			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
+			new(Storage.InlineAllocation()) SelectedType(Forward<Types>(Args)...);
+			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsInlineStorable)
 		{
-			new(&InlineAllocation) SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
+			new(Storage.InlineAllocation()) SelectedType(Forward<Types>(Args)...);
+			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
-			HeapAllocation = new SelectedType(Forward<Types>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
+			Storage.HeapAllocation() = new SelectedType(Forward<Types>(Args)...);
+			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Big);
 		}
 	}
 
@@ -392,7 +438,7 @@ private:
 			break;
 		case ERepresentation::Big:
 			GetTypeInfoImpl().DestroyImpl(GetAllocation());
-			Memory::Free(HeapAllocation);
+			Memory::Free(Storage.HeapAllocation());
 			break;
 		default: check_no_entry();
 		}
@@ -411,32 +457,32 @@ private:
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
 		return LHS.GetTypeInfoImpl().SynthThreeWayCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());;
 	}
-
+	
 };
 
-template <typename T, size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, const T& RHS)
+template <typename T, CAnyStorage StorageType>
+constexpr bool operator==(const TAny<StorageType>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
-template <size_t InlineSize, size_t InlineAlignment>
-constexpr bool operator==(const TAny<InlineSize, InlineAlignment>& LHS, FInvalid)
+template <CAnyStorage StorageType>
+constexpr bool operator==(const TAny<StorageType>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
 }
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename T>                                struct TIsTAny                                    : FFalse { };
-template <size_t InlineSize, size_t InlineAlignment> struct TIsTAny<TAny<InlineSize, InlineAlignment>> : FTrue  { };
+template <typename T>              struct TIsTAny                    : FFalse { };
+template <CAnyStorage StorageType> struct TIsTAny<TAny<StorageType>> : FTrue  { };
 
 NAMESPACE_PRIVATE_END
 
 template <typename T>
 concept CTAny = NAMESPACE_PRIVATE::TIsTAny<T>::Value;
 
-using FAny = TAny<ANY_DEFAULT_INLINE_SIZE>;
+using FAny = TAny<>;
 
 static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
 

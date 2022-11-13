@@ -1233,6 +1233,8 @@ void TestFunction()
 		TFunction<bool(bool)> Identity = [](bool In) { return In; };
 		TFunction<bool(bool)> NotIdentity = NotFn(Identity);
 
+		always_check(NotFn(Identity)(false));
+
 		always_check(Identity(true));
 		always_check(NotIdentity(false));
 	}

@@ -9,23 +9,17 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
-// NOTE: Disable alignment limit warning
-#pragma warning(disable : 4359)
-
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-inline constexpr size_t FUNCTION_DEFAULT_INLINE_SIZE      = ANY_DEFAULT_INLINE_SIZE - sizeof(uintptr);
-inline constexpr size_t FUNCTION_DEFAULT_INLINE_ALIGNMENT = ANY_DEFAULT_INLINE_ALIGNMENT;
-
 template <typename F> requires CFunction<F>
 struct TFunctionRef;
 
-template <typename F, size_t InlineSize, size_t InlineAlignment> requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F> requires CFunction<F>
 struct TFunction;
 
-template <typename F, size_t InlineSize, size_t InlineAlignment> requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F> requires CFunction<F>
 struct TUniqueFunction;
 
 NAMESPACE_PRIVATE_BEGIN
@@ -33,11 +27,11 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T> struct TIsTFunctionRef                  : FFalse { };
 template <typename F> struct TIsTFunctionRef<TFunctionRef<F>> : FTrue  { };
 
-template <typename T>                     struct TIsTFunction                     : FFalse { };
-template <typename F, size_t I, size_t J> struct TIsTFunction<TFunction<F, I, J>> : FTrue  { };
+template <typename T> struct TIsTFunction               : FFalse { };
+template <typename F> struct TIsTFunction<TFunction<F>> : FTrue  { };
 
-template <typename T>                     struct TIsTUniqueFunction                           : FFalse { };
-template <typename F, size_t I, size_t J> struct TIsTUniqueFunction<TUniqueFunction<F, I, J>> : FTrue  { };
+template <typename T> struct TIsTUniqueFunction                     : FFalse { };
+template <typename F> struct TIsTUniqueFunction<TUniqueFunction<F>> : FTrue  { };
 
 NAMESPACE_PRIVATE_END
 
@@ -86,16 +80,47 @@ template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) co
 template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const& > { using Fn = Ret(Types...); using CVRef = const int&;  };
 template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const&&> { using Fn = Ret(Types...); using CVRef = const int&&; };
 
-template <typename F, typename CVRef, size_t InlineSize, size_t InlineAlignment, bool bIsRef> struct TFunctionImpl;
+template <typename CallableType>
+struct alignas(16) FFunctionStorage
+{
+	//~ Begin CAnyStorage Interface
+	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);
+	inline static constexpr size_t InlineAlignment = 16;
+	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
+	constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
+	constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
+	constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
+	constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
+	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
+	constexpr void CopyCustom(const FFunctionStorage&  InValue) { Callable = InValue.Callable; }
+	constexpr void MoveCustom(      FFunctionStorage&& InValue) { Callable = InValue.Callable; }
+	//~ End CAnyStorage Interface
 
-template <typename Ret, typename... Types, typename CVRef, size_t InlineSize, size_t InlineAlignment, bool bIsRef>
-struct alignas(InlineAlignment) TFunctionImpl<Ret(Types...), CVRef, InlineSize, InlineAlignment, bIsRef>
+	union
+	{
+		uint8 InlineAllocationImpl[InlineSize];
+		void* HeapAllocationImpl;
+	};
+
+	uintptr TypeInfoImpl;
+
+	CallableType Callable;
+
+	template <CAnyStorage T>
+	friend struct TAny;
+
+};
+
+template <typename F, typename CVRef, bool bIsRef> struct TFunctionImpl;
+
+template <typename Ret, typename... Types, typename CVRef, bool bIsRef>
+struct TFunctionImpl<Ret(Types...), CVRef, bIsRef>
 {
 public:
 
 	using ResultType = Ret;
 	using ArgumentType = TTuple<Types...>;
-
+	
 	TFunctionImpl() = default;
 	TFunctionImpl(const TFunctionImpl&) = default;
 	TFunctionImpl(TFunctionImpl&& InValue) = default;
@@ -110,8 +135,8 @@ public:
 	FORCEINLINE ResultType operator()(Types... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Types>(Args)...); }
 	FORCEINLINE ResultType operator()(Types... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Types>(Args)...); }
 
-	constexpr bool           IsValid() const { return Callable != nullptr; }
-	constexpr explicit operator bool() const { return Callable != nullptr; }
+	constexpr bool           IsValid() const { return GetCallableImpl() != nullptr; }
+	constexpr explicit operator bool() const { return GetCallableImpl() != nullptr; }
 
 	FORCEINLINE const type_info& TargetType() const requires (!bIsRef) { return IsValid() ? Storage.GetTypeInfo() : typeid(void); };
 
@@ -140,30 +165,49 @@ public:
 			return;
 		}
 		
-		Swap(Callable, InValue.Callable);
 		Swap(Storage, InValue.Storage);
 	}
 
 private:
 
-	using StorageType = TConditional<bIsRef, TCopyConst<CVRef, void>*, TAny<InlineSize, 1>>;
-	using StorageRef  = TConditional<bIsRef, TCopyConst<CVRef, void>*, TCopyCVRef<CVRef, StorageType>&>;
+	using StoragePtrType = TCopyConst<CVRef, void>*;
+	using CallableType = ResultType(*)(StoragePtrType, Types&&...);
 
-	using CallFunc = ResultType(*)(StorageRef, Types&&...);
+	struct FunctionRefStorage
+	{
+		StoragePtrType Ptr;
+		CallableType Callable;
+	};
+
+	using FunctionStorage = TAny<FFunctionStorage<CallableType>>;
+	using StorageType = TConditional<bIsRef, FunctionRefStorage, FunctionStorage>;
 
 	StorageType Storage;
-	CallFunc Callable;
+
+	FORCEINLINE CallableType& GetCallableImpl()
+	{
+		if constexpr (bIsRef) return Storage.Callable;
+		else return Storage.GetCustomStorage().Callable;
+	}
+
+	FORCEINLINE CallableType  GetCallableImpl() const
+	{
+		if constexpr (bIsRef) return Storage.Callable;
+		else return Storage.GetCustomStorage().Callable;
+	}
 
 	FORCEINLINE ResultType CallImpl(Types&&... Args)
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		return Callable(Storage, Forward<Types>(Args)...);
+		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Types>(Args)...);
+		else return GetCallableImpl()(&Storage, Forward<Types>(Args)...);
 	}
 
 	FORCEINLINE ResultType CallImpl(Types&&... Args) const
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		return Callable(Storage, Forward<Types>(Args)...);
+		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Types>(Args)...);
+		else return GetCallableImpl()(&Storage, Forward<Types>(Args)...);
 	}
 
 protected:
@@ -171,23 +215,23 @@ protected:
 	template <typename DecayedType, typename... ArgTypes>
 	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
 	{
-		using CallableType = TCopyConst<TRemoveReference<CVRef>, DecayedType>;
+		using FuncType = TCopyConst<TRemoveReference<CVRef>, DecayedType>;
 
-		if constexpr (bIsRef) Storage = ((reinterpret_cast<StorageType>(AddressOf(Args))), ...);
+		if constexpr (bIsRef) Storage.Ptr = (AddressOf(Args), ...);
 		else Storage.template Emplace<DecayedType>(Forward<ArgTypes>(Args)...);
 
-		Callable = [](StorageRef Storage, Types&&... Args) -> ResultType
+		GetCallableImpl() = [](StoragePtrType Storage, Types&&... Args) -> ResultType
 		{
 			using InvokeType = TConditional<
 				CReference<CVRef>,
-				TCopyCVRef<CVRef, CallableType>,
-				TCopyCVRef<CVRef, CallableType>&
+				TCopyCVRef<CVRef, FuncType>,
+				TCopyCVRef<CVRef, FuncType>&
 			>;
 
-			const auto GetFunc = [&Storage]() -> InvokeType
+			const auto GetFunc = [Storage]() -> InvokeType
 			{
-				if constexpr (!bIsRef) return Storage.template GetValue<DecayedType>();
-				else return static_cast<InvokeType>(*reinterpret_cast<CallableType*>(Storage));
+				if constexpr (!bIsRef) return static_cast<TCopyConst<CVRef, FunctionStorage>*>(Storage)->template GetValue<DecayedType>();
+				else return static_cast<InvokeType>(*reinterpret_cast<FuncType*>(Storage));
 			};
 
 			return InvokeResult<ResultType>(GetFunc(), Forward<Types>(Args)...);
@@ -196,11 +240,7 @@ protected:
 
 	FORCEINLINE void AssignImpl(const TFunctionImpl& InValue)
 	{
-		if (InValue.IsValid())
-		{
-			Callable = InValue.Callable;
-			Storage = InValue.Storage;
-		}
+		if (InValue.IsValid()) Storage = InValue.Storage;
 		else ResetImpl();
 	}
 
@@ -208,14 +248,13 @@ protected:
 	{
 		if (InValue.IsValid())
 		{
-			Callable = InValue.Callable;
 			Storage = MoveTemp(InValue.Storage);
 			InValue.ResetImpl();
 		}
 		else ResetImpl();
 	}
 
-	constexpr void ResetImpl() { Callable = nullptr; }
+	constexpr void ResetImpl() { GetCallableImpl() = nullptr; }
 
 };
 
@@ -226,8 +265,6 @@ struct TFunctionRef
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		FUNCTION_DEFAULT_INLINE_SIZE,
-		FUNCTION_DEFAULT_INLINE_ALIGNMENT,
 		true>
 {
 private:
@@ -235,8 +272,6 @@ private:
 	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		FUNCTION_DEFAULT_INLINE_SIZE,
-		FUNCTION_DEFAULT_INLINE_ALIGNMENT,
 		true>;
 
 public:
@@ -263,14 +298,11 @@ public:
 
 };
 
-template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
-	requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F> requires CFunction<F>
 struct TFunction 
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		InlineSize,
-		InlineAlignment,
 		false>
 {
 private:
@@ -278,8 +310,6 @@ private:
 	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		InlineSize,
-		InlineAlignment,
 		false>;
 
 public:
@@ -349,14 +379,11 @@ public:
 
 };
 
-template <typename F, size_t InlineSize = FUNCTION_DEFAULT_INLINE_SIZE, size_t InlineAlignment = FUNCTION_DEFAULT_INLINE_ALIGNMENT>
-	requires CFunction<F> && (Memory::IsValidAlignment(InlineAlignment))
+template <typename F> requires CFunction<F>
 struct TUniqueFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		InlineSize,
-		InlineAlignment,
 	false>
 {
 private:
@@ -364,8 +391,6 @@ private:
 	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		InlineSize,
-		InlineAlignment,
 		false>;
 
 public:
@@ -383,23 +408,23 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE TUniqueFunction(const TFunction<F, InlineSize, InlineAlignment>& InValue)
+	FORCEINLINE TUniqueFunction(const TFunction<F>& InValue)
 		: Super(*reinterpret_cast<const TUniqueFunction*>(&InValue))
 	{ }
 
-	FORCEINLINE TUniqueFunction(TFunction<F, InlineSize, InlineAlignment>&& InValue)
+	FORCEINLINE TUniqueFunction(TFunction<F>&& InValue)
 		: Super(MoveTemp(*reinterpret_cast<const TUniqueFunction*>(&InValue)))
 	{
 		InValue.Reset();
 	}
 
-	FORCEINLINE TUniqueFunction& operator=(const TFunction<F, InlineSize, InlineAlignment>& InValue)
+	FORCEINLINE TUniqueFunction& operator=(const TFunction<F>& InValue)
 	{
 		Super::AssignImpl(*reinterpret_cast<const TUniqueFunction*>(&InValue));
 		return *this;
 	}
 
-	FORCEINLINE TUniqueFunction& operator=(TFunction<F, InlineSize, InlineAlignment>&& InValue)
+	FORCEINLINE TUniqueFunction& operator=(TFunction<F>&& InValue)
 	{
 		Super::AssignImpl(MoveTemp(*reinterpret_cast<TUniqueFunction*>(&InValue)));
 		return *this;
