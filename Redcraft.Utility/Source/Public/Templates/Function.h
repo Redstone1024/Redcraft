@@ -83,7 +83,7 @@ template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) co
 template <typename CallableType>
 struct alignas(16) FFunctionStorage
 {
-	//~ Begin CAnyStorage Interface
+	//~ Begin CAnyCustomStorage Interface
 	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);
 	inline static constexpr size_t InlineAlignment = 16;
 	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
@@ -94,7 +94,7 @@ struct alignas(16) FFunctionStorage
 	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
 	constexpr void CopyCustom(const FFunctionStorage&  InValue) { Callable = InValue.Callable; }
 	constexpr void MoveCustom(      FFunctionStorage&& InValue) { Callable = InValue.Callable; }
-	//~ End CAnyStorage Interface
+	//~ End CAnyCustomStorage Interface
 
 	union
 	{
@@ -105,9 +105,6 @@ struct alignas(16) FFunctionStorage
 	uintptr TypeInfoImpl;
 
 	CallableType Callable;
-
-	template <CAnyStorage T>
-	friend struct TAny;
 
 };
 

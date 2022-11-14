@@ -15,7 +15,26 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // TAny's CustomStorage concept, see FAnyDefaultStorage.
 template <typename T>
-concept CAnyStorage = true; // TODO
+concept CAnyCustomStorage = 
+//	CSameAs<decltype(T::InlineSize),      const size_t> &&
+//	CSameAs<decltype(T::InlineAlignment), const size_t> &&
+	requires(const T& A)
+	{
+		{ A.InlineAllocation() } -> CSameAs<const void*>;
+		{ A.HeapAllocation()   } -> CSameAs<void*>;
+		{ A.TypeInfo()         } -> CSameAs<uintptr>;
+	} &&
+	requires(T& A)
+	{
+		{ A.InlineAllocation() } -> CSameAs<void*>;
+		{ A.HeapAllocation()   } -> CSameAs<void*&>;
+		{ A.TypeInfo()         } -> CSameAs<uintptr&>;
+	} &&
+	requires(T& A, const T& B, T&& C)
+	{
+		A.CopyCustom(B);
+		A.MoveCustom(MoveTemp(C));
+	};
 
 // TAny's default storage structure.
 struct alignas(16) FAnyDefaultStorage
@@ -25,7 +44,7 @@ struct alignas(16) FAnyDefaultStorage
 	// You can add custom variables like this.
 	//Type Variable;
 
-	//~ Begin CAnyStorage Interface
+	//~ Begin CAnyCustomStorage Interface
 	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr);
 	inline static constexpr size_t InlineAlignment = 16;
 	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
@@ -36,7 +55,7 @@ struct alignas(16) FAnyDefaultStorage
 	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
 	constexpr void CopyCustom(const FAnyDefaultStorage&  InValue) { /* Variable =          InValue.Variable;  */ } // You just need to copy the custom variables.
 	constexpr void MoveCustom(      FAnyDefaultStorage&& InValue) { /* Variable = MoveTemp(InValue.Variable); */ } // You just need to move the custom variables.
-	//~ End CAnyStorage Interface
+	//~ End CAnyCustomStorage Interface
 
 	union
 	{
@@ -48,11 +67,11 @@ struct alignas(16) FAnyDefaultStorage
 
 };
 
-static_assert(CAnyStorage<FAnyDefaultStorage>);
+static_assert(CAnyCustomStorage<FAnyDefaultStorage>);
 
 // You can add custom storage area through CustomStorage, such as TFunction.
 // It is not recommended to use this, FAny is recommended.
-template <CAnyStorage CustomStorage = FAnyDefaultStorage>
+template <CAnyCustomStorage CustomStorage = FAnyDefaultStorage>
 struct TAny
 {
 	inline static constexpr size_t InlineSize      = CustomStorage::InlineSize;
@@ -460,13 +479,13 @@ private:
 	
 };
 
-template <typename T, CAnyStorage StorageType>
+template <typename T, CAnyCustomStorage StorageType>
 constexpr bool operator==(const TAny<StorageType>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
-template <CAnyStorage StorageType>
+template <CAnyCustomStorage StorageType>
 constexpr bool operator==(const TAny<StorageType>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
@@ -474,8 +493,8 @@ constexpr bool operator==(const TAny<StorageType>& LHS, FInvalid)
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename T>              struct TIsTAny                    : FFalse { };
-template <CAnyStorage StorageType> struct TIsTAny<TAny<StorageType>> : FTrue  { };
+template <typename T>                    struct TIsTAny                    : FFalse { };
+template <CAnyCustomStorage StorageType> struct TIsTAny<TAny<StorageType>> : FTrue  { };
 
 NAMESPACE_PRIVATE_END
 
