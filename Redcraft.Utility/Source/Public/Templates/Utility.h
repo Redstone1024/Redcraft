@@ -18,12 +18,6 @@ constexpr const T& AsConst(T& Ref)
 template <typename T>
 void AsConst(const T&& Ref) = delete;
 
-template <typename T, size_t N>
-constexpr const T(&AsConst(T(&Array)[N]))[N]
-{
-	return Array;
-}
-
 template <typename T>
 constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
 {
