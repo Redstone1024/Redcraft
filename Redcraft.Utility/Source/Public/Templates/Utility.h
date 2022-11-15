@@ -21,38 +21,38 @@ void AsConst(const T&& Ref) = delete;
 template <typename T>
 constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
 {
-	typedef TRemoveReference<T> CastType;
-	return (CastType&&)Obj;
+	using CastType = TRemoveReference<T>;
+	return static_cast<CastType&&>(Obj);
 }
 
 template <typename T>
-constexpr T CopyTemp(T& Val)
+constexpr T CopyTemp(T& Obj)
 {
-	return const_cast<const T&>(Val);
+	return const_cast<const T&>(Obj);
 }
 
 template <typename T>
-constexpr T CopyTemp(const T& Val)
+constexpr T CopyTemp(const T& Obj)
 {
-	return Val;
+	return Obj;
 }
 
 template <typename T>
-constexpr T&& CopyTemp(T&& Val)
+constexpr T&& CopyTemp(T&& Obj)
 {
-	return MoveTemp(Val);
+	return MoveTemp(Obj);
 }
 
 template <typename T>
 constexpr T&& Forward(TRemoveReference<T>& Obj)
 {
-	return (T&&)Obj;
+	return static_cast<T&&>(Obj);
 }
 
 template <typename T>
 constexpr T&& Forward(TRemoveReference<T>&& Obj)
 {
-	return (T&&)Obj;
+	return static_cast<T&&>(Obj);
 }
 
 template <typename T> requires requires(T& A, T& B) { A.Swap(B); }

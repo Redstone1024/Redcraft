@@ -18,7 +18,11 @@ public:
 	using Type = ReferencedType;
 
 	template <typename T = ReferencedType> requires CConvertibleTo<T, ReferencedType&>
-	constexpr TReferenceWrapper(T&& Object) : Pointer(AddressOf(Forward<T>(Object))) { }
+	constexpr TReferenceWrapper(T&& Object)
+	{
+		ReferencedType& Reference = Forward<T>(Object);
+		Pointer = AddressOf(Reference);
+	}
 
 	TReferenceWrapper(const TReferenceWrapper&) = default;
 	
