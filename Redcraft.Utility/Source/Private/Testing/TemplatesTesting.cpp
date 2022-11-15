@@ -784,10 +784,10 @@ void TestTuple()
 	{
 		int8 Flag;
 		FTracker(int8 InFlag) : Flag(InFlag) { }
-		FTracker(const FTracker& InValue) { Flag = InValue.Flag - 1; always_check(!Flag); }
-		FTracker(FTracker&& InValue) { Flag = InValue.Flag + 1; always_check(!Flag); }
+		FTracker(const FTracker& InValue)            { Flag = InValue.Flag - 1; always_check(!Flag);               }
+		FTracker(FTracker&& InValue)                 { Flag = InValue.Flag + 1; always_check(!Flag);               }
 		FTracker& operator=(const FTracker& InValue) { Flag = InValue.Flag - 1; always_check(!Flag); return *this; }
-		FTracker& operator=(FTracker&& InValue) { Flag = InValue.Flag + 1; always_check(!Flag); return *this; }
+		FTracker& operator=(FTracker&& InValue)      { Flag = InValue.Flag + 1; always_check(!Flag); return *this; }
 	};
 
 	{

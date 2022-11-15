@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename ReferencedType> requires (CObject<ReferencedType> || CFunction<ReferencedType>)
-struct TReferenceWrapper
+class TReferenceWrapper
 {
 public:
 
@@ -61,11 +61,11 @@ private:
 
 	ReferencedType* Pointer;
 
-	template <typename T> requires (CObject<T> || CFunction<T>) friend struct TReferenceWrapper;
+	template <typename T> requires (CObject<T> || CFunction<T>) friend class TReferenceWrapper;
 
 	// Optimize TOptional with these hacking
 	constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
-	template <typename T> requires CDestructible<T> friend struct TOptional;
+	template <typename T> requires CDestructible<T> friend class TOptional;
 
 };
 
@@ -121,7 +121,7 @@ template <typename T>
 using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::Type;
 
 template <typename ReferencedType>
-struct TOptional<TReferenceWrapper<ReferencedType>>
+class TOptional<TReferenceWrapper<ReferencedType>>
 {
 private:
 	
@@ -235,7 +235,7 @@ public:
 private:
 
 	TReferenceWrapper<ReferencedType> Reference;
-	template <typename T> requires CDestructible<T> friend struct TOptional;
+	template <typename T> requires CDestructible<T> friend class TOptional;
 
 };
 

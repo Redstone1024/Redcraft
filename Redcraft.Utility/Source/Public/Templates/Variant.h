@@ -14,7 +14,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename... Types> requires (true && ... && CDestructible<Types>)
-struct TVariant;
+class TVariant;
 
 NAMESPACE_PRIVATE_BEGIN
 
@@ -139,8 +139,10 @@ template <size_t I, typename VariantType>
 using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, VariantType>::Type;
 
 template <typename... Types> requires (true && ... && CDestructible<Types>)
-struct TVariant
+class TVariant
 {
+public:
+
 	constexpr TVariant() : TypeIndex(0xFF) { };
 
 	constexpr TVariant(FInvalid) : TVariant() { };

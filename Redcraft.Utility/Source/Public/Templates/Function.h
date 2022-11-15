@@ -13,14 +13,14 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename F> requires CFunction<F>
-struct TFunctionRef;
+template <CFunction F>
+class TFunctionRef;
 
-template <typename F> requires CFunction<F>
-struct TFunction;
+template <CFunction F>
+class TFunction;
 
-template <typename F> requires CFunction<F>
-struct TUniqueFunction;
+template <CFunction F>
+class TUniqueFunction;
 
 NAMESPACE_PRIVATE_BEGIN
 
@@ -80,38 +80,10 @@ template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) co
 template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const& > { using Fn = Ret(Types...); using CVRef = const int&;  };
 template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const&&> { using Fn = Ret(Types...); using CVRef = const int&&; };
 
-template <typename CallableType>
-struct alignas(16) FFunctionStorage
-{
-	//~ Begin CAnyCustomStorage Interface
-	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);
-	inline static constexpr size_t InlineAlignment = 16;
-	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
-	constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
-	constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
-	constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
-	constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
-	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
-	constexpr void CopyCustom(const FFunctionStorage&  InValue) { Callable = InValue.Callable; }
-	constexpr void MoveCustom(      FFunctionStorage&& InValue) { Callable = InValue.Callable; }
-	//~ End CAnyCustomStorage Interface
-
-	union
-	{
-		uint8 InlineAllocationImpl[InlineSize];
-		void* HeapAllocationImpl;
-	};
-
-	uintptr TypeInfoImpl;
-
-	CallableType Callable;
-
-};
-
-template <typename F, typename CVRef, bool bIsRef> struct TFunctionImpl;
+template <typename F, typename CVRef, bool bIsRef> class TFunctionImpl;
 
 template <typename Ret, typename... Types, typename CVRef, bool bIsRef>
-struct TFunctionImpl<Ret(Types...), CVRef, bIsRef>
+class TFunctionImpl<Ret(Types...), CVRef, bIsRef>
 {
 public:
 
@@ -175,6 +147,34 @@ private:
 		StoragePtrType Ptr;
 		CallableType Callable;
 	};
+	
+	template <typename CallableType>
+	struct alignas(16) FFunctionStorage
+	{
+		//~ Begin CAnyCustomStorage Interface
+		inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);
+		inline static constexpr size_t InlineAlignment = 16;
+		constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
+		constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
+		constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
+		constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
+		constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
+		constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
+		constexpr void CopyCustom(const FFunctionStorage&  InValue) { Callable = InValue.Callable; }
+		constexpr void MoveCustom(      FFunctionStorage&& InValue) { Callable = InValue.Callable; }
+		//~ End CAnyCustomStorage Interface
+	
+		union
+		{
+			uint8 InlineAllocationImpl[InlineSize];
+			void* HeapAllocationImpl;
+		};
+	
+		uintptr TypeInfoImpl;
+	
+		CallableType Callable;
+	
+	};
 
 	using FunctionStorage = TAny<FFunctionStorage<CallableType>>;
 	using StorageType = TConditional<bIsRef, FunctionRefStorage, FunctionStorage>;
@@ -207,7 +207,7 @@ private:
 		else return GetCallableImpl()(&Storage, Forward<Types>(Args)...);
 	}
 
-protected:
+protected: // These functions should not be used by user-defined class.
 
 	template <typename DecayedType, typename... ArgTypes>
 	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
@@ -257,8 +257,8 @@ protected:
 
 NAMESPACE_PRIVATE_END
 
-template <typename F> requires CFunction<F>
-struct TFunctionRef 
+template <CFunction F>
+class TFunctionRef
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
@@ -266,7 +266,7 @@ struct TFunctionRef
 {
 private:
 
-	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
+	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
 		true>;
@@ -287,7 +287,7 @@ public:
 	{
 		using DecayedType = TDecay<T>;
 		checkf(NAMESPACE_PRIVATE::FunctionIsBound(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
-		Super::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 	}
 	
 	template <typename T>
@@ -295,8 +295,8 @@ public:
 
 };
 
-template <typename F> requires CFunction<F>
-struct TFunction 
+template <CFunction F>
+class TFunction 
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
@@ -304,28 +304,28 @@ struct TFunction
 {
 private:
 
-	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
+	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
 		false>;
 
 public:
 
-	constexpr TFunction(nullptr_t = nullptr) { Super::ResetImpl(); }
+	constexpr TFunction(nullptr_t = nullptr) { Impl::ResetImpl(); }
 
 	FORCEINLINE TFunction(const TFunction& InValue) = default;
-	FORCEINLINE TFunction(TFunction&& InValue) : Super(MoveTemp(InValue)) { InValue.ResetImpl(); }
+	FORCEINLINE TFunction(TFunction&& InValue) : Impl(MoveTemp(InValue)) { InValue.ResetImpl(); }
 
 	FORCEINLINE TFunction& operator=(const TFunction& InValue)
 	{
-		Super::AssignImpl(InValue);
+		Impl::AssignImpl(InValue);
 		return *this;
 	}
 
 	FORCEINLINE TFunction& operator=(TFunction&& InValue)
 	{
 		if (&InValue == this) return *this;
-		Super::AssignImpl(MoveTemp(InValue));
+		Impl::AssignImpl(MoveTemp(InValue));
 		return *this;
 	}
 
@@ -336,8 +336,8 @@ public:
 	FORCEINLINE TFunction(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Super::ResetImpl();
-		else Super::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
+		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 	}
 	
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
@@ -345,10 +345,10 @@ public:
 	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
-		Super::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TFunction& operator=(nullptr_t) { Super::ResetImpl(); return *this; }
+	constexpr TFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
@@ -357,8 +357,8 @@ public:
 	{
 		using DecayedType = TDecay<T>;
 
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Super::ResetImpl();
-		else Super::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
+		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 
 		return *this;
 	}
@@ -368,62 +368,62 @@ public:
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
-		Super::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
-		return Super::template Target<DecayedType>();
+		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		return Impl::template Target<DecayedType>();
 	}
 
-	constexpr void Reset() { Super::ResetImpl(); }
+	constexpr void Reset() { Impl::ResetImpl(); }
 
 };
 
-template <typename F> requires CFunction<F>
-struct TUniqueFunction
+template <CFunction F>
+class TUniqueFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-	false>
+		false>
 {
 private:
 
-	using Super = NAMESPACE_PRIVATE::TFunctionImpl<
+	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
 		false>;
 
 public:
 
-	constexpr TUniqueFunction(nullptr_t = nullptr) { Super::ResetImpl(); }
+	constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::ResetImpl(); }
 
 	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue) = delete;
-	TUniqueFunction(TUniqueFunction&& InValue) : Super(MoveTemp(InValue)) { InValue.ResetImpl(); }
+	TUniqueFunction(TUniqueFunction&& InValue) : Impl(MoveTemp(InValue)) { InValue.ResetImpl(); }
 
 	FORCEINLINE TUniqueFunction& operator=(const TUniqueFunction& InValue) = delete;
 	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&& InValue)
 	{
 		if (&InValue == this) return *this;
-		Super::AssignImpl(MoveTemp(InValue));
+		Impl::AssignImpl(MoveTemp(InValue));
 		return *this;
 	}
 
 	FORCEINLINE TUniqueFunction(const TFunction<F>& InValue)
-		: Super(*reinterpret_cast<const TUniqueFunction*>(&InValue))
+		: Impl(*reinterpret_cast<const TUniqueFunction*>(&InValue))
 	{ }
 
 	FORCEINLINE TUniqueFunction(TFunction<F>&& InValue)
-		: Super(MoveTemp(*reinterpret_cast<const TUniqueFunction*>(&InValue)))
+		: Impl(MoveTemp(*reinterpret_cast<const TUniqueFunction*>(&InValue)))
 	{
 		InValue.Reset();
 	}
 
 	FORCEINLINE TUniqueFunction& operator=(const TFunction<F>& InValue)
 	{
-		Super::AssignImpl(*reinterpret_cast<const TUniqueFunction*>(&InValue));
+		Impl::AssignImpl(*reinterpret_cast<const TUniqueFunction*>(&InValue));
 		return *this;
 	}
 
 	FORCEINLINE TUniqueFunction& operator=(TFunction<F>&& InValue)
 	{
-		Super::AssignImpl(MoveTemp(*reinterpret_cast<TUniqueFunction*>(&InValue)));
+		Impl::AssignImpl(MoveTemp(*reinterpret_cast<TUniqueFunction*>(&InValue)));
 		return *this;
 	}
 
@@ -434,8 +434,8 @@ public:
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Super::ResetImpl();
-		else Super::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
+		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 	}
 
 	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
@@ -443,10 +443,10 @@ public:
 	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
-		Super::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TUniqueFunction& operator=(nullptr_t) { Super::ResetImpl(); return *this; }
+	constexpr TUniqueFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
 
 	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
@@ -455,8 +455,8 @@ public:
 	{
 		using DecayedType = TDecay<T>;
 
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Super::ResetImpl();
-		else Super::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
+		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 
 		return *this;
 	}
@@ -466,27 +466,27 @@ public:
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
-		Super::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
-		return Super::template Target<DecayedType>();
+		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		return Impl::template Target<DecayedType>();
 	}
 
-	constexpr void Reset() { Super::ResetImpl(); }
+	constexpr void Reset() { Impl::ResetImpl(); }
 
 };
 
-template <typename F>
+template <CFunction F>
 constexpr bool operator==(const TFunctionRef<F>& LHS, nullptr_t)
 {
 	return !LHS;
 }
 
-template <typename F>
+template <CFunction F>
 constexpr bool operator==(const TFunction<F>& LHS, nullptr_t)
 {
 	return !LHS;
 }
 
-template <typename F>
+template <CFunction F>
 constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
 {
 	return !LHS;

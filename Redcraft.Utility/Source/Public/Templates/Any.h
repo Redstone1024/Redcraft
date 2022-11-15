@@ -72,8 +72,10 @@ static_assert(CAnyCustomStorage<FAnyDefaultStorage>);
 // You can add custom storage area through CustomStorage, such as TFunction.
 // It is not recommended to use this, FAny is recommended.
 template <CAnyCustomStorage CustomStorage = FAnyDefaultStorage>
-struct TAny
+class TAny
 {
+public:
+
 	inline static constexpr size_t InlineSize      = CustomStorage::InlineSize;
 	inline static constexpr size_t InlineAlignment = CustomStorage::InlineAlignment;
 

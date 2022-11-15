@@ -17,7 +17,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #define RS_TUPLE_ELEMENT_STATIC_ALIAS 1
 
 template <typename... Types>
-struct TTuple;
+class TTuple;
 
 NAMESPACE_PRIVATE_BEGIN
 
@@ -209,10 +209,10 @@ constexpr TTuple<TUnwrapRefDecay<Types>...> MakeTupleImpl(Types&&... Args)
 }
 
 template <typename Indices, typename... Types>
-struct TTupleImpl;
+class TTupleImpl;
 
 template <size_t... Indices, typename... Types>
-struct TTupleImpl<TIndexSequence<Indices...>, Types...> : TTupleBasicElement<Types, Indices>...
+class TTupleImpl<TIndexSequence<Indices...>, Types...> : public TTupleBasicElement<Types, Indices>...
 {
 protected:
 
@@ -237,11 +237,13 @@ protected:
 };
 
 template <typename Indices, typename... Types>
-struct TTupleHelper;
+class TTupleHelper;
 
 template <size_t... Indices>
-struct TTupleHelper<TIndexSequence<Indices...>>
+class TTupleHelper<TIndexSequence<Indices...>>
 {
+public:
+
 	template <typename LHSTupleType, typename RHSTupleType>
 	static constexpr void Assign(LHSTupleType& LHS, RHSTupleType&& RHS)
 	{
@@ -299,7 +301,7 @@ template <size_t I, typename TupleType>
 using TTupleElement = typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TupleType>::Type;
 
 template <typename... Types>
-struct TTuple : NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Types...>, Types...>
+class TTuple : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Types...>, Types...>
 {
 private:
 

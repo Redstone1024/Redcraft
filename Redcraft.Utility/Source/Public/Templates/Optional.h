@@ -12,7 +12,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename OptionalType> requires CDestructible<OptionalType>
-struct TOptional
+class TOptional
 {
 private:
 	
