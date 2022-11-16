@@ -40,11 +40,11 @@ public:
 
 	constexpr TOptional(FInvalid) : TOptional() { }
 
-	template <typename... Types> requires CConstructibleFrom<OptionalType, Types...>
-	constexpr explicit TOptional(FInPlace, Types&&... Args)
+	template <typename... Ts> requires CConstructibleFrom<OptionalType, Ts...>
+	constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: bIsValid(true)
 	{
-		new(&Value) OptionalType(Forward<Types>(Args)...);
+		new(&Value) OptionalType(Forward<Ts>(Args)...);
 	}
 
 	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
@@ -296,8 +296,8 @@ constexpr TOptional<T> MakeOptional(T&& InValue)
 	return TOptional<T>(Forward<T>(InValue));
 }
 
-template <typename T, typename... Types> requires CDestructible<T> && CConstructibleFrom<T, Types...>
-constexpr TOptional<T> MakeOptional(Types&&... Args)
+template <typename T, typename... Ts> requires CDestructible<T> && CConstructibleFrom<T, Ts...>
+constexpr TOptional<T> MakeOptional(Ts&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
 }

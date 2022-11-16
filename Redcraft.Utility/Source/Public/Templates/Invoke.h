@@ -12,28 +12,28 @@ NAMESPACE_PRIVATE_BEGIN
 
 struct InvokeFunction
 {
-	template <typename F, typename... Types>
-	static auto Invoke(F&& Object, Types&&... Args)
-		-> decltype(Forward<F>(Object)(Forward<Types>(Args)...))
+	template <typename F, typename... Ts>
+	static auto Invoke(F&& Object, Ts&&... Args)
+		-> decltype(Forward<F>(Object)(Forward<Ts>(Args)...))
 	{
-		return Forward<F>(Object)(Forward<Types>(Args)...);
+		return Forward<F>(Object)(Forward<Ts>(Args)...);
 	}
 };
 
 struct InvokeMemberFunction
 {
-	template <typename F, typename ObjectType, typename... Types>
-	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args)
-		-> decltype((Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...))
+	template <typename F, typename ObjectType, typename... Ts>
+	static auto Invoke(F&& Func, ObjectType&& Object, Ts&&... Args)
+		-> decltype((Forward<ObjectType>(Object)->*Func)(Forward<Ts>(Args)...))
 	{
-		return (Forward<ObjectType>(Object)->*Func)(Forward<Types>(Args)...);
+		return (Forward<ObjectType>(Object)->*Func)(Forward<Ts>(Args)...);
 	}
 
-	template <typename F, typename ObjectType, typename... Types>
-	static auto Invoke(F&& Func, ObjectType&& Object, Types&&... Args)
-		-> decltype((Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...))
+	template <typename F, typename ObjectType, typename... Ts>
+	static auto Invoke(F&& Func, ObjectType&& Object, Ts&&... Args)
+		-> decltype((Forward<ObjectType>(Object).*Func)(Forward<Ts>(Args)...))
 	{
-		return (Forward<ObjectType>(Object).*Func)(Forward<Types>(Args)...);
+		return (Forward<ObjectType>(Object).*Func)(Forward<Ts>(Args)...);
 	}
 };
 
@@ -70,29 +70,29 @@ struct InvokeMember<F, T, Decayed, false,  true> : InvokeMemberObject { };
 template <typename F, typename T, typename Decayed>
 struct InvokeMember<F, T, Decayed, false, false> : InvokeFunction { };
 
-template <typename F, typename... Types>
+template <typename F, typename... Ts>
 struct InvokeImpl;
 
 template <typename F>
 struct InvokeImpl<F> : InvokeFunction { };
 
-template <typename F, typename T, typename... Types>
-struct InvokeImpl<F, T, Types...> : InvokeMember<F, T> { };
+template <typename F, typename T, typename... Ts>
+struct InvokeImpl<F, T, Ts...> : InvokeMember<F, T> { };
 
 NAMESPACE_PRIVATE_END
 
-template <typename F, typename... Types> requires CInvocable<F, Types...>
-constexpr auto Invoke(F&& Func, Types&&... Args)
-	-> decltype(NAMESPACE_PRIVATE::InvokeImpl<F, Types...>::Invoke(Forward<F>(Func), Forward<Types>(Args)...))
+template <typename F, typename... Ts> requires CInvocable<F, Ts...>
+constexpr auto Invoke(F&& Func, Ts&&... Args)
+	-> decltype(NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...))
 {
-	return NAMESPACE_PRIVATE::InvokeImpl<F, Types...>::Invoke(Forward<F>(Func), Forward<Types>(Args)...);
+	return NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
 }
 
-template <typename R, typename F, typename... Types> requires CInvocableResult<R, F, Types...>
-constexpr R InvokeResult(F&& Func, Types&&... Args)
+template <typename R, typename F, typename... Ts> requires CInvocableResult<R, F, Ts...>
+constexpr R InvokeResult(F&& Func, Ts&&... Args)
 {
-	if constexpr (CVoid<R>) Invoke(Forward<F>(Func), Forward<Types>(Args)...);
-	else             return Invoke(Forward<F>(Func), Forward<Types>(Args)...);
+	if constexpr (CVoid<R>) Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
+	else             return Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
 }
 
 NAMESPACE_MODULE_END(Utility)

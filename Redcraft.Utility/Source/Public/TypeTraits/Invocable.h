@@ -14,11 +14,11 @@ template <typename R, typename F, typename... Args> concept CInvocableResult = N
 
 template <typename F, typename... Args> using TInvokeResult = NAMESPACE_STD::invoke_result_t<F, Args...>; // FIXME: The result for char(&())[2] is wrong on MSVC
 
-template <typename F, typename... Types>
-concept CRegularInvocable = CInvocable<F, Types...>;
+template <typename F, typename... Ts>
+concept CRegularInvocable = CInvocable<F, Ts...>;
 
-template <typename F, typename... Types>
-concept CPredicate = CRegularInvocable<F, Types...> && CBooleanTestable<TInvokeResult<F, Types...>>;
+template <typename F, typename... Ts>
+concept CPredicate = CRegularInvocable<F, Ts...> && CBooleanTestable<TInvokeResult<F, Ts...>>;
 
 template <typename R, typename T, typename U>
 concept CRelation =

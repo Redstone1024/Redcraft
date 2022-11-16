@@ -43,10 +43,10 @@ public:
 	constexpr operator ReferencedType&() const { return *Pointer; }
 	constexpr ReferencedType& Get()      const { return *Pointer; }
 
-	template <typename... Types>
-	constexpr TInvokeResult<ReferencedType&, Types...> operator()(Types&&... Args) const
+	template <typename... Ts>
+	constexpr TInvokeResult<ReferencedType&, Ts...> operator()(Ts&&... Args) const
 	{
-		return Invoke(Get(), Forward<Types>(Args)...);
+		return Invoke(Get(), Forward<Ts>(Args)...);
 	}
 
 	constexpr size_t GetTypeHash() const requires CHashable<ReferencedType>
@@ -155,9 +155,9 @@ public:
 
 	constexpr TOptional(FInvalid) : TOptional() { }
 
-	template <typename... Types> requires CConstructibleFrom<OptionalType, Types...>
-	constexpr explicit TOptional(FInPlace, Types&&... Args)
-		: Reference(Forward<Types>(Args)...)
+	template <typename... Ts> requires CConstructibleFrom<OptionalType, Ts...>
+	constexpr explicit TOptional(FInPlace, Ts&&... Args)
+		: Reference(Forward<Ts>(Args)...)
 	{ }
 
 	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>

@@ -131,12 +131,12 @@ public:
 		}
 	}
 
-	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Types&&...>
-	FORCEINLINE explicit TAny(TInPlaceType<T>, Types&&... Args)
+	template <typename T, typename... Ts> requires CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, Ts&&...>
+	FORCEINLINE explicit TAny(TInPlaceType<T>, Ts&&... Args)
 	{
 		using SelectedType = TDecay<T>;
-		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
+		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
 	}
 
 	template <typename T> requires (!CSameAs<TDecay<T>, TAny>) && (!CTInPlaceType<TDecay<T>>)
@@ -270,14 +270,14 @@ public:
 		return *this;
 	}
 
-	template <typename T, typename... Types> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Types&&...>
-	FORCEINLINE TDecay<T>& Emplace(Types&&... Args)
+	template <typename T, typename... Ts> requires CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, Ts&&...>
+	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
 		ResetImpl();
 		
 		using SelectedType = TDecay<T>;
-		EmplaceImpl<SelectedType>(Forward<Types>(Args)...);
+		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
 		return GetValue<SelectedType>();
 	}
 
@@ -400,11 +400,11 @@ private:
 			, TypeSize       ( sizeof(T))
 			, TypeAlignment  (alignof(T))
 
-			, CopyConstructImpl ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Types).name()); })
-			, MoveConstructImpl ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Types).name()); })
-			, CopyAssignImpl    ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Types).name()); })
-			, MoveAssignImpl    ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Types).name()); })
-			, DestroyImpl       ([](void* A               ) { if constexpr (requires(T* A            ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<T*>(A)                               ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Types).name()); })
+			, CopyConstructImpl ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(T).name()); })
+			, MoveConstructImpl ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(T).name()); })
+			, CopyAssignImpl    ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(T).name()); })
+			, MoveAssignImpl    ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(T).name()); })
+			, DestroyImpl       ([](void* A               ) { if constexpr (requires(T* A            ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<T*>(A)                               ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(T).name()); })
 			
 			, EqualityCompareImpl      ([](const void* A, const void* B) -> bool             { if constexpr (CEqualityComparable<T>     ) return                                          (*reinterpret_cast<const T*>(A) ==  *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not equality comparable."),        typeid(T).name()); return false;                       })
 			, SynthThreeWayCompareImpl ([](const void* A, const void* B) -> partial_ordering { if constexpr (CSynthThreeWayComparable<T>) return NAMESPACE_REDCRAFT::SynthThreeWayCompare (*reinterpret_cast<const T*>(A),    *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not synth three-way comparable."), typeid(T).name()); return partial_ordering::unordered; })
@@ -420,8 +420,8 @@ private:
 	constexpr       void* GetAllocation()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
 	constexpr const void* GetAllocation() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
 
-	template <typename SelectedType, typename... Types>
-	FORCEINLINE void EmplaceImpl(Types&&... Args)
+	template <typename SelectedType, typename... Ts>
+	FORCEINLINE void EmplaceImpl(Ts&&... Args)
 	{
 		static constexpr const FTypeInfoImpl SelectedTypeInfo(InPlaceType<SelectedType>);
 		Storage.TypeInfo() = reinterpret_cast<uintptr>(&SelectedTypeInfo);
@@ -431,17 +431,17 @@ private:
 
 		if constexpr (bIsTriviallyStorable)
 		{
-			new(Storage.InlineAllocation()) SelectedType(Forward<Types>(Args)...);
+			new(Storage.InlineAllocation()) SelectedType(Forward<Ts>(Args)...);
 			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsInlineStorable)
 		{
-			new(Storage.InlineAllocation()) SelectedType(Forward<Types>(Args)...);
+			new(Storage.InlineAllocation()) SelectedType(Forward<Ts>(Args)...);
 			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
-			Storage.HeapAllocation() = new SelectedType(Forward<Types>(Args)...);
+			Storage.HeapAllocation() = new SelectedType(Forward<Ts>(Args)...);
 			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Big);
 		}
 	}

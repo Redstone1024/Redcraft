@@ -52,12 +52,12 @@ template <typename T> using TMakeSigned   = NAMESPACE_STD::make_signed_t<T>;
 template <typename T> using TMakeUnsigned = NAMESPACE_STD::make_unsigned_t<T>;
 
 template <size_t Size, size_t Align = 16> class TAlignedStorage { struct alignas(Align) { uint8 Pad[Size]; } Padding; };
-template <size_t Size, typename... Types> using TAlignedUnion   = TAlignedStorage<NAMESPACE_PRIVATE::TMaximum<Size, sizeof(Types)...>::Value, NAMESPACE_PRIVATE::TMaximum<alignof(Types)...>::Value>;
+template <size_t Size, typename... Ts>    using TAlignedUnion   = TAlignedStorage<NAMESPACE_PRIVATE::TMaximum<Size, sizeof(Ts)...>::Value, NAMESPACE_PRIVATE::TMaximum<alignof(Ts)...>::Value>;
 template <typename T>                     using TDecay          = NAMESPACE_STD::decay_t<T>;
 template <bool B, typename T = void>      using TEnableIf       = NAMESPACE_STD::enable_if_t<B, T>;
 template <bool B, typename T, typename F> using TConditional    = NAMESPACE_STD::conditional_t<B, T, F>;
 template <typename T>                     using TUnderlyingType = NAMESPACE_STD::underlying_type_t<T>;
-template <typename... Types>              using TVoid           = void;
+template <typename... Ts>                 using TVoid           = void;
 template <typename T>                     using TIdentity       = T;
 
 NAMESPACE_MODULE_END(Utility)

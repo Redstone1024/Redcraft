@@ -24,21 +24,21 @@ template<>      struct TCommonComparisonCategoryBasic<2> { using Type = partial_
 template<>      struct TCommonComparisonCategoryBasic<4> { using Type = weak_ordering;    };
 template<>      struct TCommonComparisonCategoryBasic<6> { using Type = partial_ordering; };
 
-template <typename... Types>
+template <typename... Ts>
 struct TCommonComparisonCategoryImpl
 	: TCommonComparisonCategoryBasic <(0u | ... |
 			(
-				CSameAs<Types, strong_ordering > ? 0u :
-				CSameAs<Types, weak_ordering   > ? 4u :
-				CSameAs<Types, partial_ordering> ? 2u : 1u
+				CSameAs<Ts, strong_ordering > ? 0u :
+				CSameAs<Ts, weak_ordering   > ? 4u :
+				CSameAs<Ts, partial_ordering> ? 2u : 1u
 			)
 		)> 
 { };
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types>
-using TCommonComparisonCategory = typename NAMESPACE_PRIVATE::TCommonComparisonCategoryImpl<Types...>::Type;
+template <typename... Ts>
+using TCommonComparisonCategory = typename NAMESPACE_PRIVATE::TCommonComparisonCategoryImpl<Ts...>::Type;
 
 template <typename T, typename OrderingType>
 concept CThreeWayComparesAs = CSameAs<TCommonComparisonCategory<T, OrderingType>, OrderingType>;

@@ -24,15 +24,15 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename...>
 struct TCommonTypeImpl;
 
-// If sizeof...(Types) is zero, there is no member Type
+// If sizeof...(Ts) is zero, there is no member Type
 template <>
 struct TCommonTypeImpl<> { };
 
-// If sizeof...(Types) is one, the member Type names the same Type as TCommonType<T, T> if it exists; otherwise there is no member Type
+// If sizeof...(Ts) is one, the member Type names the same Type as TCommonType<T, T> if it exists; otherwise there is no member Type
 template <typename T>
 struct TCommonTypeImpl<T> : TCommonTypeImpl<T, T> { };
 
-// If sizeof...(Types) is two
+// If sizeof...(Ts) is two
 
 // If applying TDecay to at least one of T and U produces a different Type, the member Type names the same Type as TCommonType<TDecay<T>, TDecay<U>>, if it exists; if not, there is no member Type
 template <typename T, typename U> concept CDecayed = CSameAs<T, TDecay<T>> && CSameAs<U, TDecay<U>>;
@@ -65,11 +65,11 @@ struct TCommonTypeImpl<T, U> { using Type = TDecay<decltype(false ? DeclVal<cons
 
 // Otherwise, there is no member Type
 
-// If sizeof...(Types) is greater than two
+// If sizeof...(Ts) is greater than two
 
 // If TCommonType<T, U> exists, the member Type denotes TCommonType<TCommonType<T, U>, R...> if such a Type exists
-template <typename T, typename U, typename W, typename... Types> requires (requires { typename TCommonTypeImpl<T, U>::Type; })
-struct TCommonTypeImpl<T, U, W, Types...> : TCommonTypeImpl<typename TCommonTypeImpl<T, U>::Type, W, Types...> { };
+template <typename T, typename U, typename W, typename... Ts> requires (requires { typename TCommonTypeImpl<T, U>::Type; })
+struct TCommonTypeImpl<T, U, W, Ts...> : TCommonTypeImpl<typename TCommonTypeImpl<T, U>::Type, W, Ts...> { };
 
 // In all other cases, there is no member Type
 template <typename...>
@@ -99,7 +99,7 @@ struct TCommonReferenceImpl<> { };
 template <typename T>
 struct TCommonReferenceImpl<T> { using Type = T; };
 
-// If sizeof...(Types) is two
+// If sizeof...(Ts) is two
 
 // If T and U are both reference types, and the simple common reference Type S of T and U exists, then the member Type Type names S
 template <typename T, typename U> concept CSimpleCommonReference = requires { typename TSimpleCommonReferenceImpl<T, U>::Type; };
@@ -137,11 +137,11 @@ struct TCommonReferenceImpl<T, U> : TCommonTypeImpl<T, U> { };
 
 // Otherwise, there is no member Type.
 
-// If sizeof...(Types) is greater than two
+// If sizeof...(Ts) is greater than two
 
 // If TCommonReference<T, U> exists, the member Type denotes TCommonReference<TCommonReference<T, U>, R...> if such a Type exists
-template <typename T, typename U, typename W, typename... Types> requires (requires { typename TCommonReferenceImpl<T, U>::Type; })
-struct TCommonReferenceImpl<T, U, W, Types...> : TCommonReferenceImpl<typename TCommonReferenceImpl<T, U>::Type, W, Types...> { };
+template <typename T, typename U, typename W, typename... Ts> requires (requires { typename TCommonReferenceImpl<T, U>::Type; })
+struct TCommonReferenceImpl<T, U, W, Ts...> : TCommonReferenceImpl<typename TCommonReferenceImpl<T, U>::Type, W, Ts...> { };
 
 // In all other cases, there is no member Type.
 template <typename...>
@@ -172,19 +172,19 @@ struct TSimpleCommonReferenceImpl { };
 
 NAMESPACE_PRIVATE_END
 
-template <typename... Types> using TCommonType      = typename NAMESPACE_PRIVATE::TCommonTypeImpl<Types...>::Type;
-template <typename... Types> using TCommonReference = typename NAMESPACE_PRIVATE::TCommonReferenceImpl<Types...>::Type;
+template <typename... Ts> using TCommonType      = typename NAMESPACE_PRIVATE::TCommonTypeImpl<Ts...>::Type;
+template <typename... Ts> using TCommonReference = typename NAMESPACE_PRIVATE::TCommonReferenceImpl<Ts...>::Type;
 
-template <typename... Types>
+template <typename... Ts>
 concept CCommonReference =
-	requires { typename TCommonReference<Types...>; }
-	&& (true && ... && CConvertibleTo<Types, TCommonReference<Types...>>);
+	requires { typename TCommonReference<Ts...>; }
+	&& (true && ... && CConvertibleTo<Ts, TCommonReference<Ts...>>);
 
-template <typename... Types>
+template <typename... Ts>
 concept CCommonType =
-	requires { typename TCommonType<Types...>; }
-	&& (true && ... && CConstructibleFrom<TCommonReference<Types...>, Types&&>)
-	&& CCommonReference<const Types&...> && CCommonReference<TCommonType<Types...>&, TCommonReference<const Types&...>>;
+	requires { typename TCommonType<Ts...>; }
+	&& (true && ... && CConstructibleFrom<TCommonReference<Ts...>, Ts&&>)
+	&& CCommonReference<const Ts&...> && CCommonReference<TCommonType<Ts...>&, TCommonReference<const Ts&...>>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

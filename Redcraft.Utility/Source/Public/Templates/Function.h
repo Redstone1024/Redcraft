@@ -56,39 +56,39 @@ constexpr bool FunctionIsBound(const T& Func)
 
 template <typename Signature, typename F> struct TIsInvocableSignature : FFalse { };
 
-template <typename Ret, typename... Types, typename F>
-struct TIsInvocableSignature<Ret(Types...), F>
-	: TBoolConstant<CInvocableResult<Ret, F, Types...> && CInvocableResult<Ret, F&, Types...>>
+template <typename Ret, typename... Ts, typename F>
+struct TIsInvocableSignature<Ret(Ts...), F>
+	: TBoolConstant<CInvocableResult<Ret, F, Ts...> && CInvocableResult<Ret, F&, Ts...>>
 { };
 
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) & , F> : TBoolConstant<CInvocableResult<Ret, F&, Types...>> { };
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) &&, F> : TBoolConstant<CInvocableResult<Ret, F , Types...>> { };
+template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) & , F> : TBoolConstant<CInvocableResult<Ret, F&, Ts...>> { };
+template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) &&, F> : TBoolConstant<CInvocableResult<Ret, F , Ts...>> { };
 
-template <typename Ret, typename... Types, typename F>
-struct TIsInvocableSignature<Ret(Types...) const, F>
-	: TBoolConstant<CInvocableResult<Ret, const F, Types...> && CInvocableResult<Ret, const F&, Types...>>
+template <typename Ret, typename... Ts, typename F>
+struct TIsInvocableSignature<Ret(Ts...) const, F>
+	: TBoolConstant<CInvocableResult<Ret, const F, Ts...> && CInvocableResult<Ret, const F&, Ts...>>
 { };
 
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const& , F> : TBoolConstant<CInvocableResult<Ret, const F&, Types...>> { };
-template <typename Ret, typename... Types, typename F> struct TIsInvocableSignature<Ret(Types...) const&&, F> : TBoolConstant<CInvocableResult<Ret, const F , Types...>> { };
+template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) const& , F> : TBoolConstant<CInvocableResult<Ret, const F&, Ts...>> { };
+template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) const&&, F> : TBoolConstant<CInvocableResult<Ret, const F , Ts...>> { };
 
 template <typename F>                      struct TFunctionInfo;
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...)        > { using Fn = Ret(Types...); using CVRef =       int;   };
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) &      > { using Fn = Ret(Types...); using CVRef =       int&;  };
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) &&     > { using Fn = Ret(Types...); using CVRef =       int&&; };
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const  > { using Fn = Ret(Types...); using CVRef = const int;   };
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const& > { using Fn = Ret(Types...); using CVRef = const int&;  };
-template <typename Ret, typename... Types> struct TFunctionInfo<Ret(Types...) const&&> { using Fn = Ret(Types...); using CVRef = const int&&; };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...)        > { using Fn = Ret(Ts...); using CVRef =       int;   };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &      > { using Fn = Ret(Ts...); using CVRef =       int&;  };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &&     > { using Fn = Ret(Ts...); using CVRef =       int&&; };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const  > { using Fn = Ret(Ts...); using CVRef = const int;   };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const& > { using Fn = Ret(Ts...); using CVRef = const int&;  };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const&&> { using Fn = Ret(Ts...); using CVRef = const int&&; };
 
 template <typename F, typename CVRef, bool bIsRef> class TFunctionImpl;
 
-template <typename Ret, typename... Types, typename CVRef, bool bIsRef>
-class TFunctionImpl<Ret(Types...), CVRef, bIsRef>
+template <typename Ret, typename... Ts, typename CVRef, bool bIsRef>
+class TFunctionImpl<Ret(Ts...), CVRef, bIsRef>
 {
 public:
 
 	using ResultType = Ret;
-	using ArgumentType = TTuple<Types...>;
+	using ArgumentType = TTuple<Ts...>;
 	
 	TFunctionImpl() = default;
 	TFunctionImpl(const TFunctionImpl&) = default;
@@ -97,12 +97,12 @@ public:
 	TFunctionImpl& operator=(TFunctionImpl&&) = default;
 	~TFunctionImpl() = default;
 
-	FORCEINLINE ResultType operator()(Types... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const   requires (CSameAs<CVRef, const int  >) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Types>(Args)...); }
-	FORCEINLINE ResultType operator()(Types... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Types>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args) const   requires (CSameAs<CVRef, const int  >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
 	constexpr bool           IsValid() const { return GetCallableImpl() != nullptr; }
 	constexpr explicit operator bool() const { return GetCallableImpl() != nullptr; }
@@ -140,7 +140,7 @@ public:
 private:
 
 	using StoragePtrType = TCopyConst<CVRef, void>*;
-	using CallableType = ResultType(*)(StoragePtrType, Types&&...);
+	using CallableType = ResultType(*)(StoragePtrType, Ts&&...);
 
 	struct FunctionRefStorage
 	{
@@ -193,18 +193,18 @@ private:
 		else return Storage.GetCustomStorage().Callable;
 	}
 
-	FORCEINLINE ResultType CallImpl(Types&&... Args)
+	FORCEINLINE ResultType CallImpl(Ts&&... Args)
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Types>(Args)...);
-		else return GetCallableImpl()(&Storage, Forward<Types>(Args)...);
+		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Ts>(Args)...);
+		else return GetCallableImpl()(&Storage, Forward<Ts>(Args)...);
 	}
 
-	FORCEINLINE ResultType CallImpl(Types&&... Args) const
+	FORCEINLINE ResultType CallImpl(Ts&&... Args) const
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Types>(Args)...);
-		else return GetCallableImpl()(&Storage, Forward<Types>(Args)...);
+		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Ts>(Args)...);
+		else return GetCallableImpl()(&Storage, Forward<Ts>(Args)...);
 	}
 
 protected: // These functions should not be used by user-defined class.
@@ -217,7 +217,7 @@ protected: // These functions should not be used by user-defined class.
 		if constexpr (bIsRef) Storage.Ptr = (AddressOf(Args), ...);
 		else Storage.template Emplace<DecayedType>(Forward<ArgTypes>(Args)...);
 
-		GetCallableImpl() = [](StoragePtrType Storage, Types&&... Args) -> ResultType
+		GetCallableImpl() = [](StoragePtrType Storage, Ts&&... Args) -> ResultType
 		{
 			using InvokeType = TConditional<
 				CReference<CVRef>,
@@ -231,7 +231,7 @@ protected: // These functions should not be used by user-defined class.
 				else return static_cast<InvokeType>(*reinterpret_cast<FuncType*>(Storage));
 			};
 
-			return InvokeResult<ResultType>(GetFunc(), Forward<Types>(Args)...);
+			return InvokeResult<ResultType>(GetFunc(), Forward<Ts>(Args)...);
 		};
 	}
 
@@ -508,32 +508,32 @@ struct TNotFunction
 	template <typename InF>
 	constexpr TNotFunction(InF&& InFunc) : Storage(Forward<InF>(InFunc)) { }
 
-	template <typename... Types> requires CInvocable<F&, Types&&...>
-	constexpr auto operator()(Types&&... Args) &
-		-> decltype(!Invoke(Storage, Forward<Types>(Args)...))
+	template <typename... Ts> requires CInvocable<F&, Ts&&...>
+	constexpr auto operator()(Ts&&... Args) &
+		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
-		return !Invoke(Storage, Forward<Types>(Args)...);
+		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
-	template <typename... Types> requires CInvocable<F&&, Types&&...>
-	constexpr auto operator()(Types&&... Args) &&
-		-> decltype(!Invoke(MoveTemp(Storage), Forward<Types>(Args)...))
+	template <typename... Ts> requires CInvocable<F&&, Ts&&...>
+	constexpr auto operator()(Ts&&... Args) &&
+		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
-		return !Invoke(MoveTemp(Storage), Forward<Types>(Args)...);
+		return !Invoke(MoveTemp(Storage), Forward<Ts>(Args)...);
 	}
 
-	template <typename... Types> requires CInvocable<const F&, Types&&...>
-	constexpr auto operator()(Types&&... Args) const&
-		-> decltype(!Invoke(Storage, Forward<Types>(Args)...))
+	template <typename... Ts> requires CInvocable<const F&, Ts&&...>
+	constexpr auto operator()(Ts&&... Args) const&
+		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
-		return !Invoke(Storage, Forward<Types>(Args)...);
+		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
-	template <typename... Types> requires CInvocable<const F&&, Types&&...>
-	constexpr auto operator()(Types&&... Args) const&&
-		-> decltype(!Invoke(MoveTemp(Storage), Forward<Types>(Args)...))
+	template <typename... Ts> requires CInvocable<const F&&, Ts&&...>
+	constexpr auto operator()(Ts&&... Args) const&&
+		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
-		return !Invoke(MoveTemp(Storage), Forward<Types>(Args)...);
+		return !Invoke(MoveTemp(Storage), Forward<Ts>(Args)...);
 	}
 };
 
