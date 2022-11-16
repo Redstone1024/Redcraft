@@ -56,13 +56,13 @@ concept CThreeWayComparable = CWeaklyEqualityComparable<T, U> && CPartiallyOrder
 			{ C <=> C } -> CThreeWayComparesAs<OrderingType>;
 		};
 
-template <typename T, typename U = T> requires CThreeWayComparable<T, U>
+template <typename T, typename U = T> requires (CThreeWayComparable<T, U>)
 using TCompareThreeWayResult = decltype(DeclVal<const TRemoveReference<T>&>() <=> DeclVal<const TRemoveReference<U>&>());
 
 template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CSynthThreeWayComparable = CThreeWayComparable<T, U> || CTotallyOrdered<T, U>;
 
-template <typename T, typename U = T> requires CSynthThreeWayComparable<T, U>
+template <typename T, typename U = T> requires (CSynthThreeWayComparable<T, U>)
 constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 {
 	if constexpr (CThreeWayComparable<T, U>)
@@ -75,7 +75,7 @@ constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 	}
 }
 
-template <typename T, typename U = T> requires CSynthThreeWayComparable<T, U>
+template <typename T, typename U = T> requires (CSynthThreeWayComparable<T, U>)
 using TSynthThreeWayResult = decltype(SynthThreeWayCompare(DeclVal<const TRemoveReference<T>&>(), DeclVal<const TRemoveReference<U>&>()));
 
 NAMESPACE_MODULE_END(Utility)

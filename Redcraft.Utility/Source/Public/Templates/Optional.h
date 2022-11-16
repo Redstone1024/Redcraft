@@ -11,7 +11,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename OptionalType> requires CDestructible<OptionalType>
+template <typename OptionalType> requires (CDestructible<OptionalType>)
 class TOptional
 {
 private:
@@ -40,39 +40,39 @@ public:
 
 	constexpr TOptional(FInvalid) : TOptional() { }
 
-	template <typename... Ts> requires CConstructibleFrom<OptionalType, Ts...>
+	template <typename... Ts> requires (CConstructibleFrom<OptionalType, Ts...>)
 	constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: bIsValid(true)
 	{
 		new(&Value) OptionalType(Forward<Ts>(Args)...);
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>)
 		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CSameAs<TRemoveCVRef<T>, TOptional>)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
-	constexpr TOptional(const TOptional& InValue) requires CCopyConstructible<OptionalType>
+	constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
-	constexpr TOptional(TOptional&& InValue) requires CMoveConstructible<OptionalType>
+	constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
 	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
@@ -84,7 +84,7 @@ public:
 		if constexpr (!CTriviallyDestructible<OptionalType>) Reset();
 	}
 
-	constexpr TOptional& operator=(const TOptional& InValue) requires CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>
+	constexpr TOptional& operator=(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
 
@@ -104,7 +104,7 @@ public:
 		return *this;
 	}
 
-	constexpr TOptional& operator=(TOptional&& InValue) requires CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>
+	constexpr TOptional& operator=(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
 
@@ -124,8 +124,8 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, const T&>
-		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
+		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value)
 	constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (!InValue.IsValid())
@@ -144,8 +144,8 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&>
-		&& CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>
+		&& CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value)
 	constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (!InValue.IsValid())
@@ -164,7 +164,7 @@ public:
 		return *this;
 	}
 
-	template <typename T = OptionalType> requires CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>)
 	constexpr TOptional& operator=(T&& InValue)
 	{
 		if (IsValid()) GetValue() = Forward<T>(InValue);
@@ -177,7 +177,7 @@ public:
 		return *this;
 	}
 
-	template <typename... ArgTypes> requires CConstructibleFrom<OptionalType, ArgTypes...>
+	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
 	constexpr OptionalType& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
@@ -218,13 +218,13 @@ public:
 		}
 	}
 
-	constexpr size_t GetTypeHash() const requires CHashable<OptionalType>
+	constexpr size_t GetTypeHash() const requires (CHashable<OptionalType>)
 	{
 		if (!IsValid()) return 2824517378;
 		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
 	}
 
-	template <typename T> requires CMoveConstructible<OptionalType> && CSwappable<OptionalType>
+	template <typename T> requires (CMoveConstructible<OptionalType> && CSwappable<OptionalType>)
 	constexpr void Swap(TOptional& InValue)
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
@@ -256,7 +256,7 @@ private:
 template <typename T>
 TOptional(T) -> TOptional<T>;
 
-template <typename T, typename U> requires CWeaklyEqualityComparable<T, U>
+template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
 constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return false;
@@ -264,7 +264,7 @@ constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 	return *LHS == *RHS;
 }
 
-template <typename T, typename U> requires CSynthThreeWayComparable<T, U>
+template <typename T, typename U> requires (CSynthThreeWayComparable<T, U>)
 constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
@@ -272,7 +272,7 @@ constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<
 	return SynthThreeWayCompare(*LHS, *RHS);
 }
 
-template <typename T, typename U> requires CWeaklyEqualityComparable<T, U>
+template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
 constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
 {
 	return LHS.IsValid() ? *LHS == RHS : false;
@@ -284,19 +284,19 @@ constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
 	return !LHS.IsValid();
 }
 
-template <typename T> requires CDestructible<T>
+template <typename T> requires (CDestructible<T>)
 constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
 {
 	return TOptional<TDecay<T>>(Invalid);
 }
 
-template <typename T> requires CDestructible<T> && CConstructibleFrom<T, T&&>
+template <typename T> requires (CDestructible<T> && CConstructibleFrom<T, T&&>)
 constexpr TOptional<T> MakeOptional(T&& InValue)
 {
 	return TOptional<T>(Forward<T>(InValue));
 }
 
-template <typename T, typename... Ts> requires CDestructible<T> && CConstructibleFrom<T, Ts...>
+template <typename T, typename... Ts> requires (CDestructible<T> && CConstructibleFrom<T, Ts...>)
 constexpr TOptional<T> MakeOptional(Ts&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);

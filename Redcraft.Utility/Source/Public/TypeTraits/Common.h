@@ -135,7 +135,7 @@ template <typename T, typename U> concept CCommonTypeImpl = requires { typename 
 template <typename T, typename U> requires (!CSimpleCommonReference<T, U> && !CBasicCommonReference<T, U> && !CConditionalValType<T, U> && CCommonTypeImpl<T, U>)
 struct TCommonReferenceImpl<T, U> : TCommonTypeImpl<T, U> { };
 
-// Otherwise, there is no member Type.
+// Otherwise, there is no member Type
 
 // If sizeof...(Ts) is greater than two
 
@@ -143,7 +143,7 @@ struct TCommonReferenceImpl<T, U> : TCommonTypeImpl<T, U> { };
 template <typename T, typename U, typename W, typename... Ts> requires (requires { typename TCommonReferenceImpl<T, U>::Type; })
 struct TCommonReferenceImpl<T, U, W, Ts...> : TCommonReferenceImpl<typename TCommonReferenceImpl<T, U>::Type, W, Ts...> { };
 
-// In all other cases, there is no member Type.
+// In all other cases, there is no member Type
 template <typename...>
 struct TCommonReferenceImpl { };
 
@@ -166,7 +166,7 @@ template <typename T, typename U> requires (CConvertibleTo<U&&, typename TSimple
 struct TSimpleCommonReferenceImpl<T&, U&&> { using Type = typename TSimpleCommonReferenceImpl<T&, const U&>::Type; };
 template <typename T, typename U> struct TSimpleCommonReferenceImpl<T&&, U&> : TSimpleCommonReferenceImpl<U&, T&&> { }; // The order is not important
 
-// Otherwise, there's no simple common reference Type.
+// Otherwise, there's no simple common reference Type
 template <typename T, typename U>
 struct TSimpleCommonReferenceImpl { };
 

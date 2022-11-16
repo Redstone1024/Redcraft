@@ -13,11 +13,11 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// TAny's CustomStorage concept, see FAnyDefaultStorage.
+// TAny's CustomStorage concept, see FAnyDefaultStorage
 template <typename T>
 concept CAnyCustomStorage = 
-//	CSameAs<decltype(T::InlineSize),      const size_t> &&
-//	CSameAs<decltype(T::InlineAlignment), const size_t> &&
+	CSameAs<decltype(T::InlineSize),      const size_t> &&
+	CSameAs<decltype(T::InlineAlignment), const size_t> &&
 	requires(const T& A)
 	{
 		{ A.InlineAllocation() } -> CSameAs<const void*>;
@@ -36,12 +36,12 @@ concept CAnyCustomStorage =
 		A.MoveCustom(MoveTemp(C));
 	};
 
-// TAny's default storage structure.
+// TAny's default storage structure
 struct alignas(16) FAnyDefaultStorage
 {
-	// The built-in copy/move operators are disabled and CopyCustom/MoveCustom is used instead of them.
+	// The built-in copy/move operators are disabled and CopyCustom/MoveCustom is used instead of them
 
-	// You can add custom variables like this.
+	// You can add custom variables like this
 	//Type Variable;
 
 	//~ Begin CAnyCustomStorage Interface
@@ -53,8 +53,8 @@ struct alignas(16) FAnyDefaultStorage
 	constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
 	constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
 	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
-	constexpr void CopyCustom(const FAnyDefaultStorage&  InValue) { /* Variable =          InValue.Variable;  */ } // You just need to copy the custom variables.
-	constexpr void MoveCustom(      FAnyDefaultStorage&& InValue) { /* Variable = MoveTemp(InValue.Variable); */ } // You just need to move the custom variables.
+	constexpr void CopyCustom(const FAnyDefaultStorage&  InValue) { /* Variable =          InValue.Variable;  */ } // You just need to copy the custom variables
+	constexpr void MoveCustom(      FAnyDefaultStorage&& InValue) { /* Variable = MoveTemp(InValue.Variable); */ } // You just need to move the custom variables
 	//~ End CAnyCustomStorage Interface
 
 	union
@@ -69,8 +69,8 @@ struct alignas(16) FAnyDefaultStorage
 
 static_assert(CAnyCustomStorage<FAnyDefaultStorage>);
 
-// You can add custom storage area through CustomStorage, such as TFunction.
-// It is not recommended to use this, FAny is recommended.
+// You can add custom storage area through CustomStorage, such as TFunction
+// It is not recommended to use this, FAny is recommended
 template <CAnyCustomStorage CustomStorage = FAnyDefaultStorage>
 class TAny
 {
@@ -131,15 +131,15 @@ public:
 		}
 	}
 
-	template <typename T, typename... Ts> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Ts&&...>
+	template <typename T, typename... Ts> requires (CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE explicit TAny(TInPlaceType<T>, Ts&&... Args)
 	{
 		using SelectedType = TDecay<T>;
 		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
 	}
 
-	template <typename T> requires (!CSameAs<TDecay<T>, TAny>) && (!CTInPlaceType<TDecay<T>>)
+	template <typename T> requires (!CSameAs<TDecay<T>, TAny> && !CTInPlaceType<TDecay<T>>)
 		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
 	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
@@ -251,7 +251,7 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CSameAs<TDecay<T>, TAny>) && (!CTInPlaceType<TDecay<T>>)
+	template <typename T> requires (!CSameAs<TDecay<T>, TAny> && !CTInPlaceType<TDecay<T>>)
 		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
@@ -270,8 +270,8 @@ public:
 		return *this;
 	}
 
-	template <typename T, typename... Ts> requires CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Ts&&...>
+	template <typename T, typename... Ts> requires (CDestructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
 		ResetImpl();
@@ -288,22 +288,22 @@ public:
 
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
-	template <typename T> requires CDestructible<TDecay<T>>
+	template <typename T> requires (CDestructible<TDecay<T>>)
 	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetAllocation());  }
 	
-	template <typename T> requires CDestructible<TDecay<T>>
+	template <typename T> requires (CDestructible<TDecay<T>>)
 	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetAllocation())); }
 	
-	template <typename T> requires CDestructible<TDecay<T>>
+	template <typename T> requires (CDestructible<TDecay<T>>)
 	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetAllocation());  }
 	
-	template <typename T> requires CDestructible<TDecay<T>>
+	template <typename T> requires (CDestructible<TDecay<T>>)
 	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetAllocation())); }
 	
-	template <typename T> requires CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>
+	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
 	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
-	template <typename T> requires CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>
+	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
 	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	constexpr       CustomStorage& GetCustomStorage()       requires (!CSameAs<CustomStorage, FAnyDefaultStorage>) { return Storage; }

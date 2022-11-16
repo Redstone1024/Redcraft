@@ -109,10 +109,10 @@ public:
 
 	FORCEINLINE const type_info& TargetType() const requires (!bIsRef) { return IsValid() ? Storage.GetTypeInfo() : typeid(void); };
 
-	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef) && CDestructible<TDecay<T>> { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef) && CDestructible<TDecay<T>> { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef) && CDestructible<TDecay<T>> { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef) && CDestructible<TDecay<T>> { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
+	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
 
 	constexpr void Swap(TFunctionImpl& InValue) requires (!bIsRef)
 	{
@@ -207,7 +207,7 @@ private:
 		else return GetCallableImpl()(&Storage, Forward<Ts>(Args)...);
 	}
 
-protected: // These functions should not be used by user-defined class.
+protected: // These functions should not be used by user-defined class
 
 	template <typename DecayedType, typename... ArgTypes>
 	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
@@ -281,8 +281,8 @@ public:
 	TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
 	TFunctionRef& operator=(TFunctionRef&& InValue) = delete;
 
-	template <typename T> requires (!CTFunctionRef<TDecay<T>>) && (!CTInPlaceType<TDecay<T>>)
-		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+	template <typename T> requires (!CTFunctionRef<TDecay<T>> && !CTInPlaceType<TDecay<T>>
+		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TFunctionRef(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -329,10 +329,10 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CTInPlaceType<TDecay<T>>)
-		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
+	template <typename T> requires (!CTInPlaceType<TDecay<T>>
+		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
-		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TFunction(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -340,8 +340,8 @@ public:
 		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 	}
 	
-	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
+	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>)
 	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
@@ -350,9 +350,9 @@ public:
 
 	constexpr TFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
 
-	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
-		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
+	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>)
 	FORCEINLINE TFunction& operator=(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -363,8 +363,8 @@ public:
 		return *this;
 	}
 
-	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...>&& CCopyConstructible<TDecay<T>>
+	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
@@ -427,10 +427,10 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CTInPlaceType<TDecay<T>>)
-		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
+	template <typename T> requires (!CTInPlaceType<TDecay<T>>
+		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>>
-		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -438,8 +438,8 @@ public:
 		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
 	}
 
-	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>>
+	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>>)
 	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
@@ -448,9 +448,9 @@ public:
 
 	constexpr TUniqueFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
 
-	template <typename T> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& (!CTFunctionRef<TDecay<T>>) && (!CTFunction<TDecay<T>>) && (!CTUniqueFunction<TDecay<T>>)
-		&& CConstructibleFrom<TDecay<T>, T&&>&& CMoveConstructible<TDecay<T>>
+	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>>)
 	FORCEINLINE TUniqueFunction& operator=(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -461,8 +461,8 @@ public:
 		return *this;
 	}
 	
-	template <typename T, typename... ArgTypes> requires NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...>&& CMoveConstructible<TDecay<T>>
+	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
@@ -508,28 +508,28 @@ struct TNotFunction
 	template <typename InF>
 	constexpr TNotFunction(InF&& InFunc) : Storage(Forward<InF>(InFunc)) { }
 
-	template <typename... Ts> requires CInvocable<F&, Ts&&...>
+	template <typename... Ts> requires (CInvocable<F&, Ts&&...>)
 	constexpr auto operator()(Ts&&... Args) &
 		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
-	template <typename... Ts> requires CInvocable<F&&, Ts&&...>
+	template <typename... Ts> requires (CInvocable<F&&, Ts&&...>)
 	constexpr auto operator()(Ts&&... Args) &&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
 		return !Invoke(MoveTemp(Storage), Forward<Ts>(Args)...);
 	}
 
-	template <typename... Ts> requires CInvocable<const F&, Ts&&...>
+	template <typename... Ts> requires (CInvocable<const F&, Ts&&...>)
 	constexpr auto operator()(Ts&&... Args) const&
 		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
-	template <typename... Ts> requires CInvocable<const F&&, Ts&&...>
+	template <typename... Ts> requires (CInvocable<const F&&, Ts&&...>)
 	constexpr auto operator()(Ts&&... Args) const&&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
@@ -539,7 +539,7 @@ struct TNotFunction
 
 NAMESPACE_PRIVATE_END
 
-template <typename F>
+template <typename F> requires (CConstructibleFrom<F, F&&>)
 constexpr NAMESPACE_PRIVATE::TNotFunction<TDecay<F>> NotFn(F&& Func)
 {
 	return NAMESPACE_PRIVATE::TNotFunction<TDecay<F>>(Forward<F>(Func));

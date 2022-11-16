@@ -159,8 +159,8 @@ public:
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts))
-		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>
+	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
 	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
 	{
@@ -168,14 +168,14 @@ public:
 		new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
 	}
 
-	template <typename T, typename... ArgTypes> requires CConstructibleFrom<T, ArgTypes...>
+	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
 	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, Forward<ArgTypes>(Args)...)
 	{ }
 
-	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value
-		&& (!CTInPlaceType<TRemoveCVRef<T>>) && (!CTInPlaceIndex<TRemoveCVRef<T>>)
-		&& (!CSameAs<TRemoveCVRef<T>, TVariant>)
+	template <typename T> requires (NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value
+		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
+		&& !CSameAs<TRemoveCVRef<T>, TVariant>)
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type>, Forward<T>(InValue))
 	{ }
 
@@ -226,7 +226,7 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value
+	template <typename T> requires (NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value)
 	constexpr TVariant& operator=(T&& InValue)
 	{
 		using SelectedType = typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type;
@@ -242,8 +242,8 @@ public:
 		return *this;
 	}
 
-	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts))
-		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>
+	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
 	constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
@@ -255,7 +255,7 @@ public:
 		return *Result;
 	}
 
-	template <typename T, typename... ArgTypes> requires CConstructibleFrom<T, ArgTypes...>
+	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
 	constexpr T& Emplace(ArgTypes&&... Args)
 	{
 		return Emplace<TVariantIndex<T, TVariant<Ts...>>>(Forward<ArgTypes>(Args)...);
@@ -423,7 +423,7 @@ private:
 	static constexpr FMoveConstructImpl MoveConstructImpl[] = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<Ts*>(A), reinterpret_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Ts).name()); }... };
 	static constexpr FCopyAssignImpl    CopyAssignImpl[]    = { [](void* A, const void* B) { if constexpr (requires(Ts* A, const Ts* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<Ts*>(A), reinterpret_cast<const Ts*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Ts).name()); }... };
 	static constexpr FMoveAssignImpl    MoveAssignImpl[]    = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<Ts*>(A), reinterpret_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Ts).name()); }... };
-	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Ts* A                ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<Ts*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Ts).name()); }... };
+	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Ts* A             ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<Ts*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Ts).name()); }... };
 
 	TAlignedUnion<1, Ts...> Value;
 	uint8 TypeIndex;
@@ -452,7 +452,7 @@ private:
 
 };
 
-template <typename T, typename... Ts> requires (!CSameAs<T, TVariant<Ts...>>) && CEqualityComparable<T>
+template <typename T, typename... Ts> requires (!CSameAs<T, TVariant<Ts...>> && CEqualityComparable<T>)
 constexpr bool operator==(const TVariant<Ts...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;

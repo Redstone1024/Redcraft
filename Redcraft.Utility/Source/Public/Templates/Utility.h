@@ -55,8 +55,8 @@ constexpr T&& Forward(TRemoveReference<T>&& Obj)
 	return static_cast<T&&>(Obj);
 }
 
-template <typename T> requires requires(T& A, T& B) { A.Swap(B); }
-	|| (CMoveConstructible<T> && CMoveAssignable<T>)
+template <typename T> requires (requires(T& A, T& B) { A.Swap(B); }
+	|| (CMoveConstructible<T> && CMoveAssignable<T>))
 constexpr void Swap(T& A, T& B)
 {
 	if constexpr (requires(T& A, T& B) { A.Swap(B); })
@@ -71,7 +71,7 @@ constexpr void Swap(T& A, T& B)
 	}
 }
 
-template <typename T, typename U = T> requires CMoveConstructible<T> && CAssignableFrom<T&, U>
+template <typename T, typename U = T> requires (CMoveConstructible<T> && CAssignableFrom<T&, U>)
 constexpr T Exchange(T& A, U&& B)
 {
 	T Temp = MoveTemp(A);
@@ -82,7 +82,7 @@ constexpr T Exchange(T& A, U&& B)
 template <typename T>
 constexpr T&& DeclVal();
 
-template <typename T> requires CObject<T>
+template <typename T> requires (CObject<T>)
 constexpr T* AddressOf(T& Object)
 {
 	return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(Object)));

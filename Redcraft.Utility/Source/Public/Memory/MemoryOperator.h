@@ -11,8 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Memory)
 
-template <typename ElementType>
-	requires CDefaultConstructible<ElementType>
+template <CDefaultConstructible ElementType>
 FORCEINLINE void DefaultConstruct(void* Address, size_t Count = 1)
 {
 	if constexpr (!CTriviallyDefaultConstructible<ElementType>)
@@ -27,7 +26,7 @@ FORCEINLINE void DefaultConstruct(void* Address, size_t Count = 1)
 }
 
 template <typename DestinationElementType, typename SourceElementType = DestinationElementType>
-	requires CConstructibleFrom<DestinationElementType, const SourceElementType&>
+	requires (CConstructibleFrom<DestinationElementType, const SourceElementType&>)
 FORCEINLINE void Construct(void* Destination, const SourceElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyConstructibleFrom<DestinationElementType, const SourceElementType> && sizeof(DestinationElementType) == sizeof(SourceElementType))
@@ -46,8 +45,7 @@ FORCEINLINE void Construct(void* Destination, const SourceElementType* Source, s
 	}
 }
 
-template <typename ElementType>
-	requires CCopyConstructible<ElementType>
+template <CCopyConstructible ElementType>
 FORCEINLINE void CopyConstruct(void* Destination, const ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyCopyConstructible<ElementType>)
@@ -66,8 +64,7 @@ FORCEINLINE void CopyConstruct(void* Destination, const ElementType* Source, siz
 	}
 }
 
-template <typename ElementType>
-	requires CMoveConstructible<ElementType>
+template <CMoveConstructible ElementType>
 FORCEINLINE void MoveConstruct(void* Destination, ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyMoveConstructible<ElementType>)
@@ -86,8 +83,7 @@ FORCEINLINE void MoveConstruct(void* Destination, ElementType* Source, size_t Co
 	}
 }
 
-template <typename ElementType>
-	requires CCopyAssignable<ElementType>
+template <CCopyAssignable ElementType>
 FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyCopyAssignable<ElementType>)
@@ -106,8 +102,7 @@ FORCEINLINE void CopyAssign(ElementType* Destination, const ElementType* Source,
 	}
 }
 
-template <typename ElementType>
-	requires CMoveAssignable<ElementType>
+template <CMoveAssignable ElementType>
 FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_t Count = 1)
 {
 	if constexpr (CTriviallyMoveAssignable<ElementType>)
@@ -126,8 +121,7 @@ FORCEINLINE void MoveAssign(ElementType* Destination, ElementType* Source, size_
 	}
 }
 
-template <typename ElementType>
-	requires CDestructible<ElementType>
+template <CDestructible ElementType>
 FORCEINLINE void Destruct(ElementType* Element, size_t Count = 1)
 {
 	if constexpr (!CTriviallyDestructible<ElementType>)
