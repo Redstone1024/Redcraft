@@ -17,8 +17,8 @@ template <size_t   I> struct TIsTInPlaceIndex<TInPlaceIndex<I>> : FTrue  { };
 
 NAMESPACE_PRIVATE_END
 
-template <typename T> concept CTInPlaceType  = NAMESPACE_PRIVATE::TIsTInPlaceType<T>::Value;
-template <typename T> concept CTInPlaceIndex = NAMESPACE_PRIVATE::TIsTInPlaceIndex<T>::Value;
+template <typename T> concept CTInPlaceType  = NAMESPACE_PRIVATE::TIsTInPlaceType<TRemoveCV<T>>::Value;
+template <typename T> concept CTInPlaceIndex = NAMESPACE_PRIVATE::TIsTInPlaceIndex<TRemoveCV<T>>::Value;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

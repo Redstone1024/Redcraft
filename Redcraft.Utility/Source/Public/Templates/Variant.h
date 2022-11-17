@@ -137,16 +137,16 @@ struct TVariantSelectedType<T>
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<T>::Value;
+concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<TRemoveCV<T>>::Value;
 
-template <typename VariantType>
-inline constexpr size_t TVariantNum = NAMESPACE_PRIVATE::TVariantNumImpl<VariantType>::Value;
+template <CTVariant T>
+inline constexpr size_t TVariantNum = NAMESPACE_PRIVATE::TVariantNumImpl<T>::Value;
 
-template <typename T, typename VariantType>
-inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, VariantType>::Value;
+template <typename T, CTVariant U>
+inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, U>::Value;
 
-template <size_t I, typename VariantType>
-using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, VariantType>::Type;
+template <size_t I, CTVariant U>
+using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, U>::Type;
 
 template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
 class TVariant

@@ -309,7 +309,7 @@ template <typename T> struct TIsTOptional<TOptional<T>> : FTrue  { };
 
 NAMESPACE_PRIVATE_END
 
-template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<T>::Value;
+template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<TRemoveCV<T>>::Value;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -289,16 +289,16 @@ public:
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-concept CTTuple = NAMESPACE_PRIVATE::TIsTTuple<T>::Value;
+concept CTTuple = NAMESPACE_PRIVATE::TIsTTuple<TRemoveCV<T>>::Value;
 
-template <typename TupleType>
-inline constexpr size_t TTupleArity = NAMESPACE_PRIVATE::TTupleArityImpl<TupleType>::Value;
+template <CTTuple T>
+inline constexpr size_t TTupleArity = NAMESPACE_PRIVATE::TTupleArityImpl<T>::Value;
 
-template <typename T, typename TupleType>
-inline constexpr size_t TTupleIndex = NAMESPACE_PRIVATE::TTupleIndexImpl<T, TupleType>::Value;
+template <typename T, CTTuple U>
+inline constexpr size_t TTupleIndex = NAMESPACE_PRIVATE::TTupleIndexImpl<T, U>::Value;
 
-template <size_t I, typename TupleType>
-using TTupleElement = typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TupleType>::Type;
+template <size_t I, CTTuple U>
+using TTupleElement = typename NAMESPACE_PRIVATE::TTupleElementImpl<I, U>::Type;
 
 template <typename... Ts>
 class TTuple : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>
@@ -607,10 +607,10 @@ constexpr TCommonComparisonCategory<TSynthThreeWayResult<LHSTypes, RHSTypes>...>
 	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::F(LHS, RHS);
 }
 
-template <typename F> requires (CInvocable<F>)
+template <typename F>
 constexpr void VisitTuple(F&& Func) { }
 
-template <typename F, typename FirstTupleType, typename... TupleTypes>
+template <typename F, typename FirstTupleType, typename... TupleTypes> requires (CTTuple<TRemoveReference<FirstTupleType>> && (true && ... && CTTuple<TRemoveReference<TupleTypes>>))
 constexpr void VisitTuple(F&& Func, FirstTupleType&& FirstTuple, TupleTypes&&... Tuples)
 {
 	NAMESPACE_PRIVATE::TTupleVisitImpl<TMakeIndexSequence<TTupleArity<TRemoveReference<FirstTupleType>>>>

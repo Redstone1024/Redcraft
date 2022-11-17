@@ -116,7 +116,7 @@ template <typename T> struct TUnwrapRefDecayImpl { using Type = typename TUnwrap
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTReferenceWrapperImpl<T>::Value;
+concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTReferenceWrapperImpl<TRemoveCV<T>>::Value;
 
 template <typename T>
 using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::Type;

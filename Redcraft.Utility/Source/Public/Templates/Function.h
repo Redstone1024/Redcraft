@@ -35,9 +35,9 @@ template <typename F> struct TIsTUniqueFunction<TUniqueFunction<F>> : FTrue  { }
 
 NAMESPACE_PRIVATE_END
 
-template <typename T> concept CTFunctionRef    = NAMESPACE_PRIVATE::TIsTFunctionRef<T>::Value;
-template <typename T> concept CTFunction       = NAMESPACE_PRIVATE::TIsTFunction<T>::Value;
-template <typename T> concept CTUniqueFunction = NAMESPACE_PRIVATE::TIsTUniqueFunction<T>::Value;
+template <typename T> concept CTFunctionRef    = NAMESPACE_PRIVATE::TIsTFunctionRef<TRemoveCV<T>>::Value;
+template <typename T> concept CTFunction       = NAMESPACE_PRIVATE::TIsTFunction<TRemoveCV<T>>::Value;
+template <typename T> concept CTUniqueFunction = NAMESPACE_PRIVATE::TIsTUniqueFunction<TRemoveCV<T>>::Value;
 
 NAMESPACE_PRIVATE_BEGIN
 

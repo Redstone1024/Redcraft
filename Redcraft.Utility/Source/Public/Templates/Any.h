@@ -501,7 +501,7 @@ template <CAnyCustomStorage StorageType> struct TIsTAny<TAny<StorageType>> : FTr
 NAMESPACE_PRIVATE_END
 
 template <typename T>
-concept CTAny = NAMESPACE_PRIVATE::TIsTAny<T>::Value;
+concept CTAny = NAMESPACE_PRIVATE::TIsTAny<TRemoveCV<T>>::Value;
 
 using FAny = TAny<>;
 
