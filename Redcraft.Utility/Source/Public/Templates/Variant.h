@@ -13,13 +13,17 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <typename... Ts> requires (true && ... && CDestructible<Ts>)
+template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
 class TVariant;
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename    T    > struct TIsTVariant                     : FFalse { };
+template <typename    T > struct TIsTVariant                  : FFalse { };
 template <typename... Ts> struct TIsTVariant<TVariant<Ts...>> : FTrue  { };
+
+// This class is to avoid conflicting with sizeof...(Ts) > 0 constraints when using TVariant<> in tool templates
+template <typename... Ts>
+struct TVariantProxy { };
 
 template <typename TupleType>
 struct TVariantNumImpl;
@@ -40,19 +44,22 @@ template <typename T, typename TupleType>
 struct TVariantIndexImpl;
 
 template <typename T, typename U, typename... Ts>
-struct TVariantIndexImpl<T, TVariant<U, Ts...>> : TConstant<size_t, TVariantIndexImpl<T, TVariant<Ts...>>::Value + 1>
+struct TVariantIndexImpl<T, TVariantProxy<U, Ts...>> : TConstant<size_t, TVariantIndexImpl<T, TVariantProxy<Ts...>>::Value + 1>
 {
 	static_assert(sizeof...(Ts) != 0, "Non-existent types in variant");
 };
 
 template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, TVariant<T, Ts...>> : TConstant<size_t, 0>
+struct TVariantIndexImpl<T, TVariantProxy<T, Ts...>> : TConstant<size_t, 0>
 {
 	static_assert((true && ... && !CSameAs<T, Ts>), "Duplicate type in variant");
 };
 
 template <typename T>
-struct TVariantIndexImpl<T, TVariant<>> : TConstant<size_t, INDEX_NONE> { };
+struct TVariantIndexImpl<T, TVariantProxy<>> : TConstant<size_t, INDEX_NONE> { };
+
+template <typename T, typename... Ts>
+struct TVariantIndexImpl<T, TVariant<Ts...>> : TVariantIndexImpl<T, TVariantProxy<Ts...>> { };
 
 template <typename T, typename... Ts>
 struct TVariantIndexImpl<T, const TVariant<Ts...>> : TVariantIndexImpl<T, TVariant<Ts...>> { };
@@ -67,20 +74,23 @@ template <size_t I, typename TupleType>
 struct TVariantAlternativeImpl;
 
 template <size_t I, typename T, typename... Ts>
-struct TVariantAlternativeImpl<I, TVariant<T, Ts...>>
+struct TVariantAlternativeImpl<I, TVariantProxy<T, Ts...>>
 {
 	static_assert(I < sizeof...(Ts) + 1, "Invalid index in variant");
-	using Type = TVariantAlternativeImpl<I - 1, TVariant<Ts...>>::Type;
+	using Type = TVariantAlternativeImpl<I - 1, TVariantProxy<Ts...>>::Type;
 };
 
 template <typename T, typename... Ts>
-struct TVariantAlternativeImpl<0, TVariant<T, Ts...>> { using Type = T; };
+struct TVariantAlternativeImpl<0, TVariantProxy<T, Ts...>> { using Type = T; };
 
 template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, TVariant<Ts...>> { };
+struct TVariantAlternativeImpl<I, TVariantProxy<Ts...>> { };
 
 template <>
-struct TVariantAlternativeImpl<0, TVariant<>> { };
+struct TVariantAlternativeImpl<0, TVariantProxy<>> { };
+
+template <size_t I, typename... Ts>
+struct TVariantAlternativeImpl<I, TVariant<Ts...>> : TVariantAlternativeImpl<I, TVariantProxy<Ts...>> { };
 
 template <size_t I, typename... Ts>
 struct TVariantAlternativeImpl<I, const TVariant<Ts...>> { using Type = TAddConst<typename TVariantAlternativeImpl<I, TVariant<Ts...>>::Type>; };
@@ -138,7 +148,7 @@ inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, 
 template <size_t I, typename VariantType>
 using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, VariantType>::Type;
 
-template <typename... Ts> requires (true && ... && CDestructible<Ts>)
+template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
 class TVariant
 {
 public:
