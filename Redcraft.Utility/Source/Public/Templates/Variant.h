@@ -157,13 +157,17 @@ public:
 
 	constexpr TVariant(FInvalid) : TVariant() { };
 
-	constexpr TVariant(const TVariant& InValue) requires (true && ... && CCopyConstructible<Ts>)
+	constexpr TVariant(const TVariant& InValue) requires (true && ... && CTriviallyCopyConstructible<Ts>) = default;
+
+	constexpr TVariant(const TVariant& InValue) requires ((true && ... && CCopyConstructible<Ts>) && !(true && ... && CTriviallyCopyConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	constexpr TVariant(TVariant&& InValue) requires (true && ... && CMoveConstructible<Ts>)
+	constexpr TVariant(TVariant&& InValue) requires (true && ... && CTriviallyMoveConstructible<Ts>) = default;
+
+	constexpr TVariant(TVariant&& InValue) requires ((true && ... && CMoveConstructible<Ts>) && !(true && ... && CTriviallyMoveConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
@@ -189,12 +193,17 @@ public:
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type>, Forward<T>(InValue))
 	{ }
 
-	constexpr ~TVariant()
+	constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
+
+	constexpr ~TVariant() requires (!(true && ... && CTriviallyDestructible<Ts>))
 	{
-		if constexpr (!(true && ... && CTriviallyDestructible<Ts>)) Reset();
+		Reset();
 	}
 
-	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CCopyConstructible<Ts> && CCopyAssignable<Ts>))
+	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)) = default;
+
+	constexpr TVariant& operator=(const TVariant& InValue) requires ((true && ... && (CCopyConstructible<Ts> && CCopyAssignable<Ts>))
+		&& !(true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)))
 	{
 		if (&InValue == this) return *this;
 
@@ -215,7 +224,10 @@ public:
 		return *this;
 	}
 
-	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CMoveConstructible<Ts> && CMoveAssignable<Ts>))
+	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)) = default;
+
+	constexpr TVariant& operator=(TVariant&& InValue) requires ((true && ... && (CMoveConstructible<Ts> && CMoveAssignable<Ts>))
+		&& !(true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)))
 	{
 		if (&InValue == this) return *this;
 

@@ -53,13 +53,17 @@ public:
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
-	constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType>)
+	constexpr TOptional(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType>) = default;
+
+	constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && !CTriviallyCopyConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
 	}
 
-	constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType>)
+	constexpr TOptional(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType>) = default;
+
+	constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && !CTriviallyMoveConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
@@ -79,12 +83,17 @@ public:
 		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	constexpr ~TOptional()
+	constexpr ~TOptional() requires (CTriviallyDestructible<OptionalType>) = default;
+
+	constexpr ~TOptional() requires (!CTriviallyDestructible<OptionalType>)
 	{
-		if constexpr (!CTriviallyDestructible<OptionalType>) Reset();
+		Reset();
 	}
 
-	constexpr TOptional& operator=(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>)
+	constexpr TOptional& operator=(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType> && CTriviallyCopyAssignable<OptionalType>) = default;
+
+	constexpr TOptional& operator=(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>
+		&& !CTriviallyCopyConstructible<OptionalType> && !CTriviallyCopyAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
 
@@ -104,7 +113,10 @@ public:
 		return *this;
 	}
 
-	constexpr TOptional& operator=(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>)
+	constexpr TOptional& operator=(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType> && CTriviallyMoveAssignable<OptionalType>) = default;
+
+	constexpr TOptional& operator=(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>
+		&& !CTriviallyMoveConstructible<OptionalType> && !CTriviallyMoveAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
 
