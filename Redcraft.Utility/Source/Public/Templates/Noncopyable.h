@@ -20,7 +20,15 @@ struct FNonmovable
 	FNonmovable& operator=(FNonmovable&&) = delete;
 };
 
-struct FSingleton : public FNoncopyable, public FNonmovable { };
+// Multiple inheritance is no longer used here, as that would break the EBO in MSVC
+struct FSingleton // : FNoncopyable, FNonmovable
+{
+	FSingleton() = default;
+	FSingleton(const FSingleton&) = delete;
+	FSingleton(FSingleton&&) = delete;
+	FSingleton& operator=(const FSingleton&) = delete;
+	FSingleton& operator=(FSingleton&&) = delete;
+};
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

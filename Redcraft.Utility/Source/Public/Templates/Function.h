@@ -149,7 +149,7 @@ private:
 	};
 	
 	template <typename CallableType>
-	struct alignas(16) FFunctionStorage
+	struct alignas(16) FFunctionStorage : FSingleton
 	{
 		//~ Begin CAnyCustomStorage Interface
 		inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);

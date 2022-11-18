@@ -54,7 +54,7 @@ NAMESPACE_PRIVATE_END
 template <typename T, bool bIsRef = false> requires (CTriviallyCopyable<T>
 	&& CCopyConstructible<T> && CMoveConstructible<T>
 	&& CCopyAssignable<T> && CMoveAssignable<T>)
-struct TAtomic : public FSingleton
+struct TAtomic : FSingleton
 {
 protected:
 
@@ -233,7 +233,7 @@ using TAtomicRef = TAtomic<T, true>;
 template <typename T>
 TAtomic(T) -> TAtomic<T>;
 
-struct FAtomicFlag : public FSingleton
+struct FAtomicFlag : FSingleton
 {
 public:
 

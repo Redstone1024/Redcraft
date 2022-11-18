@@ -15,29 +15,32 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // TAny's CustomStorage concept, see FAnyDefaultStorage
 template <typename T>
-concept CAnyCustomStorage = 
-	CSameAs<decltype(T::InlineSize),      const size_t> &&
-	CSameAs<decltype(T::InlineAlignment), const size_t> &&
-	requires(const T& A)
+concept CAnyCustomStorage = CDefaultConstructible<T>
+	&& !CCopyConstructible<T> && !CMoveConstructible<T>
+	&& !CCopyAssignable<T>    && !CMoveAssignable<T>
+	&& CDestructible<T>
+	&& CSameAs<decltype(T::InlineSize),      const size_t>
+	&& CSameAs<decltype(T::InlineAlignment), const size_t>
+	&& requires(const T& A)
 	{
 		{ A.InlineAllocation() } -> CSameAs<const void*>;
 		{ A.HeapAllocation()   } -> CSameAs<void*>;
 		{ A.TypeInfo()         } -> CSameAs<uintptr>;
-	} &&
-	requires(T& A)
+	}
+	&& requires(T& A)
 	{
 		{ A.InlineAllocation() } -> CSameAs<void*>;
 		{ A.HeapAllocation()   } -> CSameAs<void*&>;
 		{ A.TypeInfo()         } -> CSameAs<uintptr&>;
-	} &&
-	requires(T& A, const T& B, T&& C)
+	}
+	&& requires(T& A, const T& B, T&& C)
 	{
 		A.CopyCustom(B);
 		A.MoveCustom(MoveTemp(C));
 	};
 
 // TAny's default storage structure
-struct alignas(16) FAnyDefaultStorage
+struct alignas(16) FAnyDefaultStorage : FSingleton
 {
 	// The built-in copy/move operators are disabled and CopyCustom/MoveCustom is used instead of them
 
