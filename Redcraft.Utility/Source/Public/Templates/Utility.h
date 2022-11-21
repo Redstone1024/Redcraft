@@ -80,7 +80,7 @@ constexpr T Exchange(T& A, U&& B)
 }
 
 template <typename T>
-constexpr T&& DeclVal();
+constexpr TAddRValueReference<T> DeclVal();
 
 template <typename T> requires (CObject<T>)
 constexpr T* AddressOf(T& Object)
