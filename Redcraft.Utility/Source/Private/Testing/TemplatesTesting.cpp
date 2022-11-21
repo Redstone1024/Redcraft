@@ -574,6 +574,7 @@ void TestAny()
 		FAny TempC = static_cast<int32>(16);
 		FAny TempD = static_cast<int32>(32);
 
+		always_check(TempA == TempA);
 		always_check(TempA != TempB);
 		always_check(TempB != TempC);
 		always_check(TempB != TempC);

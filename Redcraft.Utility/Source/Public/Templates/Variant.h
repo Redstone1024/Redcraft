@@ -189,7 +189,7 @@ public:
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value
 		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
-		&& !CSameAs<TRemoveCVRef<T>, TVariant>)
+		&& !CBaseOf<TVariant, TRemoveCVRef<T>>)
 	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type>, Forward<T>(InValue))
 	{ }
 
@@ -289,7 +289,7 @@ public:
 	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
 	constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
 
-	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                    : false; }
+	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                 : false; }
 	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Ts...>> : false; }
 
 	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
@@ -474,7 +474,7 @@ private:
 
 };
 
-template <typename T, typename... Ts> requires (!CSameAs<T, TVariant<Ts...>> && CEqualityComparable<T>)
+template <typename T, typename... Ts> requires (!CBaseOf<TVariant<Ts...>, T> && CEqualityComparable<T>)
 constexpr bool operator==(const TVariant<Ts...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;

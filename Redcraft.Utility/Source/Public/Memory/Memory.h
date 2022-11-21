@@ -18,12 +18,12 @@ inline constexpr size_t MinimumAlignment = 8;
 
 #ifdef __cpp_lib_hardware_interference_size
 
-inline constexpr size_t DestructiveInterference = std::hardware_destructive_interference_size;
+inline constexpr size_t DestructiveInterference  = std::hardware_destructive_interference_size;
 inline constexpr size_t ConstructiveInterference = std::hardware_constructive_interference_size;
 
 #else
 
-inline constexpr size_t DestructiveInterference = 64;
+inline constexpr size_t DestructiveInterference  = 64;
 inline constexpr size_t ConstructiveInterference = 64;
 
 #endif

@@ -48,7 +48,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>)
-		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CSameAs<TRemoveCVRef<T>, TOptional>)
+		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CBaseOf<TOptional, TRemoveCVRef<T>>)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }

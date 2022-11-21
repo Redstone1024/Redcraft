@@ -102,6 +102,21 @@ struct FIgnore
 
 inline constexpr FIgnore Ignore;
 
+// This macro is used in place of using type aliases, see Atomic.h, etc
+#define STRONG_INHERIT(...) /* BaseClass */        \
+	/* struct DerivedClass : */ public __VA_ARGS__ \
+	{                                              \
+	private:                                       \
+		                                           \
+		using BaseClassTypedef = __VA_ARGS__;      \
+		                                           \
+	public:                                        \
+		                                           \
+		using BaseClassTypedef::BaseClassTypedef;  \
+		using BaseClassTypedef::operator=;         \
+		                                           \
+	}
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

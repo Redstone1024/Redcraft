@@ -74,7 +74,7 @@ static_assert(CAnyCustomStorage<FAnyDefaultStorage>);
 
 // You can add custom storage area through CustomStorage, such as TFunction
 // It is not recommended to use this, FAny is recommended
-template <CAnyCustomStorage CustomStorage = FAnyDefaultStorage>
+template <CAnyCustomStorage CustomStorage>
 class TAny
 {
 public:
@@ -142,8 +142,8 @@ public:
 		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
 	}
 
-	template <typename T> requires (!CSameAs<TDecay<T>, TAny> && !CTInPlaceType<TDecay<T>>)
-		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
+	template <typename T> requires (!CBaseOf<TAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
 
@@ -254,8 +254,8 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CSameAs<TDecay<T>, TAny> && !CTInPlaceType<TDecay<T>>)
-		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>
+	template <typename T> requires (!CBaseOf<TAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE TAny& operator=(T&& InValue)
 	{
 		using SelectedType = TDecay<T>;
@@ -481,10 +481,14 @@ private:
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
 		return LHS.GetTypeInfoImpl().SynthThreeWayCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());;
 	}
-	
+
 };
 
-template <typename T, CAnyCustomStorage StorageType>
+class FAny : STRONG_INHERIT(TAny<FAnyDefaultStorage>);
+
+static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
+
+template <typename T, CAnyCustomStorage StorageType> requires (!CBaseOf<FAny, TRemoveCVRef<T>>)
 constexpr bool operator==(const TAny<StorageType>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
@@ -505,10 +509,6 @@ NAMESPACE_PRIVATE_END
 
 template <typename T>
 concept CTAny = NAMESPACE_PRIVATE::TIsTAny<TRemoveCV<T>>::Value;
-
-using FAny = TAny<>;
-
-static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

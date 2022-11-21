@@ -597,7 +597,7 @@ template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTyp
 constexpr bool operator==(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
 {
 	if constexpr (sizeof...(LHSTypes) != sizeof...(RHSTypes)) return false;
-	return[&LHS, &RHS]<size_t... Indices>(TIndexSequence<Indices...>) -> bool {	return (true && ... && (LHS.template GetValue<Indices>() == RHS.template GetValue<Indices>())); } (TMakeIndexSequence<sizeof...(LHSTypes)>());
+	return [&LHS, &RHS]<size_t... Indices>(TIndexSequence<Indices...>) -> bool { return (true && ... && (LHS.template GetValue<Indices>() == RHS.template GetValue<Indices>())); } (TMakeIndexSequence<sizeof...(LHSTypes)>());
 }
 
 template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTypes) == sizeof...(RHSTypes) && (true && ... && (CSynthThreeWayComparable<LHSTypes, RHSTypes>)))
