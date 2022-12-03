@@ -895,75 +895,23 @@ void TestTuple()
 		TTuple<int32&&, const int64> TempA = { MoveTemp(TempO), 514 };
 		
 		TempA.Apply(
-			[]<typename T, typename U> (T&& A, U&& B)
+			[](auto&& A, auto&& B)
 			{
 				always_check(A == 15);
 				always_check(B == 514);
-				always_check((CSameAs<T&&, int32&>));
-				always_check((CSameAs<U&&, const int64&>));
+				always_check((CSameAs<decltype(A), int32&>));
+				always_check((CSameAs<decltype(B), const int64&>));
 			}
 		);
 		
 		MoveTemp(TempA).Apply(
-			[]<typename T, typename U> (T&& A, U&& B)
+			[](auto&& A, auto&& B)
 			{
 				always_check(A == 15);
 				always_check(B == 514);
-				always_check((CSameAs<T&&, int32&&>));
-				always_check((CSameAs<U&&, const int64&&>));
+				always_check((CSameAs<decltype(A), int32&&>));
+				always_check((CSameAs<decltype(B), const int64&&>));
 			}
-		);
-		
-		TempA.ApplyAfter(
-			[]<typename T, typename U, typename V> (T&& A, U&& B, V&&C)
-			{
-				always_check(A == '-');
-				always_check(B == 15);
-				always_check(C == 514);
-				always_check((CSameAs<T&&, char&&>));
-				always_check((CSameAs<U&&, int32&>));
-				always_check((CSameAs<V&&, const int64&>));
-			},
-			'-'
-		);
-		
-		MoveTemp(TempA).ApplyAfter(
-			[]<typename T, typename U, typename V> (T&& A, U&& B, V&&C)
-			{
-				always_check(A == '-');
-				always_check(B == 15);
-				always_check(C == 514);
-				always_check((CSameAs<T&&, char&&>));
-				always_check((CSameAs<U&&, int32&&>));
-				always_check((CSameAs<V&&, const int64&&>));
-			},
-			'-'
-		);
-		
-		TempA.ApplyBefore(
-			[]<typename T, typename U, typename V> (T&& A, U&& B, V&&C)
-			{
-				always_check(A == 15);
-				always_check(B == 514);
-				always_check(C == '-');
-				always_check((CSameAs<T&&, int32&>));
-				always_check((CSameAs<U&&, const int64&>));
-				always_check((CSameAs<V&&, char&&>));
-			},
-			'-'
-		);
-		
-		MoveTemp(TempA).ApplyBefore(
-			[]<typename T, typename U, typename V> (T&& A, U&& B, V&&C)
-			{
-				always_check(A == 15);
-				always_check(B == 514);
-				always_check(C == '-');
-				always_check((CSameAs<T&&, int32&&>));
-				always_check((CSameAs<U&&, const int64&&>));
-				always_check((CSameAs<V&&, char&&>));
-			},
-			'-'
 		);
 	}
 

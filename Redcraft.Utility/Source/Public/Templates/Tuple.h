@@ -211,18 +211,6 @@ public:
 		return Invoke(Forward<F>(Func), Forward<TTupleType>(Arg).template GetValue<Indices>()...);
 	}
 
-	template <typename F, typename TTupleType, typename... ArgTypes>
-	static constexpr auto ApplyAfter(F&& Func, TTupleType&& Arg, ArgTypes&&... OtherArgs)
-	{
-		return Invoke(Forward<F>(Func), Forward<ArgTypes>(OtherArgs)..., Forward<TTupleType>(Arg).template GetValue<Indices>()...);
-	}
-
-	template <typename F, typename TTupleType, typename... ArgTypes>
-	static constexpr auto ApplyBefore(F&& Func, TTupleType&& Arg, ArgTypes&&... OtherArgs)
-	{
-		return Invoke(Forward<F>(Func), Forward<TTupleType>(Arg).template GetValue<Indices>()..., Forward<ArgTypes>(OtherArgs)...);
-	}
-
 	template <typename F, typename TTupleType>
 	static constexpr auto Transform(F&& Func, TTupleType&& Arg)
 	{
@@ -332,24 +320,6 @@ public:
 	template <typename F> requires (CInvocable<F, Ts...>) constexpr decltype(auto) Apply(F&& Func)       volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
 	template <typename F> requires (CInvocable<F, Ts...>) constexpr decltype(auto) Apply(F&& Func) const volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, ArgTypes..., Ts...>) constexpr decltype(auto) ApplyAfter(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyAfter(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args)               &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args) const         &  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&  { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple& >(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args)               && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<               TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args) const         && { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const          TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args)       volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	template <typename F, typename... ArgTypes> requires (CInvocable<F, Ts..., ArgTypes...>) constexpr decltype(auto) ApplyBefore(F&& Func, ArgTypes&&... Args) const volatile&& { return Helper::ApplyBefore(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Forward<ArgTypes>(Args)...); }
-	
 	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) constexpr decltype(auto) Transform(F&& Func)               &  { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
 	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) constexpr decltype(auto) Transform(F&& Func) const         &  { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
 	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) constexpr decltype(auto) Transform(F&& Func)       volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
@@ -441,7 +411,7 @@ struct TTupleCatMake<TTuple<RTypes...>, TIndexSequence<Indices...>>
 	struct ForwardType { using Type = TConditional<CRValueReference<T>, TRemoveReference<U>&&, U>; };
 
 	template <typename TTupleType>
-	static constexpr TTuple<RTypes...> F(TTupleType&& InValue)
+	static constexpr TTuple<RTypes...> Do(TTupleType&& InValue)
 	{
 		return TTuple<RTypes...>
 			(
@@ -460,7 +430,7 @@ template <size_t... ForwardIndices, size_t... TTupleIndices>
 struct TTupleCatForward<TIndexSequence<ForwardIndices...>, TIndexSequence<TTupleIndices...>>
 {
 	template <typename ForwardType, typename TTupleType>
-	static constexpr decltype(auto) F(ForwardType&& ForwardTuple, TTupleType&& InValue)
+	static constexpr decltype(auto) Do(ForwardType&& ForwardTuple, TTupleType&& InValue)
 	{
 		return ForwardAsTuple(Forward<ForwardType>(ForwardTuple).template GetValue<ForwardIndices>()..., Forward<TTupleType>(InValue).template GetValue<TTupleIndices>()...);
 	}
@@ -470,18 +440,18 @@ template <typename R>
 struct TTupleCatImpl
 {
 	template <typename ForwardType, typename TTupleType, typename... OtherTTupleTypes>
-	static constexpr decltype(auto) F(ForwardType&& ForwardTuple, TTupleType&& InValue, OtherTTupleTypes&&... OtherValue)
+	static constexpr decltype(auto) Do(ForwardType&& ForwardTuple, TTupleType&& InValue, OtherTTupleTypes&&... OtherValue)
 	{
-		return F(TTupleCatForward<
+		return Do(TTupleCatForward<
 			TMakeIndexSequence<TTupleArity<TRemoveReference<ForwardType>>>,
 			TMakeIndexSequence<TTupleArity<TRemoveReference<TTupleType>>>>
-			::F(Forward<ForwardType>(ForwardTuple), Forward<TTupleType>(InValue)), Forward<OtherTTupleTypes>(OtherValue)...);
+			::Do(Forward<ForwardType>(ForwardTuple), Forward<TTupleType>(InValue)), Forward<OtherTTupleTypes>(OtherValue)...);
 	}
 
 	template <typename ForwardType>
-	static constexpr decltype(auto) F(ForwardType&& ForwardTuple)
+	static constexpr decltype(auto) Do(ForwardType&& ForwardTuple)
 	{
-		return TTupleCatMake<R, TMakeIndexSequence<TTupleArity<ForwardType>>>::F(Forward<ForwardType>(ForwardTuple));
+		return TTupleCatMake<R, TMakeIndexSequence<TTupleArity<ForwardType>>>::Do(Forward<ForwardType>(ForwardTuple));
 	}
 };
 
@@ -492,11 +462,11 @@ template <typename R, size_t I, size_t... Indices>
 struct TTupleThreeWay<R, TIndexSequence<I, Indices...>>
 {
 	template <typename LHSTupleType, typename RHSTupleType>
-	static constexpr R F(const LHSTupleType& LHS, const RHSTupleType& RHS)
+	static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
 	{
 		auto Result = SynthThreeWayCompare(LHS.template GetValue<I>(), RHS.template GetValue<I>());
 		if (Result != 0) return Result;
-		return TTupleThreeWay<R, TIndexSequence<Indices...>>::F(LHS, RHS);
+		return TTupleThreeWay<R, TIndexSequence<Indices...>>::Do(LHS, RHS);
 	}
 };
 
@@ -504,7 +474,7 @@ template <typename R>
 struct TTupleThreeWay<R, TIndexSequence<>>
 {
 	template <typename LHSTupleType, typename RHSTupleType>
-	static constexpr R F(const LHSTupleType& LHS, const RHSTupleType& RHS)
+	static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
 	{
 		return R::equivalent;
 	}
@@ -516,11 +486,11 @@ struct TTupleVisitImpl;
 template <size_t I, size_t... Indices>
 struct TTupleVisitImpl<TIndexSequence<I, Indices...>>
 {
-	template <typename G, typename... TupleTypes>
-	static constexpr void F(G&& Func, TupleTypes&&... Tuples)
+	template <typename F, typename... TupleTypes>
+	static constexpr void Do(F&& Func, TupleTypes&&... Tuples)
 	{
-		Invoke(Forward<G>(Func), Forward<TupleTypes>(Tuples).template GetValue<I>()...);
-		TTupleVisitImpl<TIndexSequence<Indices...>>::F(Forward<G>(Func), Forward<TupleTypes>(Tuples)...);
+		Invoke(Forward<F>(Func), Forward<TupleTypes>(Tuples).template GetValue<I>()...);
+		TTupleVisitImpl<TIndexSequence<Indices...>>::Do(Forward<F>(Func), Forward<TupleTypes>(Tuples)...);
 	}
 };
 
@@ -528,7 +498,7 @@ template <>
 struct TTupleVisitImpl<TIndexSequence<>>
 {
 	template <typename... TupleTypes>
-	static constexpr void F(TupleTypes&&... Tuples) { }
+	static constexpr void Do(TupleTypes&&... Tuples) { }
 };
 
 NAMESPACE_PRIVATE_END
@@ -541,7 +511,7 @@ constexpr decltype(auto) TupleCat(TTupleTypes&&... Args)
 {
 	using R = TTupleCatResult<TTupleTypes...>;
 	if constexpr (sizeof...(Args) == 0) return R();
-	else return NAMESPACE_PRIVATE::TTupleCatImpl<R>::F(Forward<TTupleTypes>(Args)...);
+	else return NAMESPACE_PRIVATE::TTupleCatImpl<R>::Do(Forward<TTupleTypes>(Args)...);
 }
 
 template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTypes) != sizeof...(RHSTypes) || (true && ... && CWeaklyEqualityComparable<LHSTypes, RHSTypes>))
@@ -555,17 +525,15 @@ template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTyp
 constexpr TCommonComparisonCategory<TSynthThreeWayResult<LHSTypes, RHSTypes>...> operator<=>(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
 {
 	using R = TCommonComparisonCategory<TSynthThreeWayResult<LHSTypes, RHSTypes>...>;
-	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::F(LHS, RHS);
+	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::Do(LHS, RHS);
 }
 
-template <typename F>
-constexpr void VisitTuple(F&& Func) { }
-
-template <typename F, typename FirstTupleType, typename... TupleTypes> requires (CTTuple<TRemoveReference<FirstTupleType>> && (true && ... && CTTuple<TRemoveReference<TupleTypes>>))
+template <typename F, typename FirstTupleType, typename... TupleTypes>
+	requires (CTTuple<TRemoveReference<FirstTupleType>> && (true && ... && CTTuple<TRemoveReference<TupleTypes>>))
 constexpr void VisitTuple(F&& Func, FirstTupleType&& FirstTuple, TupleTypes&&... Tuples)
 {
 	NAMESPACE_PRIVATE::TTupleVisitImpl<TMakeIndexSequence<TTupleArity<TRemoveReference<FirstTupleType>>>>
-		::F(Forward<F>(Func), Forward<FirstTupleType>(FirstTuple), Forward<TupleTypes>(Tuples)...);
+		::Do(Forward<F>(Func), Forward<FirstTupleType>(FirstTuple), Forward<TupleTypes>(Tuples)...);
 }
 
 template <typename... Ts, typename... Us> requires (requires { typename TTuple<TCommonType<Ts, Us>...>; })
