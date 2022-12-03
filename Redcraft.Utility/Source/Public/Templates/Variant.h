@@ -5,6 +5,7 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Templates/Meta.h"
 #include "Memory/MemoryOperator.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -21,85 +22,26 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename    T > struct TIsTVariant                  : FFalse { };
 template <typename... Ts> struct TIsTVariant<TVariant<Ts...>> : FTrue  { };
 
-// This class is to avoid conflicting with sizeof...(Ts) > 0 constraints when using TVariant<> in tool templates
-template <typename... Ts>
-struct TVariantProxy { };
-
-template <typename TupleType>
+template <typename VariantType>
 struct TVariantNumImpl;
 
 template <typename... Ts>
-struct TVariantNumImpl<TVariant<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
+struct TVariantNumImpl<TVariant<Ts...>> : TConstant<size_t, Meta::TSize<TTypeSequence<Ts...>>> { };
 
-template <typename... Ts>
-struct TVariantNumImpl<const TVariant<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename... Ts>
-struct TVariantNumImpl<volatile TVariant<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename... Ts>
-struct TVariantNumImpl<const volatile TVariant<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename T, typename TupleType>
+template <typename T, typename VariantType>
 struct TVariantIndexImpl;
 
-template <typename T, typename U, typename... Ts>
-struct TVariantIndexImpl<T, TVariantProxy<U, Ts...>> : TConstant<size_t, TVariantIndexImpl<T, TVariantProxy<Ts...>>::Value + 1>
-{
-	static_assert(sizeof...(Ts) != 0, "Non-existent types in variant");
-};
-
 template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, TVariantProxy<T, Ts...>> : TConstant<size_t, 0>
-{
-	static_assert((true && ... && !CSameAs<T, Ts>), "Duplicate type in variant");
-};
+struct TVariantIndexImpl<T, TVariant<Ts...>> : TConstant<size_t, Meta::TIndex<T, TTypeSequence<Ts...>>> { };
 
-template <typename T>
-struct TVariantIndexImpl<T, TVariantProxy<>> : TConstant<size_t, INDEX_NONE> { };
-
-template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, TVariant<Ts...>> : TVariantIndexImpl<T, TVariantProxy<Ts...>> { };
-
-template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, const TVariant<Ts...>> : TVariantIndexImpl<T, TVariant<Ts...>> { };
-
-template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, volatile TVariant<Ts...>> : TVariantIndexImpl<T, TVariant<Ts...>> { };
-
-template <typename T, typename... Ts>
-struct TVariantIndexImpl<T, const volatile TVariant<Ts...>> : TVariantIndexImpl<T, TVariant<Ts...>> { };
-
-template <size_t I, typename TupleType>
+template <size_t I, typename VariantType>
 struct TVariantAlternativeImpl;
 
-template <size_t I, typename T, typename... Ts>
-struct TVariantAlternativeImpl<I, TVariantProxy<T, Ts...>>
+template <size_t I, typename... Ts>
+struct TVariantAlternativeImpl<I, TVariant<Ts...>>
 {
-	static_assert(I < sizeof...(Ts) + 1, "Invalid index in variant");
-	using Type = TVariantAlternativeImpl<I - 1, TVariantProxy<Ts...>>::Type;
+	using Type = Meta::TType<I, TTypeSequence<Ts...>>;
 };
-
-template <typename T, typename... Ts>
-struct TVariantAlternativeImpl<0, TVariantProxy<T, Ts...>> { using Type = T; };
-
-template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, TVariantProxy<Ts...>> { };
-
-template <>
-struct TVariantAlternativeImpl<0, TVariantProxy<>> { };
-
-template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, TVariant<Ts...>> : TVariantAlternativeImpl<I, TVariantProxy<Ts...>> { };
-
-template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, const TVariant<Ts...>> { using Type = TAddConst<typename TVariantAlternativeImpl<I, TVariant<Ts...>>::Type>; };
-
-template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, volatile TVariant<Ts...>> { using Type = TAddVolatile<typename TVariantAlternativeImpl<I, TVariant<Ts...>>::Type>; };
-
-template <size_t I, typename... Ts>
-struct TVariantAlternativeImpl<I, const volatile TVariant<Ts...>> { using Type = TAddCV<typename TVariantAlternativeImpl<I, TVariant<Ts...>>::Type>; };
 
 template <typename T, typename... Ts>
 struct TVariantSelectedType;
@@ -140,13 +82,13 @@ template <typename T>
 concept CTVariant = NAMESPACE_PRIVATE::TIsTVariant<TRemoveCV<T>>::Value;
 
 template <CTVariant T>
-inline constexpr size_t TVariantNum = NAMESPACE_PRIVATE::TVariantNumImpl<T>::Value;
+inline constexpr size_t TVariantNum = NAMESPACE_PRIVATE::TVariantNumImpl<TRemoveCV<T>>::Value;
 
 template <typename T, CTVariant U>
-inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, U>::Value;
+inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, TRemoveCV<U>>::Value;
 
 template <size_t I, CTVariant U>
-using TVariantAlternative = typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, U>::Type;
+using TVariantAlternative = TCopyCV<U, typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, TRemoveCV<U>>::Type>;
 
 template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
 class TVariant

@@ -16,7 +16,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <typename T, typename U> struct TBasicCommonType { };
 
 // The class template is a customization point that allows users to influence the result of TCommonReference for user
-template <typename T, typename U, template<typename> typename TQualifiers, template<typename> typename UQualifiers> struct TBasicCommonReference { };
+template <typename T, typename U, template <typename> typename TQualifiers, template <typename> typename UQualifiers> struct TBasicCommonReference { };
 
 NAMESPACE_PRIVATE_BEGIN
 

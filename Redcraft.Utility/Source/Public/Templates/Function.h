@@ -2,7 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Templates/Any.h"
-#include "Templates/Tuple.h"
+#include "Templates/Meta.h"
 #include "Templates/Invoke.h"
 #include "Memory/Alignment.h"
 #include "Templates/Utility.h"
@@ -88,7 +88,7 @@ class TFunctionImpl<Ret(Ts...), CVRef, bIsRef>
 public:
 
 	using ResultType = Ret;
-	using ArgumentType = TTuple<Ts...>;
+	using ArgumentType = TTypeSequence<Ts...>;
 	
 	TFunctionImpl() = default;
 	TFunctionImpl(const TFunctionImpl&) = default;

@@ -117,6 +117,23 @@ inline constexpr FIgnore Ignore;
 		                                           \
 	}
 
+// TOverloaded Usage Example
+// 
+//	Visit(TOverloaded {
+//		[](auto A)           { ... },
+//		[](double A)         { ... },
+//		[](const FString& A) { ... },
+//	}, Target);
+//
+template <typename... Ts>
+struct TOverloaded : Ts...
+{
+	using Ts::operator()...;
+};
+
+template <typename... Ts>
+TOverloaded(Ts...) -> TOverloaded<Ts...>;
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

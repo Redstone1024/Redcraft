@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Meta.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Templates/IntegerSequence.h"
 #include "Templates/ReferenceWrapper.h"
 
 #include <tuple>
@@ -21,7 +21,7 @@ class TTuple;
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename    T    > struct TIsTTuple                   : FFalse { };
+template <typename    T > struct TIsTTuple                : FFalse { };
 template <typename... Ts> struct TIsTTuple<TTuple<Ts...>> : FTrue  { };
 
 struct FForwardingConstructor { explicit FForwardingConstructor() = default; };
@@ -34,71 +34,22 @@ template <typename TupleType>
 struct TTupleArityImpl;
 
 template <typename... Ts>
-struct TTupleArityImpl<TTuple<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename... Ts>
-struct TTupleArityImpl<const TTuple<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename... Ts>
-struct TTupleArityImpl<volatile TTuple<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
-
-template <typename... Ts>
-struct TTupleArityImpl<const volatile TTuple<Ts...>> : TConstant<size_t, sizeof...(Ts)> { };
+struct TTupleArityImpl<TTuple<Ts...>> : TConstant<size_t, Meta::TSize<TTypeSequence<Ts...>>> { };
 
 template <typename T, typename TupleType>
 struct TTupleIndexImpl;
 
-template <typename T, typename U, typename... Ts>
-struct TTupleIndexImpl<T, TTuple<U, Ts...>> : TConstant<size_t, TTupleIndexImpl<T, TTuple<Ts...>>::Value + 1>
-{
-	static_assert(sizeof...(Ts) != 0, "Non-existent types in tuple");
-};
-
 template <typename T, typename... Ts>
-struct TTupleIndexImpl<T, TTuple<T, Ts...>> : TConstant<size_t, 0>
-{
-	static_assert((true && ... && !CSameAs<T, Ts>), "Duplicate type in tuple");
-};
-
-template <typename T>
-struct TTupleIndexImpl<T, TTuple<>> : TConstant<size_t, INDEX_NONE> { };
-
-template <typename T, typename... Ts>
-struct TTupleIndexImpl<T, const TTuple<Ts...>> : TTupleIndexImpl<T, TTuple<Ts...>> { };
-
-template <typename T, typename... Ts>
-struct TTupleIndexImpl<T, volatile TTuple<Ts...>> : TTupleIndexImpl<T, TTuple<Ts...>> { };
-
-template <typename T, typename... Ts>
-struct TTupleIndexImpl<T, const volatile TTuple<Ts...>> : TTupleIndexImpl<T, TTuple<Ts...>> { };
+struct TTupleIndexImpl<T, TTuple<Ts...>> : TConstant<size_t, Meta::TIndex<T, TTypeSequence<Ts...>>> { };
 
 template <size_t I, typename TupleType>
 struct TTupleElementImpl;
 
-template <size_t I, typename T, typename... Ts>
-struct TTupleElementImpl<I, TTuple<T, Ts...>>
+template <size_t I, typename... Ts>
+struct TTupleElementImpl<I, TTuple<Ts...>>
 {
-	static_assert(I < sizeof...(Ts) + 1, "Invalid index in tuple");
-	using Type = TTupleElementImpl<I - 1, TTuple<Ts...>>::Type;
+	using Type = Meta::TType<I, TTypeSequence<Ts...>>;
 };
-
-template <typename T, typename... Ts>
-struct TTupleElementImpl<0, TTuple<T, Ts...>> { using Type = T; };
-
-template <size_t I, typename... Ts>
-struct TTupleElementImpl<I, TTuple<Ts...>> { };
-
-template <>
-struct TTupleElementImpl<0, TTuple<>> { };
-
-template <size_t I, typename... Ts>
-struct TTupleElementImpl<I, const TTuple<Ts...>> { using Type = TAddConst<typename TTupleElementImpl<I, TTuple<Ts...>>::Type>; };
-
-template <size_t I, typename... Ts>
-struct TTupleElementImpl<I, volatile TTuple<Ts...>> { using Type = TAddVolatile<typename TTupleElementImpl<I, TTuple<Ts...>>::Type>; };
-
-template <size_t I, typename... Ts>
-struct TTupleElementImpl<I, const volatile TTuple<Ts...>> { using Type = TAddCV<typename TTupleElementImpl<I, TTuple<Ts...>>::Type>; };
 
 template <bool bTrue, typename... Ts>
 struct TTupleConvertCopy : FTrue { };
@@ -247,8 +198,8 @@ public:
 	template <typename LHSTupleType, typename RHSTupleType>
 	static constexpr void Assign(LHSTupleType& LHS, RHSTupleType&& RHS)
 	{
-		static_assert(sizeof...(Indices) == TTupleArityImpl<TRemoveReference<LHSTupleType>>::Value
-			&& TTupleArityImpl<TRemoveReference<LHSTupleType>>::Value == TTupleArityImpl<TRemoveReference<RHSTupleType>>::Value,
+		static_assert(sizeof...(Indices) == TTupleArityImpl<TRemoveCVRef<LHSTupleType>>::Value
+			&& TTupleArityImpl<TRemoveCVRef<LHSTupleType>>::Value == TTupleArityImpl<TRemoveCVRef<RHSTupleType>>::Value,
 			"Cannot assign tuple from different size");
 		
 		((LHS.template GetValue<Indices>() = Forward<RHSTupleType>(RHS).template GetValue<Indices>()), ...);
@@ -292,13 +243,13 @@ template <typename T>
 concept CTTuple = NAMESPACE_PRIVATE::TIsTTuple<TRemoveCV<T>>::Value;
 
 template <CTTuple T>
-inline constexpr size_t TTupleArity = NAMESPACE_PRIVATE::TTupleArityImpl<T>::Value;
+inline constexpr size_t TTupleArity = NAMESPACE_PRIVATE::TTupleArityImpl<TRemoveCV<T>>::Value;
 
 template <typename T, CTTuple U>
-inline constexpr size_t TTupleIndex = NAMESPACE_PRIVATE::TTupleIndexImpl<T, U>::Value;
+inline constexpr size_t TTupleIndex = NAMESPACE_PRIVATE::TTupleIndexImpl<T, TRemoveCV<U>>::Value;
 
 template <size_t I, CTTuple U>
-using TTupleElement = typename NAMESPACE_PRIVATE::TTupleElementImpl<I, U>::Type;
+using TTupleElement = TCopyCV<U, typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TRemoveCV<U>>::Type>;
 
 template <typename... Ts>
 class TTuple : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>
