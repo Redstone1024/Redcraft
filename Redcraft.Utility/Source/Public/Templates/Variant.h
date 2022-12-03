@@ -43,38 +43,27 @@ struct TVariantAlternativeImpl<I, TVariant<Ts...>>
 	using Type = Meta::TType<I, TTypeSequence<Ts...>>;
 };
 
-template <typename T, typename... Ts>
-struct TVariantSelectedType;
-
-template <typename T, typename U, typename... Ts>
-struct TVariantSelectedType<T, U, Ts...>
+template <typename T, typename TSequence>
+struct TVariantOverloadType
 {
-	using TypeAlternativeA = TConditional<CConstructibleFrom<U, T&&>, U, void>;
-	using TypeAlternativeB = typename TVariantSelectedType<T, Ts...>::Type;
+	using FrontType = Meta::TFront<TSequence>;
+	using NextSequence = Meta::TPop<TSequence>;
+	using NextUniqueSequence = typename TVariantOverloadType<T, NextSequence>::Type;
 
-	using Type = TConditional<CSameAs<TRemoveCVRef<TypeAlternativeA>, void>, TypeAlternativeB,
-				 TConditional<CSameAs<TRemoveCVRef<TypeAlternativeB>, void>, TypeAlternativeA, 
-				 TConditional<CSameAs<TRemoveCVRef<TypeAlternativeB>, TRemoveCVRef<T>>, TypeAlternativeB, TypeAlternativeA>>>;
+	// T_i x[] = { Forward<T>(t) };
+	static constexpr bool bConditional = requires { DeclVal<void(FrontType(&&)[1])>()({ DeclVal<T>() }); };
 
-	// 0 - Type not found
-	// 1 - Same type found
-	// 2 - Multiple types found
-	// 3 - The type found
-	static constexpr uint8 Flag = CSameAs<TRemoveCVRef<Type>, void> ? 0 :
-								  CSameAs<TRemoveCVRef<TypeAlternativeA>, TRemoveCVRef<TypeAlternativeB>> ? 2 :
-								  CSameAs<TRemoveCVRef<            Type>, TRemoveCVRef<               T>> ? 1 :
-								 !CSameAs<TRemoveCVRef<TypeAlternativeA>, void> && !CSameAs<TypeAlternativeB, void> ? 2 : 3;
-
-	static constexpr bool Value = Flag & 1;
-
+	using Type = TConditional<bConditional, Meta::TPush<FrontType, NextUniqueSequence>, NextUniqueSequence>;
 };
 
 template <typename T>
-struct TVariantSelectedType<T>
+struct TVariantOverloadType<T, TTypeSequence<>>
 {
-	static constexpr uint8 Flag = 0;
-	using Type = void;
+	using Type = TTypeSequence<>;
 };
+
+template <typename T, typename... Ts>
+using TVariantSelectedType = Meta::TOverloadResolution<T, typename NAMESPACE_PRIVATE::TVariantOverloadType<T, TTypeSequence<Ts...>>::Type>;
 
 NAMESPACE_PRIVATE_END
 
@@ -129,10 +118,10 @@ public:
 		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, Forward<ArgTypes>(Args)...)
 	{ }
 
-	template <typename T> requires (NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value
+	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; }
 		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
 		&& !CBaseOf<TVariant, TRemoveCVRef<T>>)
-	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type>, Forward<T>(InValue))
+	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
 	{ }
 
 	constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
@@ -190,10 +179,10 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Value)
+	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; })
 	constexpr TVariant& operator=(T&& InValue)
 	{
-		using SelectedType = typename NAMESPACE_PRIVATE::TVariantSelectedType<TRemoveReference<T>, Ts...>::Type;
+		using SelectedType = NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>;
 
 		if (GetIndex() == TVariantIndex<SelectedType, TVariant<Ts...>>) GetValue<SelectedType>() = Forward<T>(InValue);
 		else

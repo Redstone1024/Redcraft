@@ -180,8 +180,8 @@ void TestVariant()
 		TVariant<int32> TempB(Invalid);
 		TVariant<int32> TempC(InPlaceType<int32>, 0);
 		TVariant<int32> TempD(0);
-		TVariant<int32> TempE(0l);
-		TVariant<int32> TempF(0.0);
+//		TVariant<int32> TempE(0ll);
+//		TVariant<int32> TempF(0.0);
 		TVariant<int32> TempG(TempA);
 		TVariant<int32> TempH(TempD);
 		TVariant<int32> TempI(TVariant<int32>(0));
@@ -240,7 +240,13 @@ void TestVariant()
 		Swap(TempW, TempX);
 		Swap(TempW, TempX);
 	}
-	
+
+	{
+//		TVariant<bool> TempA = false;
+//		TempA.Visit([](auto& A) { A = true; });
+//		always_check(TempA.GetValue<bool>());
+	}
+
 	{
 		struct FTracker
 		{
