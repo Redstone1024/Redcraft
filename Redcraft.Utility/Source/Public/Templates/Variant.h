@@ -239,70 +239,6 @@ public:
 	template <typename T> constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	template <typename T> constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
-	template <typename F> requires (true && ... && CInvocable<F, Ts>)
-	FORCEINLINE decltype(auto) Visit(F&& Func) &
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-
-		using ReturnType = TCommonType<TInvokeResult<F, Ts>...>;
-
-		using FInvokeImpl = ReturnType(*)(F&&, void*);
-		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<Ts*>(This)); }... };
-
-		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
-	}
-
-	template <typename F> requires (true && ... && CInvocable<F, Ts>)
-	FORCEINLINE decltype(auto) Visit(F&& Func) &&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-
-		using ReturnType = TCommonType<TInvokeResult<F, Ts>...>;
-
-		using FInvokeImpl = ReturnType(*)(F&&, void*);
-		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<Ts*>(This))); }... };
-
-		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
-	}
-
-	template <typename F> requires (true && ... && CInvocable<F, Ts>)
-	FORCEINLINE decltype(auto) Visit(F&& Func) const&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-
-		using ReturnType = TCommonType<TInvokeResult<F, Ts>...>;
-
-		using FInvokeImpl = ReturnType(*)(F&&, const void*);
-		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), *reinterpret_cast<const Ts*>(This)); }... };
-
-		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
-	}
-
-	template <typename F> requires (true && ... && CInvocable<F, Ts>)
-	FORCEINLINE decltype(auto) Visit(F&& Func) const&&
-	{
-		checkf(IsValid(), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-
-		using ReturnType = TCommonType<TInvokeResult<F, Ts>...>;
-
-		using FInvokeImpl = ReturnType(*)(F&&, const void*);
-		static constexpr FInvokeImpl InvokeImpl[] = { [](F&& Func, const void* This) -> ReturnType { return InvokeResult<ReturnType>(Forward<F>(Func), MoveTemp(*reinterpret_cast<const Ts*>(This))); }... };
-
-		return InvokeImpl[GetIndex()](Forward<F>(Func), &Value);
-	}
-
-	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Ts>)
-	FORCEINLINE R Visit(F&& Func) &       { return Visit(Forward<F>(Func)); }
-
-	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Ts>)
-	FORCEINLINE R Visit(F&& Func) &&      { return MoveTemp(*this).Visit(Forward<F>(Func)); }
-
-	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Ts>)
-	FORCEINLINE R Visit(F&& Func) const&  { return Visit(Forward<F>(Func)); }
-
-	template <typename R, typename F> requires (true && ... && CInvocableResult<R, F, Ts>)
-	FORCEINLINE R Visit(F&& Func) const&& { return MoveTemp(*this).Visit(Forward<F>(Func)); }
-
 	constexpr void Reset()
 	{
 		if (GetIndex() == INDEX_NONE) return;
@@ -415,6 +351,152 @@ template <typename... Ts>
 constexpr bool operator==(const TVariant<Ts...>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
+}
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename F, typename... VariantTypes>
+struct TVariantVisitImpl
+{
+	struct GetTotalNum
+	{
+		static constexpr size_t Do()
+		{
+			if (sizeof...(VariantTypes) == 0) return 0;
+
+			constexpr size_t VariantNums[] = { TVariantNum<TRemoveReference<VariantTypes>>... };
+
+			size_t Result = 1;
+
+			for (size_t Index = 0; Index < sizeof...(VariantTypes); ++Index)
+			{
+				Result *= VariantNums[Index];
+			}
+
+			return Result;
+		};
+	};
+
+	struct EncodeIndices
+	{
+		static constexpr size_t Do(initializer_list<size_t> Indices)
+		{
+			constexpr size_t VariantNums[] = { TVariantNum<TRemoveReference<VariantTypes>>... };
+
+			size_t Result = 0;
+
+			for (size_t Index = 0; Index < sizeof...(VariantTypes); ++Index)
+			{
+				Result *= VariantNums[Index];
+				Result += GetData(Indices)[Index];
+			}
+
+			return Result;
+		};
+	};
+
+	struct DecodeExtent
+	{
+		static constexpr size_t Do(size_t EncodedIndex, size_t Extent)
+		{
+			constexpr size_t VariantNums[] = { TVariantNum<TRemoveReference<VariantTypes>>... };
+
+			for (size_t Index = Extent + 1; Index < sizeof...(VariantTypes); ++Index)
+			{
+				EncodedIndex /= VariantNums[Index];
+			}
+
+			return EncodedIndex % VariantNums[Extent];
+		};
+	};
+
+	template <size_t EncodedIndex, typename>
+	struct InvokeEncoded;
+
+	template <size_t EncodedIndex, size_t... ExtentIndices>
+	struct InvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
+	{
+		static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+		{
+			return Invoke(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
+		}
+
+		template <typename Ret>
+		struct Result
+		{
+			static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+			{
+				return InvokeResult<Ret>(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
+			}
+		};
+	};
+
+	template <typename>
+	struct InvokeVariant;
+
+	template <size_t... EncodedIndices>
+	struct InvokeVariant<TIndexSequence<EncodedIndices...>>
+	{
+		static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+		{
+			using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
+
+			using ResultType = TCommonType<decltype(InvokeEncoded<EncodedIndices, ExtentIndices>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...))...>;
+			
+			using InvokeImplType = ResultType(*)(F&&, VariantTypes&&...);
+
+			constexpr InvokeImplType InvokeImpl[] = { InvokeEncoded<EncodedIndices, ExtentIndices>::template Result<ResultType>::Do... };
+
+			return InvokeImpl[EncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+		}
+
+		template <typename Ret>
+		struct Result
+		{
+			static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+			{
+				using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
+
+				using InvokeImplType = Ret(*)(F&&, VariantTypes&&...);
+
+				constexpr InvokeImplType InvokeImpl[] = { InvokeEncoded<EncodedIndices, ExtentIndices>::template Result<Ret>::Do... };
+
+				return InvokeImpl[EncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+			}
+		};
+	};
+
+	static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+	{
+		return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+	}
+
+	template <typename Ret>
+	struct Result
+	{
+		static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+		{
+			return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::template Result<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+		}
+	};
+};
+
+NAMESPACE_PRIVATE_END
+
+template <typename F, typename FirstVariantType, typename... VariantTypes>
+	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
+constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
+{
+	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
+	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
+}
+
+template <typename Ret, typename F, typename FirstVariantType, typename... VariantTypes>
+	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
+constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
+{
+	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
+	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template Result<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
 }
 
 NAMESPACE_MODULE_END(Utility)

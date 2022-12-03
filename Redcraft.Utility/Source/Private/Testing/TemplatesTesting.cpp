@@ -242,9 +242,64 @@ void TestVariant()
 	}
 
 	{
-//		TVariant<bool> TempA = false;
-//		TempA.Visit([](auto& A) { A = true; });
-//		always_check(TempA.GetValue<bool>());
+		using VariantType = TVariant<int32, int64, float64>;
+		VariantType TempArray[] = { 10, 15ll, 1.5 };
+		
+		for(auto&& TempA : TempArray)
+		{
+			Visit(
+				[](auto&& A)
+				{
+					using T = TRemoveCVRef<decltype(A)>;
+					if constexpr (CSameAs<T, int32>) always_check(A == 10);
+					else if constexpr (CSameAs<T, int64>) always_check(A == 15ll);
+					else if constexpr (CSameAs<T, float64>) always_check(A == 1.5);
+					else always_check_no_entry();
+				},
+				TempA
+			);
+
+			VariantType TempB = Visit([](auto&& A) -> VariantType { return A + A; }, TempA);
+ 
+			Visit(
+				[](auto&& A, auto&& B)
+				{
+					using T = TRemoveCVRef<decltype(A)>;
+					if constexpr (CSameAs<T, int32>) always_check(A == 10 && B == 20);
+					else if constexpr (CSameAs<T, int64>) always_check(A == 15ll && B == 30ll);
+					else if constexpr (CSameAs<T, float64>) always_check(A == 1.5 && B == 3.0);
+					else always_check_no_entry();
+				},
+				TempA, TempB
+			);
+
+			Visit([](auto&& A) { A *= 2; }, TempA);
+			
+			Visit(
+				[](auto&& A)
+				{
+					using T = TRemoveCVRef<decltype(A)>;
+					if constexpr (CSameAs<T, int32>) always_check(A == 20);
+					else if constexpr (CSameAs<T, int64>) always_check(A == 30ll);
+					else if constexpr (CSameAs<T, float64>) always_check(A == 3.0);
+					else always_check_no_entry();
+				},
+				TempA
+			);
+		}
+ 
+		for (auto&& TempA : TempArray) {
+			Visit(
+				TOverloaded
+				{
+					[](int32 A)   { always_check(A == 20);   },
+					[](int64 A)   { always_check(A == 30ll); },
+					[](float64 A) { always_check(A == 3.0);  },
+					[](auto A)    { always_check_no_entry(); },
+				},
+				TempA
+			);
+		}
 	}
 
 	{
@@ -272,10 +327,10 @@ void TestVariant()
 		bool bIsLValue;
 		bool bIsRValue;
 
-		auto TestQualifiers = [&bIsConst, &bIsLValue, &bIsRValue](auto&& Arg) -> int32
+		auto TestQualifiers = [&bIsConst, &bIsLValue, &bIsRValue](auto&& A) -> int32
 		{
-			using T = decltype(Arg);
-			always_check(Arg == 10);
+			using T = decltype(A);
+			always_check(A == 10);
 			always_check(CConst<TRemoveReference<T>> == bIsConst);
 			always_check(CLValueReference<T> == bIsLValue);
 			always_check(CRValueReference<T> == bIsRValue);
@@ -287,7 +342,7 @@ void TestVariant()
 		bIsRValue = false;
 
 		TVariant<int32> TempLA = 10;
-		auto ReturnLA = TempLA.Visit(TestQualifiers);
+		auto ReturnLA = Visit(TestQualifiers, TempLA);
 		always_check((CSameAs<int32, decltype(ReturnLA)>));
 
 		bIsConst = true;
@@ -295,7 +350,7 @@ void TestVariant()
 		bIsRValue = false;
 
 		const TVariant<int32> TempLB = TempLA;
-		auto ReturnLB = TempLB.Visit(TestQualifiers);
+		auto ReturnLB = Visit(TestQualifiers, TempLB);
 		always_check((CSameAs<int32, decltype(ReturnLB)>));
 
 		bIsConst = false;
@@ -303,7 +358,7 @@ void TestVariant()
 		bIsRValue = true;
 
 		TVariant<int32> TempRA = 10;
-		auto ReturnRA = MoveTemp(TempRA).Visit(TestQualifiers);
+		auto ReturnRA = Visit(TestQualifiers, MoveTemp(TempRA));
 		always_check((CSameAs<int32, decltype(ReturnRA)>));
 
 		bIsConst = true;
@@ -311,7 +366,7 @@ void TestVariant()
 		bIsRValue = true;
 
 		const TVariant<int32> TempRB = TempLA;
-		auto ReturnRB = MoveTemp(TempRB).Visit(TestQualifiers);
+		auto ReturnRB = Visit(TestQualifiers, MoveTemp(TempRB));
 		always_check((CSameAs<int32, decltype(ReturnRB)>));
 
 		bIsConst = false;
@@ -319,7 +374,7 @@ void TestVariant()
 		bIsRValue = false;
 
 		TVariant<int32> TempLC = 10;
-		auto ReturnLC = TempLC.Visit<int32>(TestQualifiers);
+		auto ReturnLC = Visit<int32>(TestQualifiers, TempLC);
 		always_check((CSameAs<int32, decltype(ReturnLC)>));
 
 		bIsConst = true;
@@ -327,7 +382,7 @@ void TestVariant()
 		bIsRValue = false;
 
 		const TVariant<int32> TempLD = TempLC;
-		auto ReturnLD = TempLD.Visit<int32>(TestQualifiers);
+		auto ReturnLD = Visit<int32>(TestQualifiers, TempLD);
 		always_check((CSameAs<int32, decltype(ReturnLD)>));
 
 		bIsConst = false;
@@ -335,7 +390,7 @@ void TestVariant()
 		bIsRValue = true;
 
 		TVariant<int32> TempRC = 10;
-		auto ReturnRC = MoveTemp(TempRC).Visit<int32>(TestQualifiers);
+		auto ReturnRC = Visit<int32>(TestQualifiers, MoveTemp(TempRC));
 		always_check((CSameAs<int32, decltype(ReturnRC)>));
 
 		bIsConst = true;
@@ -343,7 +398,7 @@ void TestVariant()
 		bIsRValue = true;
 
 		const TVariant<int32> TempRD = TempLC;
-		auto ReturnRD = MoveTemp(TempRD).Visit<int32>(TestQualifiers);
+		auto ReturnRD = Visit<int32>(TestQualifiers, MoveTemp(TempRD));
 		always_check((CSameAs<int32, decltype(ReturnRD)>));
 	}
 	
