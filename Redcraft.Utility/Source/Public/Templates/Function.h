@@ -1,13 +1,18 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Templates/Any.h"
+#include "Memory/Memory.h"
 #include "Templates/Meta.h"
 #include "Templates/Invoke.h"
-#include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
+
+// NOTE: In the STL, the assignment operation of the std::any type uses the copy-and-swap idiom
+// instead of directly calling the assignment operation of the contained value.
+// But we don't follow the the copy-and-swap idiom, see "Templates/Any.h".
+// This class implements assignment operations in a way that assumes no assignment operations of the type,
+// because the assignment operations of TFunction are in most cases different between LHS and RHS.
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -41,6 +46,359 @@ template <typename T> concept CTUniqueFunction = NAMESPACE_PRIVATE::TIsTUniqueFu
 
 NAMESPACE_PRIVATE_BEGIN
 
+template <bool bIsRef, bool bIsUnique>
+class TFunctionStorage;
+
+template <bool bIsUnique>
+class TFunctionStorage<true, bIsUnique>
+{
+public:
+
+	constexpr TFunctionStorage()                                   = default;
+	constexpr TFunctionStorage(const TFunctionStorage&)            = default;
+	constexpr TFunctionStorage(TFunctionStorage&&)                 = default;
+	constexpr TFunctionStorage& operator=(const TFunctionStorage&) = delete;
+	constexpr TFunctionStorage& operator=(TFunctionStorage&&)      = delete;
+	constexpr ~TFunctionStorage()                                  = default;
+
+	constexpr uintptr GetValuePtr() const { return ValuePtr; }
+	constexpr uintptr GetCallable() const { return Callable; }
+
+	constexpr bool IsValid() const { return ValuePtr != 0; }
+
+	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
+	constexpr void Destroy() { }
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	constexpr void Invalidate() { ValuePtr = 0; }
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	template <typename T, typename U>
+	constexpr void Emplace(intptr InCallable, U&& Args)
+	{
+		static_assert(CSameAs<TDecay<T>, TDecay<U>>);
+		ValuePtr = reinterpret_cast<uintptr>(AddressOf(Args));
+		Callable = InCallable;
+	}
+	
+	constexpr void Swap(TFunctionStorage& InValue)
+	{
+		NAMESPACE_REDCRAFT::Swap(ValuePtr, InValue.ValuePtr);
+		NAMESPACE_REDCRAFT::Swap(Callable, InValue.Callable);
+	}
+
+private:
+
+	uintptr ValuePtr;
+	uintptr Callable;
+
+};
+
+// For non-unique storage, the memory layout should be compatible with unique storage,
+// i.e. it can be directly reinterpreted_cast.
+template <bool bIsUnique>
+class alignas(16) TFunctionStorage<false, bIsUnique>
+{
+public:
+
+	constexpr TFunctionStorage() = default;
+	
+	FORCEINLINE TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
+		: TypeInfo(InValue.TypeInfo)
+	{
+		if (!IsValid()) return;
+
+		Callable = InValue.Callable;
+
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:
+			break;
+		case ERepresentation::Trivial:
+			Memory::Memcpy(InternalStorage, InValue.InternalStorage);
+			break;
+		case ERepresentation::Small:
+			GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+			break;
+		case ERepresentation::Big:
+			ExternalStorage = Memory::Malloc(GetTypeInfo().TypeSize, GetTypeInfo().TypeAlignment);
+			GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+			break;
+		default: check_no_entry();
+		}
+	}
+
+	FORCEINLINE TFunctionStorage(TFunctionStorage&& InValue)
+		: TypeInfo(InValue.TypeInfo)
+	{
+		if (!IsValid()) return;
+
+		Callable = InValue.Callable;
+
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:
+			break;
+		case ERepresentation::Trivial:
+			Memory::Memcpy(InternalStorage, InValue.InternalStorage);
+			break;
+		case ERepresentation::Small:
+			GetTypeInfo().MoveConstruct(GetStorage(), InValue.GetStorage());
+			break;
+		case ERepresentation::Big:
+			ExternalStorage = InValue.ExternalStorage;
+			InValue.Invalidate();
+			break;
+		default: check_no_entry();
+		}
+	}
+
+	FORCEINLINE ~TFunctionStorage()
+	{
+		Destroy();
+	}
+	
+	FORCEINLINE TFunctionStorage& operator=(const TFunctionStorage& InValue) requires (!bIsUnique)
+	{
+		if (&InValue == this) return *this;
+
+		if (!InValue.IsValid())
+		{
+			Destroy();
+			Invalidate();
+		}
+		else
+		{
+			Destroy();
+
+			TypeInfo = InValue.TypeInfo;
+			Callable = InValue.Callable;
+
+			switch (GetRepresentation())
+			{
+			case ERepresentation::Empty:
+				break;
+			case ERepresentation::Trivial:
+				Memory::Memcpy(InternalStorage, InValue.InternalStorage);
+				break;
+			case ERepresentation::Small:
+				GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+				break;
+			case ERepresentation::Big:
+				ExternalStorage = Memory::Malloc(GetTypeInfo().TypeSize, GetTypeInfo().TypeAlignment);
+				GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+				break;
+			default: check_no_entry();
+			}
+		}
+
+		return *this;
+	}
+
+	FORCEINLINE TFunctionStorage& operator=(TFunctionStorage&& InValue)
+	{
+		if (&InValue == this) return *this;
+
+		if (!InValue.IsValid())
+		{
+			Destroy();
+			Invalidate();
+		}
+		else
+		{
+			Destroy();
+
+			TypeInfo = InValue.TypeInfo;
+			Callable = InValue.Callable;
+
+			switch (GetRepresentation())
+			{
+			case ERepresentation::Empty:
+				break;
+			case ERepresentation::Trivial:
+				Memory::Memcpy(InternalStorage, InValue.InternalStorage);
+				break;
+			case ERepresentation::Small:
+				GetTypeInfo().MoveConstruct(GetStorage(), InValue.GetStorage());
+				break;
+			case ERepresentation::Big:
+				ExternalStorage = InValue.ExternalStorage;
+				InValue.Invalidate();
+				break;
+			default: check_no_entry();
+			}
+		}
+
+		return *this;
+	}
+
+	constexpr uintptr GetValuePtr() const { return reinterpret_cast<uintptr>(GetStorage()); }
+	constexpr uintptr GetCallable() const { return Callable;                                }
+
+	constexpr bool IsValid() const { return TypeInfo != 0; }
+
+	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
+	FORCEINLINE void Destroy()
+	{
+		if (!IsValid()) return;
+
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:
+		case ERepresentation::Trivial:
+			break;
+		case ERepresentation::Small:
+			GetTypeInfo().Destruct(GetStorage());
+			break;
+		case ERepresentation::Big:
+			GetTypeInfo().Destruct(GetStorage());
+			Memory::Free(ExternalStorage);
+			break;
+		default: check_no_entry();
+		}
+	}
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	constexpr void Invalidate() { TypeInfo = 0; }
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	template <typename T, typename... Ts>
+	FORCEINLINE void Emplace(uintptr InCallable, Ts&&... Args)
+	{
+		Callable = InCallable;
+
+		using DecayedType = TDecay<T>;
+
+		static constexpr const FTypeInfo SelectedTypeInfo(InPlaceType<DecayedType>);
+		TypeInfo = reinterpret_cast<uintptr>(&SelectedTypeInfo);
+
+		if constexpr (CEmpty<DecayedType>) return;
+
+		constexpr bool bIsInlineStorable = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage);
+		constexpr bool bIsTriviallyStorable = bIsInlineStorable && CTrivial<DecayedType> && CTriviallyCopyable<DecayedType>;
+
+		if constexpr (bIsTriviallyStorable)
+		{
+			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
+		}
+		else if constexpr (bIsInlineStorable)
+		{
+			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
+		}
+		else
+		{
+			ExternalStorage = new DecayedType(Forward<Ts>(Args)...);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
+		}
+
+	}
+
+	FORCEINLINE void Swap(TFunctionStorage& InValue)
+	{
+		if (!IsValid() && !InValue.IsValid()) return;
+
+		if (IsValid() && !InValue.IsValid())
+		{
+			InValue = MoveTemp(*this);
+			Destroy();
+			Invalidate();
+		}
+		else if (InValue.IsValid() && !IsValid())
+		{
+			*this = MoveTemp(InValue);
+			InValue.Destroy();
+			InValue.Invalidate();
+		}
+		else
+		{
+			TFunctionStorage Temp = MoveTemp(*this);
+			*this = MoveTemp(InValue);
+			InValue = MoveTemp(Temp);
+		}
+	}
+
+private:
+
+	union
+	{
+		uint8 InternalStorage[64 - sizeof(uintptr) - sizeof(uintptr)];
+		void* ExternalStorage;
+	};
+
+	uintptr TypeInfo;
+	uintptr Callable;
+
+	struct FMovableTypeInfo
+	{
+		const size_t TypeSize;
+		const size_t TypeAlignment;
+
+		using FMoveConstruct = void(*)(void*, void*);
+		using FDestruct      = void(*)(void*       );
+		
+		const FMoveConstruct MoveConstruct;
+		const FDestruct      Destruct;
+
+		template <typename T>
+		constexpr FMovableTypeInfo(TInPlaceType<T>)
+			: TypeSize(sizeof(T)), TypeAlignment(alignof(T))
+			, MoveConstruct(
+				[](void* A, void* B)
+				{
+					new (A) T(*reinterpret_cast<T*>(B));
+				}
+			)
+			, Destruct(
+				[](void* A)
+				{
+					reinterpret_cast<T*>(A)->~T();
+				}
+			)
+		{ }
+	};
+	
+	struct FCopyableTypeInfo : public FMovableTypeInfo
+	{
+		using FCopyConstruct = void(*)(void*, const void*);
+
+		const FCopyConstruct CopyConstruct;
+
+		template <typename T>
+		constexpr FCopyableTypeInfo(TInPlaceType<T>)
+			: FMovableTypeInfo(InPlaceType<T>)
+			, CopyConstruct(
+				[](void* A, const void* B)
+				{
+					new (A) T(*reinterpret_cast<const T*>(B));
+				}
+			)
+		{ }
+	};
+
+	using FTypeInfo = TConditional<bIsUnique, FMovableTypeInfo, FCopyableTypeInfo>;
+	
+	static_assert(alignof(FTypeInfo) >= 4);
+
+	static constexpr uintptr_t RepresentationMask = 3;
+
+	enum class ERepresentation : uintptr
+	{
+		Empty   = 0, // EmptyType
+		Trivial = 1, // Trivial & Internal
+		Small   = 2, // InternalStorage
+		Big     = 3, // ExternalStorage
+	};
+
+	constexpr ERepresentation  GetRepresentation() const { return        static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
+	constexpr const FTypeInfo& GetTypeInfo()       const { return *reinterpret_cast<const FTypeInfo*>(TypeInfo & ~RepresentationMask); }
+
+	constexpr       void* GetStorage()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
+	constexpr const void* GetStorage() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
+	
+};
+
 template <typename T>
 constexpr bool FunctionIsBound(const T& Func)
 {
@@ -72,7 +430,7 @@ struct TIsInvocableSignature<Ret(Ts...) const, F>
 template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) const& , F> : TBoolConstant<CInvocableResult<Ret, const F&, Ts...>> { };
 template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) const&&, F> : TBoolConstant<CInvocableResult<Ret, const F , Ts...>> { };
 
-template <typename F>                      struct TFunctionInfo;
+template <typename F>                   struct TFunctionInfo;
 template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...)        > { using Fn = Ret(Ts...); using CVRef =       int;   };
 template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &      > { using Fn = Ret(Ts...); using CVRef =       int&;  };
 template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &&     > { using Fn = Ret(Ts...); using CVRef =       int&&; };
@@ -80,22 +438,22 @@ template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const  >
 template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const& > { using Fn = Ret(Ts...); using CVRef = const int&;  };
 template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const&&> { using Fn = Ret(Ts...); using CVRef = const int&&; };
 
-template <typename F, typename CVRef, bool bIsRef> class TFunctionImpl;
+template <typename F, typename CVRef, bool bIsRef, bool bIsUnique = false> class TFunctionImpl;
 
-template <typename Ret, typename... Ts, typename CVRef, bool bIsRef>
-class TFunctionImpl<Ret(Ts...), CVRef, bIsRef>
+template <typename Ret, typename... Ts, typename CVRef, bool bIsRef, bool bIsUnique>
+class TFunctionImpl<Ret(Ts...), CVRef, bIsRef, bIsUnique>
 {
 public:
 
 	using ResultType = Ret;
 	using ArgumentType = TTypeSequence<Ts...>;
 	
-	TFunctionImpl() = default;
-	TFunctionImpl(const TFunctionImpl&) = default;
-	TFunctionImpl(TFunctionImpl&& InValue) = default;
-	TFunctionImpl& operator=(const TFunctionImpl&) = default;
-	TFunctionImpl& operator=(TFunctionImpl&&) = default;
-	~TFunctionImpl() = default;
+	constexpr TFunctionImpl()                                = default;
+	constexpr TFunctionImpl(const TFunctionImpl&)            = default;
+	constexpr TFunctionImpl(TFunctionImpl&&)                 = default;
+	constexpr TFunctionImpl& operator=(const TFunctionImpl&) = default;
+	constexpr TFunctionImpl& operator=(TFunctionImpl&&)      = default;
+	constexpr ~TFunctionImpl()                               = default;
 
 	FORCEINLINE ResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
@@ -104,154 +462,57 @@ public:
 	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
-	constexpr bool           IsValid() const { return GetCallableImpl() != nullptr; }
-	constexpr explicit operator bool() const { return GetCallableImpl() != nullptr; }
+	constexpr bool           IsValid() const { return Storage.IsValid(); }
+	constexpr explicit operator bool() const { return Storage.IsValid(); }
 
-	FORCEINLINE const type_info& TargetType() const requires (!bIsRef) { return IsValid() ? Storage.GetTypeInfo() : typeid(void); };
-
-	template <typename T> FORCEINLINE       T&  Target() &       requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<      StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE       T&& Target() &&      requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<      StorageType&&>(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&  Target() const&  requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<const StorageType& >(Storage).template GetValue<T>(); }
-	template <typename T> FORCEINLINE const T&& Target() const&& requires (!bIsRef && CDestructible<TDecay<T>>) { return static_cast<const StorageType&&>(Storage).template GetValue<T>(); }
-
-	constexpr void Swap(TFunctionImpl& InValue) requires (!bIsRef)
-	{
-		using NAMESPACE_REDCRAFT::Swap;
-
-		if (!IsValid() && !InValue.IsValid()) return;
-
-		if (IsValid() && !InValue.IsValid())
-		{
-			InValue = MoveTemp(*this);
-			ResetImpl();
-			return;
-		}
-
-		if (InValue.IsValid() && !IsValid())
-		{
-			*this = MoveTemp(InValue);
-			InValue.ResetImpl();
-			return;
-		}
-		
-		Swap(Storage, InValue.Storage);
-	}
+	constexpr void Swap(TFunctionImpl& InValue) { Storage.Swap(InValue.Storage); }
 
 private:
 
-	using StoragePtrType = TCopyConst<CVRef, void>*;
-	using CallableType = ResultType(*)(StoragePtrType, Ts&&...);
+	using CallableType = ResultType(*)(uintptr, Ts&&...);
 
-	struct FunctionRefStorage
-	{
-		StoragePtrType Ptr;
-		CallableType Callable;
-	};
-	
-	template <typename CallableType>
-	struct alignas(16) FFunctionStorage : FSingleton
-	{
-		//~ Begin CAnyCustomStorage Interface
-		inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr) - sizeof(CallableType);
-		inline static constexpr size_t InlineAlignment = 16;
-		constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
-		constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
-		constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
-		constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
-		constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
-		constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
-		constexpr void CopyCustom(const FFunctionStorage&  InValue) { Callable = InValue.Callable; }
-		constexpr void MoveCustom(      FFunctionStorage&& InValue) { Callable = InValue.Callable; }
-		//~ End CAnyCustomStorage Interface
-	
-		union
-		{
-			uint8 InlineAllocationImpl[InlineSize];
-			void* HeapAllocationImpl;
-		};
-	
-		uintptr TypeInfoImpl;
-	
-		CallableType Callable;
-	
-	};
-
-	using FunctionStorage = TAny<FFunctionStorage<CallableType>>;
-	using StorageType = TConditional<bIsRef, FunctionRefStorage, FunctionStorage>;
-
-	StorageType Storage;
-
-	FORCEINLINE CallableType& GetCallableImpl()
-	{
-		if constexpr (bIsRef) return Storage.Callable;
-		else return Storage.GetCustomStorage().Callable;
-	}
-
-	FORCEINLINE CallableType  GetCallableImpl() const
-	{
-		if constexpr (bIsRef) return Storage.Callable;
-		else return Storage.GetCustomStorage().Callable;
-	}
-
-	FORCEINLINE ResultType CallImpl(Ts&&... Args)
-	{
-		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Ts>(Args)...);
-		else return GetCallableImpl()(&Storage, Forward<Ts>(Args)...);
-	}
+	TFunctionStorage<bIsRef, bIsUnique> Storage;
 
 	FORCEINLINE ResultType CallImpl(Ts&&... Args) const
 	{
 		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		if constexpr (bIsRef) return GetCallableImpl()(Storage.Ptr, Forward<Ts>(Args)...);
-		else return GetCallableImpl()(&Storage, Forward<Ts>(Args)...);
+		CallableType Callable = reinterpret_cast<CallableType>(Storage.GetCallable());
+		return Callable(Storage.GetValuePtr(), Forward<Ts>(Args)...);
 	}
 
 protected: // These functions should not be used by user-defined class
 
-	template <typename DecayedType, typename... ArgTypes>
-	FORCEINLINE void EmplaceImpl(ArgTypes&&... Args)
+	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
+	FORCEINLINE void Destroy() { Storage.Destroy(); }
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	constexpr void Invalidate() { Storage.Invalidate(); }
+
+	// Make sure you call this function after you have destroyed the held object using Destroy().
+	template <typename T, typename... ArgTypes>
+	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
-		using FuncType = TCopyConst<TRemoveReference<CVRef>, DecayedType>;
+		using DecayedType = TDecay<T>;
 
-		if constexpr (bIsRef) Storage.Ptr = (AddressOf(Args), ...);
-		else Storage.template Emplace<DecayedType>(Forward<ArgTypes>(Args)...);
+		// This add a l-value reference to a non-reference type, while preserving the r-value reference.
+		using ObjectType = TCopyCVRef<CVRef, DecayedType>;
+		using InvokeType = TConditional<CReference<ObjectType>, ObjectType, ObjectType&>;
 
-		GetCallableImpl() = [](StoragePtrType Storage, Ts&&... Args) -> ResultType
+		CallableType Callable = [](uintptr ObjectPtr, Ts&&... Args) -> ResultType
 		{
-			using InvokeType = TConditional<
-				CReference<CVRef>,
-				TCopyCVRef<CVRef, FuncType>,
-				TCopyCVRef<CVRef, FuncType>&
-			>;
-
-			const auto GetFunc = [Storage]() -> InvokeType
-			{
-				if constexpr (!bIsRef) return static_cast<TCopyConst<CVRef, FunctionStorage>*>(Storage)->template GetValue<DecayedType>();
-				else return static_cast<InvokeType>(*reinterpret_cast<FuncType*>(Storage));
-			};
-
-			return InvokeResult<ResultType>(GetFunc(), Forward<Ts>(Args)...);
+			return InvokeResult<ResultType>(
+				static_cast<InvokeType>(*reinterpret_cast<DecayedType*>(ObjectPtr)),
+				Forward<Ts>(Args)...
+			);
 		};
-	}
 
-	FORCEINLINE void AssignImpl(const TFunctionImpl& InValue)
-	{
-		if (InValue.IsValid()) Storage = InValue.Storage;
-		else ResetImpl();
-	}
+		Storage.template Emplace<DecayedType>(
+			reinterpret_cast<uintptr>(Callable),
+			Forward<ArgTypes>(Args)...
+		);
 
-	FORCEINLINE void AssignImpl(TFunctionImpl&& InValue)
-	{
-		if (InValue.IsValid())
-		{
-			Storage = MoveTemp(InValue.Storage);
-			InValue.ResetImpl();
-		}
-		else ResetImpl();
+		return *reinterpret_cast<DecayedType*>(Storage.GetValuePtr());
 	}
-
-	constexpr void ResetImpl() { GetCallableImpl() = nullptr; }
 
 };
 
@@ -276,22 +537,21 @@ public:
 	TFunctionRef() = delete;
 
 	TFunctionRef(const TFunctionRef& InValue) = default;
-	TFunctionRef(TFunctionRef&& InValue) = default;
+	TFunctionRef(TFunctionRef&& InValue)      = default;
 
+	// We delete the assignment operators because we don't want it to be confused with being related to
+	// regular C++ reference assignment - i.e. calling the assignment operator of whatever the reference
+	// is bound to - because that's not what TFunctionRef does, nor is it even capable of doing that.
 	TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
-	TFunctionRef& operator=(TFunctionRef&& InValue) = delete;
+	TFunctionRef& operator=(TFunctionRef&& InValue)      = delete;
 
-	template <typename T> requires (!CTFunctionRef<TDecay<T>> && !CTInPlaceType<TDecay<T>>
+	template <typename T> requires (!CTFunctionRef<TDecay<T>>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TFunctionRef(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
 		checkf(NAMESPACE_PRIVATE::FunctionIsBound(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
-		Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		Impl::template Emplace<T>(Forward<T>(InValue));
 	}
-	
-	template <typename T>
-	TFunctionRef(const T&&) = delete;
 
 };
 
@@ -300,79 +560,67 @@ class TFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		false>
+		false, false>
 {
 private:
 
 	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		false>;
+		false, false>;
 
 public:
 
-	constexpr TFunction(nullptr_t = nullptr) { Impl::ResetImpl(); }
+	constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
-	FORCEINLINE TFunction(const TFunction& InValue) = default;
-	FORCEINLINE TFunction(TFunction&& InValue) : Impl(MoveTemp(InValue)) { InValue.ResetImpl(); }
-
-	FORCEINLINE TFunction& operator=(const TFunction& InValue)
-	{
-		Impl::AssignImpl(InValue);
-		return *this;
-	}
-
-	FORCEINLINE TFunction& operator=(TFunction&& InValue)
-	{
-		if (&InValue == this) return *this;
-		Impl::AssignImpl(MoveTemp(InValue));
-		return *this;
-	}
+	FORCEINLINE TFunction(const TFunction& InValue)            = default;
+	FORCEINLINE TFunction(TFunction&& InValue)                 = default;
+	FORCEINLINE TFunction& operator=(const TFunction& InValue) = default;
+	FORCEINLINE TFunction& operator=(TFunction&& InValue)      = default;
 
 	template <typename T> requires (!CTInPlaceType<TDecay<T>>
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TFunction(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
-		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
+		else Impl::template Emplace<T>(Forward<T>(InValue));
 	}
 	
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
-		using DecayedType = TDecay<T>;
-		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
+	constexpr TFunction& operator=(nullptr_t) { Reset(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TFunction& operator=(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
-
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
-		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Reset();
+		else Emplace<T>(Forward<T>(InValue));
 
 		return *this;
 	}
 
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
-		using DecayedType = TDecay<T>;
-		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
-		return Impl::template Target<DecayedType>();
+		Impl::Destroy();
+		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr void Reset() { Impl::ResetImpl(); }
+	constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
 };
 
@@ -381,96 +629,86 @@ class TUniqueFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		false>
+		false, true>
 {
 private:
 
 	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
-		false>;
+		false, true>;
 
 public:
 
-	constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::ResetImpl(); }
+	constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
-	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue) = delete;
-	TUniqueFunction(TUniqueFunction&& InValue) : Impl(MoveTemp(InValue)) { InValue.ResetImpl(); }
-
+	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue)            = delete;
+	FORCEINLINE TUniqueFunction(TUniqueFunction&& InValue)                 = default;
 	FORCEINLINE TUniqueFunction& operator=(const TUniqueFunction& InValue) = delete;
-	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&& InValue)
-	{
-		if (&InValue == this) return *this;
-		Impl::AssignImpl(MoveTemp(InValue));
-		return *this;
-	}
+	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&& InValue)      = default;
 
 	FORCEINLINE TUniqueFunction(const TFunction<F>& InValue)
-		: Impl(*reinterpret_cast<const TUniqueFunction*>(&InValue))
-	{ }
+	{
+		new (this) TFunction<F>(InValue);
+	}
 
 	FORCEINLINE TUniqueFunction(TFunction<F>&& InValue)
-		: Impl(MoveTemp(*reinterpret_cast<const TUniqueFunction*>(&InValue)))
 	{
-		InValue.Reset();
+		new (this) TFunction<F>(MoveTemp(InValue));
 	}
 
 	FORCEINLINE TUniqueFunction& operator=(const TFunction<F>& InValue)
 	{
-		Impl::AssignImpl(*reinterpret_cast<const TUniqueFunction*>(&InValue));
+		*reinterpret_cast<TFunction<F>*>(this) = InValue;
 		return *this;
 	}
 
 	FORCEINLINE TUniqueFunction& operator=(TFunction<F>&& InValue)
 	{
-		Impl::AssignImpl(MoveTemp(*reinterpret_cast<TUniqueFunction*>(&InValue)));
+		*reinterpret_cast<TFunction<F>*>(this) = MoveTemp(InValue);
 		return *this;
 	}
 
 	template <typename T> requires (!CTInPlaceType<TDecay<T>>
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>>
+		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
-		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
+		else Impl::template Emplace<T>(Forward<T>(InValue));
 	}
 
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
-		using DecayedType = TDecay<T>;
-		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
+		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TUniqueFunction& operator=(nullptr_t) { Impl::ResetImpl(); return *this; }
+	constexpr TUniqueFunction& operator=(nullptr_t) { Impl::Destroy(); Impl::Invalidate(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TUniqueFunction& operator=(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
-
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::ResetImpl();
-		else Impl::template EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Reset();
+		else Emplace<T>(Forward<T>(InValue));
 
 		return *this;
 	}
 	
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>>)
+		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
+		Impl::Destroy();
 		using DecayedType = TDecay<T>;
-		Impl::template EmplaceImpl<DecayedType>(Forward<ArgTypes>(Args)...);
-		return Impl::template Target<DecayedType>();
+		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr void Reset() { Impl::ResetImpl(); }
+	constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
 };
 
@@ -494,6 +732,9 @@ constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
 
 static_assert(sizeof(TFunction<void()>)       == 64, "The byte size of TFunction is unexpected");
 static_assert(sizeof(TUniqueFunction<void()>) == 64, "The byte size of TUniqueFunction is unexpected");
+
+static_assert(alignof(TFunction<void()>)       == 16, "The byte alignment of TFunction is unexpected");
+static_assert(alignof(TUniqueFunction<void()>) == 16, "The byte alignment of TUniqueFunction is unexpected");
 
 NAMESPACE_PRIVATE_BEGIN
 

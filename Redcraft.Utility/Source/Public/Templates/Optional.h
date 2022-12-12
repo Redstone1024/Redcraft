@@ -44,7 +44,7 @@ public:
 	constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: bIsValid(true)
 	{
-		new(&Value) OptionalType(Forward<Ts>(Args)...);
+		new (&Value) OptionalType(Forward<Ts>(Args)...);
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>)
@@ -58,7 +58,7 @@ public:
 	constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && !CTriviallyCopyConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
+		if (InValue.IsValid()) new (&Value) OptionalType(InValue.GetValue());
 	}
 
 	constexpr TOptional(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType>) = default;
@@ -66,21 +66,21 @@ public:
 	constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && !CTriviallyMoveConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
+		if (InValue.IsValid()) new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
 	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new(&Value) OptionalType(InValue.GetValue());
+		if (InValue.IsValid()) new (&Value) OptionalType(InValue.GetValue());
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value)
 	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
+		if (InValue.IsValid()) new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
 	constexpr ~TOptional() requires (CTriviallyDestructible<OptionalType>) = default;
@@ -106,7 +106,7 @@ public:
 		if (IsValid()) GetValue() = InValue.GetValue();
 		else 
 		{
-			new(&Value) OptionalType(InValue.GetValue());
+			new (&Value) OptionalType(InValue.GetValue());
 			bIsValid = true;
 		}
 
@@ -129,7 +129,7 @@ public:
 		if (IsValid()) GetValue() = MoveTemp(InValue.GetValue());
 		else
 		{
-			new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
+			new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 			bIsValid = true;
 		}
 
@@ -149,7 +149,7 @@ public:
 		if (IsValid()) GetValue() = InValue.GetValue();
 		else
 		{
-			new(&Value) OptionalType(InValue.GetValue());
+			new (&Value) OptionalType(InValue.GetValue());
 			bIsValid = true;
 		}
 
@@ -169,7 +169,7 @@ public:
 		if (IsValid()) GetValue() = MoveTemp(InValue.GetValue());
 		else
 		{
-			new(&Value) OptionalType(MoveTemp(InValue.GetValue()));
+			new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 			bIsValid = true;
 		}
 
@@ -182,7 +182,7 @@ public:
 		if (IsValid()) GetValue() = Forward<T>(InValue);
 		else
 		{
-			new(&Value) OptionalType(Forward<T>(InValue));
+			new (&Value) OptionalType(Forward<T>(InValue));
 			bIsValid = true;
 		}
 
@@ -194,7 +194,7 @@ public:
 	{
 		Reset();
 
-		OptionalType* Result = new(&Value) OptionalType(Forward<ArgTypes>(Args)...);
+		OptionalType* Result = new (&Value) OptionalType(Forward<ArgTypes>(Args)...);
 		bIsValid = true;
 
 		return *Result;

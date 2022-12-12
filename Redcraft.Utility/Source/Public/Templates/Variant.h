@@ -110,7 +110,7 @@ public:
 		: TypeIndex(I)
 	{
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
+		new (&Value) SelectedType(Forward<ArgTypes>(Args)...);
 	}
 
 	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
@@ -188,7 +188,7 @@ public:
 		else
 		{
 			Reset();
-			new(&Value) SelectedType(Forward<T>(InValue));
+			new (&Value) SelectedType(Forward<T>(InValue));
 			TypeIndex = TVariantIndex<SelectedType, TVariant<Ts...>>;
 		}
 
@@ -202,7 +202,7 @@ public:
 		Reset();
 
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		SelectedType* Result = new(&Value) SelectedType(Forward<ArgTypes>(Args)...);
+		SelectedType* Result = new (&Value) SelectedType(Forward<ArgTypes>(Args)...);
 		TypeIndex = I;
 
 		return *Result;
