@@ -25,20 +25,18 @@ public:
 	}
 
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper&) = default;
+	FORCEINLINE constexpr TReferenceWrapper(TReferenceWrapper&&)      = default;
 	
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
 		: Pointer(InValue.Pointer)
 	{ }
 
-	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
-	
-	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
-	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
-	{
-		Pointer = InValue.Pointer;
-		return *this;
-	}
+	template <typename T = ReferencedType> requires (CAssignableFrom<ReferencedType&, T&&>)
+	FORCEINLINE constexpr TReferenceWrapper& operator=(T&& Object) { Get() = Forward<T>(Object); return *this; }
+
+	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = delete;
+	FORCEINLINE constexpr TReferenceWrapper& operator=(TReferenceWrapper&&)      = delete;
 	
 	FORCEINLINE constexpr operator ReferencedType&() const { return *Pointer; }
 	FORCEINLINE constexpr ReferencedType& Get()      const { return *Pointer; }
