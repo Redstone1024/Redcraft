@@ -82,14 +82,14 @@ struct InvokeImpl<F, T, Ts...> : InvokeMember<F, T> { };
 NAMESPACE_PRIVATE_END
 
 template <typename F, typename... Ts> requires (CInvocable<F, Ts...>)
-constexpr auto Invoke(F&& Func, Ts&&... Args)
+FORCEINLINE constexpr auto Invoke(F&& Func, Ts&&... Args)
 	-> decltype(NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...))
 {
 	return NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
 }
 
 template <typename R, typename F, typename... Ts> requires (CInvocableResult<R, F, Ts...>)
-constexpr R InvokeResult(F&& Func, Ts&&... Args)
+FORCEINLINE constexpr R InvokeResult(F&& Func, Ts&&... Args)
 {
 	if constexpr (CVoid<R>) Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
 	else             return Invoke(Forward<F>(Func), Forward<Ts>(Args)...);

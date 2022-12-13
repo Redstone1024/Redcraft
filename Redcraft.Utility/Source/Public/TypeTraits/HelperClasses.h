@@ -12,8 +12,8 @@ struct TConstant
 	using ValueType = InType;
 	using Type = TConstant;
 	static constexpr ValueType Value = InValue;
-	constexpr operator ValueType() const { return Value; }
-	constexpr ValueType operator()() const { return Value; }
+	FORCEINLINE constexpr operator ValueType() const { return Value; }
+	FORCEINLINE constexpr ValueType operator()() const { return Value; }
 };
 
 template <bool InValue>

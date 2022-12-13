@@ -13,8 +13,8 @@ template <typename T, T... Ints>
 struct TIntegerSequence 
 {
 	using ValueType = T;
-	static constexpr size_t   Num()     { return sizeof...(Ints);                          }
-	static constexpr const T* GetData() { return NAMESPACE_REDCRAFT::GetData({ Ints... }); }
+	FORCEINLINE static constexpr size_t   Num()     { return sizeof...(Ints);                          }
+	FORCEINLINE static constexpr const T* GetData() { return NAMESPACE_REDCRAFT::GetData({ Ints... }); }
 };
 
 NAMESPACE_PRIVATE_BEGIN

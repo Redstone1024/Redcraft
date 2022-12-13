@@ -68,8 +68,8 @@ public:
 
 	static constexpr size_t RequiredAlignment = NAMESPACE_STD::atomic_ref<T>::required_alignment;
 
-	constexpr TAtomicImpl()                  requires (!bIsRef) : NativeAtomic()        { };
-	constexpr TAtomicImpl(ValueType Desired) requires (!bIsRef) : NativeAtomic(Desired) { };
+	FORCEINLINE constexpr TAtomicImpl()                  requires (!bIsRef) : NativeAtomic()        { };
+	FORCEINLINE constexpr TAtomicImpl(ValueType Desired) requires (!bIsRef) : NativeAtomic(Desired) { };
 
 	FORCEINLINE explicit TAtomicImpl(ValueType&   Desired) requires (bIsRef) : NativeAtomic(Desired) { check(Memory::IsAligned(&Desired, RequiredAlignment)); };
 	FORCEINLINE          TAtomicImpl(TAtomicImpl& InValue) requires (bIsRef) : NativeAtomic(InValue) { };
@@ -247,7 +247,7 @@ struct FAtomicFlag : FSingleton
 {
 public:
 
-	constexpr FAtomicFlag() : NativeAtomic() { };
+	FORCEINLINE constexpr FAtomicFlag() : NativeAtomic() { };
 
 	FORCEINLINE void Clear(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.clear(static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	FORCEINLINE void Clear(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.clear(static_cast<NAMESPACE_STD::memory_order>(Order)); }

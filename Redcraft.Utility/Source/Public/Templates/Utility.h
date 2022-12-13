@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T>
-constexpr const T& AsConst(T& Ref)
+FORCEINLINE constexpr const T& AsConst(T& Ref)
 {
 	return Ref;
 }
@@ -19,45 +19,45 @@ template <typename T>
 void AsConst(const T&& Ref) = delete;
 
 template <typename T>
-constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
+FORCEINLINE constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
 {
 	using CastType = TRemoveReference<T>;
 	return static_cast<CastType&&>(Obj);
 }
 
 template <typename T>
-constexpr T CopyTemp(T& Obj)
+FORCEINLINE constexpr T CopyTemp(T& Obj)
 {
 	return const_cast<const T&>(Obj);
 }
 
 template <typename T>
-constexpr T CopyTemp(const T& Obj)
+FORCEINLINE constexpr T CopyTemp(const T& Obj)
 {
 	return Obj;
 }
 
 template <typename T>
-constexpr T&& CopyTemp(T&& Obj)
+FORCEINLINE constexpr T&& CopyTemp(T&& Obj)
 {
 	return MoveTemp(Obj);
 }
 
 template <typename T>
-constexpr T&& Forward(TRemoveReference<T>& Obj)
+FORCEINLINE constexpr T&& Forward(TRemoveReference<T>& Obj)
 {
 	return static_cast<T&&>(Obj);
 }
 
 template <typename T>
-constexpr T&& Forward(TRemoveReference<T>&& Obj)
+FORCEINLINE constexpr T&& Forward(TRemoveReference<T>&& Obj)
 {
 	return static_cast<T&&>(Obj);
 }
 
 template <typename T> requires (requires(T& A, T& B) { A.Swap(B); }
 	|| (CMoveConstructible<T> && CMoveAssignable<T>))
-constexpr void Swap(T& A, T& B)
+FORCEINLINE constexpr void Swap(T& A, T& B)
 {
 	if constexpr (requires(T& A, T& B) { A.Swap(B); })
 	{
@@ -72,7 +72,7 @@ constexpr void Swap(T& A, T& B)
 }
 
 template <typename T, typename U = T> requires (CMoveConstructible<T> && CAssignableFrom<T&, U>)
-constexpr T Exchange(T& A, U&& B)
+FORCEINLINE constexpr T Exchange(T& A, U&& B)
 {
 	T Temp = MoveTemp(A);
 	A = Forward<U>(B);
@@ -80,16 +80,16 @@ constexpr T Exchange(T& A, U&& B)
 }
 
 template <typename T>
-constexpr TAddRValueReference<T> DeclVal();
+TAddRValueReference<T> DeclVal();
 
 template <typename T> requires (CObject<T>)
-constexpr T* AddressOf(T& Object)
+FORCEINLINE constexpr T* AddressOf(T& Object)
 {
 	return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(Object)));
 }
 
 template <typename T> requires (!CObject<T>)
-constexpr T* AddressOf(T& Object)
+FORCEINLINE constexpr T* AddressOf(T& Object)
 {
 	return &Object;
 }
@@ -97,7 +97,7 @@ constexpr T* AddressOf(T& Object)
 struct FIgnore
 {
 	template <typename T>
-	constexpr void operator=(T&&) const { }
+	FORCEINLINE constexpr void operator=(T&&) const { }
 };
 
 inline constexpr FIgnore Ignore;

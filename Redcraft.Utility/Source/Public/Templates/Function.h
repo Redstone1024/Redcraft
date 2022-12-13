@@ -54,34 +54,34 @@ class TFunctionStorage<true, bIsUnique>
 {
 public:
 
-	constexpr TFunctionStorage()                                   = default;
-	constexpr TFunctionStorage(const TFunctionStorage&)            = default;
-	constexpr TFunctionStorage(TFunctionStorage&&)                 = default;
-	constexpr TFunctionStorage& operator=(const TFunctionStorage&) = delete;
-	constexpr TFunctionStorage& operator=(TFunctionStorage&&)      = delete;
-	constexpr ~TFunctionStorage()                                  = default;
+	FORCEINLINE constexpr TFunctionStorage()                                   = default;
+	FORCEINLINE constexpr TFunctionStorage(const TFunctionStorage&)            = default;
+	FORCEINLINE constexpr TFunctionStorage(TFunctionStorage&&)                 = default;
+	FORCEINLINE constexpr TFunctionStorage& operator=(const TFunctionStorage&) = delete;
+	FORCEINLINE constexpr TFunctionStorage& operator=(TFunctionStorage&&)      = delete;
+	FORCEINLINE constexpr ~TFunctionStorage()                                  = default;
 
-	constexpr uintptr GetValuePtr() const { return ValuePtr; }
-	constexpr uintptr GetCallable() const { return Callable; }
+	FORCEINLINE constexpr uintptr GetValuePtr() const { return ValuePtr; }
+	FORCEINLINE constexpr uintptr GetCallable() const { return Callable; }
 
-	constexpr bool IsValid() const { return ValuePtr != 0; }
+	FORCEINLINE constexpr bool IsValid() const { return ValuePtr != 0; }
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
-	constexpr void Destroy() { }
+	FORCEINLINE constexpr void Destroy() { }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
-	constexpr void Invalidate() { ValuePtr = 0; }
+	FORCEINLINE constexpr void Invalidate() { ValuePtr = 0; }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename U>
-	constexpr void Emplace(intptr InCallable, U&& Args)
+	FORCEINLINE constexpr void Emplace(intptr InCallable, U&& Args)
 	{
 		static_assert(CSameAs<TDecay<T>, TDecay<U>>);
 		ValuePtr = reinterpret_cast<uintptr>(AddressOf(Args));
 		Callable = InCallable;
 	}
 	
-	constexpr void Swap(TFunctionStorage& InValue)
+	FORCEINLINE constexpr void Swap(TFunctionStorage& InValue)
 	{
 		NAMESPACE_REDCRAFT::Swap(ValuePtr, InValue.ValuePtr);
 		NAMESPACE_REDCRAFT::Swap(Callable, InValue.Callable);
@@ -101,7 +101,7 @@ class alignas(16) TFunctionStorage<false, bIsUnique>
 {
 public:
 
-	constexpr TFunctionStorage() = default;
+	FORCEINLINE constexpr TFunctionStorage() = default;
 	
 	FORCEINLINE TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
 		: TypeInfo(InValue.TypeInfo)
@@ -232,10 +232,10 @@ public:
 		return *this;
 	}
 
-	constexpr uintptr GetValuePtr() const { return reinterpret_cast<uintptr>(GetStorage()); }
-	constexpr uintptr GetCallable() const { return Callable;                                }
+	FORCEINLINE constexpr uintptr GetValuePtr() const { return reinterpret_cast<uintptr>(GetStorage()); }
+	FORCEINLINE constexpr uintptr GetCallable() const { return Callable;                                }
 
-	constexpr bool IsValid() const { return TypeInfo != 0; }
+	FORCEINLINE constexpr bool IsValid() const { return TypeInfo != 0; }
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
 	FORCEINLINE void Destroy()
@@ -259,7 +259,7 @@ public:
 	}
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
-	constexpr void Invalidate() { TypeInfo = 0; }
+	FORCEINLINE constexpr void Invalidate() { TypeInfo = 0; }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename... Ts>
@@ -342,7 +342,7 @@ private:
 		const FDestruct      Destruct;
 
 		template <typename T>
-		constexpr FMovableTypeInfo(TInPlaceType<T>)
+		FORCEINLINE constexpr FMovableTypeInfo(TInPlaceType<T>)
 			: TypeSize(sizeof(T)), TypeAlignment(alignof(T))
 			, MoveConstruct(
 				[](void* A, void* B)
@@ -366,7 +366,7 @@ private:
 		const FCopyConstruct CopyConstruct;
 
 		template <typename T>
-		constexpr FCopyableTypeInfo(TInPlaceType<T>)
+		FORCEINLINE constexpr FCopyableTypeInfo(TInPlaceType<T>)
 			: FMovableTypeInfo(InPlaceType<T>)
 			, CopyConstruct(
 				[](void* A, const void* B)
@@ -391,16 +391,16 @@ private:
 		Big     = 3, // ExternalStorage
 	};
 
-	constexpr ERepresentation  GetRepresentation() const { return        static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
-	constexpr const FTypeInfo& GetTypeInfo()       const { return *reinterpret_cast<const FTypeInfo*>(TypeInfo & ~RepresentationMask); }
+	FORCEINLINE constexpr ERepresentation  GetRepresentation() const { return        static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
+	FORCEINLINE constexpr const FTypeInfo& GetTypeInfo()       const { return *reinterpret_cast<const FTypeInfo*>(TypeInfo & ~RepresentationMask); }
 
-	constexpr       void* GetStorage()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
-	constexpr const void* GetStorage() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
+	FORCEINLINE constexpr       void* GetStorage()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
+	FORCEINLINE constexpr const void* GetStorage() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
 	
 };
 
 template <typename T>
-constexpr bool FunctionIsBound(const T& Func)
+FORCEINLINE constexpr bool FunctionIsBound(const T& Func)
 {
 	if constexpr (CPointer<T> || CMemberPointer<T> || CTFunctionRef<T> || CTFunction<T> || CTUniqueFunction<T>)
 	{
@@ -448,12 +448,12 @@ public:
 	using ResultType = Ret;
 	using ArgumentType = TTypeSequence<Ts...>;
 	
-	constexpr TFunctionImpl()                                = default;
-	constexpr TFunctionImpl(const TFunctionImpl&)            = default;
-	constexpr TFunctionImpl(TFunctionImpl&&)                 = default;
-	constexpr TFunctionImpl& operator=(const TFunctionImpl&) = default;
-	constexpr TFunctionImpl& operator=(TFunctionImpl&&)      = default;
-	constexpr ~TFunctionImpl()                               = default;
+	FORCEINLINE constexpr TFunctionImpl()                                = default;
+	FORCEINLINE constexpr TFunctionImpl(const TFunctionImpl&)            = default;
+	FORCEINLINE constexpr TFunctionImpl(TFunctionImpl&&)                 = default;
+	FORCEINLINE constexpr TFunctionImpl& operator=(const TFunctionImpl&) = default;
+	FORCEINLINE constexpr TFunctionImpl& operator=(TFunctionImpl&&)      = default;
+	FORCEINLINE constexpr ~TFunctionImpl()                               = default;
 
 	FORCEINLINE ResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
@@ -462,10 +462,10 @@ public:
 	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
-	constexpr bool           IsValid() const { return Storage.IsValid(); }
-	constexpr explicit operator bool() const { return Storage.IsValid(); }
+	FORCEINLINE constexpr bool           IsValid() const { return Storage.IsValid(); }
+	FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
 
-	constexpr void Swap(TFunctionImpl& InValue) { Storage.Swap(InValue.Storage); }
+	FORCEINLINE constexpr void Swap(TFunctionImpl& InValue) { Storage.Swap(InValue.Storage); }
 
 private:
 
@@ -483,14 +483,14 @@ private:
 protected: // These functions should not be used by user-defined class
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
-	FORCEINLINE void Destroy() { Storage.Destroy(); }
+	FORCEINLINE constexpr void Destroy() { Storage.Destroy(); }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
-	constexpr void Invalidate() { Storage.Invalidate(); }
+	FORCEINLINE constexpr void Invalidate() { Storage.Invalidate(); }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename... ArgTypes>
-	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
+	FORCEINLINE constexpr TDecay<T>& Emplace(ArgTypes&&... Args)
 	{
 		using DecayedType = TDecay<T>;
 
@@ -534,20 +534,20 @@ private:
 
 public:
 
-	TFunctionRef() = delete;
+	FORCEINLINE constexpr TFunctionRef() = delete;
 
-	TFunctionRef(const TFunctionRef& InValue) = default;
-	TFunctionRef(TFunctionRef&& InValue)      = default;
+	FORCEINLINE constexpr TFunctionRef(const TFunctionRef& InValue) = default;
+	FORCEINLINE constexpr TFunctionRef(TFunctionRef&& InValue)      = default;
 
 	// We delete the assignment operators because we don't want it to be confused with being related to
 	// regular C++ reference assignment - i.e. calling the assignment operator of whatever the reference
 	// is bound to - because that's not what TFunctionRef does, nor is it even capable of doing that.
-	TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
-	TFunctionRef& operator=(TFunctionRef&& InValue)      = delete;
+	FORCEINLINE constexpr TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
+	FORCEINLINE constexpr TFunctionRef& operator=(TFunctionRef&& InValue)      = delete;
 
 	template <typename T> requires (!CTFunctionRef<TDecay<T>>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
-	FORCEINLINE TFunctionRef(T&& InValue)
+	FORCEINLINE constexpr TFunctionRef(T&& InValue)
 	{
 		checkf(NAMESPACE_PRIVATE::FunctionIsBound(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
 		Impl::template Emplace<T>(Forward<T>(InValue));
@@ -571,7 +571,7 @@ private:
 
 public:
 
-	constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
+	FORCEINLINE constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
 	FORCEINLINE TFunction(const TFunction& InValue)            = default;
 	FORCEINLINE TFunction(TFunction&& InValue)                 = default;
@@ -592,12 +592,12 @@ public:
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE TFunction(TInPlaceType<T>, ArgTypes&&... Args)
+	FORCEINLINE explicit TFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TFunction& operator=(nullptr_t) { Reset(); return *this; }
+	FORCEINLINE constexpr TFunction& operator=(nullptr_t) { Reset(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
@@ -620,7 +620,7 @@ public:
 		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
+	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
 };
 
@@ -640,7 +640,7 @@ private:
 
 public:
 
-	constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
+	FORCEINLINE constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
 	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue)            = delete;
 	FORCEINLINE TUniqueFunction(TUniqueFunction&& InValue)                 = default;
@@ -681,12 +681,12 @@ public:
 
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
+	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
 	{
 		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr TUniqueFunction& operator=(nullptr_t) { Impl::Destroy(); Impl::Invalidate(); return *this; }
+	FORCEINLINE constexpr TUniqueFunction& operator=(nullptr_t) { Impl::Destroy(); Impl::Invalidate(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
@@ -708,24 +708,24 @@ public:
 		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
+	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
 };
 
 template <CFunction F>
-constexpr bool operator==(const TFunctionRef<F>& LHS, nullptr_t)
+FORCEINLINE constexpr bool operator==(const TFunctionRef<F>& LHS, nullptr_t)
 {
 	return !LHS;
 }
 
 template <CFunction F>
-constexpr bool operator==(const TFunction<F>& LHS, nullptr_t)
+FORCEINLINE constexpr bool operator==(const TFunction<F>& LHS, nullptr_t)
 {
 	return !LHS;
 }
 
 template <CFunction F>
-constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
+FORCEINLINE constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
 {
 	return !LHS;
 }
@@ -743,35 +743,29 @@ struct TNotFunction
 {
 	F Storage;
 
-	TNotFunction(const TNotFunction&) = default;
-	TNotFunction(TNotFunction&&) = default;
-
-	template <typename InF>
-	constexpr TNotFunction(InF&& InFunc) : Storage(Forward<InF>(InFunc)) { }
-
 	template <typename... Ts> requires (CInvocable<F&, Ts&&...>)
-	constexpr auto operator()(Ts&&... Args) &
+	FORCEINLINE constexpr auto operator()(Ts&&... Args) &
 		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
 	template <typename... Ts> requires (CInvocable<F&&, Ts&&...>)
-	constexpr auto operator()(Ts&&... Args) &&
+	FORCEINLINE constexpr auto operator()(Ts&&... Args) &&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
 		return !Invoke(MoveTemp(Storage), Forward<Ts>(Args)...);
 	}
 
 	template <typename... Ts> requires (CInvocable<const F&, Ts&&...>)
-	constexpr auto operator()(Ts&&... Args) const&
+	FORCEINLINE constexpr auto operator()(Ts&&... Args) const&
 		-> decltype(!Invoke(Storage, Forward<Ts>(Args)...))
 	{
 		return !Invoke(Storage, Forward<Ts>(Args)...);
 	}
 
 	template <typename... Ts> requires (CInvocable<const F&&, Ts&&...>)
-	constexpr auto operator()(Ts&&... Args) const&&
+	FORCEINLINE constexpr auto operator()(Ts&&... Args) const&&
 		-> decltype(!Invoke(MoveTemp(Storage), Forward<Ts>(Args)...))
 	{
 		return !Invoke(MoveTemp(Storage), Forward<Ts>(Args)...);
@@ -781,9 +775,9 @@ struct TNotFunction
 NAMESPACE_PRIVATE_END
 
 template <typename F> requires (CConstructibleFrom<F, F&&>)
-constexpr NAMESPACE_PRIVATE::TNotFunction<TDecay<F>> NotFn(F&& Func)
+FORCEINLINE constexpr NAMESPACE_PRIVATE::TNotFunction<TDecay<F>> NotFn(F&& Func)
 {
-	return NAMESPACE_PRIVATE::TNotFunction<TDecay<F>>(Forward<F>(Func));
+	return { Forward<F>(Func) };
 }
 
 NAMESPACE_MODULE_END(Utility)

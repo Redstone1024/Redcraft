@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Memory)
 
-constexpr bool IsValidAlignment(size_t Alignment) { return !(Alignment & (Alignment - 1)); }
+FORCEINLINE constexpr bool IsValidAlignment(size_t Alignment) { return !(Alignment & (Alignment - 1)); }
 
 template <typename T> requires (CIntegral<T> || CPointer<T>)
 FORCEINLINE constexpr T Align(T InValue, size_t Alignment)

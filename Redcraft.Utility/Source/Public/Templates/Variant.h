@@ -84,21 +84,21 @@ class TVariant
 {
 public:
 
-	constexpr TVariant() : TypeIndex(0xFF) { };
+	FORCEINLINE constexpr TVariant() : TypeIndex(0xFF) { };
 
-	constexpr TVariant(FInvalid) : TVariant() { };
+	FORCEINLINE constexpr TVariant(FInvalid) : TVariant() { };
 
-	constexpr TVariant(const TVariant& InValue) requires (true && ... && CTriviallyCopyConstructible<Ts>) = default;
+	FORCEINLINE constexpr TVariant(const TVariant& InValue) requires (true && ... && CTriviallyCopyConstructible<Ts>) = default;
 
-	constexpr TVariant(const TVariant& InValue) requires ((true && ... && CCopyConstructible<Ts>) && !(true && ... && CTriviallyCopyConstructible<Ts>))
+	FORCEINLINE constexpr TVariant(const TVariant& InValue) requires ((true && ... && CCopyConstructible<Ts>) && !(true && ... && CTriviallyCopyConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
-	constexpr TVariant(TVariant&& InValue) requires (true && ... && CTriviallyMoveConstructible<Ts>) = default;
+	FORCEINLINE constexpr TVariant(TVariant&& InValue) requires (true && ... && CTriviallyMoveConstructible<Ts>) = default;
 
-	constexpr TVariant(TVariant&& InValue) requires ((true && ... && CMoveConstructible<Ts>) && !(true && ... && CTriviallyMoveConstructible<Ts>))
+	FORCEINLINE constexpr TVariant(TVariant&& InValue) requires ((true && ... && CMoveConstructible<Ts>) && !(true && ... && CTriviallyMoveConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
@@ -106,7 +106,7 @@ public:
 
 	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
 		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
-	constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
 		: TypeIndex(I)
 	{
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
@@ -114,26 +114,26 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
-	constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
 		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, Forward<ArgTypes>(Args)...)
 	{ }
 
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; }
 		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
 		&& !CBaseOf<TVariant, TRemoveCVRef<T>>)
-	constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
+	FORCEINLINE constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
 	{ }
 
-	constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
+	FORCEINLINE constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
 
-	constexpr ~TVariant() requires (!(true && ... && CTriviallyDestructible<Ts>))
+	FORCEINLINE constexpr ~TVariant() requires (!(true && ... && CTriviallyDestructible<Ts>))
 	{
 		Reset();
 	}
 
-	constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)) = default;
+	FORCEINLINE constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)) = default;
 
-	constexpr TVariant& operator=(const TVariant& InValue) requires ((true && ... && (CCopyConstructible<Ts> && CCopyAssignable<Ts>))
+	FORCEINLINE constexpr TVariant& operator=(const TVariant& InValue) requires ((true && ... && (CCopyConstructible<Ts> && CCopyAssignable<Ts>))
 		&& !(true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)))
 	{
 		if (&InValue == this) return *this;
@@ -155,9 +155,9 @@ public:
 		return *this;
 	}
 
-	constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)) = default;
+	FORCEINLINE constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)) = default;
 
-	constexpr TVariant& operator=(TVariant&& InValue) requires ((true && ... && (CMoveConstructible<Ts> && CMoveAssignable<Ts>))
+	FORCEINLINE constexpr TVariant& operator=(TVariant&& InValue) requires ((true && ... && (CMoveConstructible<Ts> && CMoveAssignable<Ts>))
 		&& !(true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)))
 	{
 		if (&InValue == this) return *this;
@@ -180,7 +180,7 @@ public:
 	}
 
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; })
-	constexpr TVariant& operator=(T&& InValue)
+	FORCEINLINE constexpr TVariant& operator=(T&& InValue)
 	{
 		using SelectedType = NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>;
 
@@ -197,7 +197,7 @@ public:
 
 	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
 		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
-	constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(ArgTypes&&... Args)
+	FORCEINLINE constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
 
@@ -209,37 +209,37 @@ public:
 	}
 
 	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
-	constexpr T& Emplace(ArgTypes&&... Args)
+	FORCEINLINE constexpr T& Emplace(ArgTypes&&... Args)
 	{
 		return Emplace<TVariantIndex<T, TVariant<Ts...>>>(Forward<ArgTypes>(Args)...);
 	}
 
-	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
+	FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
 
-	constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
-	constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
-	constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
+	FORCEINLINE constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
+	FORCEINLINE constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
+	FORCEINLINE constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
 
-	template <size_t   I> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                 : false; }
-	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Ts...>> : false; }
+	template <size_t   I> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                 : false; }
+	template <typename T> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Ts...>> : false; }
 
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
 
-	template <typename T> constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
-	template <typename T> constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
-	template <typename T> constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
-	template <typename T> constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
+	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
+	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
+	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
+	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
 
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) Get(      TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
-	template <size_t I> requires (I < sizeof...(Ts)) constexpr decltype(auto) Get(const TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) Get(      TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) Get(const TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 
-	template <typename T> constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	template <typename T> constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> FORCEINLINE constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> FORCEINLINE constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
-	constexpr void Reset()
+	FORCEINLINE constexpr void Reset()
 	{
 		if (GetIndex() == INDEX_NONE) return;
 
@@ -251,7 +251,7 @@ public:
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
 	}
 
-	constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Ts>)
+	FORCEINLINE constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Ts>)
 	{
 		if (!IsValid()) return 114514;
 
@@ -263,7 +263,7 @@ public:
 		return HashCombine(GetTypeHash(GetIndex()), HashImpl[GetIndex()](&Value));
 	}
 
-	constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
+	FORCEINLINE constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
 
@@ -317,7 +317,7 @@ private:
 	TAlignedUnion<1, Ts...> Value;
 	uint8 TypeIndex;
 
-	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
+	friend FORCEINLINE constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
@@ -328,7 +328,7 @@ private:
 		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
-	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
+	friend FORCEINLINE constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
@@ -342,13 +342,13 @@ private:
 };
 
 template <typename T, typename... Ts> requires (!CBaseOf<TVariant<Ts...>, T> && CEqualityComparable<T>)
-constexpr bool operator==(const TVariant<Ts...>& LHS, const T& RHS)
+FORCEINLINE constexpr bool operator==(const TVariant<Ts...>& LHS, const T& RHS)
 {
 	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 }
 
 template <typename... Ts>
-constexpr bool operator==(const TVariant<Ts...>& LHS, FInvalid)
+FORCEINLINE constexpr bool operator==(const TVariant<Ts...>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
 }
@@ -360,7 +360,7 @@ struct TVariantVisitImpl
 {
 	struct GetTotalNum
 	{
-		static constexpr size_t Do()
+		FORCEINLINE static constexpr size_t Do()
 		{
 			if (sizeof...(VariantTypes) == 0) return 0;
 
@@ -379,7 +379,7 @@ struct TVariantVisitImpl
 
 	struct EncodeIndices
 	{
-		static constexpr size_t Do(initializer_list<size_t> Indices)
+		FORCEINLINE static constexpr size_t Do(initializer_list<size_t> Indices)
 		{
 			constexpr size_t VariantNums[] = { TVariantNum<TRemoveReference<VariantTypes>>... };
 
@@ -397,7 +397,7 @@ struct TVariantVisitImpl
 
 	struct DecodeExtent
 	{
-		static constexpr size_t Do(size_t EncodedIndex, size_t Extent)
+		FORCEINLINE static constexpr size_t Do(size_t EncodedIndex, size_t Extent)
 		{
 			constexpr size_t VariantNums[] = { TVariantNum<TRemoveReference<VariantTypes>>... };
 
@@ -416,7 +416,7 @@ struct TVariantVisitImpl
 	template <size_t EncodedIndex, size_t... ExtentIndices>
 	struct InvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
 	{
-		static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
 			return Invoke(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
 		}
@@ -424,7 +424,7 @@ struct TVariantVisitImpl
 		template <typename Ret>
 		struct Result
 		{
-			static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
 				return InvokeResult<Ret>(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
 			}
@@ -437,7 +437,7 @@ struct TVariantVisitImpl
 	template <size_t... EncodedIndices>
 	struct InvokeVariant<TIndexSequence<EncodedIndices...>>
 	{
-		static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
 			using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
 
@@ -453,7 +453,7 @@ struct TVariantVisitImpl
 		template <typename Ret>
 		struct Result
 		{
-			static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
 				using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
 
@@ -466,7 +466,7 @@ struct TVariantVisitImpl
 		};
 	};
 
-	static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
+	FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 	{
 		return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 	}
@@ -474,7 +474,7 @@ struct TVariantVisitImpl
 	template <typename Ret>
 	struct Result
 	{
-		static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
+		FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 		{
 			return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::template Result<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 		}
@@ -485,7 +485,7 @@ NAMESPACE_PRIVATE_END
 
 template <typename F, typename FirstVariantType, typename... VariantTypes>
 	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
-constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
+FORCEINLINE constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
 {
 	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
@@ -493,7 +493,7 @@ constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, Varian
 
 template <typename Ret, typename F, typename FirstVariantType, typename... VariantTypes>
 	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
-constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
+FORCEINLINE constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
 {
 	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
 	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template Result<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);

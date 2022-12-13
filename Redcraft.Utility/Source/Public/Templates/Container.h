@@ -7,47 +7,47 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T> requires (requires(T&& Container) { Container.GetData(); })
-constexpr decltype(auto) GetData(T&& Container)
+FORCEINLINE constexpr decltype(auto) GetData(T&& Container)
 {
 	return Container.GetData();
 }
 
-template <typename T, size_t N> constexpr       T* GetData(      T(&  Container)[N]) { return Container; }
-template <typename T, size_t N> constexpr       T* GetData(      T(&& Container)[N]) { return Container; }
-template <typename T, size_t N> constexpr const T* GetData(const T(&  Container)[N]) { return Container; }
-template <typename T, size_t N> constexpr const T* GetData(const T(&& Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr       T* GetData(      T(&  Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr       T* GetData(      T(&& Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr const T* GetData(const T(&  Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr const T* GetData(const T(&& Container)[N]) { return Container; }
 
 template <typename T> requires (requires(T&& Container) { Container.data(); })
-constexpr decltype(auto) GetData(T&& Container)
+FORCEINLINE constexpr decltype(auto) GetData(T&& Container)
 {
 	return Container.data();
 }
 
 template <typename T>
-constexpr decltype(auto) GetData(initializer_list<T> Container)
+FORCEINLINE constexpr decltype(auto) GetData(initializer_list<T> Container)
 {
 	return Container.begin();
 }
 
 template <typename T> requires (requires(T&& Container) { Container.Num(); })
-constexpr decltype(auto) GetNum(T&& Container)
+FORCEINLINE constexpr decltype(auto) GetNum(T&& Container)
 {
 	return Container.Num();
 }
 
-template <typename T, size_t N> constexpr size_t GetNum(      T(&  Container)[N]) { return N; }
-template <typename T, size_t N> constexpr size_t GetNum(      T(&& Container)[N]) { return N; }
-template <typename T, size_t N> constexpr size_t GetNum(const T(&  Container)[N]) { return N; }
-template <typename T, size_t N> constexpr size_t GetNum(const T(&& Container)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(&  Container)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(&& Container)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(&  Container)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(&& Container)[N]) { return N; }
 
 template <typename T> requires (requires(T&& Container) { Container.size(); })
-constexpr decltype(auto) GetNum(T&& Container)
+FORCEINLINE constexpr decltype(auto) GetNum(T&& Container)
 {
 	return Container.size();
 }
 
 template <typename T>
-constexpr decltype(auto) GetNum(initializer_list<T> Container)
+FORCEINLINE constexpr decltype(auto) GetNum(initializer_list<T> Container)
 {
 	return Container.size();
 }

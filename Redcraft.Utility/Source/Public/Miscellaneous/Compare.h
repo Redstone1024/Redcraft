@@ -63,7 +63,7 @@ template <typename T, typename U = T, typename OrderingType = partial_ordering>
 concept CSynthThreeWayComparable = CThreeWayComparable<T, U> || CTotallyOrdered<T, U>;
 
 template <typename T, typename U = T> requires (CSynthThreeWayComparable<T, U>)
-constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
+FORCEINLINE constexpr decltype(auto) SynthThreeWayCompare(T&& LHS, U&& RHS)
 {
 	if constexpr (CThreeWayComparable<T, U>)
 	{

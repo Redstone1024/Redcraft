@@ -18,43 +18,43 @@ public:
 	using Type = ReferencedType;
 
 	template <typename T = ReferencedType> requires (CConvertibleTo<T, ReferencedType&>)
-	constexpr TReferenceWrapper(T&& Object)
+	FORCEINLINE constexpr TReferenceWrapper(T&& Object)
 	{
 		ReferencedType& Reference = Forward<T>(Object);
 		Pointer = AddressOf(Reference);
 	}
 
-	TReferenceWrapper(const TReferenceWrapper&) = default;
+	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper&) = default;
 	
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
-	constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
+	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
 		: Pointer(InValue.Pointer)
 	{ }
 
-	TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
+	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
 	
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
-	constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
+	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
 	{
 		Pointer = InValue.Pointer;
 		return *this;
 	}
 	
-	constexpr operator ReferencedType&() const { return *Pointer; }
-	constexpr ReferencedType& Get()      const { return *Pointer; }
+	FORCEINLINE constexpr operator ReferencedType&() const { return *Pointer; }
+	FORCEINLINE constexpr ReferencedType& Get()      const { return *Pointer; }
 
 	template <typename... Ts>
-	constexpr TInvokeResult<ReferencedType&, Ts...> operator()(Ts&&... Args) const
+	FORCEINLINE constexpr TInvokeResult<ReferencedType&, Ts...> operator()(Ts&&... Args) const
 	{
 		return Invoke(Get(), Forward<Ts>(Args)...);
 	}
 
-	constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
+	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
 	{
 		return NAMESPACE_REDCRAFT::GetTypeHash(Get());
 	}
 	
-	constexpr void Swap(TReferenceWrapper& InValue)
+	FORCEINLINE constexpr void Swap(TReferenceWrapper& InValue)
 	{
 		ReferencedType* Temp = Pointer;
 		Pointer = InValue.Pointer;
@@ -68,7 +68,7 @@ private:
 	template <typename T> requires (CObject<T> || CFunction<T>) friend class TReferenceWrapper;
 
 	// Optimize TOptional with these hacking
-	constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
+	FORCEINLINE constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
 	template <typename T> requires (CDestructible<T>) friend class TOptional;
 
 };
@@ -80,25 +80,25 @@ template <typename T>
 void Ref(const T&&) = delete;
 
 template <typename T>
-constexpr TReferenceWrapper<T> Ref(T& InValue)
+FORCEINLINE constexpr TReferenceWrapper<T> Ref(T& InValue)
 {
 	return TReferenceWrapper<T>(InValue);
 }
 
 template <typename T>
-constexpr TReferenceWrapper<T> Ref(TReferenceWrapper<T> InValue)
+FORCEINLINE constexpr TReferenceWrapper<T> Ref(TReferenceWrapper<T> InValue)
 {
 	return Ref(InValue.Get());
 }
 
 template <typename T>
-constexpr TReferenceWrapper<const T> Ref(const T& InValue)
+FORCEINLINE constexpr TReferenceWrapper<const T> Ref(const T& InValue)
 {
 	return TReferenceWrapper<const T>(InValue);
 }
 
 template <typename T>
-constexpr TReferenceWrapper<const T> Ref(TReferenceWrapper<T> InValue)
+FORCEINLINE constexpr TReferenceWrapper<const T> Ref(TReferenceWrapper<T> InValue)
 {
 	return Ref(InValue.Get());
 }
@@ -151,87 +151,87 @@ public:
 
 	using ValueType = OptionalType;
 
-	constexpr TOptional() : Reference(Invalid) { }
+	FORCEINLINE constexpr TOptional() : Reference(Invalid) { }
 
-	constexpr TOptional(FInvalid) : TOptional() { }
+	FORCEINLINE constexpr TOptional(FInvalid) : TOptional() { }
 
 	template <typename... Ts> requires (CConstructibleFrom<OptionalType, Ts...>)
-	constexpr explicit TOptional(FInPlace, Ts&&... Args)
+	FORCEINLINE constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: Reference(Forward<Ts>(Args)...)
 	{ }
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>
 		&& !CSameAs<TRemoveCVRef<T>, FInPlace> && !CBaseOf<TOptional, TRemoveCVRef<T>>)
-	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
-	TOptional(const TOptional& InValue) = default;
-	TOptional(TOptional&& InValue) = default;
+	FORCEINLINE TOptional(const TOptional& InValue) = default;
+	FORCEINLINE TOptional(TOptional&& InValue) = default;
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
-	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: Reference(InValue.Reference)
 	{ }
 
-	~TOptional() = default;
+	FORCEINLINE ~TOptional() = default;
 
-	TOptional& operator=(const TOptional& InValue) = default;
-	TOptional& operator=(TOptional&& InValue) = default;
+	FORCEINLINE TOptional& operator=(const TOptional& InValue) = default;
+	FORCEINLINE TOptional& operator=(TOptional&& InValue) = default;
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
 		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value)
-	constexpr TOptional& operator=(const TOptional<T>& InValue)
+	FORCEINLINE constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		Reference = InValue.Reference;
 		return *this;
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>)
-	constexpr TOptional& operator=(T&& InValue)
+	FORCEINLINE constexpr TOptional& operator=(T&& InValue)
 	{
 		Reference = InValue;
 		return *this;
 	}
 
 	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
-	constexpr OptionalType& Emplace(ArgTypes&&... Args)
+	FORCEINLINE constexpr OptionalType& Emplace(ArgTypes&&... Args)
 	{
 		Reference = TReferenceWrapper<ReferencedType>(Forward<ArgTypes>(Args)...);
 		return Reference;
 	}
 
-	constexpr bool           IsValid() const { return Reference.Pointer != nullptr; }
-	constexpr explicit operator bool() const { return Reference.Pointer != nullptr; }
+	FORCEINLINE constexpr bool           IsValid() const { return Reference.Pointer != nullptr; }
+	FORCEINLINE constexpr explicit operator bool() const { return Reference.Pointer != nullptr; }
 	
-	constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	FORCEINLINE constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	FORCEINLINE constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	FORCEINLINE constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
+	FORCEINLINE constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
 
-	constexpr const OptionalType* operator->() const { return &GetValue(); }
-	constexpr       OptionalType* operator->()       { return &GetValue(); }
+	FORCEINLINE constexpr const OptionalType* operator->() const { return &GetValue(); }
+	FORCEINLINE constexpr       OptionalType* operator->()       { return &GetValue(); }
 
-	constexpr       OptionalType&  operator*() &       { return GetValue(); }
-	constexpr       OptionalType&& operator*() &&      { return GetValue(); }
-	constexpr const OptionalType&  operator*() const&  { return GetValue(); }
-	constexpr const OptionalType&& operator*() const&& { return GetValue(); }
+	FORCEINLINE constexpr       OptionalType&  operator*() &       { return GetValue(); }
+	FORCEINLINE constexpr       OptionalType&& operator*() &&      { return GetValue(); }
+	FORCEINLINE constexpr const OptionalType&  operator*() const&  { return GetValue(); }
+	FORCEINLINE constexpr const OptionalType&& operator*() const&& { return GetValue(); }
 
-	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
-	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
+	FORCEINLINE constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
+	FORCEINLINE constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
 
-	constexpr void Reset()
+	FORCEINLINE constexpr void Reset()
 	{
 		Reference = Invalid;
 	}
 
-	constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
+	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
 	{
 		if (!IsValid()) return 2824517378;
 		return Reference.GetTypeHash();
 	}
 
-	constexpr void Swap(TOptional& InValue)
+	FORCEINLINE constexpr void Swap(TOptional& InValue)
 	{
 		Reference.Swap(InValue.Reference);
 	}

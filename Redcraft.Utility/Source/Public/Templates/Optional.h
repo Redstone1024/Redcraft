@@ -36,12 +36,12 @@ public:
 
 	using ValueType = OptionalType;
 
-	constexpr TOptional() : bIsValid(false) { }
+	FORCEINLINE constexpr TOptional() : bIsValid(false) { }
 
-	constexpr TOptional(FInvalid) : TOptional() { }
+	FORCEINLINE constexpr TOptional(FInvalid) : TOptional() { }
 
 	template <typename... Ts> requires (CConstructibleFrom<OptionalType, Ts...>)
-	constexpr explicit TOptional(FInPlace, Ts&&... Args)
+	FORCEINLINE constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: bIsValid(true)
 	{
 		new (&Value) OptionalType(Forward<Ts>(Args)...);
@@ -49,50 +49,50 @@ public:
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>)
 		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CBaseOf<TOptional, TRemoveCVRef<T>>)
-	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
 	
-	constexpr TOptional(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType>) = default;
+	FORCEINLINE constexpr TOptional(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType>) = default;
 
-	constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && !CTriviallyCopyConstructible<OptionalType>)
+	FORCEINLINE constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && !CTriviallyCopyConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new (&Value) OptionalType(InValue.GetValue());
 	}
 
-	constexpr TOptional(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType>) = default;
+	FORCEINLINE constexpr TOptional(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType>) = default;
 
-	constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && !CTriviallyMoveConstructible<OptionalType>)
+	FORCEINLINE constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && !CTriviallyMoveConstructible<OptionalType>)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
-	constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new (&Value) OptionalType(InValue.GetValue());
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value)
-	constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	constexpr ~TOptional() requires (CTriviallyDestructible<OptionalType>) = default;
+	FORCEINLINE constexpr ~TOptional() requires (CTriviallyDestructible<OptionalType>) = default;
 
-	constexpr ~TOptional() requires (!CTriviallyDestructible<OptionalType>)
+	FORCEINLINE constexpr ~TOptional() requires (!CTriviallyDestructible<OptionalType>)
 	{
 		Reset();
 	}
 
-	constexpr TOptional& operator=(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType> && CTriviallyCopyAssignable<OptionalType>) = default;
+	FORCEINLINE constexpr TOptional& operator=(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType> && CTriviallyCopyAssignable<OptionalType>) = default;
 
-	constexpr TOptional& operator=(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>
+	FORCEINLINE constexpr TOptional& operator=(const TOptional& InValue) requires (CCopyConstructible<OptionalType> && CCopyAssignable<OptionalType>
 		&& !CTriviallyCopyConstructible<OptionalType> && !CTriviallyCopyAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
@@ -113,9 +113,9 @@ public:
 		return *this;
 	}
 
-	constexpr TOptional& operator=(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType> && CTriviallyMoveAssignable<OptionalType>) = default;
+	FORCEINLINE constexpr TOptional& operator=(TOptional&& InValue) requires (CTriviallyMoveConstructible<OptionalType> && CTriviallyMoveAssignable<OptionalType>) = default;
 
-	constexpr TOptional& operator=(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>
+	FORCEINLINE constexpr TOptional& operator=(TOptional&& InValue) requires (CMoveConstructible<OptionalType> && CMoveAssignable<OptionalType>
 		&& !CTriviallyMoveConstructible<OptionalType> && !CTriviallyMoveAssignable<OptionalType>)
 	{
 		if (&InValue == this) return *this;
@@ -138,7 +138,7 @@ public:
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
 		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value)
-	constexpr TOptional& operator=(const TOptional<T>& InValue)
+	FORCEINLINE constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (!InValue.IsValid())
 		{
@@ -158,7 +158,7 @@ public:
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>
 		&& CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value)
-	constexpr TOptional& operator=(TOptional<T>&& InValue)
+	FORCEINLINE constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (!InValue.IsValid())
 		{
@@ -177,7 +177,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>)
-	constexpr TOptional& operator=(T&& InValue)
+	FORCEINLINE constexpr TOptional& operator=(T&& InValue)
 	{
 		if (IsValid()) GetValue() = Forward<T>(InValue);
 		else
@@ -190,7 +190,7 @@ public:
 	}
 
 	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
-	constexpr OptionalType& Emplace(ArgTypes&&... Args)
+	FORCEINLINE constexpr OptionalType& Emplace(ArgTypes&&... Args)
 	{
 		Reset();
 
@@ -200,26 +200,26 @@ public:
 		return *Result;
 	}
 
-	constexpr bool           IsValid() const { return bIsValid; }
-	constexpr explicit operator bool() const { return bIsValid; }
+	FORCEINLINE constexpr bool           IsValid() const { return bIsValid; }
+	FORCEINLINE constexpr explicit operator bool() const { return bIsValid; }
 	
-	constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      OptionalType*>(&Value);   }
-	constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      OptionalType*>(&Value));  }
-	constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const OptionalType*>(&Value);   }
-	constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const OptionalType*>(&Value));  }
+	FORCEINLINE constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      OptionalType*>(&Value);   }
+	FORCEINLINE constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      OptionalType*>(&Value));  }
+	FORCEINLINE constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const OptionalType*>(&Value);   }
+	FORCEINLINE constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const OptionalType*>(&Value));  }
 
-	constexpr const OptionalType* operator->() const { return &GetValue(); }
-	constexpr       OptionalType* operator->()       { return &GetValue(); }
+	FORCEINLINE constexpr const OptionalType* operator->() const { return &GetValue(); }
+	FORCEINLINE constexpr       OptionalType* operator->()       { return &GetValue(); }
 
-	constexpr       OptionalType&  operator*() &       { return GetValue(); }
-	constexpr       OptionalType&& operator*() &&      { return GetValue(); }
-	constexpr const OptionalType&  operator*() const&  { return GetValue(); }
-	constexpr const OptionalType&& operator*() const&& { return GetValue(); }
+	FORCEINLINE constexpr       OptionalType&  operator*() &       { return GetValue(); }
+	FORCEINLINE constexpr       OptionalType&& operator*() &&      { return GetValue(); }
+	FORCEINLINE constexpr const OptionalType&  operator*() const&  { return GetValue(); }
+	FORCEINLINE constexpr const OptionalType&& operator*() const&& { return GetValue(); }
 
-	constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
-	constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
+	FORCEINLINE constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
+	FORCEINLINE constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
 
-	constexpr void Reset()
+	FORCEINLINE constexpr void Reset()
 	{
 		if (bIsValid)
 		{
@@ -230,14 +230,14 @@ public:
 		}
 	}
 
-	constexpr size_t GetTypeHash() const requires (CHashable<OptionalType>)
+	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<OptionalType>)
 	{
 		if (!IsValid()) return 2824517378;
 		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
 	}
 
 	template <typename T> requires (CMoveConstructible<OptionalType> && CSwappable<OptionalType>)
-	constexpr void Swap(TOptional& InValue)
+	FORCEINLINE constexpr void Swap(TOptional& InValue)
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
 
@@ -269,7 +269,7 @@ template <typename T>
 TOptional(T) -> TOptional<T>;
 
 template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
-constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
+FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return false;
 	if (LHS.IsValid() == false) return true;
@@ -277,7 +277,7 @@ constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
 }
 
 template <typename T, typename U> requires (CSynthThreeWayComparable<T, U>)
-constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
+FORCEINLINE constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
 {
 	if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
 	if (LHS.IsValid() == false) return partial_ordering::equivalent;
@@ -285,31 +285,31 @@ constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<
 }
 
 template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
-constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
+FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
 {
 	return LHS.IsValid() ? *LHS == RHS : false;
 }
 
 template <typename T>
-constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
+FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
 {
 	return !LHS.IsValid();
 }
 
 template <typename T> requires (CDestructible<T>)
-constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
+FORCEINLINE constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
 {
 	return TOptional<TDecay<T>>(Invalid);
 }
 
 template <typename T> requires (CDestructible<T> && CConstructibleFrom<T, T&&>)
-constexpr TOptional<T> MakeOptional(T&& InValue)
+FORCEINLINE constexpr TOptional<T> MakeOptional(T&& InValue)
 {
 	return TOptional<T>(Forward<T>(InValue));
 }
 
 template <typename T, typename... Ts> requires (CDestructible<T> && CConstructibleFrom<T, Ts...>)
-constexpr TOptional<T> MakeOptional(Ts&&... Args)
+FORCEINLINE constexpr TOptional<T> MakeOptional(Ts&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
 }
