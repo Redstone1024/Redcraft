@@ -104,7 +104,7 @@ public:
 	FORCEINLINE constexpr TFunctionStorage() = default;
 	
 	FORCEINLINE TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
-		: TypeInfo(InValue.TypeInfo)
+		: RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
 
@@ -118,18 +118,18 @@ public:
 			Memory::Memcpy(InternalStorage, InValue.InternalStorage);
 			break;
 		case ERepresentation::Small:
-			GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+			GetRTTI().CopyConstruct(GetStorage(), InValue.GetStorage());
 			break;
 		case ERepresentation::Big:
-			ExternalStorage = Memory::Malloc(GetTypeInfo().TypeSize, GetTypeInfo().TypeAlignment);
-			GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+			ExternalStorage = Memory::Malloc(GetRTTI().TypeSize, GetRTTI().TypeAlignment);
+			GetRTTI().CopyConstruct(GetStorage(), InValue.GetStorage());
 			break;
 		default: check_no_entry();
 		}
 	}
 
 	FORCEINLINE TFunctionStorage(TFunctionStorage&& InValue)
-		: TypeInfo(InValue.TypeInfo)
+		: RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
 
@@ -143,7 +143,7 @@ public:
 			Memory::Memcpy(InternalStorage, InValue.InternalStorage);
 			break;
 		case ERepresentation::Small:
-			GetTypeInfo().MoveConstruct(GetStorage(), InValue.GetStorage());
+			GetRTTI().MoveConstruct(GetStorage(), InValue.GetStorage());
 			break;
 		case ERepresentation::Big:
 			ExternalStorage = InValue.ExternalStorage;
@@ -171,7 +171,7 @@ public:
 		{
 			Destroy();
 
-			TypeInfo = InValue.TypeInfo;
+			RTTI = InValue.RTTI;
 			Callable = InValue.Callable;
 
 			switch (GetRepresentation())
@@ -182,11 +182,11 @@ public:
 				Memory::Memcpy(InternalStorage, InValue.InternalStorage);
 				break;
 			case ERepresentation::Small:
-				GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+				GetRTTI().CopyConstruct(GetStorage(), InValue.GetStorage());
 				break;
 			case ERepresentation::Big:
-				ExternalStorage = Memory::Malloc(GetTypeInfo().TypeSize, GetTypeInfo().TypeAlignment);
-				GetTypeInfo().CopyConstruct(GetStorage(), InValue.GetStorage());
+				ExternalStorage = Memory::Malloc(GetRTTI().TypeSize, GetRTTI().TypeAlignment);
+				GetRTTI().CopyConstruct(GetStorage(), InValue.GetStorage());
 				break;
 			default: check_no_entry();
 			}
@@ -208,7 +208,7 @@ public:
 		{
 			Destroy();
 
-			TypeInfo = InValue.TypeInfo;
+			RTTI = InValue.RTTI;
 			Callable = InValue.Callable;
 
 			switch (GetRepresentation())
@@ -219,7 +219,7 @@ public:
 				Memory::Memcpy(InternalStorage, InValue.InternalStorage);
 				break;
 			case ERepresentation::Small:
-				GetTypeInfo().MoveConstruct(GetStorage(), InValue.GetStorage());
+				GetRTTI().MoveConstruct(GetStorage(), InValue.GetStorage());
 				break;
 			case ERepresentation::Big:
 				ExternalStorage = InValue.ExternalStorage;
@@ -235,7 +235,7 @@ public:
 	FORCEINLINE constexpr uintptr GetValuePtr() const { return reinterpret_cast<uintptr>(GetStorage()); }
 	FORCEINLINE constexpr uintptr GetCallable() const { return Callable;                                }
 
-	FORCEINLINE constexpr bool IsValid() const { return TypeInfo != 0; }
+	FORCEINLINE constexpr bool IsValid() const { return RTTI != 0; }
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
 	FORCEINLINE void Destroy()
@@ -248,10 +248,10 @@ public:
 		case ERepresentation::Trivial:
 			break;
 		case ERepresentation::Small:
-			GetTypeInfo().Destruct(GetStorage());
+			GetRTTI().Destruct(GetStorage());
 			break;
 		case ERepresentation::Big:
-			GetTypeInfo().Destruct(GetStorage());
+			GetRTTI().Destruct(GetStorage());
 			Memory::Free(ExternalStorage);
 			break;
 		default: check_no_entry();
@@ -259,7 +259,7 @@ public:
 	}
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
-	FORCEINLINE constexpr void Invalidate() { TypeInfo = 0; }
+	FORCEINLINE constexpr void Invalidate() { RTTI = 0; }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename... Ts>
@@ -269,8 +269,8 @@ public:
 
 		using DecayedType = TDecay<T>;
 
-		static constexpr const FTypeInfo SelectedTypeInfo(InPlaceType<DecayedType>);
-		TypeInfo = reinterpret_cast<uintptr>(&SelectedTypeInfo);
+		static constexpr const FRTTI SelectedRTTI(InPlaceType<DecayedType>);
+		RTTI = reinterpret_cast<uintptr>(&SelectedRTTI);
 
 		if constexpr (CEmpty<DecayedType>) return;
 
@@ -280,17 +280,17 @@ public:
 		if constexpr (bIsTriviallyStorable)
 		{
 			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
+			RTTI |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsInlineStorable)
 		{
 			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
+			RTTI |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
 			ExternalStorage = new DecayedType(Forward<Ts>(Args)...);
-			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
+			RTTI |= static_cast<uintptr>(ERepresentation::Big);
 		}
 
 	}
@@ -327,10 +327,10 @@ private:
 		void* ExternalStorage;
 	};
 
-	uintptr TypeInfo;
+	uintptr RTTI;
 	uintptr Callable;
 
-	struct FMovableTypeInfo
+	struct FMovableRTTI
 	{
 		const size_t TypeSize;
 		const size_t TypeAlignment;
@@ -342,12 +342,12 @@ private:
 		const FDestruct      Destruct;
 
 		template <typename T>
-		FORCEINLINE constexpr FMovableTypeInfo(TInPlaceType<T>)
+		FORCEINLINE constexpr FMovableRTTI(TInPlaceType<T>)
 			: TypeSize(sizeof(T)), TypeAlignment(alignof(T))
 			, MoveConstruct(
 				[](void* A, void* B)
 				{
-					new (A) T(*reinterpret_cast<T*>(B));
+					new (A) T(MoveTemp(*reinterpret_cast<T*>(B)));
 				}
 			)
 			, Destruct(
@@ -359,15 +359,15 @@ private:
 		{ }
 	};
 	
-	struct FCopyableTypeInfo : public FMovableTypeInfo
+	struct FCopyableRTTI : public FMovableRTTI
 	{
 		using FCopyConstruct = void(*)(void*, const void*);
 
 		const FCopyConstruct CopyConstruct;
 
 		template <typename T>
-		FORCEINLINE constexpr FCopyableTypeInfo(TInPlaceType<T>)
-			: FMovableTypeInfo(InPlaceType<T>)
+		FORCEINLINE constexpr FCopyableRTTI(TInPlaceType<T>)
+			: FMovableRTTI(InPlaceType<T>)
 			, CopyConstruct(
 				[](void* A, const void* B)
 				{
@@ -377,9 +377,9 @@ private:
 		{ }
 	};
 
-	using FTypeInfo = TConditional<bIsUnique, FMovableTypeInfo, FCopyableTypeInfo>;
+	using FRTTI = TConditional<bIsUnique, FMovableRTTI, FCopyableRTTI>;
 	
-	static_assert(alignof(FTypeInfo) >= 4);
+	static_assert(alignof(FRTTI) >= 4);
 
 	static constexpr uintptr_t RepresentationMask = 3;
 
@@ -391,8 +391,8 @@ private:
 		Big     = 3, // ExternalStorage
 	};
 
-	FORCEINLINE constexpr ERepresentation  GetRepresentation() const { return        static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
-	FORCEINLINE constexpr const FTypeInfo& GetTypeInfo()       const { return *reinterpret_cast<const FTypeInfo*>(TypeInfo & ~RepresentationMask); }
+	FORCEINLINE constexpr ERepresentation GetRepresentation() const { return    static_cast<ERepresentation>(RTTI &  RepresentationMask); }
+	FORCEINLINE constexpr    const FRTTI& GetRTTI()           const { return *reinterpret_cast<const FRTTI*>(RTTI & ~RepresentationMask); }
 
 	FORCEINLINE constexpr       void* GetStorage()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
 	FORCEINLINE constexpr const void* GetStorage() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
