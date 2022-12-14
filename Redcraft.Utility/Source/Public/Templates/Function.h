@@ -272,17 +272,17 @@ public:
 		static constexpr const FRTTI SelectedRTTI(InPlaceType<DecayedType>);
 		RTTI = reinterpret_cast<uintptr>(&SelectedRTTI);
 
-		if constexpr (CEmpty<DecayedType>) return;
+		if constexpr (CEmpty<DecayedType> && CTrivial<DecayedType>) return; // ERepresentation::Empty
 
-		constexpr bool bIsInlineStorable = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage);
-		constexpr bool bIsTriviallyStorable = bIsInlineStorable && CTrivial<DecayedType> && CTriviallyCopyable<DecayedType>;
+		constexpr bool bIsTriviallyStorable = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage) && CTriviallyCopyable<DecayedType>;
+		constexpr bool bIsSmallStorable     = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage);
 
 		if constexpr (bIsTriviallyStorable)
 		{
 			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
 			RTTI |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
-		else if constexpr (bIsInlineStorable)
+		else if constexpr (bIsSmallStorable)
 		{
 			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
 			RTTI |= static_cast<uintptr>(ERepresentation::Small);
@@ -393,10 +393,30 @@ private:
 
 	FORCEINLINE constexpr ERepresentation GetRepresentation() const { return    static_cast<ERepresentation>(RTTI &  RepresentationMask); }
 	FORCEINLINE constexpr    const FRTTI& GetRTTI()           const { return *reinterpret_cast<const FRTTI*>(RTTI & ~RepresentationMask); }
-
-	FORCEINLINE constexpr       void* GetStorage()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
-	FORCEINLINE constexpr const void* GetStorage() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? InternalStorage : ExternalStorage; }
 	
+	FORCEINLINE constexpr void* GetStorage()
+	{
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:   return nullptr;
+		case ERepresentation::Trivial: return &InternalStorage;
+		case ERepresentation::Small:   return &InternalStorage;
+		case ERepresentation::Big:     return ExternalStorage;
+		default: check_no_entry();     return nullptr;
+		}
+	}
+	
+	FORCEINLINE constexpr const void* GetStorage() const
+	{
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:   return nullptr;
+		case ERepresentation::Trivial: return &InternalStorage;
+		case ERepresentation::Small:   return &InternalStorage;
+		case ERepresentation::Big:     return ExternalStorage;
+		default: check_no_entry();     return nullptr;
+		}
+	}
 };
 
 template <typename T>
