@@ -71,6 +71,10 @@ void TestMemoryBuffer()
 	Memory::Memmove(PtrA, PtrA + 2, 6);
 	always_check((TempA << 16) == TempB);
 
+	TempA = 0x0123456789ABCDEF;
+	Memory::Memmove(TempB, TempA);
+	always_check(TempB == TempA);
+
 	TempA = 1004;
 	TempB = 1005;
 	TempC = 1005;
@@ -78,8 +82,13 @@ void TestMemoryBuffer()
 	int32 ResultA = Memory::Memcmp(PtrA, PtrB, sizeof(int64));
 	int32 ResultB = Memory::Memcmp(PtrB, PtrC, sizeof(int64));
 	int32 ResultC = Memory::Memcmp(PtrC, PtrD, sizeof(int64));
-	always_check((ResultA < 0) != (ResultB < 0));
+	always_check((ResultA < 0) == (ResultC < 0));
 	always_check(ResultB == 0);
+	int32 ResultD = Memory::Memcmp(TempA, TempB);
+	int32 ResultE = Memory::Memcmp(TempB, TempC);
+	int32 ResultF = Memory::Memcmp(TempC, TempD);
+	always_check((ResultD < 0) == (ResultF < 0));
+	always_check(ResultE == 0);
 
 	Memory::Memset(PtrA, 0x3F, sizeof(int64));
 	always_check(TempA == 0x3F3F3F3F3F3F3F3F);

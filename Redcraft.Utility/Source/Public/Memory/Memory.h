@@ -54,6 +54,20 @@ FORCEINLINE void* Memcpy(void* Destination, const void* Source, size_t Count)
 }
 
 template <typename T>
+FORCEINLINE void Memmove(T& Destination, const T& Source)
+{
+	static_assert(!CPointer<T>, "For pointers use the three parameters function");
+	Memmove(&Destination, &Source, sizeof(T));
+}
+
+template <typename T>
+FORCEINLINE int32 Memcmp(const T& BufferLHS, const T& BufferRHS)
+{
+	static_assert(!CPointer<T>, "For pointers use the three parameters function");
+	return Memcmp(&BufferLHS, &BufferRHS, sizeof(T));
+}
+
+template <typename T>
 FORCEINLINE void Memset(T& Source, uint8 ValueToSet)
 {
 	static_assert(!CPointer<T>, "For pointers use the three parameters function");
