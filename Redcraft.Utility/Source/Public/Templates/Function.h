@@ -321,15 +321,6 @@ public:
 
 private:
 
-	union
-	{
-		uint8 InternalStorage[64 - sizeof(uintptr) - sizeof(uintptr)];
-		void* ExternalStorage;
-	};
-
-	uintptr RTTI;
-	uintptr Callable;
-
 	struct FMovableRTTI
 	{
 		const size_t TypeSize;
@@ -390,6 +381,15 @@ private:
 		Small   = 2, // InternalStorage
 		Big     = 3, // ExternalStorage
 	};
+	
+	union
+	{
+		uint8 InternalStorage[64 - sizeof(uintptr) - sizeof(uintptr)];
+		void* ExternalStorage;
+	};
+
+	uintptr RTTI;
+	uintptr Callable;
 
 	FORCEINLINE constexpr ERepresentation GetRepresentation() const { return    static_cast<ERepresentation>(RTTI &  RepresentationMask); }
 	FORCEINLINE constexpr    const FRTTI& GetRTTI()           const { return *reinterpret_cast<const FRTTI*>(RTTI & ~RepresentationMask); }

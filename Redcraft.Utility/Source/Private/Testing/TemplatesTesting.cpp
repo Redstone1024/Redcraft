@@ -448,7 +448,7 @@ void TestAny()
 		FTracker& operator=(const FTracker& InValue) { always_check_no_entry(); return *this; }
 		FTracker& operator=(FTracker&& InValue) { return *this; }
 	};
-	
+
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -492,7 +492,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(0 == TempA);
 	}
-	
+
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -536,7 +536,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(FIntegral(0) == TempA);
 	}
-	
+
 	{
 		FAny TempA;
 		FAny TempB(Invalid);
@@ -580,7 +580,7 @@ void TestAny()
 		always_check(!TempD.IsValid());
 		always_check(FFloating(0.0) == TempA);
 	}
-	
+
 	{
 		FAny TempA;
 		FAny TempB(InPlaceType<int32>, 0);
@@ -624,24 +624,6 @@ void TestAny()
 		TempZ = FTracker();
 	}
 
-	{
-		always_check(GetTypeHash(FAny(114)) == GetTypeHash(FAny(114)));
-		always_check(GetTypeHash(FAny(114)) != GetTypeHash(FAny(514)));
-	}
-
-	{
-		FAny TempA = Invalid;
-		FAny TempB = static_cast<int16>(16);
-		FAny TempC = static_cast<int32>(16);
-		FAny TempD = static_cast<int32>(32);
-
-		always_check(TempA == TempA);
-		always_check(TempA != TempB);
-		always_check(TempB != TempC);
-		always_check(TempB != TempC);
-		always_check(TempD >= TempC);
-		always_check(TempA <=> TempB == partial_ordering::unordered);
-	}
 }
 
 void TestTuple()

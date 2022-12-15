@@ -13,122 +13,67 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// TAny's CustomStorage concept, see FAnyDefaultStorage
-template <typename T>
-concept CAnyCustomStorage = CDefaultConstructible<T>
-	&& !CCopyConstructible<T> && !CMoveConstructible<T>
-	&& !CCopyAssignable<T>    && !CMoveAssignable<T>
-	&& CDestructible<T>
-	&& CSameAs<decltype(T::InlineSize),      const size_t>
-	&& CSameAs<decltype(T::InlineAlignment), const size_t>
-	&& requires(const T& A)
-	{
-		{ A.InlineAllocation() } -> CSameAs<const void*>;
-		{ A.HeapAllocation()   } -> CSameAs<void*>;
-		{ A.TypeInfo()         } -> CSameAs<uintptr>;
-	}
-	&& requires(T& A)
-	{
-		{ A.InlineAllocation() } -> CSameAs<void*>;
-		{ A.HeapAllocation()   } -> CSameAs<void*&>;
-		{ A.TypeInfo()         } -> CSameAs<uintptr&>;
-	}
-	&& requires(T& A, const T& B, T&& C)
-	{
-		A.CopyCustom(B);
-		A.MoveCustom(MoveTemp(C));
-	};
+// NOTE: In the STL, the assignment operation of the std::any type uses the copy-and-swap idiom
+// instead of directly calling the assignment operation of the contained value.
+// The purpose of this is as follows: 
+//	1) the copy assignment might not exist. 
+//	2) the typical case is that the objects are different. 
+//	3) it is less exception-safe
+// But we don't follow the the copy-and-swap idiom, because we assume that no function throws an exception.
 
-// TAny's default storage structure
-struct alignas(16) FAnyDefaultStorage : FSingleton
-{
-	// The built-in copy/move operators are disabled and CopyCustom/MoveCustom is used instead of them
-
-	// You can add custom variables like this
-	//Type Variable;
-
-	//~ Begin CAnyCustomStorage Interface
-	inline static constexpr size_t InlineSize      = 64 - sizeof(uintptr);
-	inline static constexpr size_t InlineAlignment = 16;
-	constexpr       void* InlineAllocation()       { return &InlineAllocationImpl; }
-	constexpr const void* InlineAllocation() const { return &InlineAllocationImpl; }
-	constexpr void*&      HeapAllocation()         { return HeapAllocationImpl;    }
-	constexpr void*       HeapAllocation()   const { return HeapAllocationImpl;    }
-	constexpr uintptr&    TypeInfo()               { return TypeInfoImpl;          }
-	constexpr uintptr     TypeInfo()         const { return TypeInfoImpl;          }
-	constexpr void CopyCustom(const FAnyDefaultStorage&  InValue) { /* Variable =          InValue.Variable;  */ } // You just need to copy the custom variables
-	constexpr void MoveCustom(      FAnyDefaultStorage&& InValue) { /* Variable = MoveTemp(InValue.Variable); */ } // You just need to move the custom variables
-	//~ End CAnyCustomStorage Interface
-
-	union
-	{
-		uint8 InlineAllocationImpl[InlineSize];
-		void* HeapAllocationImpl;
-	};
-
-	uintptr TypeInfoImpl;
-
-};
-
-static_assert(CAnyCustomStorage<FAnyDefaultStorage>);
-
-// You can add custom storage area through CustomStorage, such as TFunction
-// It is not recommended to use this, FAny is recommended
-template <CAnyCustomStorage CustomStorage>
-class TAny
+class alignas(16) FAny
 {
 public:
 
-	inline static constexpr size_t InlineSize      = CustomStorage::InlineSize;
-	inline static constexpr size_t InlineAlignment = CustomStorage::InlineAlignment;
+	FORCEINLINE constexpr FAny() { Invalidate(); }
 
-	constexpr TAny() { Storage.TypeInfo() = 0; }
+	FORCEINLINE constexpr FAny(FInvalid) : FAny() { }
 
-	constexpr TAny(FInvalid) : TAny() { }
-	
-	FORCEINLINE TAny(const TAny& InValue)
+	FORCEINLINE FAny(const FAny& InValue)
+		: TypeInfo(InValue.TypeInfo)
 	{
-		Storage.CopyCustom(InValue.Storage);
-
-		Storage.TypeInfo() = InValue.Storage.TypeInfo();
-
 		if (!IsValid()) return;
 
 		switch (GetRepresentation())
 		{
+		case ERepresentation::Empty:
+			break;
 		case ERepresentation::Trivial:
-			Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+			Memory::Memcpy(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 			break;
 		case ERepresentation::Small:
-			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
+			SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+			SmallStorage.RTTI->CopyConstruct(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
 			break;
 		case ERepresentation::Big:
-			Storage.HeapAllocation() = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
-			GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
+			BigStorage.RTTI = InValue.BigStorage.RTTI;
+			BigStorage.External = Memory::Malloc(BigStorage.RTTI->TypeSize, BigStorage.RTTI->TypeAlignment);
+			BigStorage.RTTI->CopyConstruct(BigStorage.External, InValue.BigStorage.External);
 			break;
 		default: check_no_entry();
 		}
 	}
 
-	FORCEINLINE TAny(TAny&& InValue)
+	FORCEINLINE FAny(FAny&& InValue)
+		: TypeInfo(InValue.TypeInfo)
 	{
-		Storage.MoveCustom(MoveTemp(InValue.Storage));
-
-		Storage.TypeInfo() = InValue.Storage.TypeInfo();
-
 		if (!IsValid()) return;
 
 		switch (GetRepresentation())
 		{
+		case ERepresentation::Empty:
+			break;
 		case ERepresentation::Trivial:
-			Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+			Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 			break;
 		case ERepresentation::Small:
-			GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
+			SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+			SmallStorage.RTTI->MoveConstruct(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
 			break;
 		case ERepresentation::Big:
-			Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
-			InValue.Storage.TypeInfo() = 0;
+			BigStorage.RTTI = InValue.BigStorage.RTTI;
+			BigStorage.External = InValue.BigStorage.External;
+			InValue.Invalidate();
 			break;
 		default: check_no_entry();
 		}
@@ -136,27 +81,24 @@ public:
 
 	template <typename T, typename... Ts> requires (CDestructible<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
-	FORCEINLINE explicit TAny(TInPlaceType<T>, Ts&&... Args)
+	FORCEINLINE explicit FAny(TInPlaceType<T>, Ts&&... Args)
 	{
-		using SelectedType = TDecay<T>;
-		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
+		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
 
-	template <typename T> requires (!CBaseOf<TAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
 		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>)
-	FORCEINLINE TAny(T&& InValue) : TAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
+	FORCEINLINE FAny(T&& InValue) : FAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
 
-	FORCEINLINE ~TAny()
+	FORCEINLINE ~FAny()
 	{
-		ResetImpl();
+		Destroy();
 	}
 
-	FORCEINLINE TAny& operator=(const TAny& InValue)
+	FORCEINLINE FAny& operator=(const FAny& InValue)
 	{
 		if (&InValue == this) return *this;
-
-		Storage.CopyCustom(InValue.Storage);
 
 		if (!InValue.IsValid())
 		{
@@ -166,33 +108,43 @@ public:
 		{
 			switch (GetRepresentation())
 			{
+			case ERepresentation::Empty:
+				break;
 			case ERepresentation::Trivial:
-				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+				Memory::Memcpy(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 				break;
 			case ERepresentation::Small:
+				SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+				SmallStorage.RTTI->CopyAssign(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
+				break;
 			case ERepresentation::Big:
-				GetTypeInfoImpl().CopyAssignImpl(GetAllocation(), InValue.GetAllocation());
+				BigStorage.RTTI = InValue.BigStorage.RTTI;
+				BigStorage.RTTI->CopyAssign(BigStorage.External, InValue.BigStorage.External);
 				break;
 			default: check_no_entry();
 			}
 		}
 		else
 		{
-			ResetImpl();
+			Destroy();
 
-			Storage.TypeInfo() = InValue.Storage.TypeInfo();
+			TypeInfo = InValue.TypeInfo;
 
 			switch (GetRepresentation())
 			{
+			case ERepresentation::Empty:
+				break;
 			case ERepresentation::Trivial:
-				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+				Memory::Memcpy(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 				break;
 			case ERepresentation::Small:
-				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
+				SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+				SmallStorage.RTTI->CopyConstruct(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
 				break;
 			case ERepresentation::Big:
-				Storage.HeapAllocation() = Memory::Malloc(GetTypeInfoImpl().TypeSize, GetTypeInfoImpl().TypeAlignment);
-				GetTypeInfoImpl().CopyConstructImpl(GetAllocation(), InValue.GetAllocation());
+				BigStorage.RTTI = InValue.BigStorage.RTTI;
+				BigStorage.External = Memory::Malloc(BigStorage.RTTI->TypeSize, BigStorage.RTTI->TypeAlignment);
+				BigStorage.RTTI->CopyConstruct(BigStorage.External, InValue.BigStorage.External);
 				break;
 			default: check_no_entry();
 			}
@@ -201,11 +153,9 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE TAny& operator=(TAny&& InValue)
+	FORCEINLINE FAny& operator=(FAny&& InValue)
 	{
 		if (&InValue == this) return *this;
-
-		Storage.MoveCustom(MoveTemp(InValue.Storage));
 
 		if (!InValue.IsValid())
 		{
@@ -215,37 +165,45 @@ public:
 		{
 			switch (GetRepresentation())
 			{
+			case ERepresentation::Empty:
+				break;
 			case ERepresentation::Trivial:
-				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+				Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 				break;
 			case ERepresentation::Small:
-				GetTypeInfoImpl().MoveAssignImpl(GetAllocation(), InValue.GetAllocation());
+				SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+				SmallStorage.RTTI->MoveAssign(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
 				break;
 			case ERepresentation::Big:
-				ResetImpl();
-				Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
-				InValue.Storage.TypeInfo() = 0;
+				Destroy();
+				BigStorage.RTTI = InValue.BigStorage.RTTI;
+				BigStorage.External = InValue.BigStorage.External;
+				InValue.Invalidate();
 				break;
 			default: check_no_entry();
 			}
 		}
 		else
 		{
-			ResetImpl();
+			Destroy();
 
-			Storage.TypeInfo() = InValue.Storage.TypeInfo();
+			TypeInfo = InValue.TypeInfo;
 
 			switch (GetRepresentation())
 			{
+			case ERepresentation::Empty:
+				break;
 			case ERepresentation::Trivial:
-				Memory::Memcpy(Storage.InlineAllocation(), InValue.Storage.InlineAllocation(), Storage.InlineSize);
+				Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
 				break;
 			case ERepresentation::Small:
-				GetTypeInfoImpl().MoveConstructImpl(GetAllocation(), InValue.GetAllocation());
+				SmallStorage.RTTI = InValue.SmallStorage.RTTI;
+				SmallStorage.RTTI->MoveConstruct(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
 				break;
 			case ERepresentation::Big:
-				Storage.HeapAllocation() = InValue.Storage.HeapAllocation();
-				InValue.Storage.TypeInfo() = 0;
+				BigStorage.RTTI = InValue.BigStorage.RTTI;
+				BigStorage.External = InValue.BigStorage.External;
+				InValue.Invalidate();
 				break;
 			default: check_no_entry();
 			}
@@ -254,20 +212,20 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CBaseOf<TAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
-		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>)
-	FORCEINLINE TAny& operator=(T&& InValue)
+	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+		&& CDestructible<TDecay<T>>&& CConstructibleFrom<TDecay<T>, T&&>)
+	FORCEINLINE FAny& operator=(T&& InValue)
 	{
-		using SelectedType = TDecay<T>;
+		using DecayedType = TDecay<T>;
 
-		if (HoldsAlternative<SelectedType>())
+		if (HoldsAlternative<DecayedType>())
 		{
-			GetValue<SelectedType>() = Forward<T>(InValue);
+			GetValue<DecayedType>() = Forward<T>(InValue);
 		}
 		else
 		{
-			ResetImpl();
-			EmplaceImpl<SelectedType>(Forward<T>(InValue));
+			Destroy();
+			EmplaceImpl<DecayedType>(Forward<T>(InValue));
 		}
 
 		return *this;
@@ -277,58 +235,46 @@ public:
 		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
-		ResetImpl();
-		
-		using SelectedType = TDecay<T>;
-		EmplaceImpl<SelectedType>(Forward<Ts>(Args)...);
-		return GetValue<SelectedType>();
+		Destroy();
+		EmplaceImpl<T>(Forward<Ts>(Args)...);
+		return GetValue<TDecay<T>>();
 	}
 
-	constexpr const type_info& GetTypeInfo() const { return IsValid() ? *GetTypeInfoImpl().NativeTypeInfo : typeid(void); }
+	FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? GetTypeInfoImpl() : typeid(void); }
 
-	constexpr bool           IsValid() const { return Storage.TypeInfo() != 0; }
-	constexpr explicit operator bool() const { return Storage.TypeInfo() != 0; }
+	FORCEINLINE constexpr bool           IsValid() const { return TypeInfo != 0; }
+	FORCEINLINE constexpr explicit operator bool() const { return TypeInfo != 0; }
 
-	template <typename T> constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
+	template <typename T> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
-	template <typename T> requires (CDestructible<TDecay<T>>)
-	constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetAllocation());  }
-	
-	template <typename T> requires (CDestructible<TDecay<T>>)
-	constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetAllocation())); }
-	
-	template <typename T> requires (CDestructible<TDecay<T>>)
-	constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetAllocation());  }
-	
-	template <typename T> requires (CDestructible<TDecay<T>>)
-	constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetAllocation())); }
+	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	FORCEINLINE constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetStorage());  }
+
+	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	FORCEINLINE constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetStorage())); }
+
+	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	FORCEINLINE constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetStorage());  }
+
+	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	FORCEINLINE constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetStorage())); }
+
+	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
 	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
-	constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
-	constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-
-	constexpr       CustomStorage& GetCustomStorage()       requires (!CSameAs<CustomStorage, FAnyDefaultStorage>) { return Storage; }
-	constexpr const CustomStorage& GetCustomStorage() const requires (!CSameAs<CustomStorage, FAnyDefaultStorage>) { return Storage; }
+	FORCEINLINE constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	FORCEINLINE void Reset()
 	{
-		ResetImpl();
-		Storage.TypeInfo() = 0;
+		Destroy();
+		Invalidate();
 	}
-
-	FORCEINLINE size_t GetTypeHash() const
-	{
-		using NAMESPACE_REDCRAFT::GetTypeHash;
-		if (!IsValid()) return 20090007;
-		return HashCombine(GetTypeHash(GetTypeInfo()), GetTypeInfoImpl().HashImpl(GetAllocation()));
-	}
-
-	FORCEINLINE void Swap(TAny& InValue)
+	
+	FORCEINLINE void Swap(FAny& InValue)
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
-
+		
 		if (IsValid() && !InValue.IsValid())
 		{
 			InValue = MoveTemp(*this);
@@ -342,173 +288,256 @@ public:
 			InValue.Reset();
 			return;
 		}
-
+		
 		if (GetTypeInfo() == InValue.GetTypeInfo())
 		{
-			GetTypeInfoImpl().SwapImpl(GetAllocation(), InValue.GetAllocation());
+			switch (GetRepresentation())
+			{
+			case ERepresentation::Empty:
+				break;
+			case ERepresentation::Trivial:
+				uint8 Buffer[sizeof(TrivialStorage.Internal)];
+				Memory::Memmove(Buffer, TrivialStorage.Internal);
+				Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
+				Memory::Memmove(InValue.TrivialStorage.Internal, Buffer);
+				break;
+			case ERepresentation::Small:
+				SmallStorage.RTTI->SwapObject(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
+				break;
+			case ERepresentation::Big:
+				NAMESPACE_REDCRAFT::Swap(BigStorage.External, InValue.BigStorage.External);
+				break;
+			default: check_no_entry();
+			}
+
 			return;
 		}
 		
-		TAny Temp = MoveTemp(*this);
+		FAny Temp = MoveTemp(*this);
 		*this = MoveTemp(InValue);
 		InValue = MoveTemp(Temp);
 	}
 
 private:
 
-	CustomStorage Storage;
-
-	static constexpr uintptr_t RepresentationMask = 3;
-
-	enum class ERepresentation : uint8
+	struct FRTTI
 	{
-		Trivial, // Trivial & Inline
-		Small,   // InlineAllocation
-		Big,     // HeapAllocation
-	};
-
-	struct FTypeInfoImpl
-	{
-		const type_info* NativeTypeInfo;
-
 		const size_t TypeSize;
 		const size_t TypeAlignment;
 
-		using FCopyConstructImpl = void(*)(void*, const void*);
-		using FMoveConstructImpl = void(*)(void*,       void*);
-		using FCopyAssignImpl    = void(*)(void*, const void*);
-		using FMoveAssignImpl    = void(*)(void*,       void*);
-		using FDestroyImpl       = void(*)(void*             );
-		
-		using FEqualityCompareImpl      = bool             (*)(const void*, const void*);
-		using FSynthThreeWayCompareImpl = partial_ordering (*)(const void*, const void*);
-		using FHashImpl                 = size_t           (*)(const void*             );
-		using FSwapImpl                 = void             (*)(      void*,       void*);
-		
-		const FCopyConstructImpl CopyConstructImpl;
-		const FMoveConstructImpl MoveConstructImpl;
-		const FCopyAssignImpl    CopyAssignImpl;
-		const FMoveAssignImpl    MoveAssignImpl;
-		const FDestroyImpl       DestroyImpl;
+		using FCopyConstruct = void(*)(void*, const void*);
+		using FMoveConstruct = void(*)(void*,       void*);
+		using FCopyAssign    = void(*)(void*, const void*);
+		using FMoveAssign    = void(*)(void*,       void*);
+		using FDestruct      = void(*)(void*             );
+		using FSwapObject    = void(*)(void*,       void*);
 
-		const FEqualityCompareImpl      EqualityCompareImpl;
-		const FSynthThreeWayCompareImpl SynthThreeWayCompareImpl;
-		const FHashImpl                 HashImpl;
-		const FSwapImpl                 SwapImpl;
+		const FCopyConstruct CopyConstruct;
+		const FMoveConstruct MoveConstruct;
+		const FCopyAssign    CopyAssign;
+		const FMoveAssign    MoveAssign;
+		const FDestruct      Destruct;
+		const FSwapObject    SwapObject;
 
 		template <typename T>
-		constexpr FTypeInfoImpl(TInPlaceType<T>)
-			
-			: NativeTypeInfo (&typeid(T))
-			, TypeSize       ( sizeof(T))
-			, TypeAlignment  (alignof(T))
-
-			, CopyConstructImpl ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(T).name()); })
-			, MoveConstructImpl ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(T).name()); })
-			, CopyAssignImpl    ([](void* A, const void* B) { if constexpr (requires(T* A, const T* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<T*>(A), reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(T).name()); })
-			, MoveAssignImpl    ([](void* A,       void* B) { if constexpr (requires(T* A,       T* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<T*>(A), reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(T).name()); })
-			, DestroyImpl       ([](void* A               ) { if constexpr (requires(T* A            ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<T*>(A)                               ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(T).name()); })
-			
-			, EqualityCompareImpl      ([](const void* A, const void* B) -> bool             { if constexpr (CEqualityComparable<T>     ) return                                          (*reinterpret_cast<const T*>(A) ==  *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not equality comparable."),        typeid(T).name()); return false;                       })
-			, SynthThreeWayCompareImpl ([](const void* A, const void* B) -> partial_ordering { if constexpr (CSynthThreeWayComparable<T>) return NAMESPACE_REDCRAFT::SynthThreeWayCompare (*reinterpret_cast<const T*>(A),    *reinterpret_cast<const T*>(B)); else checkf(false, TEXT("The type '%s' is not synth three-way comparable."), typeid(T).name()); return partial_ordering::unordered; })
-			, HashImpl                 ([](const void* A               ) -> size_t           { if constexpr (CHashable<T>               ) return NAMESPACE_REDCRAFT::GetTypeHash          (*reinterpret_cast<const T*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not hashable."),                   typeid(T).name()); return 1080551797;                  })
-			, SwapImpl                 ([](      void* A,       void* B) -> void             { if constexpr (CSwappable<T>              )        NAMESPACE_REDCRAFT::Swap                 (*reinterpret_cast<      T*>(A),    *reinterpret_cast<      T*>(B)); else checkf(false, TEXT("The type '%s' is not swappable."),                  typeid(T).name());                                     })
-	
+		FORCEINLINE constexpr FRTTI(TInPlaceType<T>)
+			: TypeSize( sizeof(T)), TypeAlignment(alignof(T))
+			, CopyConstruct(
+				[](void* A, const void* B)
+				{
+					new (A) T(*reinterpret_cast<const T*>(B));
+				}
+			)
+			, MoveConstruct(
+				[](void* A, void* B)
+				{
+					new (A) T(MoveTemp(*reinterpret_cast<T*>(B)));
+				}
+			)
+			, CopyAssign(
+				[](void* A, const void* B)
+				{
+					if constexpr (CCopyAssignable<T>)
+					{
+						*reinterpret_cast<T*>(A) = *reinterpret_cast<const T*>(B);
+					}
+					else
+					{
+						reinterpret_cast<T*>(A)->~T();
+						new (A) T(*reinterpret_cast<const T*>(B));
+					}
+				}
+			)
+			, MoveAssign(
+				[](void* A, void* B)
+				{
+					if constexpr (CMoveAssignable<T>)
+					{
+						*reinterpret_cast<T*>(A) = MoveTemp(*reinterpret_cast<T*>(B));
+					}
+					else
+					{
+						reinterpret_cast<T*>(A)->~T();
+						new (A) T(MoveTemp(*reinterpret_cast<T*>(B)));
+					}
+				}
+			)
+			, Destruct(
+				[](void* A)
+				{
+					reinterpret_cast<T*>(A)->~T();
+				}
+			)
+			, SwapObject{
+				[](void* A, void* B)
+				{
+					NAMESPACE_REDCRAFT::Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+				}
+			}
 		{ }
 	};
 
-	constexpr ERepresentation    GetRepresentation() const { return            static_cast<ERepresentation>(Storage.TypeInfo() &  RepresentationMask); }
-	constexpr const FTypeInfoImpl& GetTypeInfoImpl() const { return *reinterpret_cast<const FTypeInfoImpl*>(Storage.TypeInfo() & ~RepresentationMask); }
+	struct FTrivialStorage
+	{
+		uint8 Internal[64 - sizeof(uintptr)];
+	};
 
-	constexpr       void* GetAllocation()       { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
-	constexpr const void* GetAllocation() const { return GetRepresentation() == ERepresentation::Trivial || GetRepresentation() == ERepresentation::Small ? Storage.InlineAllocation() : Storage.HeapAllocation(); }
+	struct FSmallStorage
+	{
+		uint8 Internal[sizeof(FTrivialStorage) - sizeof(const FRTTI*)];
+		const FRTTI* RTTI;
+	};
 
-	template <typename SelectedType, typename... Ts>
+	struct FBigStorage
+	{
+		uint8 Padding[sizeof(FTrivialStorage) - sizeof(void*) - sizeof(const FRTTI*)];
+		void* External;
+		const FRTTI* RTTI;
+	};
+
+	static_assert(sizeof(FTrivialStorage) == sizeof(FSmallStorage));
+	static_assert(sizeof(FTrivialStorage) == sizeof(  FBigStorage));
+
+	static_assert(alignof(type_info) >= 4);
+
+	static constexpr uintptr_t RepresentationMask = 3;
+
+	enum class ERepresentation : uintptr
+	{
+		Empty   = 0, // EmptyType
+		Trivial = 1, // TrivialStorage
+		Small   = 2, // SmallStorage
+		Big     = 3, // BigStorage
+	};
+
+	union
+	{
+		FTrivialStorage TrivialStorage;
+		FSmallStorage   SmallStorage;
+		FBigStorage     BigStorage;
+	};
+
+	uintptr TypeInfo;
+
+	FORCEINLINE ERepresentation  GetRepresentation() const { return        static_cast<ERepresentation>(TypeInfo &  RepresentationMask); }
+	FORCEINLINE const type_info& GetTypeInfoImpl()   const { return *reinterpret_cast<const type_info*>(TypeInfo & ~RepresentationMask); }
+
+	FORCEINLINE void* GetStorage()
+	{
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:   return nullptr;
+		case ERepresentation::Trivial: return &TrivialStorage.Internal;
+		case ERepresentation::Small:   return &SmallStorage.Internal;
+		case ERepresentation::Big:     return BigStorage.External;
+		default: check_no_entry();     return nullptr;
+		}
+	}
+	
+	FORCEINLINE const void* GetStorage() const
+	{
+		switch (GetRepresentation())
+		{
+		case ERepresentation::Empty:   return nullptr;
+		case ERepresentation::Trivial: return &TrivialStorage.Internal;
+		case ERepresentation::Small:   return &SmallStorage.Internal;
+		case ERepresentation::Big:     return BigStorage.External;
+		default: check_no_entry();     return nullptr;
+		}
+	}
+	
+	template <typename T, typename... Ts>
 	FORCEINLINE void EmplaceImpl(Ts&&... Args)
 	{
-		static constexpr const FTypeInfoImpl SelectedTypeInfo(InPlaceType<SelectedType>);
-		Storage.TypeInfo() = reinterpret_cast<uintptr>(&SelectedTypeInfo);
+		using DecayedType = TDecay<T>;
 
-		constexpr bool bIsInlineStorable = sizeof(SelectedType) <= Storage.InlineSize && alignof(SelectedType) <= Storage.InlineAlignment;
-		constexpr bool bIsTriviallyStorable = bIsInlineStorable && CTrivial<SelectedType> && CTriviallyCopyable<SelectedType>;
+		TypeInfo = reinterpret_cast<uintptr>(&typeid(DecayedType));
+
+		if constexpr (CEmpty<DecayedType> && CTrivial<DecayedType>) return; // ERepresentation::Empty
+
+		constexpr bool bIsTriviallyStorable = sizeof(DecayedType) <= sizeof(TrivialStorage.Internal) && alignof(DecayedType) <= alignof(FAny) && CTriviallyCopyable<DecayedType>;
+		constexpr bool bIsSmallStorable     = sizeof(DecayedType) <= sizeof(  SmallStorage.Internal) && alignof(DecayedType) <= alignof(FAny);
+
+		static constexpr const FRTTI SelectedRTTI(InPlaceType<DecayedType>);
 
 		if constexpr (bIsTriviallyStorable)
 		{
-			new(Storage.InlineAllocation()) SelectedType(Forward<Ts>(Args)...);
-			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Trivial);
+			new (&TrivialStorage.Internal) DecayedType(Forward<Ts>(Args)...);
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
-		else if constexpr (bIsInlineStorable)
+		else if constexpr (bIsSmallStorable)
 		{
-			new(Storage.InlineAllocation()) SelectedType(Forward<Ts>(Args)...);
-			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Small);
+			new (&SmallStorage.Internal) DecayedType(Forward<Ts>(Args)...);
+			SmallStorage.RTTI = &SelectedRTTI;
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
-			Storage.HeapAllocation() = new SelectedType(Forward<Ts>(Args)...);
-			Storage.TypeInfo() |= static_cast<uintptr>(ERepresentation::Big);
+			BigStorage.External = Memory::Malloc(sizeof(DecayedType), alignof(DecayedType));
+			new (BigStorage.External) DecayedType(Forward<Ts>(Args)...);
+			BigStorage.RTTI = &SelectedRTTI;
+			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
 		}
 	}
 
-	FORCEINLINE void ResetImpl()
+	FORCEINLINE void Destroy()
 	{
 		if (!IsValid()) return;
 
 		switch (GetRepresentation())
 		{
+		case ERepresentation::Empty:
 		case ERepresentation::Trivial:
 			break;
 		case ERepresentation::Small:
-			GetTypeInfoImpl().DestroyImpl(GetAllocation());
+			SmallStorage.RTTI->Destruct(&SmallStorage.Internal);
 			break;
 		case ERepresentation::Big:
-			GetTypeInfoImpl().DestroyImpl(GetAllocation());
-			Memory::Free(Storage.HeapAllocation());
+			BigStorage.RTTI->Destruct(BigStorage.External);
+			Memory::Free(BigStorage.External);
 			break;
 		default: check_no_entry();
 		}
 	}
 
-	friend FORCEINLINE bool operator==(const TAny& LHS, const TAny& RHS)
+	FORCEINLINE constexpr void Invalidate() { TypeInfo = 0; }
+
+	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>>)
+	friend FORCEINLINE constexpr bool operator==(const FAny& LHS, const T& RHS)
 	{
-		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return false;
-		if (LHS.IsValid() == false) return true;
-		return LHS.GetTypeInfoImpl().EqualityCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());
+		return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
 	}
 
-	friend FORCEINLINE partial_ordering operator<=>(const TAny& LHS, const TAny& RHS)
+	friend FORCEINLINE constexpr bool operator==(const FAny& LHS, FInvalid)
 	{
-		if (LHS.GetTypeInfo() != RHS.GetTypeInfo()) return partial_ordering::unordered;
-		if (LHS.IsValid() == false) return partial_ordering::equivalent;
-		return LHS.GetTypeInfoImpl().SynthThreeWayCompareImpl(LHS.GetAllocation(), RHS.GetAllocation());;
+		return !LHS.IsValid();
 	}
 
 };
 
-class FAny : STRONG_INHERIT(TAny<FAnyDefaultStorage>);
-
 static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
 
-template <typename T, CAnyCustomStorage StorageType> requires (!CBaseOf<FAny, TRemoveCVRef<T>>)
-constexpr bool operator==(const TAny<StorageType>& LHS, const T& RHS)
-{
-	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
-}
-
-template <CAnyCustomStorage StorageType>
-constexpr bool operator==(const TAny<StorageType>& LHS, FInvalid)
-{
-	return !LHS.IsValid();
-}
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T>                    struct TIsTAny                    : FFalse { };
-template <CAnyCustomStorage StorageType> struct TIsTAny<TAny<StorageType>> : FTrue  { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T>
-concept CTAny = NAMESPACE_PRIVATE::TIsTAny<TRemoveCV<T>>::Value;
+static_assert(alignof(FAny) == 16, "The byte alignment of FAny is unexpected");
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
