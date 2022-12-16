@@ -12,26 +12,30 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename OptionalType> requires (CDestructible<OptionalType>)
+class TOptional;
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T, typename U>
+concept CTOptionalAllowUnwrappable =
+	 !(CConstructibleFrom<U,       TOptional<T>& >
+	|| CConstructibleFrom<U, const TOptional<T>& >
+	|| CConstructibleFrom<U,       TOptional<T>&&>
+	|| CConstructibleFrom<U, const TOptional<T>&&>
+	|| CConvertibleTo<      TOptional<T>&,  U>
+	|| CConvertibleTo<const TOptional<T>&,  U>
+	|| CConvertibleTo<      TOptional<T>&&, U>
+	|| CConvertibleTo<const TOptional<T>&&, U>
+	|| CAssignableFrom<U&,       TOptional<T>& >
+	|| CAssignableFrom<U&, const TOptional<T>& >
+	|| CAssignableFrom<U&,       TOptional<T>&&>
+	|| CAssignableFrom<U&, const TOptional<T>&&>);
+
+NAMESPACE_PRIVATE_END
+
+template <typename OptionalType> requires (CDestructible<OptionalType>)
 class TOptional
 {
-private:
-	
-	template <typename T>
-	struct TAllowUnwrapping : TBoolConstant<!(
-		   CConstructibleFrom<OptionalType,       TOptional<T>& >
-		|| CConstructibleFrom<OptionalType, const TOptional<T>& >
-		|| CConstructibleFrom<OptionalType,       TOptional<T>&&>
-		|| CConstructibleFrom<OptionalType, const TOptional<T>&&>
-		|| CConvertibleTo<      TOptional<T>&,  OptionalType>
-		|| CConvertibleTo<const TOptional<T>&,  OptionalType>
-		|| CConvertibleTo<      TOptional<T>&&, OptionalType>
-		|| CConvertibleTo<const TOptional<T>&&, OptionalType>
-		|| CAssignableFrom<OptionalType&,       TOptional<T>& >
-		|| CAssignableFrom<OptionalType&, const TOptional<T>& >
-		|| CAssignableFrom<OptionalType&,       TOptional<T>&&>
-		|| CAssignableFrom<OptionalType&, const TOptional<T>&&>
-	)> { };
-
 public:
 
 	using ValueType = OptionalType;
@@ -69,14 +73,14 @@ public:
 		if (InValue.IsValid()) new (&Value) OptionalType(MoveTemp(InValue.GetValue()));
 	}
 
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
 		if (InValue.IsValid()) new (&Value) OptionalType(InValue.GetValue());
 	}
 
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && TAllowUnwrapping<T>::Value)
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(TOptional<T>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
@@ -137,7 +141,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
-		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value)
+		&& CAssignableFrom<OptionalType&, const T&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		if (!InValue.IsValid())
@@ -157,7 +161,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>
-		&& CAssignableFrom<OptionalType&, T&&> && TAllowUnwrapping<T>::Value)
+		&& CAssignableFrom<OptionalType&, T&&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr TOptional& operator=(TOptional<T>&& InValue)
 	{
 		if (!InValue.IsValid())

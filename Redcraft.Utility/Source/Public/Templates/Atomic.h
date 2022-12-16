@@ -229,10 +229,12 @@ protected:
 
 NAMESPACE_PRIVATE_END
 
-template <typename T>
+template <typename T> requires (CTriviallyCopyable<T>
+	&& CCopyConstructible<T> && CMoveConstructible<T>
+	&& CCopyAssignable<T> && CMoveAssignable<T>)
 struct TAtomic : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, false>);
 
-template <typename T>
+template <typename T> requires (CTriviallyCopyable<T>)
 struct TAtomicRef : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, true>);
 
 template <typename T>

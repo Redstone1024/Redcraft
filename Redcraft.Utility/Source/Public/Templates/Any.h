@@ -21,6 +21,13 @@ NAMESPACE_MODULE_BEGIN(Utility)
 //	3) it is less exception-safe
 // But we don't follow the the copy-and-swap idiom, because we assume that no function throws an exception.
 
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T>
+concept CFAnyPlaceable = CDestructible<TDecay<T>> && CCopyConstructible<TDecay<T>> && CMoveConstructible<TDecay<T>> && CSwappable<TDecay<T>>;
+
+NAMESPACE_PRIVATE_END
+
 class alignas(16) FAny
 {
 public:
@@ -79,15 +86,14 @@ public:
 		}
 	}
 
-	template <typename T, typename... Ts> requires (CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE explicit FAny(TInPlaceType<T>, Ts&&... Args)
 	{
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
 
 	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
-		&& CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T&&>)
+		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny(T&& InValue) : FAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
 
@@ -213,7 +219,7 @@ public:
 	}
 
 	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
-		&& CDestructible<TDecay<T>>&& CConstructibleFrom<TDecay<T>, T&&>)
+		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny& operator=(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
@@ -231,8 +237,7 @@ public:
 		return *this;
 	}
 
-	template <typename T, typename... Ts> requires (CDestructible<TDecay<T>>
-		&& CConstructibleFrom<TDecay<T>, Ts&&...>)
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
 		Destroy();
@@ -247,22 +252,22 @@ public:
 
 	template <typename T> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
-	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetStorage());  }
-
-	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetStorage())); }
-
-	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetStorage());  }
-
-	template <typename T> requires (CSameAs<T, TDecay<T>>&& CDestructible<TDecay<T>>)
+	
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetStorage())); }
-
-	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
+	
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && CDestructible<TDecay<T>>)
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
 	FORCEINLINE void Reset()

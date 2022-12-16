@@ -122,28 +122,31 @@ using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::Ty
 template <typename T>
 using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::Type;
 
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T, typename U>
+concept CTOptionalRefAllowUnwrappable =
+	 !(CConstructibleFrom<U,       TOptional<T>& >
+	|| CConstructibleFrom<U, const TOptional<T>& >
+	|| CConstructibleFrom<U,       TOptional<T>&&>
+	|| CConstructibleFrom<U, const TOptional<T>&&>
+	|| CConvertibleTo<      TOptional<T>&,  U>
+	|| CConvertibleTo<const TOptional<T>&,  U>
+	|| CConvertibleTo<      TOptional<T>&&, U>
+	|| CConvertibleTo<const TOptional<T>&&, U>
+	|| CAssignableFrom<U&,       TOptional<T>& >
+	|| CAssignableFrom<U&, const TOptional<T>& >
+	|| CAssignableFrom<U&,       TOptional<T>&&>
+	|| CAssignableFrom<U&, const TOptional<T>&&>);
+
+NAMESPACE_PRIVATE_END
+
 template <typename ReferencedType>
 class TOptional<TReferenceWrapper<ReferencedType>>
 {
 private:
 	
 	using OptionalType = TReferenceWrapper<ReferencedType>;
-
-	template <typename T>
-	struct TAllowUnwrapping : TBoolConstant < !(
-		   CConstructibleFrom<OptionalType,       TOptional<T>& >
-		|| CConstructibleFrom<OptionalType, const TOptional<T>& >
-		|| CConstructibleFrom<OptionalType,       TOptional<T>&&>
-		|| CConstructibleFrom<OptionalType, const TOptional<T>&&>
-		|| CConvertibleTo<      TOptional<T>&,  OptionalType>
-		|| CConvertibleTo<const TOptional<T>&,  OptionalType>
-		|| CConvertibleTo<      TOptional<T>&&, OptionalType>
-		|| CConvertibleTo<const TOptional<T>&&, OptionalType>
-		|| CAssignableFrom<OptionalType&,       TOptional<T>& >
-		|| CAssignableFrom<OptionalType&, const TOptional<T>& >
-		|| CAssignableFrom<OptionalType&,       TOptional<T>&&>
-		|| CAssignableFrom<OptionalType&, const TOptional<T>&&>
-	)> { };
 
 public:
 
@@ -167,7 +170,7 @@ public:
 	FORCEINLINE TOptional(const TOptional& InValue) = default;
 	FORCEINLINE TOptional(TOptional&& InValue) = default;
 
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && TAllowUnwrapping<T>::Value)
+	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && NAMESPACE_PRIVATE::CTOptionalRefAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
 		: Reference(InValue.Reference)
 	{ }
@@ -178,7 +181,7 @@ public:
 	FORCEINLINE TOptional& operator=(TOptional&& InValue) = default;
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
-		&& CAssignableFrom<OptionalType&, const T&> && TAllowUnwrapping<T>::Value)
+		&& CAssignableFrom<OptionalType&, const T&> && NAMESPACE_PRIVATE::CTOptionalRefAllowUnwrappable<T, OptionalType>)
 	FORCEINLINE constexpr TOptional& operator=(const TOptional<T>& InValue)
 	{
 		Reference = InValue.Reference;
