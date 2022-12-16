@@ -65,10 +65,6 @@ private:
 
 	template <typename T> requires (CObject<T> || CFunction<T>) friend class TReferenceWrapper;
 
-	// Optimize TOptional with these hacking
-	FORCEINLINE constexpr TReferenceWrapper(FInvalid) : Pointer(nullptr) { };
-	template <typename T> requires (CDestructible<T>) friend class TOptional;
-
 };
 
 template <typename T>
@@ -121,128 +117,6 @@ using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::Ty
 
 template <typename T>
 using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::Type;
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T, typename U>
-concept CTOptionalRefAllowUnwrappable =
-	 !(CConstructibleFrom<U,       TOptional<T>& >
-	|| CConstructibleFrom<U, const TOptional<T>& >
-	|| CConstructibleFrom<U,       TOptional<T>&&>
-	|| CConstructibleFrom<U, const TOptional<T>&&>
-	|| CConvertibleTo<      TOptional<T>&,  U>
-	|| CConvertibleTo<const TOptional<T>&,  U>
-	|| CConvertibleTo<      TOptional<T>&&, U>
-	|| CConvertibleTo<const TOptional<T>&&, U>
-	|| CAssignableFrom<U&,       TOptional<T>& >
-	|| CAssignableFrom<U&, const TOptional<T>& >
-	|| CAssignableFrom<U&,       TOptional<T>&&>
-	|| CAssignableFrom<U&, const TOptional<T>&&>);
-
-NAMESPACE_PRIVATE_END
-
-template <typename ReferencedType>
-class TOptional<TReferenceWrapper<ReferencedType>>
-{
-private:
-	
-	using OptionalType = TReferenceWrapper<ReferencedType>;
-
-public:
-
-	using ValueType = OptionalType;
-
-	FORCEINLINE constexpr TOptional() : Reference(Invalid) { }
-
-	FORCEINLINE constexpr TOptional(FInvalid) : TOptional() { }
-
-	template <typename... Ts> requires (CConstructibleFrom<OptionalType, Ts...>)
-	FORCEINLINE constexpr explicit TOptional(FInPlace, Ts&&... Args)
-		: Reference(Forward<Ts>(Args)...)
-	{ }
-
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>
-		&& !CSameAs<TRemoveCVRef<T>, FInPlace> && !CBaseOf<TOptional, TRemoveCVRef<T>>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
-		: TOptional(InPlace, Forward<T>(InValue))
-	{ }
-	
-	FORCEINLINE TOptional(const TOptional& InValue) = default;
-	FORCEINLINE TOptional(TOptional&& InValue) = default;
-
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&> && NAMESPACE_PRIVATE::CTOptionalRefAllowUnwrappable<T, OptionalType>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, OptionalType>) TOptional(const TOptional<T>& InValue)
-		: Reference(InValue.Reference)
-	{ }
-
-	FORCEINLINE ~TOptional() = default;
-
-	FORCEINLINE TOptional& operator=(const TOptional& InValue) = default;
-	FORCEINLINE TOptional& operator=(TOptional&& InValue) = default;
-
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, const T&>
-		&& CAssignableFrom<OptionalType&, const T&> && NAMESPACE_PRIVATE::CTOptionalRefAllowUnwrappable<T, OptionalType>)
-	FORCEINLINE constexpr TOptional& operator=(const TOptional<T>& InValue)
-	{
-		Reference = InValue.Reference;
-		return *this;
-	}
-
-	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&> && CAssignableFrom<OptionalType&, T&&>)
-	FORCEINLINE constexpr TOptional& operator=(T&& InValue)
-	{
-		Reference = InValue;
-		return *this;
-	}
-
-	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
-	FORCEINLINE constexpr OptionalType& Emplace(ArgTypes&&... Args)
-	{
-		Reference = TReferenceWrapper<ReferencedType>(Forward<ArgTypes>(Args)...);
-		return Reference;
-	}
-
-	FORCEINLINE constexpr bool           IsValid() const { return Reference.Pointer != nullptr; }
-	FORCEINLINE constexpr explicit operator bool() const { return Reference.Pointer != nullptr; }
-	
-	FORCEINLINE constexpr       OptionalType&  GetValue() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	FORCEINLINE constexpr       OptionalType&& GetValue() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	FORCEINLINE constexpr const OptionalType&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-	FORCEINLINE constexpr const OptionalType&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return Reference; }
-
-	FORCEINLINE constexpr const OptionalType* operator->() const { return &GetValue(); }
-	FORCEINLINE constexpr       OptionalType* operator->()       { return &GetValue(); }
-
-	FORCEINLINE constexpr       OptionalType&  operator*() &       { return GetValue(); }
-	FORCEINLINE constexpr       OptionalType&& operator*() &&      { return GetValue(); }
-	FORCEINLINE constexpr const OptionalType&  operator*() const&  { return GetValue(); }
-	FORCEINLINE constexpr const OptionalType&& operator*() const&& { return GetValue(); }
-
-	FORCEINLINE constexpr       OptionalType& Get(      OptionalType& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
-	FORCEINLINE constexpr const OptionalType& Get(const OptionalType& DefaultValue) const& { return IsValid() ? GetValue() : DefaultValue;  }
-
-	FORCEINLINE constexpr void Reset()
-	{
-		Reference = Invalid;
-	}
-
-	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
-	{
-		if (!IsValid()) return 2824517378;
-		return Reference.GetTypeHash();
-	}
-
-	FORCEINLINE constexpr void Swap(TOptional& InValue)
-	{
-		Reference.Swap(InValue.Reference);
-	}
-
-private:
-
-	TReferenceWrapper<ReferencedType> Reference;
-	template <typename T> requires (CDestructible<T>) friend class TOptional;
-
-};
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
