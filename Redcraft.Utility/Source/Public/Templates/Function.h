@@ -103,7 +103,7 @@ public:
 
 	FORCEINLINE constexpr TFunctionStorage() = default;
 	
-	FORCEINLINE TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
+	TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
 		: RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
@@ -128,7 +128,7 @@ public:
 		}
 	}
 
-	FORCEINLINE TFunctionStorage(TFunctionStorage&& InValue)
+	TFunctionStorage(TFunctionStorage&& InValue)
 		: RTTI(InValue.RTTI)
 	{
 		if (!IsValid()) return;
@@ -158,7 +158,7 @@ public:
 		Destroy();
 	}
 	
-	FORCEINLINE TFunctionStorage& operator=(const TFunctionStorage& InValue) requires (!bIsUnique)
+	TFunctionStorage& operator=(const TFunctionStorage& InValue) requires (!bIsUnique)
 	{
 		if (&InValue == this) return *this;
 
@@ -195,7 +195,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE TFunctionStorage& operator=(TFunctionStorage&& InValue)
+	TFunctionStorage& operator=(TFunctionStorage&& InValue)
 	{
 		if (&InValue == this) return *this;
 
@@ -238,7 +238,7 @@ public:
 	FORCEINLINE constexpr bool IsValid() const { return RTTI != 0; }
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
-	FORCEINLINE void Destroy()
+	void Destroy()
 	{
 		if (!IsValid()) return;
 
@@ -263,7 +263,7 @@ public:
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename... Ts>
-	FORCEINLINE void Emplace(uintptr InCallable, Ts&&... Args)
+	void Emplace(uintptr InCallable, Ts&&... Args)
 	{
 		Callable = InCallable;
 
@@ -295,7 +295,7 @@ public:
 
 	}
 
-	FORCEINLINE void Swap(TFunctionStorage& InValue)
+	void Swap(TFunctionStorage& InValue)
 	{
 		if (!IsValid() && !InValue.IsValid()) return;
 
