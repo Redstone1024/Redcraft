@@ -130,6 +130,8 @@ void TestOptional()
 		always_check(TempO == TempO);
 		always_check(TempO == 300);
 		always_check(300 == TempO);
+		always_check(TempO >= 200);
+		always_check(400 >= TempO);
 
 		int16 TempQ = 1024;
 		TOptional<int16> TempR = TempQ;
@@ -221,6 +223,8 @@ void TestVariant()
 		always_check(TempO == TempO);
 		always_check(TempO == 300);
 		always_check(300 == TempO);
+		always_check(TempO >= 200);
+		always_check(400 >= TempO);
 
 		Swap(TempD, TempA);
 
@@ -428,7 +432,7 @@ void TestAny()
 		int32 A;
 		FIntegral() { }
 		FIntegral(int32 InA) : A(InA) { }
-		bool operator==(FIntegral RHS) const { return A == RHS.A; }
+		bool operator==(FIntegral RHS) const& { return A == RHS.A; }
 	};
 
 	struct FFloating
@@ -437,7 +441,7 @@ void TestAny()
 		uint8 Pad[64];
 		FFloating() { }
 		FFloating(double InA) : A(InA) { }
-		bool operator==(FFloating RHS) const { return A == RHS.A; }
+		bool operator==(FFloating RHS) const& { return A == RHS.A; }
 	};
 
 	struct FTracker
@@ -474,6 +478,8 @@ void TestAny()
 		always_check(TempO.IsValid());
 
 		always_check(TempO == 404);
+		always_check(TempO >= 400);
+		always_check(500 >= TempO);
 		always_check(TempO.GetValue<int32>() == 404);
 		always_check(TempO.Get<int32>(500) == 404);
 

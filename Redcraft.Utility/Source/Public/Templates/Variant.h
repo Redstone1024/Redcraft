@@ -194,6 +194,42 @@ public:
 
 		return *this;
 	}
+	
+	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
+	{
+		if (LHS.GetIndex() != RHS.GetIndex()) return false;
+		if (LHS.IsValid() == false) return true;
+
+		using FCompareImpl = bool(*)(const void*, const void*);
+		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> bool { return *reinterpret_cast<const Ts*>(LHS) == *reinterpret_cast<const Ts*>(RHS); }... };
+
+		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
+	}
+
+	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
+	{
+		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
+		if (LHS.IsValid() == false) return partial_ordering::equivalent;
+
+		using FCompareImpl = partial_ordering(*)(const void*, const void*);
+		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> partial_ordering { return SynthThreeWayCompare(*reinterpret_cast<const Ts*>(LHS), *reinterpret_cast<const Ts*>(RHS)); }...};
+
+		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
+	}
+	
+	template <typename T> requires (!CBaseOf<TVariant, T> && CEqualityComparable<T>)
+	FORCEINLINE constexpr bool operator==(const T& InValue) const&
+	{
+		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
+	}
+	
+	template <typename T> requires (!CBaseOf<TVariant, T> && CEqualityComparable<T>)
+	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
+	{
+		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
+	}
+	
+	FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
 
 	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
 		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
@@ -317,41 +353,7 @@ private:
 	TAlignedUnion<1, Ts...> Value;
 	uint8 TypeIndex;
 
-	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
-	{
-		if (LHS.GetIndex() != RHS.GetIndex()) return false;
-		if (LHS.IsValid() == false) return true;
-
-		using FCompareImpl = bool(*)(const void*, const void*);
-		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> bool { return *reinterpret_cast<const Ts*>(LHS) == *reinterpret_cast<const Ts*>(RHS); }... };
-
-		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
-	}
-
-	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
-	{
-		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
-		if (LHS.IsValid() == false) return partial_ordering::equivalent;
-
-		using FCompareImpl = partial_ordering(*)(const void*, const void*);
-		constexpr FCompareImpl CompareImpl[] = { [](const void* LHS, const void* RHS) -> partial_ordering { return SynthThreeWayCompare(*reinterpret_cast<const Ts*>(LHS), *reinterpret_cast<const Ts*>(RHS)); }...};
-
-		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
-	}
-
 };
-
-template <typename T, typename... Ts> requires (!CBaseOf<TVariant<Ts...>, T> && CEqualityComparable<T>)
-FORCEINLINE constexpr bool operator==(const TVariant<Ts...>& LHS, const T& RHS)
-{
-	return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
-}
-
-template <typename... Ts>
-FORCEINLINE constexpr bool operator==(const TVariant<Ts...>& LHS, FInvalid)
-{
-	return !LHS.IsValid();
-}
 
 NAMESPACE_PRIVATE_BEGIN
 

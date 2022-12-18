@@ -16,6 +16,9 @@ class TOptional;
 
 NAMESPACE_PRIVATE_BEGIN
 
+template <typename T> struct TIsTOptional               : FFalse { };
+template <typename T> struct TIsTOptional<TOptional<T>> : FTrue  { };
+
 template <typename T, typename U>
 concept CTOptionalAllowUnwrappable =
 	 !(CConstructibleFrom<U,       TOptional<T>& >
@@ -32,6 +35,8 @@ concept CTOptionalAllowUnwrappable =
 	|| CAssignableFrom<U&, const TOptional<T>&&>);
 
 NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<TRemoveCV<T>>::Value;
 
 template <typename OptionalType> requires (CDestructible<OptionalType>)
 class TOptional
@@ -192,6 +197,36 @@ public:
 
 		return *this;
 	}
+	
+	template <typename T = OptionalType> requires (CWeaklyEqualityComparable<OptionalType, T>)
+	friend FORCEINLINE constexpr bool operator==(const TOptional& LHS, const TOptional<T>& RHS)
+	{
+		if (LHS.IsValid() != RHS.IsValid()) return false;
+		if (LHS.IsValid() == false) return true;
+		return *LHS == *RHS;
+	}
+
+	template <typename T = OptionalType> requires (CSynthThreeWayComparable<OptionalType, T>)
+	friend FORCEINLINE constexpr partial_ordering operator<=>(const TOptional& LHS, const TOptional<T>& RHS)
+	{
+		if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
+		if (LHS.IsValid() == false) return partial_ordering::equivalent;
+		return SynthThreeWayCompare(*LHS, *RHS);
+	}
+
+	template <typename T = OptionalType> requires (!CTOptional<T>&& CWeaklyEqualityComparable<OptionalType, T>)
+	FORCEINLINE constexpr bool operator==(const T& InValue) const&
+	{
+		return IsValid() ? GetValue() == InValue : false;
+	}
+	
+	template <typename T = OptionalType> requires (!CTOptional<T>&& CSynthThreeWayComparable<OptionalType, T>)
+	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
+	{
+		return IsValid() ? SynthThreeWayCompare(GetValue(), InValue) : partial_ordering::unordered;
+	}
+
+	FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
 
 	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
 	FORCEINLINE constexpr OptionalType& Emplace(ArgTypes&&... Args)
@@ -272,34 +307,6 @@ private:
 template <typename T>
 TOptional(T) -> TOptional<T>;
 
-template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
-FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, const TOptional<U>& RHS)
-{
-	if (LHS.IsValid() != RHS.IsValid()) return false;
-	if (LHS.IsValid() == false) return true;
-	return *LHS == *RHS;
-}
-
-template <typename T, typename U> requires (CSynthThreeWayComparable<T, U>)
-FORCEINLINE constexpr partial_ordering operator<=>(const TOptional<T>& LHS, const TOptional<U>& RHS)
-{
-	if (LHS.IsValid() != RHS.IsValid()) return partial_ordering::unordered;
-	if (LHS.IsValid() == false) return partial_ordering::equivalent;
-	return SynthThreeWayCompare(*LHS, *RHS);
-}
-
-template <typename T, typename U> requires (CWeaklyEqualityComparable<T, U>)
-FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, const U& RHS)
-{
-	return LHS.IsValid() ? *LHS == RHS : false;
-}
-
-template <typename T>
-FORCEINLINE constexpr bool operator==(const TOptional<T>& LHS, FInvalid)
-{
-	return !LHS.IsValid();
-}
-
 template <typename T> requires (CDestructible<T>)
 FORCEINLINE constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
 {
@@ -317,15 +324,6 @@ FORCEINLINE constexpr TOptional<T> MakeOptional(Ts&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
 }
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T> struct TIsTOptional               : FFalse { };
-template <typename T> struct TIsTOptional<TOptional<T>> : FTrue  { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<TRemoveCV<T>>::Value;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

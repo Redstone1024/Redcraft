@@ -5,7 +5,6 @@
 #include "Memory/Alignment.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Memory/MemoryOperator.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -236,6 +235,20 @@ public:
 
 		return *this;
 	}
+	
+	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	FORCEINLINE constexpr bool operator==(const T& InValue) const&
+	{
+		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
+	}
+	
+	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
+	{
+		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
+	}
+
+	FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
 
 	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
@@ -526,17 +539,6 @@ private:
 	}
 
 	FORCEINLINE constexpr void Invalidate() { TypeInfo = 0; }
-
-	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>>)
-	friend FORCEINLINE constexpr bool operator==(const FAny& LHS, const T& RHS)
-	{
-		return LHS.template HoldsAlternative<T>() ? LHS.template GetValue<T>() == RHS : false;
-	}
-
-	friend FORCEINLINE constexpr bool operator==(const FAny& LHS, FInvalid)
-	{
-		return !LHS.IsValid();
-	}
 
 };
 

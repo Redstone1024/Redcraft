@@ -226,6 +226,57 @@ public:
 
 };
 
+template <typename R, typename Indices>
+struct TTupleThreeWay;
+
+template <typename R, size_t I, size_t... Indices>
+struct TTupleThreeWay<R, TIndexSequence<I, Indices...>>
+{
+	template <typename LHSTupleType, typename RHSTupleType>
+	FORCEINLINE static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
+	{
+		auto Result = SynthThreeWayCompare(LHS.template GetValue<I>(), RHS.template GetValue<I>());
+		if (Result != 0) return Result;
+		return TTupleThreeWay<R, TIndexSequence<Indices...>>::Do(LHS, RHS);
+	}
+};
+
+template <typename R>
+struct TTupleThreeWay<R, TIndexSequence<>>
+{
+	template <typename LHSTupleType, typename RHSTupleType>
+	FORCEINLINE static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
+	{
+		return R::equivalent;
+	}
+};
+
+template <typename, typename> struct TTTupleWeaklyEqualityComparable;
+
+template <typename T, typename U, typename... Ts, typename... Us>
+struct TTTupleWeaklyEqualityComparable<TTypeSequence<T, Ts...>, TTypeSequence<U, Us...>>
+	: TBoolConstant<CWeaklyEqualityComparable<T, U> && TTTupleWeaklyEqualityComparable<TTypeSequence<Ts...>, TTypeSequence<Us...>>::Value>
+{ };
+
+template <>
+struct TTTupleWeaklyEqualityComparable<TTypeSequence<>, TTypeSequence<>> : FTrue { };
+
+template <typename TSequence, typename USequence>
+concept CTTupleWeaklyEqualityComparable = TTTupleWeaklyEqualityComparable<TSequence, USequence>::Value;
+
+template <typename, typename> struct TTTupleSynthThreeWayComparable;
+
+template <typename T, typename U, typename... Ts, typename... Us>
+struct TTTupleSynthThreeWayComparable<TTypeSequence<T, Ts...>, TTypeSequence<U, Us...>>
+	: TBoolConstant<CSynthThreeWayComparable<T, U> && TTTupleSynthThreeWayComparable<TTypeSequence<Ts...>, TTypeSequence<Us...>>::Value>
+{ };
+
+template <>
+struct TTTupleSynthThreeWayComparable<TTypeSequence<>, TTypeSequence<>> : FTrue { };
+
+template <typename TSequence, typename USequence>
+concept CTTupleSynthThreeWayComparable = TTTupleSynthThreeWayComparable<TSequence, USequence>::Value;
+
 NAMESPACE_PRIVATE_END
 
 template <typename T>
@@ -258,34 +309,34 @@ public:
 		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<ArgTypes>(Args)...)
 	{ }
 	
-	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == sizeof...(Ts)
-		&& (true && ... && CConstructibleFrom<Ts, const OtherTypes&>)
-		&& NAMESPACE_PRIVATE::TTupleConvertCopy<sizeof...(Ts) != 1, Ts..., OtherTypes...>::Value)
-	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<OtherTypes&&, Ts>)) TTuple(const TTuple<OtherTypes...>& InValue)
+	template <typename... Us> requires (sizeof...(Us) == sizeof...(Ts)
+		&& (true && ... && CConstructibleFrom<Ts, const Us&>)
+		&& NAMESPACE_PRIVATE::TTupleConvertCopy<sizeof...(Ts) != 1, Ts..., Us...>::Value)
+	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<Us&&, Ts>)) TTuple(const TTuple<Us...>& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, InValue)
 	{ }
 
-	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == sizeof...(Ts)
-		&& (true && ... && CConstructibleFrom<Ts, OtherTypes&&>)
-		&& NAMESPACE_PRIVATE::TTupleConvertMove<sizeof...(Ts) != 1, Ts..., OtherTypes...>::Value)
-	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<OtherTypes&&, Ts>)) TTuple(TTuple<OtherTypes...>&& InValue)
+	template <typename... Us> requires (sizeof...(Us) == sizeof...(Ts)
+		&& (true && ... && CConstructibleFrom<Ts, Us&&>)
+		&& NAMESPACE_PRIVATE::TTupleConvertMove<sizeof...(Ts) != 1, Ts..., Us...>::Value)
+	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<Us&&, Ts>)) TTuple(TTuple<Us...>&& InValue)
 		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, MoveTemp(InValue))
 	{ }
 
 	FORCEINLINE constexpr TTuple(const TTuple&) = default;
 	FORCEINLINE constexpr TTuple(TTuple&&)      = default;
 
-	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == sizeof...(Ts)
-		&& (true && ... && CAssignableFrom<Ts&, const OtherTypes&>))
-	FORCEINLINE constexpr TTuple& operator=(const TTuple<OtherTypes...>& InValue)
+	template <typename... Us> requires (sizeof...(Us) == sizeof...(Ts)
+		&& (true && ... && CAssignableFrom<Ts&, const Us&>))
+	FORCEINLINE constexpr TTuple& operator=(const TTuple<Us...>& InValue)
 	{
 		Helper::Assign(*this, InValue);
 		return *this;
 	}
 
-	template <typename... OtherTypes> requires (sizeof...(OtherTypes) == sizeof...(Ts)
-		&& (true && ... && CAssignableFrom<Ts&, OtherTypes&&>))
-	FORCEINLINE constexpr TTuple& operator=(TTuple<OtherTypes...>&& InValue)
+	template <typename... Us> requires (sizeof...(Us) == sizeof...(Ts)
+		&& (true && ... && CAssignableFrom<Ts&, Us&&>))
+	FORCEINLINE constexpr TTuple& operator=(TTuple<Us...>&& InValue)
 	{
 		Helper::Assign(*this, MoveTemp(InValue));
 		return *this;
@@ -293,6 +344,25 @@ public:
 
 	FORCEINLINE constexpr TTuple& operator=(const TTuple&) = default;
 	FORCEINLINE constexpr TTuple& operator=(TTuple&&)      = default;
+	
+	template <typename... Us> requires (sizeof...(Ts) == sizeof...(Us) && NAMESPACE_PRIVATE::CTTupleWeaklyEqualityComparable<TTypeSequence<Ts...>, TTypeSequence<Us...>>)
+	friend FORCEINLINE constexpr bool operator==(const TTuple& LHS, const TTuple<Us...>& RHS)
+	{
+		if constexpr (sizeof...(Ts) != sizeof...(Us)) return false;
+
+		return [&LHS, &RHS]<size_t... Indices>(TIndexSequence<Indices...>) -> bool
+		{
+			return (true && ... && (LHS.template GetValue<Indices>() == RHS.template GetValue<Indices>()));
+		}
+		(TMakeIndexSequence<sizeof...(Ts)>());
+	}
+	
+	template <typename... Us> requires (sizeof...(Ts) == sizeof...(Us) && NAMESPACE_PRIVATE::CTTupleSynthThreeWayComparable<TTypeSequence<Ts...>, TTypeSequence<Us...>>)
+	friend FORCEINLINE constexpr TCommonComparisonCategory<TSynthThreeWayResult<Ts, Us>...> operator<=>(const TTuple& LHS, const TTuple<Us...>& RHS)
+	{
+		using R = TCommonComparisonCategory<TSynthThreeWayResult<Ts, Us>...>;
+		return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(Ts)>>::Do(LHS, RHS);
+	}
 
 	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue()               &  { return static_cast<               NAMESPACE_PRIVATE::TTupleBasicElement<TTupleElement<I, TTuple<Ts...>>, I>& >(*this).GetValue(); }
 	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() const         &  { return static_cast<const          NAMESPACE_PRIVATE::TTupleBasicElement<TTupleElement<I, TTuple<Ts...>>, I>& >(*this).GetValue(); }
@@ -456,31 +526,6 @@ struct TTupleCatImpl
 	}
 };
 
-template <typename R, typename Indices>
-struct TTupleThreeWay;
-
-template <typename R, size_t I, size_t... Indices>
-struct TTupleThreeWay<R, TIndexSequence<I, Indices...>>
-{
-	template <typename LHSTupleType, typename RHSTupleType>
-	FORCEINLINE static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
-	{
-		auto Result = SynthThreeWayCompare(LHS.template GetValue<I>(), RHS.template GetValue<I>());
-		if (Result != 0) return Result;
-		return TTupleThreeWay<R, TIndexSequence<Indices...>>::Do(LHS, RHS);
-	}
-};
-
-template <typename R>
-struct TTupleThreeWay<R, TIndexSequence<>>
-{
-	template <typename LHSTupleType, typename RHSTupleType>
-	FORCEINLINE static constexpr R Do(const LHSTupleType& LHS, const RHSTupleType& RHS)
-	{
-		return R::equivalent;
-	}
-};
-
 template <typename Indices>
 struct TTupleVisitImpl;
 
@@ -513,20 +558,6 @@ FORCEINLINE constexpr decltype(auto) TupleCat(TTupleTypes&&... Args)
 	using R = TTupleCatResult<TTupleTypes...>;
 	if constexpr (sizeof...(Args) == 0) return R();
 	else return NAMESPACE_PRIVATE::TTupleCatImpl<R>::Do(Forward<TTupleTypes>(Args)...);
-}
-
-template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTypes) != sizeof...(RHSTypes) || (true && ... && CWeaklyEqualityComparable<LHSTypes, RHSTypes>))
-FORCEINLINE constexpr bool operator==(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
-{
-	if constexpr (sizeof...(LHSTypes) != sizeof...(RHSTypes)) return false;
-	return [&LHS, &RHS]<size_t... Indices>(TIndexSequence<Indices...>) -> bool { return (true && ... && (LHS.template GetValue<Indices>() == RHS.template GetValue<Indices>())); } (TMakeIndexSequence<sizeof...(LHSTypes)>());
-}
-
-template <typename... LHSTypes, typename... RHSTypes> requires (sizeof...(LHSTypes) == sizeof...(RHSTypes) && (true && ... && (CSynthThreeWayComparable<LHSTypes, RHSTypes>)))
-FORCEINLINE constexpr TCommonComparisonCategory<TSynthThreeWayResult<LHSTypes, RHSTypes>...> operator<=>(const TTuple<LHSTypes...>& LHS, const TTuple<RHSTypes...>& RHS)
-{
-	using R = TCommonComparisonCategory<TSynthThreeWayResult<LHSTypes, RHSTypes>...>;
-	return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(LHSTypes)>>::Do(LHS, RHS);
 }
 
 template <typename F, typename FirstTupleType, typename... TupleTypes>

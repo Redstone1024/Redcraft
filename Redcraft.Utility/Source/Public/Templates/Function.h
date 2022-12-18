@@ -482,6 +482,8 @@ public:
 	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
+	FORCEINLINE constexpr bool operator==(nullptr_t) const& { return !IsValid(); }
+
 	FORCEINLINE constexpr bool           IsValid() const { return Storage.IsValid(); }
 	FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
 
@@ -572,6 +574,9 @@ public:
 		checkf(NAMESPACE_PRIVATE::FunctionIsBound(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
 		Impl::template Emplace<T>(Forward<T>(InValue));
 	}
+
+	template <typename T>
+	TFunctionRef(const T&& InValue) = delete;
 
 };
 
@@ -718,7 +723,7 @@ public:
 
 		return *this;
 	}
-	
+
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
@@ -731,24 +736,6 @@ public:
 	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
 };
-
-template <CFunction F>
-FORCEINLINE constexpr bool operator==(const TFunctionRef<F>& LHS, nullptr_t)
-{
-	return !LHS;
-}
-
-template <CFunction F>
-FORCEINLINE constexpr bool operator==(const TFunction<F>& LHS, nullptr_t)
-{
-	return !LHS;
-}
-
-template <CFunction F>
-FORCEINLINE constexpr bool operator==(const TUniqueFunction<F>& LHS, nullptr_t)
-{
-	return !LHS;
-}
 
 static_assert(sizeof(TFunction<void()>)       == 64, "The byte size of TFunction is unexpected");
 static_assert(sizeof(TUniqueFunction<void()>) == 64, "The byte size of TUniqueFunction is unexpected");
