@@ -23,7 +23,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename T>
-concept CFAnyPlaceable = CDestructible<TDecay<T>> && CCopyConstructible<TDecay<T>> && CMoveConstructible<TDecay<T>> && CSwappable<TDecay<T>>;
+concept CFAnyPlaceable = CDestructible<TDecay<T>> && CCopyConstructible<TDecay<T>> && CMoveConstructible<TDecay<T>>;
 
 NAMESPACE_PRIVATE_END
 
@@ -314,10 +314,10 @@ public:
 			case ERepresentation::Empty:
 				break;
 			case ERepresentation::Trivial:
-				uint8 Buffer[sizeof(TrivialStorage.Internal)];
-				Memory::Memmove(Buffer, TrivialStorage.Internal);
+				uint8 TempBuffer[sizeof(TrivialStorage.Internal)];
+				Memory::Memmove(TempBuffer, TrivialStorage.Internal);
 				Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
-				Memory::Memmove(InValue.TrivialStorage.Internal, Buffer);
+				Memory::Memmove(InValue.TrivialStorage.Internal, TempBuffer);
 				break;
 			case ERepresentation::Small:
 				SmallStorage.RTTI->SwapObject(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
@@ -409,7 +409,20 @@ private:
 			, SwapObject{
 				[](void* A, void* B)
 				{
-					NAMESPACE_REDCRAFT::Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+					if constexpr (CSwappable<T>)
+					{
+						NAMESPACE_REDCRAFT::Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+					}
+					else
+					{
+						TAlignedStorage<sizeof(T), alignof(T)> TempBuffer;
+						new (&TempBuffer) T(MoveTemp(*reinterpret_cast<T*>(A)));
+						reinterpret_cast<T*>(A)->~T();
+						new (A) T(MoveTemp(*reinterpret_cast<T*>(B)));
+						reinterpret_cast<T*>(B)->~T();
+						new (B) T(MoveTemp(*reinterpret_cast<T*>(&TempBuffer)));
+						reinterpret_cast<T*>(&TempBuffer)->~T();
+					}
 				}
 			}
 		{ }

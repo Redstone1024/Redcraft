@@ -52,13 +52,6 @@ public:
 		return NAMESPACE_REDCRAFT::GetTypeHash(Get());
 	}
 	
-	FORCEINLINE constexpr void Swap(TReferenceWrapper& InValue)
-	{
-		ReferencedType* Temp = Pointer;
-		Pointer = InValue.Pointer;
-		InValue.Pointer = Temp;
-	}
-
 private:
 
 	ReferencedType* Pointer;
