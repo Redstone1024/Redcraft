@@ -120,7 +120,7 @@ public:
 
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; }
 		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
-		&& !CBaseOf<TVariant, TRemoveCVRef<T>>)
+		&& !CSameAs<TVariant, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
 	{ }
 
@@ -217,13 +217,13 @@ public:
 		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 	
-	template <typename T> requires (!CBaseOf<TVariant, T> && CEqualityComparable<T>)
+	template <typename T> requires (!CSameAs<TVariant, T> && CEqualityComparable<T>)
 	FORCEINLINE constexpr bool operator==(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
 	}
 	
-	template <typename T> requires (!CBaseOf<TVariant, T> && CEqualityComparable<T>)
+	template <typename T> requires (!CSameAs<TVariant, T> && CEqualityComparable<T>)
 	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
@@ -287,51 +287,43 @@ public:
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
 	}
 
-	FORCEINLINE constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Ts>)
+	friend FORCEINLINE constexpr size_t GetTypeHash(const TVariant& A) requires (true && ... && CHashable<Ts>)
 	{
-		if (!IsValid()) return 114514;
-
-		using NAMESPACE_REDCRAFT::GetTypeHash;
+		if (!A.IsValid()) return 114514;
 
 		using FHashImpl = size_t(*)(const void*);
 		constexpr FHashImpl HashImpl[] = { [](const void* This) -> size_t { return GetTypeHash(*reinterpret_cast<const Ts*>(This)); }... };
 
-		return HashCombine(GetTypeHash(GetIndex()), HashImpl[GetIndex()](&Value));
+		return HashCombine(GetTypeHash(A.GetIndex()), HashImpl[A.GetIndex()](&A.Value));
 	}
 
-	constexpr void Swap(TVariant& InValue) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
+	friend constexpr void Swap(TVariant& A, TVariant& B) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
 	{
-		if (!IsValid() && !InValue.IsValid()) return;
+		if (!A.IsValid() && !B.IsValid()) return;
 
-		if (IsValid() && !InValue.IsValid())
+		if (A.IsValid() && !B.IsValid())
 		{
-			InValue = MoveTemp(*this);
-			Reset();
-			return;
+			B = MoveTemp(A);
+			A.Reset();
 		}
-
-		if (InValue.IsValid() && !IsValid())
+		else if (!A.IsValid() && B.IsValid())
 		{
-			*this = MoveTemp(InValue);
-			InValue.Reset();
-			return;
+			A = MoveTemp(B);
+			B.Reset();
 		}
-
-		if (GetIndex() == InValue.GetIndex())
+		else if (A.GetIndex() == B.GetIndex())
 		{
-			using NAMESPACE_REDCRAFT::Swap;
-
 			using FSwapImpl = void(*)(void*, void*);
 			constexpr FSwapImpl SwapImpl[] = { [](void* A, void* B) { Swap(*reinterpret_cast<Ts*>(A), *reinterpret_cast<Ts*>(B)); }... };
 
-			SwapImpl[GetIndex()](&Value, &InValue.Value);
-
-			return;
+			SwapImpl[A.GetIndex()](&A.Value, &B.Value);
 		}
-
-		TVariant Temp = MoveTemp(*this);
-		*this = MoveTemp(InValue);
-		InValue = MoveTemp(Temp);
+		else
+		{
+			TVariant Temp = MoveTemp(A);
+			A = MoveTemp(B);
+			B = MoveTemp(Temp);
+		}
 	}
 
 private:

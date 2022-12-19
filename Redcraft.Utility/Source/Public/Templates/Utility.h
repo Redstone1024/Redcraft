@@ -55,20 +55,12 @@ FORCEINLINE constexpr T&& Forward(TRemoveReference<T>&& Obj)
 	return static_cast<T&&>(Obj);
 }
 
-template <typename T> requires (requires(T& A, T& B) { A.Swap(B); }
-	|| (CMoveConstructible<T> && CMoveAssignable<T>))
+template <typename T> requires (CMoveConstructible<T> && CMoveAssignable<T>)
 FORCEINLINE constexpr void Swap(T& A, T& B)
 {
-	if constexpr (requires(T& A, T& B) { A.Swap(B); })
-	{
-		A.Swap(B);
-	}
-	else
-	{
-		T Temp = MoveTemp(A);
-		A = MoveTemp(B);
-		B = MoveTemp(Temp);
-	}
+	T Temp = MoveTemp(A);
+	A = MoveTemp(B);
+	B = MoveTemp(Temp);
 }
 
 template <typename T, typename U = T> requires (CMoveConstructible<T> && CAssignableFrom<T&, U>)

@@ -57,7 +57,7 @@ public:
 	}
 
 	template <typename T = OptionalType> requires (CConstructibleFrom<OptionalType, T&&>)
-		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CBaseOf<TOptional, TRemoveCVRef<T>>)
+		&& (!CSameAs<TRemoveCVRef<T>, FInPlace>) && (!CSameAs<TOptional, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, OptionalType>) TOptional(T&& InValue)
 		: TOptional(InPlace, Forward<T>(InValue))
 	{ }
@@ -269,32 +269,31 @@ public:
 		}
 	}
 
-	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<OptionalType>)
+	friend FORCEINLINE constexpr size_t GetTypeHash(const TOptional& A) requires (CHashable<OptionalType>)
 	{
-		if (!IsValid()) return 2824517378;
-		return NAMESPACE_REDCRAFT::GetTypeHash(GetValue());
+		if (!A.IsValid()) return 2824517378;
+		return GetTypeHash(A.GetValue());
 	}
 
 	template <typename T> requires (CMoveConstructible<OptionalType> && CSwappable<OptionalType>)
-	constexpr void Swap(TOptional& InValue)
+	friend constexpr void Swap(TOptional& A, TOptional& B)
 	{
-		if (!IsValid() && !InValue.IsValid()) return;
+		if (!A.IsValid() && !B.IsValid()) return;
 
-		if (IsValid() && !InValue.IsValid())
+		if (A.IsValid() && !B.IsValid())
 		{
-			InValue = MoveTemp(*this);
-			Reset();
-			return;
+			B = MoveTemp(A);
+			A.Reset();
 		}
-
-		if (InValue.IsValid() && !IsValid())
+		else if (!A.IsValid() && B.IsValid())
 		{
-			*this = MoveTemp(InValue);
-			InValue.Reset();
-			return;
+			A = MoveTemp(B);
+			B.Reset();
 		}
-
-		NAMESPACE_REDCRAFT::Swap(GetValue(), InValue.GetValue());
+		else
+		{
+			Swap(A.GetValue(), B.GetValue());
+		}
 	}
 
 private:

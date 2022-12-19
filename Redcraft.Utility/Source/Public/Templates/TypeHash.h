@@ -86,12 +86,6 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	return GetTypeHash(reinterpret_cast<intptr>(A));
 }
 
-template <typename T> requires (requires(const T& A) { { GetTypeHash(A.GetTypeHash()) } -> CSameAs<size_t>; })
-FORCEINLINE constexpr size_t GetTypeHash(const T& A)
-{
-	return GetTypeHash(A.GetTypeHash());
-}
-
 template <typename T> requires (requires(const T& A) { { GetTypeHash(A.hash_code()) } -> CSameAs<size_t>; })
 FORCEINLINE constexpr size_t GetTypeHash(const T& A)
 {

@@ -409,20 +409,20 @@ public:
 	template <typename T> requires (CConstructibleFrom<T, Ts...>) FORCEINLINE constexpr T Construct()       volatile&& { return Helper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
 	template <typename T> requires (CConstructibleFrom<T, Ts...>) FORCEINLINE constexpr T Construct() const volatile&& { return Helper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
 	
-	FORCEINLINE constexpr size_t GetTypeHash() const requires (true && ... && CHashable<Ts>)
+	friend FORCEINLINE constexpr size_t GetTypeHash(const TTuple& A) requires (true && ... && CHashable<Ts>)
 	{
-		return [this]<size_t... Indices>(TIndexSequence<Indices...>) -> size_t
+		return [&A]<size_t... Indices>(TIndexSequence<Indices...>) -> size_t
 		{
-			return HashCombine(NAMESPACE_REDCRAFT::GetTypeHash(GetValue<Indices>())...);
+			return HashCombine(GetTypeHash(A.template GetValue<Indices>())...);
 		}
 		(TMakeIndexSequence<sizeof...(Ts)>());
 	}
 
-	FORCEINLINE constexpr void Swap(TTuple& InValue) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
+	friend FORCEINLINE constexpr void Swap(TTuple& A, TTuple& B) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
 	{
-		[&A = *this, &B = InValue]<size_t... Indices>(TIndexSequence<Indices...>)
+		[&A, &B]<size_t... Indices>(TIndexSequence<Indices...>)
 		{
-			((NAMESPACE_REDCRAFT::Swap(A.template GetValue<Indices>(), B.template GetValue<Indices>())), ...);
+			((Swap(A.template GetValue<Indices>(), B.template GetValue<Indices>())), ...);
 		}
 		(TMakeIndexSequence<sizeof...(Ts)>());
 	}

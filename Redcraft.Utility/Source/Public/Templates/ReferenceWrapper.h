@@ -47,9 +47,9 @@ public:
 		return Invoke(Get(), Forward<Ts>(Args)...);
 	}
 
-	FORCEINLINE constexpr size_t GetTypeHash() const requires (CHashable<ReferencedType>)
+	friend FORCEINLINE constexpr size_t GetTypeHash(TReferenceWrapper A) requires (CHashable<ReferencedType>)
 	{
-		return NAMESPACE_REDCRAFT::GetTypeHash(Get());
+		return GetTypeHash(A.Get());
 	}
 	
 private:

@@ -80,12 +80,6 @@ public:
 		ValuePtr = reinterpret_cast<uintptr>(AddressOf(Args));
 		Callable = InCallable;
 	}
-	
-	FORCEINLINE constexpr void Swap(TFunctionStorage& InValue)
-	{
-		NAMESPACE_REDCRAFT::Swap(ValuePtr, InValue.ValuePtr);
-		NAMESPACE_REDCRAFT::Swap(Callable, InValue.Callable);
-	}
 
 private:
 
@@ -295,27 +289,27 @@ public:
 
 	}
 
-	void Swap(TFunctionStorage& InValue)
+	friend void Swap(TFunctionStorage& A, TFunctionStorage& B)
 	{
-		if (!IsValid() && !InValue.IsValid()) return;
+		if (!A.IsValid() && !B.IsValid()) return;
 
-		if (IsValid() && !InValue.IsValid())
+		if (A.IsValid() && !B.IsValid())
 		{
-			InValue = MoveTemp(*this);
-			Destroy();
-			Invalidate();
+			B = MoveTemp(A);
+			A.Destroy();
+			A.Invalidate();
 		}
-		else if (InValue.IsValid() && !IsValid())
+		else if (!A.IsValid() && B.IsValid())
 		{
-			*this = MoveTemp(InValue);
-			InValue.Destroy();
-			InValue.Invalidate();
+			A = MoveTemp(B);
+			B.Destroy();
+			B.Invalidate();
 		}
 		else
 		{
-			TFunctionStorage Temp = MoveTemp(*this);
-			*this = MoveTemp(InValue);
-			InValue = MoveTemp(Temp);
+			TFunctionStorage Temp = MoveTemp(A);
+			A = MoveTemp(B);
+			B = MoveTemp(Temp);
 		}
 	}
 
@@ -487,8 +481,6 @@ public:
 	FORCEINLINE constexpr bool           IsValid() const { return Storage.IsValid(); }
 	FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
 
-	FORCEINLINE constexpr void Swap(TFunctionImpl& InValue) { Storage.Swap(InValue.Storage); }
-
 private:
 
 	using CallableType = ResultType(*)(uintptr, Ts&&...);
@@ -535,6 +527,8 @@ protected: // These functions should not be used by user-defined class
 
 		return *reinterpret_cast<DecayedType*>(Storage.GetValuePtr());
 	}
+
+	friend FORCEINLINE constexpr void Swap(TFunctionImpl& A, TFunctionImpl& B) requires (!bIsRef) { Swap(A.Storage, B.Storage); }
 
 };
 
@@ -647,6 +641,8 @@ public:
 
 	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
+	friend FORCEINLINE constexpr void Swap(TFunction& A, TFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
+
 };
 
 template <CFunction F>
@@ -734,6 +730,8 @@ public:
 	}
 
 	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
+
+	friend FORCEINLINE constexpr void Swap(TUniqueFunction& A, TUniqueFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
 
 };
 

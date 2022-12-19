@@ -91,7 +91,7 @@ public:
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
 
-	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+	template <typename T> requires (!CSameAs<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
 		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny(T&& InValue) : FAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
 	{ }
@@ -217,7 +217,7 @@ public:
 		return *this;
 	}
 
-	template <typename T> requires (!CBaseOf<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+	template <typename T> requires (!CSameAs<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
 		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny& operator=(T&& InValue)
 	{
@@ -236,13 +236,13 @@ public:
 		return *this;
 	}
 	
-	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr bool operator==(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
 	}
 	
-	template <typename T> requires (!CBaseOf<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
 	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
@@ -289,51 +289,26 @@ public:
 		Invalidate();
 	}
 	
-	void Swap(FAny& InValue)
+	friend void Swap(FAny& A, FAny& B)
 	{
-		if (!IsValid() && !InValue.IsValid()) return;
+		if (!A.IsValid() && !B.IsValid()) return;
 		
-		if (IsValid() && !InValue.IsValid())
+		if (A.IsValid() && !B.IsValid())
 		{
-			InValue = MoveTemp(*this);
-			Reset();
-			return;
+			B = MoveTemp(A);
+			A.Reset();
 		}
-
-		if (InValue.IsValid() && !IsValid())
+		else if (!A.IsValid() && B.IsValid())
 		{
-			*this = MoveTemp(InValue);
-			InValue.Reset();
-			return;
+			A = MoveTemp(B);
+			B.Reset();
 		}
-		
-		if (GetTypeInfo() == InValue.GetTypeInfo())
+		else
 		{
-			switch (GetRepresentation())
-			{
-			case ERepresentation::Empty:
-				break;
-			case ERepresentation::Trivial:
-				uint8 TempBuffer[sizeof(TrivialStorage.Internal)];
-				Memory::Memmove(TempBuffer, TrivialStorage.Internal);
-				Memory::Memmove(TrivialStorage.Internal, InValue.TrivialStorage.Internal);
-				Memory::Memmove(InValue.TrivialStorage.Internal, TempBuffer);
-				break;
-			case ERepresentation::Small:
-				SmallStorage.RTTI->SwapObject(&SmallStorage.Internal, &InValue.SmallStorage.Internal);
-				break;
-			case ERepresentation::Big:
-				NAMESPACE_REDCRAFT::Swap(BigStorage.External, InValue.BigStorage.External);
-				break;
-			default: check_no_entry();
-			}
-
-			return;
+			FAny Temp = MoveTemp(A);
+			A = MoveTemp(B);
+			B = MoveTemp(Temp);
 		}
-		
-		FAny Temp = MoveTemp(*this);
-		*this = MoveTemp(InValue);
-		InValue = MoveTemp(Temp);
 	}
 
 private:
@@ -411,7 +386,7 @@ private:
 				{
 					if constexpr (CSwappable<T>)
 					{
-						NAMESPACE_REDCRAFT::Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
+						Swap(*reinterpret_cast<T*>(A), *reinterpret_cast<T*>(B));
 					}
 					else
 					{
