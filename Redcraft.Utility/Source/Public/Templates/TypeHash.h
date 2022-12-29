@@ -9,16 +9,19 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+/** Combines zero hash value. */
 FORCEINLINE constexpr size_t HashCombine()
 {
 	return 0;
 }
 
+/** Combines one hash value to get itself. */
 FORCEINLINE constexpr size_t HashCombine(size_t A)
 {
 	return A;
 }
 
+/** Combines two hash values to get a third. this function is not commutative. */
 FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C)
 {
 	
@@ -39,6 +42,7 @@ FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C)
 	return C;
 }
 
+/** Combines more hash values to get a new value. this function is not commutative. */
 template <typename... Ts> requires (true && ... && CConvertibleTo<Ts, size_t>)
 FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
 {
@@ -46,6 +50,7 @@ FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
 	return HashCombine(B, InOther...);
 }
 
+/** Overloads the GetTypeHash algorithm for CIntegral. */
 template <CIntegral T>
 FORCEINLINE constexpr size_t GetTypeHash(T A)
 {
@@ -59,6 +64,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	return INDEX_NONE;
 }
 
+/** Overloads the GetTypeHash algorithm for CFloatingPoint. */
 template <CFloatingPoint T>
 FORCEINLINE constexpr size_t GetTypeHash(T A)
 {
@@ -74,18 +80,21 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	return INDEX_NONE;
 }
 
+/** Overloads the GetTypeHash algorithm for CEnum. */
 template <CEnum T>
 FORCEINLINE constexpr size_t GetTypeHash(T A)
 {
 	return GetTypeHash(static_cast<TUnderlyingType<T>>(A));
 }
 
+/** Overloads the GetTypeHash algorithm for CPointer. */
 template <typename T> requires (CPointer<T> || CSameAs<T, nullptr_t>)
 FORCEINLINE constexpr size_t GetTypeHash(T A)
 {
 	return GetTypeHash(reinterpret_cast<intptr>(A));
 }
 
+/** Overloads the GetTypeHash algorithm for T::hash_code(). */
 template <typename T> requires (requires(const T& A) { { GetTypeHash(A.hash_code()) } -> CSameAs<size_t>; })
 FORCEINLINE constexpr size_t GetTypeHash(const T& A)
 {

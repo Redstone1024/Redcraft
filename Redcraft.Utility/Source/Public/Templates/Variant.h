@@ -79,60 +79,83 @@ inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, 
 template <size_t I, CTVariant U>
 using TVariantAlternative = TCopyCV<U, typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, TRemoveCV<U>>::Type>;
 
+/**
+ * The class template TVariant represents a type-safe union. An instance of TVariant
+ * holds a value of one of its alternative types, or in the case of invalid - no value.
+ */
 template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
 class TVariant
 {
 public:
 
+	/** Constructs an invalid object. */
 	FORCEINLINE constexpr TVariant() : TypeIndex(0xFF) { };
 
+	/** Constructs an invalid object. */
 	FORCEINLINE constexpr TVariant(FInvalid) : TVariant() { };
 
+	/** Copies content of other into a new instance. */
 	FORCEINLINE constexpr TVariant(const TVariant& InValue) requires (true && ... && CTriviallyCopyConstructible<Ts>) = default;
 
+	/** Copies content of other into a new instance. */
 	FORCEINLINE constexpr TVariant(const TVariant& InValue) requires ((true && ... && CCopyConstructible<Ts>) && !(true && ... && CTriviallyCopyConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
 
+	/** Moves content of other into a new instance. */
 	FORCEINLINE constexpr TVariant(TVariant&& InValue) requires (true && ... && CTriviallyMoveConstructible<Ts>) = default;
 
+	/** Moves content of other into a new instance. */
 	FORCEINLINE constexpr TVariant(TVariant&& InValue) requires ((true && ... && CMoveConstructible<Ts>) && !(true && ... && CTriviallyMoveConstructible<Ts>))
 		: TypeIndex(static_cast<uint8>(InValue.GetIndex()))
 	{
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
-
-	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
-		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
-	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, ArgTypes&&... Args)
-		: TypeIndex(I)
-	{
-		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		new (&Value) SelectedType(Forward<ArgTypes>(Args)...);
-	}
-
-	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
-	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, ArgTypes&&... Args)
-		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, Forward<ArgTypes>(Args)...)
-	{ }
-
+	
+	/**
+	 * Converting constructor. Constructs a variant holding the alternative type that would be selected
+	 * by overload resolution for the expression F(Forward<T>(InValue)) if there was an overload of
+	 * imaginary function F(T) for every T from Ts... in scope at the same time, except that an overload F(T)
+	 * is only considered if the declaration T X[] = { Forward<T>(InValue) }; is valid for some invented variable x.
+	 * Direct-initializes the contained value as if by direct non-list-initialization from Forward<T>(InValue).
+	 */
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; }
 		&& !CTInPlaceType<TRemoveCVRef<T>> && !CTInPlaceIndex<TRemoveCVRef<T>>
 		&& !CSameAs<TVariant, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
 	{ }
+	
+	/** Constructs a variant with the specified alternative T and initializes the contained value with the arguments Forward<Us>(Args).... */
+	template <typename T, typename... Us> requires (CConstructibleFrom<T, Us...>)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, Us&&... Args)
+		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, Forward<Us>(Args)...)
+	{ }
 
+	/** Constructs a variant with the alternative T specified by the index I and initializes the contained value with the arguments Forward<Us>(Args).... */
+	template <size_t I, typename... Us> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, Us...>)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, Us&&... Args)
+		: TypeIndex(I)
+	{
+		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		new (&Value) SelectedType(Forward<Us>(Args)...);
+	}
+
+	/** Destroys the contained object, if any, as if by a call to Reset(). */
 	FORCEINLINE constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
 
+	/** Destroys the contained object, if any, as if by a call to Reset(). */
 	FORCEINLINE constexpr ~TVariant() requires (!(true && ... && CTriviallyDestructible<Ts>))
 	{
 		Reset();
 	}
 
+	/** Assigns by copying the state of 'InValue'. */
 	FORCEINLINE constexpr TVariant& operator=(const TVariant& InValue) requires (true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)) = default;
 
+	/** Assigns by copying the state of 'InValue'. */
 	constexpr TVariant& operator=(const TVariant& InValue) requires ((true && ... && (CCopyConstructible<Ts> && CCopyAssignable<Ts>))
 		&& !(true && ... && (CTriviallyCopyConstructible<Ts> && CTriviallyCopyAssignable<Ts>)))
 	{
@@ -155,8 +178,10 @@ public:
 		return *this;
 	}
 
+	/** Assigns by moving the state of 'InValue'. */
 	FORCEINLINE constexpr TVariant& operator=(TVariant&& InValue) requires (true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)) = default;
 
+	/** Assigns by moving the state of 'InValue'. */
 	constexpr TVariant& operator=(TVariant&& InValue) requires ((true && ... && (CMoveConstructible<Ts> && CMoveAssignable<Ts>))
 		&& !(true && ... && (CTriviallyMoveConstructible<Ts> && CTriviallyMoveAssignable<Ts>)))
 	{
@@ -179,6 +204,7 @@ public:
 		return *this;
 	}
 
+	/** Converting assignment. Constructs a variant holding the alternative type that would be selected by overload resolution. */
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; })
 	FORCEINLINE constexpr TVariant& operator=(T&& InValue)
 	{
@@ -194,8 +220,9 @@ public:
 
 		return *this;
 	}
-	
-	friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
+
+	/** Check if the two variants are equivalent. */
+	NODISCARD friend constexpr bool operator==(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CEqualityComparable<Ts>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return false;
 		if (LHS.IsValid() == false) return true;
@@ -206,7 +233,8 @@ public:
 		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
 
-	friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
+	/** Check the order relationship between two variants. */
+	NODISCARD friend constexpr partial_ordering operator<=>(const TVariant& LHS, const TVariant& RHS) requires (true && ... && CSynthThreeWayComparable<Ts>)
 	{
 		if (LHS.GetIndex() != RHS.GetIndex()) return partial_ordering::unordered;
 		if (LHS.IsValid() == false) return partial_ordering::equivalent;
@@ -216,65 +244,87 @@ public:
 
 		return CompareImpl[LHS.GetIndex()](&LHS.Value, &RHS.Value);
 	}
-	
+
+	/** Check if the variant value is equivalent to 'InValue'. */
 	template <typename T> requires (!CSameAs<TVariant, T> && CEqualityComparable<T>)
-	FORCEINLINE constexpr bool operator==(const T& InValue) const&
+	NODISCARD FORCEINLINE constexpr bool operator==(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
 	}
-	
+
+	/** Check that the variant value is in ordered relationship with 'InValue'. */
 	template <typename T> requires (!CSameAs<TVariant, T> && CEqualityComparable<T>)
-	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
+	NODISCARD FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
 	}
-	
-	FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
 
-	template <size_t I, typename... ArgTypes> requires (I < sizeof...(Ts)
-		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, ArgTypes...>)
-	FORCEINLINE constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(ArgTypes&&... Args)
+	/** @return true if instance does not contain a value, otherwise false. */
+	NODISCARD FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
+	
+	/** Equivalent to Emplace<I>(Forward<Us>(Args)...), where I is the zero-based index of T in Types.... */
+	template <typename T, typename... Us> requires (CConstructibleFrom<T, Us...>)
+	FORCEINLINE constexpr T& Emplace(Us&&... Args)
+	{
+		return Emplace<TVariantIndex<T, TVariant<Ts...>>>(Forward<Us>(Args)...);
+	}
+
+	/**
+	 * First, destroys the currently contained value if any.
+	 * Then direct-initializes the contained value as if constructing a value of type T with the arguments Forward<Us>(Args)....
+	 *
+	 * @param  Args	- The arguments to be passed to the constructor of the contained object.
+	 * 
+	 * @return A reference to the new contained object.
+	 */
+	template <size_t I, typename... Us> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, Us...>)
+	FORCEINLINE constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(Us&&... Args)
 	{
 		Reset();
 
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		SelectedType* Result = new (&Value) SelectedType(Forward<ArgTypes>(Args)...);
+		SelectedType* Result = new (&Value) SelectedType(Forward<Us>(Args)...);
 		TypeIndex = I;
 
 		return *Result;
 	}
 
-	template <typename T, typename... ArgTypes> requires (CConstructibleFrom<T, ArgTypes...>)
-	FORCEINLINE constexpr T& Emplace(ArgTypes&&... Args)
-	{
-		return Emplace<TVariantIndex<T, TVariant<Ts...>>>(Forward<ArgTypes>(Args)...);
-	}
+	/** @return The typeid of the contained value if instance is non-empty, otherwise typeid(void). */
+	NODISCARD FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
 
-	FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? *TypeInfos[GetIndex()] : typeid(void); }
+	/** @return The zero-based index of the alternative held by the variant. */
+	NODISCARD FORCEINLINE constexpr size_t GetIndex() const { return IsValid() ? TypeIndex : INDEX_NONE; }
 
-	FORCEINLINE constexpr size_t GetIndex()        const { return TypeIndex != 0xFF ? TypeIndex : INDEX_NONE; }
-	FORCEINLINE constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
-	FORCEINLINE constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
+	/** @return true if instance contains a value, otherwise false. */
+	NODISCARD FORCEINLINE constexpr bool IsValid()           const { return TypeIndex != 0xFF; }
+	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return TypeIndex != 0xFF; }
 
-	template <size_t   I> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                 : false; }
-	template <typename T> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Ts...>> : false; }
+	/** @return true if the variant currently holds the alternative, false otherwise. */
+	template <size_t   I> NODISCARD FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == I                                 : false; }
+	template <typename T> NODISCARD FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetIndex() == TVariantIndex<T, TVariant<Ts...>> : false; }
 
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
+	/** @return The contained object. */
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value);  }
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<I>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const TVariantAlternative<I, TVariant<Ts...>>*>(&Value)); }
 
-	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
-	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
-	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
-	template <typename T> FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
+	/** @return The contained object. */
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);  }
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value)); }
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);  }
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TVariant. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value)); }
 
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) Get(      TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
-	template <size_t I> requires (I < sizeof...(Ts)) FORCEINLINE constexpr decltype(auto) Get(const TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	/** @return The contained object when HoldsAlternative<I>() returns true, 'DefaultValue' otherwise. */
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) Get(      TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) &      { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
+	template <size_t I> requires (I < sizeof...(Ts)) NODISCARD FORCEINLINE constexpr decltype(auto) Get(const TVariantAlternative<I, TVariant<Ts...>>& DefaultValue) const& { return HoldsAlternative<I>() ? GetValue<I>() : DefaultValue; }
 
-	template <typename T> FORCEINLINE constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	template <typename T> FORCEINLINE constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	/** @return The contained object when HoldsAlternative<T>() returns true, 'DefaultValue' otherwise. */
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
 
+	/** If not empty, destroys the contained object. */
 	FORCEINLINE constexpr void Reset()
 	{
 		if (GetIndex() == INDEX_NONE) return;
@@ -287,7 +337,8 @@ public:
 		TypeIndex = static_cast<uint8>(INDEX_NONE);
 	}
 
-	friend FORCEINLINE constexpr size_t GetTypeHash(const TVariant& A) requires (true && ... && CHashable<Ts>)
+	/** Overloads the GetTypeHash algorithm for TVariant. */
+	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TVariant& A) requires (true && ... && CHashable<Ts>)
 	{
 		if (!A.IsValid()) return 114514;
 
@@ -297,6 +348,7 @@ public:
 		return HashCombine(GetTypeHash(A.GetIndex()), HashImpl[A.GetIndex()](&A.Value));
 	}
 
+	/** Overloads the Swap algorithm for TVariant. */
 	friend constexpr void Swap(TVariant& A, TVariant& B) requires (true && ... && (CMoveConstructible<Ts> && CSwappable<Ts>))
 	{
 		if (!A.IsValid() && !B.IsValid()) return;
@@ -477,6 +529,7 @@ struct TVariantVisitImpl
 
 NAMESPACE_PRIVATE_END
 
+/** Applies the visitor 'Func' (Callable that can be called with any combination of types from variants) to the variants 'Variants'. */
 template <typename F, typename FirstVariantType, typename... VariantTypes>
 	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
 constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
@@ -485,6 +538,7 @@ constexpr decltype(auto) Visit(F&& Func, FirstVariantType&& FirstVariant, Varian
 	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
 }
 
+/** Applies the visitor 'Func' (Callable that can be called with any combination of types from variants) to the variants 'Variants'. */
 template <typename Ret, typename F, typename FirstVariantType, typename... VariantTypes>
 	requires (CTVariant<TRemoveReference<FirstVariantType>> && (true && ... && CTVariant<TRemoveReference<VariantTypes>>))
 constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)

@@ -27,14 +27,22 @@ concept CFAnyPlaceable = CDestructible<TDecay<T>> && CCopyConstructible<TDecay<T
 
 NAMESPACE_PRIVATE_END
 
+/**
+ * The class any describes a type-safe container for single values of any copy and move constructible type.
+ * An object of class any stores an instance of any type that satisfies the constructor requirements or is empty,
+ * and this is referred to as the state of the class any object. The stored instance is called the contained object.
+ */
 class alignas(16) FAny
 {
 public:
 
+	/** Constructs an empty object. */
 	FORCEINLINE constexpr FAny() { Invalidate(); }
 
+	/** Constructs an empty object. */
 	FORCEINLINE constexpr FAny(FInvalid) : FAny() { }
 
+	/** Copies content of other into a new instance. This may use the object's copy constructor. */
 	FAny(const FAny& InValue)
 		: TypeInfo(InValue.TypeInfo)
 	{
@@ -60,6 +68,7 @@ public:
 		}
 	}
 
+	/** Moves content of other into a new instance. This may use the object's move constructor. */
 	FAny(FAny&& InValue)
 		: TypeInfo(InValue.TypeInfo)
 	{
@@ -85,25 +94,29 @@ public:
 		}
 	}
 
+	/** Constructs an object with initial content an object of type TDecay<T>, direct-initialized from Forward<T>(InValue). */
+	template <typename T> requires (!CSameAs<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
+		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
+	FORCEINLINE FAny(T&& InValue) : FAny(InPlaceType<T>, Forward<T>(InValue))
+	{ }
+
+	/** Constructs an object with initial content an object of type TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args).... */
 	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE explicit FAny(TInPlaceType<T>, Ts&&... Args)
 	{
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
 
-	template <typename T> requires (!CSameAs<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
-		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
-	FORCEINLINE FAny(T&& InValue) : FAny(InPlaceType<TDecay<T>>, Forward<T>(InValue))
-	{ }
-
+	/** Destroys the contained object, if any, as if by a call to Reset(). */
 	FORCEINLINE ~FAny()
 	{
 		Destroy();
 	}
 
+	/** Assigns by copying the state of 'InValue'. This may use the object's copy constructor or copy assignment operator. */
 	FAny& operator=(const FAny& InValue)
 	{
-		if (&InValue == this) return *this;
+		if (&InValue == this) UNLIKELY return *this;
 
 		if (!InValue.IsValid())
 		{
@@ -158,9 +171,10 @@ public:
 		return *this;
 	}
 
+	/** Assigns by moving the state of 'InValue'. This may use the object's move constructor or move assignment operator. */
 	FAny& operator=(FAny&& InValue)
 	{
-		if (&InValue == this) return *this;
+		if (&InValue == this) UNLIKELY return *this;
 
 		if (!InValue.IsValid())
 		{
@@ -217,39 +231,54 @@ public:
 		return *this;
 	}
 
+	/** Assigns the type and value of 'InValue'. This may use the object's constructor or assignment operator. */
 	template <typename T> requires (!CSameAs<FAny, TDecay<T>> && !CTInPlaceType<TDecay<T>>
 		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny& operator=(T&& InValue)
 	{
 		using DecayedType = TDecay<T>;
 
-		if (HoldsAlternative<DecayedType>())
+		if constexpr (CAssignableFrom<DecayedType, T&&>)
 		{
-			GetValue<DecayedType>() = Forward<T>(InValue);
+			if (HoldsAlternative<DecayedType>())
+			{
+				GetValue<DecayedType>() = Forward<T>(InValue);
+				return *this;
+			}
 		}
-		else
-		{
-			Destroy();
-			EmplaceImpl<DecayedType>(Forward<T>(InValue));
-		}
+
+		Destroy();
+		EmplaceImpl<DecayedType>(Forward<T>(InValue));
 
 		return *this;
 	}
 	
-	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr bool operator==(const T& InValue) const&
+	/** Check if the contained value is equivalent to 'InValue'. */
+	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CEqualityComparable<T>)
+	NODISCARD FORCEINLINE constexpr bool operator==(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? GetValue<T>() == InValue : false;
 	}
-	
-	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
+
+	/** Check that the contained value is in ordered relationship with 'InValue'. */
+	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CSynthThreeWayComparable<T>)
+	NODISCARD FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
 	{
 		return HoldsAlternative<T>() ? SynthThreeWayCompare(GetValue<T>(), InValue) : partial_ordering::unordered;
 	}
 
-	FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
+	/** @return true if instance does not contain a value, otherwise false. */
+	NODISCARD FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
 
+	/**
+	 * Changes the contained object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current contained object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args)..., as the contained object.
+	 *
+	 * @param  Args	- The arguments to be passed to the constructor of the contained object.
+	 *
+	 * @return A reference to the new contained object.
+	 */
 	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, Ts&&...>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
@@ -258,37 +287,48 @@ public:
 		return GetValue<TDecay<T>>();
 	}
 
-	FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? GetTypeInfoImpl() : typeid(void); }
+	/** @return The typeid of the contained value if instance is non-empty, otherwise typeid(void). */
+	NODISCARD FORCEINLINE constexpr const type_info& GetTypeInfo() const { return IsValid() ? GetTypeInfoImpl() : typeid(void); }
 
-	FORCEINLINE constexpr bool           IsValid() const { return TypeInfo != 0; }
-	FORCEINLINE constexpr explicit operator bool() const { return TypeInfo != 0; }
+	/** @return true if instance contains a value, otherwise false. */
+	NODISCARD FORCEINLINE constexpr           bool IsValid() const { return TypeInfo != 0; }
+	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return TypeInfo != 0; }
 
-	template <typename T> FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
+	/** @return true if the any currently holds the alternative 'T', false otherwise. */
+	template <typename T> NODISCARD FORCEINLINE constexpr bool HoldsAlternative() const { return IsValid() ? GetTypeInfo() == typeid(T) : false; }
 
+	/** @return The contained object. */
 	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetStorage());  }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetStorage())); }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetStorage());  }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetStorage())); }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
-	
-	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
-	FORCEINLINE constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+	NODISCARD FORCEINLINE constexpr       T&  GetValue() &       { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(GetStorage());  }
 
+	/** @return The contained object. */
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	NODISCARD FORCEINLINE constexpr       T&& GetValue() &&      { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(GetStorage())); }
+
+	/** @return The contained object. */
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	NODISCARD FORCEINLINE constexpr const T&  GetValue() const&  { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(GetStorage());  }
+
+	/** @return The contained object. */
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	NODISCARD FORCEINLINE constexpr const T&& GetValue() const&& { checkf(HoldsAlternative<T>(), TEXT("It is an error to call GetValue() on an wrong TAny. Please either check HoldsAlternative() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(GetStorage())); }
+
+	/** @return The contained object when HoldsAlternative<T>() returns true, 'DefaultValue' otherwise. */
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	NODISCARD FORCEINLINE constexpr       T& Get(      T& DefaultValue) &      { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+
+	/** @return The contained object when HoldsAlternative<T>() returns true, 'DefaultValue' otherwise. */
+	template <typename T> requires (CSameAs<T, TDecay<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+	NODISCARD FORCEINLINE constexpr const T& Get(const T& DefaultValue) const& { return HoldsAlternative<T>() ? GetValue<T>() : DefaultValue; }
+
+	/** If not empty, destroys the contained object. */
 	FORCEINLINE void Reset()
 	{
 		Destroy();
 		Invalidate();
 	}
 	
+	/** Overloads the Swap algorithm for FAny. */
 	friend void Swap(FAny& A, FAny& B)
 	{
 		if (!A.IsValid() && !B.IsValid()) return;

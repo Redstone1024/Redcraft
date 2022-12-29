@@ -154,7 +154,7 @@ public:
 	
 	TFunctionStorage& operator=(const TFunctionStorage& InValue) requires (!bIsUnique)
 	{
-		if (&InValue == this) return *this;
+		if (&InValue == this) UNLIKELY return *this;
 
 		if (!InValue.IsValid())
 		{
@@ -191,7 +191,7 @@ public:
 
 	TFunctionStorage& operator=(TFunctionStorage&& InValue)
 	{
-		if (&InValue == this) return *this;
+		if (&InValue == this) UNLIKELY return *this;
 
 		if (!InValue.IsValid())
 		{
@@ -469,6 +469,7 @@ public:
 	FORCEINLINE constexpr TFunctionImpl& operator=(TFunctionImpl&&)      = default;
 	FORCEINLINE constexpr ~TFunctionImpl()                               = default;
 
+	/** Invokes the stored callable function target with the parameters args. */
 	FORCEINLINE ResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Ts>(Args)...); }
@@ -476,10 +477,12 @@ public:
 	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
 	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
-	FORCEINLINE constexpr bool operator==(nullptr_t) const& { return !IsValid(); }
+	/** @return false if instance stores a callable function target, true otherwise. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return !IsValid(); }
 
-	FORCEINLINE constexpr bool           IsValid() const { return Storage.IsValid(); }
-	FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
+	/** @return true if instance stores a callable function target, false otherwise. */
+	NODISCARD FORCEINLINE constexpr           bool IsValid() const { return Storage.IsValid(); }
+	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
 
 private:
 
@@ -494,7 +497,7 @@ private:
 		return Callable(Storage.GetValuePtr(), Forward<Ts>(Args)...);
 	}
 
-protected: // These functions should not be used by user-defined class
+protected:
 
 	// Use Invalidate() to invalidate the storage or use Emplace<T>() to emplace a new object after destruction.
 	FORCEINLINE constexpr void Destroy() { Storage.Destroy(); }
@@ -534,6 +537,17 @@ protected: // These functions should not be used by user-defined class
 
 NAMESPACE_PRIVATE_END
 
+/**
+ * A class which represents a reference to something callable. The important part here is *reference* - if
+ * you bind it to a lambda and the lambda goes out of scope, you will be left with an invalid reference.
+ *
+ * If you also want to take ownership of the callable thing, e.g. you want to return a lambda from a
+ * function, you should use TFunction. TFunctionRef does not concern itself with ownership because it's
+ * intended to be FAST.
+ *
+ * TFunctionRef is most useful when you want to parameterize a function with some caller-defined code
+ * without making it a template.
+ */
 template <CFunction F>
 class TFunctionRef
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
@@ -550,17 +564,21 @@ private:
 
 public:
 
+	/** Remove the default initialization and disallow the construction of a TFunctionRef that does not store the function target. */
 	FORCEINLINE constexpr TFunctionRef() = delete;
 
 	FORCEINLINE constexpr TFunctionRef(const TFunctionRef& InValue) = default;
 	FORCEINLINE constexpr TFunctionRef(TFunctionRef&& InValue)      = default;
 
-	// We delete the assignment operators because we don't want it to be confused with being related to
-	// regular C++ reference assignment - i.e. calling the assignment operator of whatever the reference
-	// is bound to - because that's not what TFunctionRef does, nor is it even capable of doing that.
+	/**
+	 * We delete the assignment operators because we don't want it to be confused with being related to
+	 * regular C++ reference assignment - i.e. calling the assignment operator of whatever the reference
+	 * is bound to - because that's not what TFunctionRef does, nor is it even capable of doing that.
+	 */
 	FORCEINLINE constexpr TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
 	FORCEINLINE constexpr TFunctionRef& operator=(TFunctionRef&& InValue)      = delete;
 
+	/** Constructor which binds a TFunctionRef to a callable object. */
 	template <typename T> requires (!CTFunctionRef<TDecay<T>>
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE constexpr TFunctionRef(T&& InValue)
@@ -574,6 +592,12 @@ public:
 
 };
 
+/**
+ * A class which represents a copy of something callable.
+ *
+ * It takes a copy of whatever is bound to it, meaning you can return it from functions and store them in
+ * objects without caring about the lifetime of the original object being bound.
+ */
 template <CFunction F>
 class TFunction 
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
@@ -590,6 +614,7 @@ private:
 
 public:
 
+	/**  Default constructor. */
 	FORCEINLINE constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
 	FORCEINLINE TFunction(const TFunction& InValue)            = default;
@@ -597,6 +622,10 @@ public:
 	FORCEINLINE TFunction& operator=(const TFunction& InValue) = default;
 	FORCEINLINE TFunction& operator=(TFunction&& InValue)      = default;
 
+	/**
+	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
+	 * direct-initialized from Forward<T>(InValue).
+	 */
 	template <typename T> requires (!CTInPlaceType<TDecay<T>>
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
@@ -607,7 +636,11 @@ public:
 		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
 		else Impl::template Emplace<T>(Forward<T>(InValue));
 	}
-	
+
+	/**
+	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
+	 * direct-non-list-initialized from Forward<Ts>(Args)....
+	 */
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
@@ -616,8 +649,10 @@ public:
 		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
+	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
 	FORCEINLINE constexpr TFunction& operator=(nullptr_t) { Reset(); return *this; }
 
+	/** Assigns the type and value of 'InValue'. */
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CCopyConstructible<TDecay<T>>
@@ -630,6 +665,15 @@ public:
 		return *this;
 	}
 
+	/**
+	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args)..., as the function object.
+	 *
+	 * @param  Args	- The arguments to be passed to the constructor of the function object.
+	 *
+	 * @return A reference to the new function object.
+	 */
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
@@ -639,12 +683,20 @@ public:
 		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
+	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
 	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
+	/** Overloads the Swap algorithm for TFunction. */
 	friend FORCEINLINE constexpr void Swap(TFunction& A, TFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
 
 };
 
+/**
+ * A class which represents a copy of something callable, but is move-only.
+ *
+ * It takes a copy of whatever is bound to it, meaning you can return it from functions and store them in
+ * objects without caring about the lifetime of the original object being bound.
+ */
 template <CFunction F>
 class TUniqueFunction
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
@@ -661,6 +713,7 @@ private:
 
 public:
 
+	/**  Default constructor. */
 	FORCEINLINE constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
 	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue)            = delete;
@@ -668,28 +721,36 @@ public:
 	FORCEINLINE TUniqueFunction& operator=(const TUniqueFunction& InValue) = delete;
 	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&& InValue)      = default;
 
+	/** Constructor from TFunction to TUniqueFunction. */
 	FORCEINLINE TUniqueFunction(const TFunction<F>& InValue)
 	{
 		new (this) TFunction<F>(InValue);
 	}
 
+	/** Constructor from TFunction to TUniqueFunction. */
 	FORCEINLINE TUniqueFunction(TFunction<F>&& InValue)
 	{
 		new (this) TFunction<F>(MoveTemp(InValue));
 	}
 
+	/** Assignment operator from TFunction to TUniqueFunction. */
 	FORCEINLINE TUniqueFunction& operator=(const TFunction<F>& InValue)
 	{
 		*reinterpret_cast<TFunction<F>*>(this) = InValue;
 		return *this;
 	}
 
+	/** Assignment operator from TFunction to TUniqueFunction. */
 	FORCEINLINE TUniqueFunction& operator=(TFunction<F>&& InValue)
 	{
 		*reinterpret_cast<TFunction<F>*>(this) = MoveTemp(InValue);
 		return *this;
 	}
 
+	/**
+	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
+	 * direct-initialized from Forward<T>(InValue).
+	 */
 	template <typename T> requires (!CTInPlaceType<TDecay<T>>
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
 		&& CConstructibleFrom<TDecay<T>, T&&> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>
@@ -699,7 +760,11 @@ public:
 		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
 		else Impl::template Emplace<T>(Forward<T>(InValue));
 	}
-
+	
+	/**
+	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
+	 * direct-non-list-initialized from Forward<Ts>(Args)....
+	 */
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
@@ -707,6 +772,7 @@ public:
 		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
+	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */
 	FORCEINLINE constexpr TUniqueFunction& operator=(nullptr_t) { Impl::Destroy(); Impl::Invalidate(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
@@ -720,6 +786,15 @@ public:
 		return *this;
 	}
 
+	/**
+	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args)..., as the function object.
+	 *
+	 * @param  Args	- The arguments to be passed to the constructor of the function object.
+	 *
+	 * @return A reference to the new function object.
+	 */
 	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
@@ -729,8 +804,10 @@ public:
 		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
 	}
 
+	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */
 	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
 
+	/** Overloads the Swap algorithm for TUniqueFunction. */
 	friend FORCEINLINE constexpr void Swap(TUniqueFunction& A, TUniqueFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
 
 };
@@ -779,8 +856,9 @@ struct TNotFunction
 
 NAMESPACE_PRIVATE_END
 
-template <typename F> requires (CConstructibleFrom<F, F&&>)
-FORCEINLINE constexpr NAMESPACE_PRIVATE::TNotFunction<TDecay<F>> NotFn(F&& Func)
+/** Creates a forwarding call wrapper that returns the negation of the callable object it holds. */
+template <typename F> requires (CConstructibleFrom<F, F&&> && CMoveConstructible<F>)
+NODISCARD FORCEINLINE constexpr NAMESPACE_PRIVATE::TNotFunction<TDecay<F>> NotFn(F&& Func)
 {
 	return { Forward<F>(Func) };
 }

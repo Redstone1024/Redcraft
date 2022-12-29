@@ -940,7 +940,8 @@ void TestTuple()
 				always_check(C == 'A');
 			}
 		};
-		MakeTuple(1, 1.2f, 'A').Construct<FTest>();
+
+		Ignore = MakeTuple(1, 1.2f, 'A').Construct<FTest>();
 	}
 
 	{

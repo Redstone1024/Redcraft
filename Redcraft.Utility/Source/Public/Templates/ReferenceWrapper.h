@@ -10,6 +10,11 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+/**
+ * TReferenceWrapper is a class template that wraps a reference object.
+ * It is frequently used as a mechanism to store references inside standard
+ * containers which cannot normally hold references.
+ */
 template <typename ReferencedType> requires (CObject<ReferencedType> || CFunction<ReferencedType>)
 class TReferenceWrapper
 {
@@ -17,6 +22,7 @@ public:
 
 	using Type = ReferencedType;
 
+	/** Constructs a new reference wrapper. */
 	template <typename T = ReferencedType> requires (CConvertibleTo<T, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper(T&& Object)
 	{
@@ -24,34 +30,47 @@ public:
 		Pointer = AddressOf(Reference);
 	}
 
+	/** Copies/moves content of other into a new instance. */
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper&) = default;
 	FORCEINLINE constexpr TReferenceWrapper(TReferenceWrapper&&)      = default;
-	
+
+	/** Converting copy constructor. */
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
 		: Pointer(InValue.Pointer)
 	{ }
 
+	/** Assign a value to the referenced object. */
 	template <typename T = ReferencedType> requires (CAssignableFrom<ReferencedType&, T&&>)
 	FORCEINLINE constexpr TReferenceWrapper& operator=(T&& Object) { Get() = Forward<T>(Object); return *this; }
 
+	/** Remove the assignment operator, as rebinding is not allowed. */
 	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = delete;
 	FORCEINLINE constexpr TReferenceWrapper& operator=(TReferenceWrapper&&)      = delete;
 	
-	FORCEINLINE constexpr operator ReferencedType&() const { return *Pointer; }
+	/** @return The stored reference. */
 	FORCEINLINE constexpr ReferencedType& Get()      const { return *Pointer; }
+	FORCEINLINE constexpr operator ReferencedType&() const { return *Pointer; }
 
+	/** Calls the Callable object, reference to which is stored. */
 	template <typename... Ts>
 	FORCEINLINE constexpr TInvokeResult<ReferencedType&, Ts...> operator()(Ts&&... Args) const
 	{
 		return Invoke(Get(), Forward<Ts>(Args)...);
 	}
 
-	friend FORCEINLINE constexpr size_t GetTypeHash(TReferenceWrapper A) requires (CHashable<ReferencedType>)
+	/** Overloads the GetTypeHash algorithm for TReferenceWrapper. */
+	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TReferenceWrapper A) requires (CHashable<ReferencedType>)
 	{
 		return GetTypeHash(A.Get());
 	}
-	
+
+	/** Overloads the Swap algorithm for TReferenceWrapper. */
+	friend FORCEINLINE constexpr void Swap(TReferenceWrapper A, TReferenceWrapper B) requires (CSwappable<ReferencedType>)
+	{
+		Swap(A.Get(), B.Get());
+	}
+
 private:
 
 	ReferencedType* Pointer;
