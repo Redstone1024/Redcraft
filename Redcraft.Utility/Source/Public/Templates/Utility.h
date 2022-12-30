@@ -73,6 +73,18 @@ FORCEINLINE constexpr void Swap(T& A, T& B)
 	B = MoveTemp(Temp);
 }
 
+/** Overloads the Swap algorithm for array. */
+template <typename T, size_t N> requires (CMoveConstructible<T> && CMoveAssignable<T>)
+FORCEINLINE constexpr void Swap(T(&A)[N], T(&B)[N])
+{
+	for (size_t Index = 0; Index < N; ++Index)
+	{
+		T Temp = MoveTemp(A[Index]);
+		A[Index] = MoveTemp(B[Index]);
+		B[Index] = MoveTemp(Temp);
+	}
+}
+
 /** Replaces the value of 'A' with 'B' and returns the old value of 'A'. */
 template <typename T, typename U = T> requires (CMoveConstructible<T> && CAssignableFrom<T&, U>)
 FORCEINLINE constexpr T Exchange(T& A, U&& B)
