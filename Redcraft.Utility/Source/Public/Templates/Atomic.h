@@ -287,10 +287,10 @@ NAMESPACE_PRIVATE_END
 template <typename T> requires (CTriviallyCopyable<T>
 	&& CCopyConstructible<T> && CMoveConstructible<T>
 	&& CCopyAssignable<T> && CMoveAssignable<T>)
-struct TAtomic : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, false>);
+struct TAtomic final : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, false>);
 
 template <typename T> requires (CTriviallyCopyable<T>)
-struct TAtomicRef : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, true>);
+struct TAtomicRef final : STRONG_INHERIT(NAMESPACE_PRIVATE::TAtomicImpl<T, true>);
 
 template <typename T>
 TAtomic(T) -> TAtomic<T>;
@@ -304,7 +304,7 @@ static_assert(sizeof(TAtomic<int32>) == sizeof(int32), "The byte size of TAtomic
  * FAtomicFlag is an atomic boolean type. Unlike all specializations of TAtomic, it is guaranteed to be lock-free.
  * Unlike TAtomic<bool>, FAtomicFlag does not provide load or store operations.
  */
-struct FAtomicFlag : FSingleton
+struct FAtomicFlag final : FSingleton
 {
 public:
 

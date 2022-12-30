@@ -107,7 +107,7 @@ FORCEINLINE constexpr T* AddressOf(T& Object)
 template <typename T>
 const T* AddressOf(const T&&) = delete;
 
-struct FIgnore
+struct FIgnore final
 {
 	template <typename T>
 	FORCEINLINE constexpr void operator=(T&&) const { }
@@ -145,7 +145,7 @@ inline constexpr FIgnore Ignore;
  *	}, Target);
  */
 template <typename... Ts>
-struct TOverloaded : Ts...
+struct TOverloaded final : Ts...
 {
 	using Ts::operator()...;
 };

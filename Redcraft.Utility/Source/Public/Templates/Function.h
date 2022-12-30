@@ -549,7 +549,7 @@ NAMESPACE_PRIVATE_END
  * without making it a template.
  */
 template <CFunction F>
-class TFunctionRef
+class TFunctionRef final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
@@ -599,7 +599,7 @@ public:
  * objects without caring about the lifetime of the original object being bound.
  */
 template <CFunction F>
-class TFunction 
+class TFunction final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
@@ -698,7 +698,7 @@ public:
  * objects without caring about the lifetime of the original object being bound.
  */
 template <CFunction F>
-class TUniqueFunction
+class TUniqueFunction final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
 		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,

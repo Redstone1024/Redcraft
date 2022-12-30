@@ -40,7 +40,7 @@ template <typename T> concept CTOptional = NAMESPACE_PRIVATE::TIsTOptional<TRemo
 
 /** The class template manages an optional contained value, i.e. a value that may or may not be present. */
 template <typename OptionalType> requires (CDestructible<OptionalType>)
-class TOptional
+class TOptional final
 {
 public:
 

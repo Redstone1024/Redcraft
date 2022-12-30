@@ -32,7 +32,7 @@ NAMESPACE_PRIVATE_END
  * An object of class any stores an instance of any type that satisfies the constructor requirements or is empty,
  * and this is referred to as the state of the class any object. The stored instance is called the contained object.
  */
-class alignas(16) FAny
+class alignas(16) FAny final
 {
 public:
 

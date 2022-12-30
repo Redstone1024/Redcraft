@@ -16,7 +16,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
  * containers which cannot normally hold references.
  */
 template <typename ReferencedType> requires (CObject<ReferencedType> || CFunction<ReferencedType>)
-class TReferenceWrapper
+class TReferenceWrapper final
 {
 public:
 

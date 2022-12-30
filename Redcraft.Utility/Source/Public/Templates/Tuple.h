@@ -292,7 +292,7 @@ template <size_t I, CTTuple U>
 using TTupleElement = TCopyCV<U, typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TRemoveCV<U>>::Type>;
 
 template <typename... Ts>
-class TTuple : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>
+class TTuple final : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>
 {
 private:
 

@@ -84,7 +84,7 @@ using TVariantAlternative = TCopyCV<U, typename NAMESPACE_PRIVATE::TVariantAlter
  * holds a value of one of its alternative types, or in the case of invalid - no value.
  */
 template <typename... Ts> requires (sizeof...(Ts) > 0 && (true && ... && CDestructible<Ts>))
-class TVariant
+class TVariant final
 {
 public:
 
