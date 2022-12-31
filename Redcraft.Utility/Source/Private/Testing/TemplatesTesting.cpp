@@ -173,6 +173,13 @@ void TestOptional()
 		always_check(TempB <= TempC);
 		always_check(TempA <=> TempB == partial_ordering::unordered);
 	}
+
+	{
+		struct FTest { FTest(initializer_list<int32>, int32) { } };
+
+		TOptional<FTest> Temp(InPlace, { 0, 1, 2 }, 3);
+		Temp.Emplace({ 0, 1, 2 }, 3);
+	}
 }
 
 void TestVariant()
@@ -186,8 +193,8 @@ void TestVariant()
 //		TVariant<int32> TempF(0.0);
 		TVariant<int32> TempG(TempA);
 		TVariant<int32> TempH(TempD);
-		TVariant<int32> TempI(TVariant<int32>(0));
-		TVariant<int32> TempJ(TVariant<int32>(Invalid));
+		TVariant<int32> TempI = TVariant<int32>(0);
+		TVariant<int32> TempJ = TVariant<int32>(Invalid);
 
 		TVariant<int32> TempK, TempL, TempM, TempN;
 		TempK = TempA;
@@ -423,6 +430,16 @@ void TestVariant()
 		always_check(TempD >= TempC);
 		always_check(TempA <=> TempB == partial_ordering::unordered);
 	}
+
+	{
+		struct FTest { FTest(initializer_list<int32>, int32) { } };
+
+		TVariant<FTest> TempA(InPlaceIndex<0>, { 0, 1, 2 }, 3);
+		TempA.Emplace<0>({ 0, 1, 2 }, 3);
+
+		TVariant<FTest> TempB(InPlaceType<FTest>, { 0, 1, 2 }, 3);
+		TempB.Emplace<FTest>({ 0, 1, 2 }, 3);
+	}
 }
 
 void TestAny()
@@ -630,6 +647,12 @@ void TestAny()
 		TempZ = FTracker();
 	}
 
+	{
+		struct FTest { FTest(initializer_list<int32>, int32) { } };
+
+		FAny Temp(InPlaceType<FTest>, { 0, 1, 2 }, 3);
+		Temp.Emplace<FTest>({ 0, 1, 2 }, 3);
+	}
 }
 
 void TestTuple()
@@ -1235,6 +1258,19 @@ void TestFunction()
 		always_check(NotIdentity(false));
 	}
 
+	{
+		struct FTest
+		{
+			FTest(initializer_list<int32>, int32) { }
+			void operator()() { }
+		};
+
+		TFunction<void()> TempA(InPlaceType<FTest>, { 0, 1, 2 }, 3);
+		TempA.Emplace<FTest>({ 0, 1, 2 }, 3);
+
+		TUniqueFunction<void()> TempB(InPlaceType<FTest>, { 0, 1, 2 }, 3);
+		TempB.Emplace<FTest>({ 0, 1, 2 }, 3);
+	}
 }
 
 void TestAtomic()

@@ -106,6 +106,13 @@ public:
 	{
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
+	
+	/** Constructs an object with initial content an object of type TDecay<T>, direct-non-list-initialized from IL, Forward<Ts>(Args).... */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts&&...>)
+	FORCEINLINE explicit FAny(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
+	{
+		EmplaceImpl<T>(IL, Forward<Ts>(Args)...);
+	}
 
 	/** Destroys the contained object, if any, as if by a call to Reset(). */
 	FORCEINLINE ~FAny()
@@ -275,7 +282,7 @@ public:
 	 * First destroys the current contained object (if any) by Reset(), then constructs an object of type
 	 * TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args)..., as the contained object.
 	 *
-	 * @param  Args	- The arguments to be passed to the constructor of the contained object.
+	 * @param  Args - The arguments to be passed to the constructor of the contained object.
 	 *
 	 * @return A reference to the new contained object.
 	 */
@@ -284,6 +291,23 @@ public:
 	{
 		Destroy();
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
+		return GetValue<TDecay<T>>();
+	}
+
+	/**
+	 * Changes the contained object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current contained object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from IL, Forward<Ts>(Args)..., as the contained object.
+	 *
+	 * @param  IL, Args - The arguments to be passed to the constructor of the contained object.
+	 *
+	 * @return A reference to the new contained object.
+	 */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts&&...>)
+	FORCEINLINE TDecay<T>& Emplace(initializer_list<U> IL, Ts&&... Args)
+	{
+		Destroy();
+		EmplaceImpl<T>(IL, Forward<Ts>(Args)...);
 		return GetValue<TDecay<T>>();
 	}
 

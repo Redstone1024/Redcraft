@@ -142,6 +142,22 @@ public:
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
 		new (&Value) SelectedType(Forward<Us>(Args)...);
 	}
+	
+	/** Constructs a variant with the specified alternative T and initializes the contained value with the arguments IL, Forward<Us>(Args).... */
+	template <typename T, typename U, typename... Us> requires (CConstructibleFrom<T, initializer_list<U>, Us...>)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, initializer_list<U> IL, Us&&... Args)
+		: TVariant(InPlaceIndex<TVariantIndex<T, TVariant<Ts...>>>, IL, Forward<Us>(Args)...)
+	{ }
+
+	/** Constructs a variant with the alternative T specified by the index I and initializes the contained value with the arguments IL, Forward<Us>(Args).... */
+	template <size_t I, typename T, typename... Us> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, initializer_list<T>, Us...>)
+	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, initializer_list<T> IL, Us&&... Args)
+		: TypeIndex(I)
+	{
+		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		new (&Value) SelectedType(IL, Forward<Us>(Args)...);
+	}
 
 	/** Destroys the contained object, if any, as if by a call to Reset(). */
 	FORCEINLINE constexpr ~TVariant() requires (true && ... && CTriviallyDestructible<Ts>) = default;
@@ -273,7 +289,7 @@ public:
 	 * First, destroys the currently contained value if any.
 	 * Then direct-initializes the contained value as if constructing a value of type T with the arguments Forward<Us>(Args)....
 	 *
-	 * @param  Args	- The arguments to be passed to the constructor of the contained object.
+	 * @param  Args - The arguments to be passed to the constructor of the contained object.
 	 * 
 	 * @return A reference to the new contained object.
 	 */
@@ -285,6 +301,34 @@ public:
 
 		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
 		SelectedType* Result = new (&Value) SelectedType(Forward<Us>(Args)...);
+		TypeIndex = I;
+
+		return *Result;
+	}
+	
+	/** Equivalent to Emplace<I>(IL, Forward<Us>(Args)...), where I is the zero-based index of T in Types.... */
+	template <typename T, typename U, typename... Us> requires (CConstructibleFrom<T, initializer_list<U>, Us...>)
+	FORCEINLINE constexpr T& Emplace(initializer_list<U> IL, Us&&... Args)
+	{
+		return Emplace<TVariantIndex<T, TVariant<Ts...>>>(IL, Forward<Us>(Args)...);
+	}
+
+	/**
+	 * First, destroys the currently contained value if any.
+	 * Then direct-initializes the contained value as if constructing a value of type T with the arguments IL, Forward<Us>(Args)....
+	 *
+	 * @param  IL, Args - The arguments to be passed to the constructor of the contained object.
+	 * 
+	 * @return A reference to the new contained object.
+	 */
+	template <size_t I, typename T, typename... Us> requires (I < sizeof...(Ts)
+		&& CConstructibleFrom<TVariantAlternative<I, TVariant<Ts...>>, initializer_list<T>, Us...>)
+	FORCEINLINE constexpr TVariantAlternative<I, TVariant<Ts...>>& Emplace(initializer_list<T> IL, Us&&... Args)
+	{
+		Reset();
+
+		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		SelectedType* Result = new (&Value) SelectedType(IL, Forward<Us>(Args)...);
 		TypeIndex = I;
 
 		return *Result;

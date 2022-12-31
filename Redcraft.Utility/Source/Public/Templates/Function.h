@@ -506,8 +506,8 @@ protected:
 	FORCEINLINE constexpr void Invalidate() { Storage.Invalidate(); }
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
-	template <typename T, typename... ArgTypes>
-	FORCEINLINE constexpr TDecay<T>& Emplace(ArgTypes&&... Args)
+	template <typename T, typename... Us>
+	FORCEINLINE constexpr TDecay<T>& Emplace(Us&&... Args)
 	{
 		using DecayedType = TDecay<T>;
 
@@ -525,7 +525,7 @@ protected:
 
 		Storage.template Emplace<DecayedType>(
 			reinterpret_cast<uintptr>(Callable),
-			Forward<ArgTypes>(Args)...
+			Forward<Us>(Args)...
 		);
 
 		return *reinterpret_cast<DecayedType*>(Storage.GetValuePtr());
@@ -641,12 +641,24 @@ public:
 	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
 	 * direct-non-list-initialized from Forward<Ts>(Args)....
 	 */
-	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, Ts...> && CCopyConstructible<TDecay<T>>
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE explicit TFunction(TInPlaceType<T>, ArgTypes&&... Args)
+	FORCEINLINE explicit TFunction(TInPlaceType<T>, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
+		Impl::template Emplace<T>(Forward<Ts>(Args)...);
+	}
+	
+	/**
+	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
+	 * direct-non-list-initialized from IL, Forward<Ts>(Args)....
+	 */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE explicit TFunction(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
+	{
+		Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
@@ -670,17 +682,35 @@ public:
 	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
 	 * TDecay<T>, direct-non-list-initialized from Forward<Ts>(Args)..., as the function object.
 	 *
-	 * @param  Args	- The arguments to be passed to the constructor of the function object.
+	 * @param  Args - The arguments to be passed to the constructor of the function object.
 	 *
 	 * @return A reference to the new function object.
 	 */
-	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CCopyConstructible<TDecay<T>>
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, Ts...> && CCopyConstructible<TDecay<T>>
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
+	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
 		Impl::Destroy();
-		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
+		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
+	}
+	
+	/**
+	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from IL, Forward<Ts>(Args)..., as the function object.
+	 *
+	 * @param  IL, Args - The arguments to be passed to the constructor of the function object.
+	 *
+	 * @return A reference to the new function object.
+	 */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CCopyConstructible<TDecay<T>>
+		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE TDecay<T>& Emplace(initializer_list<U> IL, Ts&&... Args)
+	{
+		Impl::Destroy();
+		return Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
@@ -765,11 +795,22 @@ public:
 	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
 	 * direct-non-list-initialized from Forward<Ts>(Args)....
 	 */
-	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, ArgTypes&&... Args)
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
+		Impl::template Emplace<T>(Forward<Ts>(Args)...);
+	}
+	
+	/**
+	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
+	 * direct-non-list-initialized from IL, Forward<Ts>(Args)....
+	 */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
+	{
+		Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */
@@ -795,13 +836,31 @@ public:
 	 *
 	 * @return A reference to the new function object.
 	 */
-	template <typename T, typename... ArgTypes> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
-		&& CConstructibleFrom<TDecay<T>, ArgTypes...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
-	FORCEINLINE TDecay<T>& Emplace(ArgTypes&&... Args)
+	template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
 		Impl::Destroy();
 		using DecayedType = TDecay<T>;
-		return Impl::template Emplace<T>(Forward<ArgTypes>(Args)...);
+		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
+	}
+	
+	/**
+	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
+	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
+	 * TDecay<T>, direct-non-list-initialized from IL, Forward<Ts>(Args)..., as the function object.
+	 *
+	 * @param  IL, Args - The arguments to be passed to the constructor of the function object.
+	 *
+	 * @return A reference to the new function object.
+	 */
+	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
+		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
+	FORCEINLINE TDecay<T>& Emplace(initializer_list<U> IL, Ts&&... Args)
+	{
+		Impl::Destroy();
+		using DecayedType = TDecay<T>;
+		return Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */

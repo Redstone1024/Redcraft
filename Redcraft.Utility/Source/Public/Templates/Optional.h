@@ -66,6 +66,14 @@ public:
 	{
 		new (&Value) OptionalType(Forward<Ts>(Args)...);
 	}
+	
+	/** Constructs an object with initial content an object, direct-non-list-initialized from IL, Forward<Ts>(Args).... */
+	template <typename U, typename... Ts> requires (CConstructibleFrom<OptionalType, initializer_list<U>, Ts...>)
+	FORCEINLINE constexpr explicit TOptional(FInPlace, initializer_list<U> IL, Ts&&... Args)
+		: bIsValid(true)
+	{
+		new (&Value) OptionalType(IL, Forward<Ts>(Args)...);
+	}
 
 	/** Copies content of other into a new instance. */
 	FORCEINLINE constexpr TOptional(const TOptional& InValue) requires (CTriviallyCopyConstructible<OptionalType>) = default;
@@ -258,16 +266,36 @@ public:
 	 * First destroys the current contained object (if any) by Reset(),
 	 * then constructs an object, direct-non-list-initialized from Forward<Ts>(Args)..., as the contained object.
 	 *
-	 * @param  Args	- The arguments to be passed to the constructor of the object.
+	 * @param  Args - The arguments to be passed to the constructor of the object.
 	 *
 	 * @return A reference to the new object.
 	 */
-	template <typename... ArgTypes> requires (CConstructibleFrom<OptionalType, ArgTypes...>)
-	FORCEINLINE constexpr OptionalType& Emplace(ArgTypes&&... Args)
+	template <typename... Ts> requires (CConstructibleFrom<OptionalType, Ts...>)
+	FORCEINLINE constexpr OptionalType& Emplace(Ts&&... Args)
 	{
 		Reset();
 
-		OptionalType* Result = new (&Value) OptionalType(Forward<ArgTypes>(Args)...);
+		OptionalType* Result = new (&Value) OptionalType(Forward<Ts>(Args)...);
+		bIsValid = true;
+
+		return *Result;
+	}
+	
+	/**
+	 * Changes the contained object to one constructed from the arguments.
+	 * First destroys the current contained object (if any) by Reset(),
+	 * then constructs an object, direct-non-list-initialized from IL, Forward<Ts>(Args)..., as the contained object.
+	 *
+	 * @param  IL, Args - The arguments to be passed to the constructor of the object.
+	 *
+	 * @return A reference to the new object.
+	 */
+	template <typename U, typename... Ts> requires (CConstructibleFrom<OptionalType, initializer_list<U>, Ts...>)
+	FORCEINLINE constexpr OptionalType& Emplace(initializer_list<U> IL, Ts&&... Args)
+	{
+		Reset();
+
+		OptionalType* Result = new (&Value) OptionalType(IL, Forward<Ts>(Args)...);
 		bIsValid = true;
 
 		return *Result;
