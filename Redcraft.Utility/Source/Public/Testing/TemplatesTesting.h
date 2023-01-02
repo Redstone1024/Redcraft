@@ -17,6 +17,7 @@ REDCRAFTUTILITY_API void TestAny();
 REDCRAFTUTILITY_API void TestTuple();
 REDCRAFTUTILITY_API void TestFunction();
 REDCRAFTUTILITY_API void TestAtomic();
+REDCRAFTUTILITY_API void TestScopeHelper();
 REDCRAFTUTILITY_API void TestMiscTemplates();
 
 NAMESPACE_END(Testing)

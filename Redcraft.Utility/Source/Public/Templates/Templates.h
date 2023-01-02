@@ -14,3 +14,4 @@
 #include "Templates/TypeHash.h"
 #include "Templates/Function.h"
 #include "Templates/Atomic.h"
+#include "Templates/ScopeHelper.h"

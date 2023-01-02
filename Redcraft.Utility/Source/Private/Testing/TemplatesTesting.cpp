@@ -24,6 +24,7 @@ void TestTemplates()
 	TestTuple();
 	TestFunction();
 	TestAtomic();
+	TestScopeHelper();
 	TestMiscTemplates();
 }
 
@@ -1379,6 +1380,93 @@ void TestAtomic()
 		AtomicThreadFence();
 		AtomicSignalFence();
 	}
+}
+
+void TestScopeHelper()
+{
+	{
+		int32 CheckNum = 0;
+		{
+			TScopeCallback ScopeCallback([&]() { CheckNum = 2; });
+			always_check(CheckNum == 0);
+			CheckNum = 1;
+			always_check(CheckNum == 1);
+		}
+		always_check(CheckNum == 2);
+	}
+
+	{
+		int32 CheckNum = 0;
+		{
+			TScopeCallback ScopeCallback([&]() { CheckNum = 2; });
+			always_check(CheckNum == 0);
+			CheckNum = 1;
+			always_check(CheckNum == 1);
+			ScopeCallback.Release();
+		}
+		always_check(CheckNum == 1);
+	}
+
+	{
+		int32 CheckNum = 0;
+		{
+			TScopeCallback ScopeCallbackA([&]() { CheckNum = 2; });
+			TScopeCallback ScopeCallbackB(MoveTemp(ScopeCallbackA));
+			always_check(CheckNum == 0);
+			CheckNum = 1;
+			always_check(CheckNum == 1);
+		}
+		always_check(CheckNum == 2);
+	}
+
+	{
+		int32 CheckNum = 1;
+		{
+			TGuardValue GuardValue(CheckNum);
+			CheckNum = 2;
+			always_check(CheckNum == 2);
+		}
+		always_check(CheckNum == 1);
+	}
+
+	{
+		int32 CheckNum = 1;
+		{
+			TGuardValue GuardValue(CheckNum, 2);
+			always_check(CheckNum == 2);
+		}
+		always_check(CheckNum == 1);
+	}
+
+	{
+		int32 CheckNum = 1;
+		{
+			TGuardValue GuardValue(CheckNum, 2);
+			always_check(CheckNum == 2);
+			GuardValue.Release();
+		}
+		always_check(CheckNum == 2);
+	}
+
+	{
+		int32 CheckNum = 1;
+		{
+			TGuardValue GuardValueA(CheckNum, 2);
+			TGuardValue GuardValueB(MoveTemp(GuardValueA));
+			always_check(CheckNum == 2);
+		}
+		always_check(CheckNum == 1);
+	}
+
+	{
+		int32 CheckNum = 1;
+		{
+			TScopeCounter GuardValue(CheckNum);
+			always_check(CheckNum == 2);
+		}
+		always_check(CheckNum == 1);
+	}
+
 }
 
 NAMESPACE_UNNAMED_BEGIN
