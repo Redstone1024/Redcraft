@@ -14,7 +14,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 /** The class template is a general-purpose scope guard intended to call its callback function when a scope is exited. */
 template <CInvocable F> requires (CDestructible<F>)
-class TScopeCallback final : public FNoncopyable
+class TScopeCallback final : private FNoncopyable
 {
 public:
 
@@ -53,7 +53,7 @@ TScopeCallback(F) -> TScopeCallback<F>;
 
 /** The class template is a general-purpose scope guard intended to make sure a value is restored when a scope is exited. */
 template <typename T> requires (CCopyConstructible<T> && CCopyAssignable<T> && CMoveAssignable<T> && CDestructible<T>)
-class TGuardValue final : public FNoncopyable
+class TGuardValue final : private FNoncopyable
 {
 public:
 
@@ -99,7 +99,7 @@ TGuardValue(T&, U&&) -> TGuardValue<T>;
 
 /** Commonly used to make sure a value is incremented, and then decremented when a scope is exited. */
 template <typename T> requires (requires(T& Value) { ++Value; --Value; })
-class TScopeCounter : public FNoncopyable
+class TScopeCounter final : private FNoncopyable
 {
 public:
 
