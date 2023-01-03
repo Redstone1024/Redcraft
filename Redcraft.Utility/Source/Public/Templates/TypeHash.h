@@ -74,7 +74,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	if constexpr (sizeof(T) ==  2) return GetTypeHash(*reinterpret_cast<uint16*>(&A));
 	if constexpr (sizeof(T) ==  4) return GetTypeHash(*reinterpret_cast<uint32*>(&A));
 	if constexpr (sizeof(T) ==  8) return GetTypeHash(*reinterpret_cast<uint64*>(&A));
-	if constexpr (sizeof(T) == 16) return GetTypeHash(*reinterpret_cast<uint64*>(&A) + *(reinterpret_cast<uint64*>(&A) + 1));
+	if constexpr (sizeof(T) == 16) return GetTypeHash(*reinterpret_cast<uint64*>(&A) ^ *(reinterpret_cast<uint64*>(&A) + 1));
 	else check_no_entry();
 	
 	return INDEX_NONE;

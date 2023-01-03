@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/TypeHash.h"
 #include "TypeTraits/Swappable.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -69,6 +70,20 @@ FORCEINLINE constexpr void Swap(T(&A)[N], T(&B)[N])
 	{
 		Swap(A[Index], B[Index]);
 	}
+}
+
+/** Overloads the GetTypeHash algorithm for arrays. */
+template <typename T, size_t N> requires (CHashable<TRemoveAllExtents<T>>)
+FORCEINLINE constexpr size_t GetTypeHash(T(&A)[N])
+{
+	size_t Result = 3516520171;
+
+	for (size_t Index = 0; Index < N; ++Index)
+	{
+		Result = HashCombine(Result, GetTypeHash(A[Index]));
+	}
+	
+	return Result;
 }
 
 NAMESPACE_MODULE_END(Utility)
