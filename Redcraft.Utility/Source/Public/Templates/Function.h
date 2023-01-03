@@ -478,11 +478,11 @@ public:
 	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
 	/** @return false if instance stores a callable function target, true otherwise. */
-	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return !IsValid(); }
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& requires (!bIsRef) { return !IsValid(); }
 
 	/** @return true if instance stores a callable function target, false otherwise. */
-	NODISCARD FORCEINLINE constexpr           bool IsValid() const { return Storage.IsValid(); }
-	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return Storage.IsValid(); }
+	NODISCARD FORCEINLINE constexpr           bool IsValid() const requires (!bIsRef) { return Storage.IsValid(); }
+	NODISCARD FORCEINLINE constexpr explicit operator bool() const requires (!bIsRef) { return Storage.IsValid(); }
 
 private:
 
@@ -492,7 +492,7 @@ private:
 
 	FORCEINLINE ResultType CallImpl(Ts&&... Args) const
 	{
-		checkf(IsValid(), TEXT("Attempting to call an unbound TFunction!"));
+		checkf(Storage.IsValid(), TEXT("Attempting to call an unbound TFunction!"));
 		CallableType Callable = reinterpret_cast<CallableType>(Storage.GetCallable());
 		return Callable(Storage.GetValuePtr(), Forward<Ts>(Args)...);
 	}
