@@ -3,3 +3,6 @@
 
 # CMake generated files
 out/
+
+# Test modules
+/*.Test/
