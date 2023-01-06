@@ -23,31 +23,30 @@ public:
 	using Type = ReferencedType;
 
 	/** Constructs a new reference wrapper. */
-	template <typename T = ReferencedType> requires (CConvertibleTo<T, ReferencedType&>)
+	template <typename T = ReferencedType&> requires (CConvertibleTo<T&&, ReferencedType&> && !CSameAs<TReferenceWrapper, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TReferenceWrapper(T&& Object)
-	{
-		ReferencedType& Reference = Forward<T>(Object);
-		Pointer = AddressOf(Reference);
-	}
+		: Pointer(AddressOf(static_cast<ReferencedType&>(Forward<T>(Object))))
+	{ }
 
-	/** Copies/moves content of other into a new instance. */
+	/** Copies content of other into a new instance. */
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper&) = default;
-	FORCEINLINE constexpr TReferenceWrapper(TReferenceWrapper&&)      = default;
-
+	
 	/** Converting copy constructor. */
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)
 		: Pointer(InValue.Pointer)
 	{ }
 
-	/** Assign a value to the referenced object. */
-	template <typename T = ReferencedType> requires (CAssignableFrom<ReferencedType&, T&&>)
-	FORCEINLINE constexpr TReferenceWrapper& operator=(T&& Object) { Get() = Forward<T>(Object); return *this; }
+	/** Assigns by copying the content of other. */
+	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
 
-	/** Remove the assignment operator, as rebinding is not allowed. */
-	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = delete;
-	FORCEINLINE constexpr TReferenceWrapper& operator=(TReferenceWrapper&&)      = delete;
-	
+	/** Assigns by copying the content of other. */
+	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
+	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
+	{
+		Pointer = InValue.Pointer;
+	}
+
 	/** @return The stored reference. */
 	FORCEINLINE constexpr ReferencedType& Get()      const { return *Pointer; }
 	FORCEINLINE constexpr operator ReferencedType&() const { return *Pointer; }
@@ -63,12 +62,6 @@ public:
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TReferenceWrapper A) requires (CHashable<ReferencedType>)
 	{
 		return GetTypeHash(A.Get());
-	}
-
-	/** Overloads the Swap algorithm for TReferenceWrapper. */
-	friend FORCEINLINE constexpr void Swap(TReferenceWrapper A, TReferenceWrapper B) requires (CSwappable<ReferencedType>)
-	{
-		Swap(A.Get(), B.Get());
 	}
 
 private:
