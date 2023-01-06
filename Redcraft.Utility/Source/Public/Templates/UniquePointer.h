@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
+#include "Templates/Noncopyable.h"
 #include "TypeTraits/PrimaryType.h"
 #include "TypeTraits/Miscellaneous.h"
 #include "TypeTraits/TypeProperties.h"
@@ -14,24 +15,24 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename T, typename E, bool = CEmpty<E> && !CFinal<E>>
-class TUniquePtrStorage;
+class TUniqueStorage;
 
 template <typename T, typename E>
-class TUniquePtrStorage<T, E, true> : private E
+class TUniqueStorage<T, E, true> : private E
 {
 public:
 
-	FORCEINLINE constexpr TUniquePtrStorage() = delete;
+	FORCEINLINE constexpr TUniqueStorage() = delete;
 
-	FORCEINLINE constexpr TUniquePtrStorage(T* InPtr) : E(), Pointer(InPtr) { }
+	FORCEINLINE constexpr TUniqueStorage(T* InPtr) : E(), Pointer(InPtr) { }
 
 	template<typename U>
-	FORCEINLINE constexpr TUniquePtrStorage(T* InPtr, U&& InDeleter) : E(Forward<U>(InDeleter)), Pointer(InPtr) { }
+	FORCEINLINE constexpr TUniqueStorage(T* InPtr, U&& InDeleter) : E(Forward<U>(InDeleter)), Pointer(InPtr) { }
 
-	FORCEINLINE constexpr TUniquePtrStorage(const TUniquePtrStorage&)            = delete;
-	FORCEINLINE constexpr TUniquePtrStorage(TUniquePtrStorage&& InValue)         = default;
-	FORCEINLINE constexpr TUniquePtrStorage& operator=(const TUniquePtrStorage&) = delete;
-	FORCEINLINE constexpr TUniquePtrStorage& operator=(TUniquePtrStorage&&)      = default;
+	FORCEINLINE constexpr TUniqueStorage(const TUniqueStorage&)            = delete;
+	FORCEINLINE constexpr TUniqueStorage(TUniqueStorage&& InValue)         = default;
+	FORCEINLINE constexpr TUniqueStorage& operator=(const TUniqueStorage&) = delete;
+	FORCEINLINE constexpr TUniqueStorage& operator=(TUniqueStorage&&)      = default;
 
 	FORCEINLINE constexpr       T*& GetPointer()       { return Pointer; }
 	FORCEINLINE constexpr       T*  GetPointer() const { return Pointer; }
@@ -48,21 +49,21 @@ private:
 };
 
 template <typename T, typename E>
-class TUniquePtrStorage<T, E, false>
+class TUniqueStorage<T, E, false>
 {
 public:
 
-	FORCEINLINE constexpr TUniquePtrStorage() = delete;
+	FORCEINLINE constexpr TUniqueStorage() = delete;
 
-	FORCEINLINE constexpr TUniquePtrStorage(T* InPtr) : E(), Pointer(InPtr) { }
+	FORCEINLINE constexpr TUniqueStorage(T* InPtr) : E(), Pointer(InPtr) { }
 
 	template<typename U>
-	FORCEINLINE constexpr TUniquePtrStorage(T* InPtr, U&& InDeleter) : Pointer(InPtr), Deleter(Forward<U>(InDeleter)) { }
+	FORCEINLINE constexpr TUniqueStorage(T* InPtr, U&& InDeleter) : Pointer(InPtr), Deleter(Forward<U>(InDeleter)) { }
 
-	FORCEINLINE constexpr TUniquePtrStorage(const TUniquePtrStorage&)            = delete;
-	FORCEINLINE constexpr TUniquePtrStorage(TUniquePtrStorage&& InValue)         = default;
-	FORCEINLINE constexpr TUniquePtrStorage& operator=(const TUniquePtrStorage&) = delete;
-	FORCEINLINE constexpr TUniquePtrStorage& operator=(TUniquePtrStorage&&)      = default;
+	FORCEINLINE constexpr TUniqueStorage(const TUniqueStorage&)            = delete;
+	FORCEINLINE constexpr TUniqueStorage(TUniqueStorage&& InValue)         = default;
+	FORCEINLINE constexpr TUniqueStorage& operator=(const TUniqueStorage&) = delete;
+	FORCEINLINE constexpr TUniqueStorage& operator=(TUniqueStorage&&)      = default;
 
 	FORCEINLINE constexpr       T*& GetPointer()       { return Pointer; }
 	FORCEINLINE constexpr       T*  GetPointer() const { return Pointer; }
@@ -122,8 +123,7 @@ struct TDefaultDelete<T[]>
 };
 
 /** This is essentially a reference version of TUniquePtr. */
-template <typename T, typename E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>
-	&& ((!CArray<T> && CInvocable<E, T*>) || (CArray<T> && CInvocable<E, TRemoveExtent<T>*>)))
+template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>)
 class TUniqueRef final : private FSingleton
 {
 public:
@@ -233,7 +233,7 @@ public:
 
 private:
 
-	NAMESPACE_PRIVATE::TUniquePtrStorage<T, E> Storage;
+	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
 
 };
 
@@ -358,13 +358,12 @@ public:
 
 private:
 
-	NAMESPACE_PRIVATE::TUniquePtrStorage<T, E> Storage;
+	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
 
 };
 
 /** Single-ownership smart pointer. Use this when you need an object's lifetime to be strictly bound to the lifetime of a single smart pointer. */
-template <typename T, typename E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>
-	&& ((!CArray<T> && CInvocable<E, T*>) || (CArray<T> && CInvocable<E, TRemoveExtent<T>*>)))
+template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>)
 class TUniquePtr final : private FNoncopyable
 {
 public:
@@ -488,10 +487,9 @@ public:
 
 private:
 
-	NAMESPACE_PRIVATE::TUniquePtrStorage<T, E> Storage;
+	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
 
-	template <typename OtherT, typename OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>
-		&& ((!CArray<OtherT> && CInvocable<OtherE, OtherT*>) || (CArray<OtherT> && CInvocable<OtherE, TRemoveExtent<OtherT>*>)))
+	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>)
 	friend class TUniquePtr;
 
 };
@@ -631,10 +629,9 @@ public:
 
 private:
 
-	NAMESPACE_PRIVATE::TUniquePtrStorage<T, E> Storage;
-
-	template <typename OtherT, typename OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>
-		&& ((!CArray<OtherT> && CInvocable<OtherE, OtherT*>) || (CArray<OtherT> && CInvocable<OtherE, TRemoveExtent<OtherT>*>)))
+	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
+	
+	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>)
 	friend class TUniquePtr;
 
 };
