@@ -146,7 +146,7 @@ void TestMemoryMalloc()
 	always_check(Memory::IsAligned(PtrC, 1024));
 	PtrC->A = 0x01234567;
 	always_check(PtrC->A == 0x01234567);
-	delete[] PtrC;
+	delete [] PtrC;
 
 }
 

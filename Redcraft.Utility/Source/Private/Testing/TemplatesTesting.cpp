@@ -25,6 +25,7 @@ void TestTemplates()
 	TestFunction();
 	TestAtomic();
 	TestScopeHelper();
+	TestUniquePointer();
 	TestMiscTemplates();
 }
 
@@ -1466,6 +1467,287 @@ void TestScopeHelper()
 		}
 		always_check(CheckNum == 1);
 	}
+
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+struct FCounter
+{
+	static int32 Num;
+	FCounter() { ++Num; }
+	~FCounter() { --Num; }
+};
+
+int32 FCounter::Num = 0;
+
+struct FDeleter
+{
+	static int32 Num;
+	void operator()(FCounter* Ptr) { delete Ptr; ++Num; }
+};
+
+int32 FDeleter::Num = 0;
+
+struct FArrayDeleter
+{
+	static int32 Num;
+	void operator()(FCounter* Ptr) { delete [] Ptr; ++Num; }
+};
+
+int32 FArrayDeleter::Num = 0;
+
+NAMESPACE_UNNAMED_END
+
+void TestUniquePointer()
+{
+	{
+		TUniqueRef<int32> Temp(new int32);
+		*Temp = 15;
+		check(*Temp.Get() = 15);
+	}
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TUniqueRef<FCounter> TempA(PtrA);
+		TUniqueRef<FCounter, FDeleter> TempB(PtrB);
+		TUniqueRef<FCounter, FDeleter> TempC(PtrC, FDeleter());
+
+		check(TempA == PtrA);
+		check(TempC != TempB);
+		check((TempA <=> PtrA) == strong_ordering::equal);
+		check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter);
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
+		check(FCounter::Num == TempNum + 1);
+		delete PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
+		check(FCounter::Num == TempNum + 1);
+		delete PtrY;
+
+		check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		check(TempC.GetDeleter().Num == 2);
+	}
+
+	check(FCounter::Num == 0);
+	check(FDeleter::Num == 4);
+
+	{
+		TUniqueRef<int32[]> Temp(new int32[4]);
+		Temp[0] = 15;
+		check(Temp.Get()[0] = 15);
+	}
+	
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TUniqueRef<FCounter[]> TempA(PtrA);
+		TUniqueRef<FCounter[], FArrayDeleter> TempB(PtrB);
+		TUniqueRef<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
+
+		check(TempA == PtrA);
+		check(TempC != TempB);
+		check((TempA <=> PtrA) == strong_ordering::equal);
+		check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4]);
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
+		check(FCounter::Num == TempNum + 4);
+		delete [] PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
+		check(FCounter::Num == TempNum + 4);
+		delete [] PtrY;
+
+		check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		check(TempC.GetDeleter().Num == 2);
+	}
+
+	check(     FCounter::Num == 0);
+	check(FArrayDeleter::Num == 4);
+	
+	{
+		TUniquePtr<int32> Temp = MakeUnique<int32>(NoInit);
+		*Temp = 15;
+		check(*Temp.Get() = 15);
+	}
+
+	{
+		TUniquePtr<int32> Temp = MakeUnique<int32>();
+		*Temp = 15;
+		check(*Temp.Get() = 15);
+	}
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TUniquePtr<FCounter> TempA(PtrA);
+		TUniquePtr<FCounter, FDeleter> TempB(PtrB);
+		TUniquePtr<FCounter, FDeleter> TempC(PtrC, FDeleter());
+
+		check(TempA == PtrA);
+		check(TempC != TempB);
+		check((TempA <=> PtrA) == strong_ordering::equal);
+		check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter);
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
+		check(FCounter::Num == TempNum + 1);
+		delete PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
+		check(FCounter::Num == TempNum + 1);
+		delete PtrY;
+
+		check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		check(TempC.GetDeleter().Num == 2);
+
+		TUniquePtr<FCounter, FDeleter> TempD(MoveTemp(TempB));
+
+		TUniquePtr<FCounter, FDeleter> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter);
+		check(!!TempB);
+		check(TempB.IsValid());
+		delete TempB.Release();
+
+	}
+
+	check(FCounter::Num == 0);
+	check(FDeleter::Num == 4);
+
+	{
+		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4, NoInit);
+		Temp[0] = 15;
+		check(Temp.Get()[0] = 15);
+	}
+
+	{
+		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4);
+		Temp[0] = 15;
+		check(Temp.Get()[0] = 15);
+	}
+
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TUniquePtr<FCounter[]> TempA(PtrA);
+		TUniquePtr<FCounter[], FArrayDeleter> TempB(PtrB);
+		TUniquePtr<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
+
+		check(TempA == PtrA);
+		check(TempC != TempB);
+		check((TempA <=> PtrA) == strong_ordering::equal);
+		check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4]);
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
+		check(FCounter::Num == TempNum + 4);
+		delete [] PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
+		check(FCounter::Num == TempNum + 4);
+		delete [] PtrY;
+
+		check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		check(TempC.GetDeleter().Num == 2);
+
+		TUniquePtr<FCounter[], FArrayDeleter> TempD(MoveTemp(TempB));
+
+		TUniquePtr<FCounter[], FArrayDeleter> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter[4]);
+		check(!!TempB);
+		check(TempB.IsValid());
+		delete [] TempB.Release();
+
+	}
+
+	check(     FCounter::Num == 0);
+	check(FArrayDeleter::Num == 4);
 
 }
 
