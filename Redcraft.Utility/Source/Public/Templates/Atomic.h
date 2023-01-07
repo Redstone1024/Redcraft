@@ -151,7 +151,8 @@ public:
 	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)
 	{
 		ValueType Temp(Load(EMemoryOrder::Relaxed));
-		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order));
+		// We do a weak read here because we require a loop.
+		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order, true));
 		return Temp;
 	}
 
@@ -160,7 +161,8 @@ public:
 	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile
 	{
 		ValueType Temp(Load(EMemoryOrder::Relaxed));
-		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order));
+		// We do a weak read here because we require a loop.
+		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order, true));
 		return Temp;
 	}
 
