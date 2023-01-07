@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/PrimaryType.h"
@@ -123,7 +124,7 @@ struct TDefaultDelete<T[]>
 };
 
 /** This is essentially a reference version of TUniquePtr. */
-template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>)
+template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
 class TUniqueRef final : private FSingleton
 {
 public:
@@ -151,7 +152,7 @@ public:
 	}
 
 	/** Destroy the owned object. */
-	FORCEINLINE constexpr ~TUniqueRef() { GetDeleter()(Get()); }
+	FORCEINLINE constexpr ~TUniqueRef() { Invoke(GetDeleter(), Get()); }
 
 	/** Compares the pointer values of two TUniqueRef. */
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() == RHS.Get(); }
@@ -172,7 +173,7 @@ public:
 	FORCEINLINE constexpr void Reset(T* InPtr)
 	{
 		checkf(InPtr != nullptr, TEXT("TUniqueRef cannot be initialized by nullptr. Please use TUniquePtr."));
-		GetDeleter()(Get());
+		Invoke(GetDeleter(), Get());
 		Storage.GetPointer() = InPtr;
 	}
 
@@ -214,8 +215,8 @@ public:
 	NODISCARD FORCEINLINE constexpr T* Get() const { return Storage.GetPointer(); }
 
 	/** @return The deleter that is used for destruction of the managed object. */
-	NODISCARD FORCEINLINE constexpr       E&  GetDeleter()       { return Storage.GetDeleter(); }
-	NODISCARD FORCEINLINE constexpr const E&  GetDeleter() const { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr       E& GetDeleter()       { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr const E& GetDeleter() const { return Storage.GetDeleter(); }
 
 	/** @return The a reference or pointer to the object owned by *this, i.e. Get(). */
 	NODISCARD FORCEINLINE constexpr T& operator*()  const { return *Get(); }
@@ -271,7 +272,7 @@ public:
 	}
 
 	/** Destroy the owned array. */
-	FORCEINLINE constexpr ~TUniqueRef() { GetDeleter()(Get()); }
+	FORCEINLINE constexpr ~TUniqueRef() { Invoke(GetDeleter(), Get()); }
 
 	/** Compares the pointer values of two TUniqueRef. */
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() == RHS.Get(); }
@@ -295,7 +296,7 @@ public:
 	FORCEINLINE constexpr void Reset(U InPtr)
 	{
 		checkf(InPtr != nullptr, TEXT("TUniqueRef cannot be initialized by nullptr. Please use TUniquePtr."));
-		GetDeleter()(Get());
+		Invoke(GetDeleter(), Get());
 		Storage.GetPointer() = InPtr;
 	}
 
@@ -340,8 +341,8 @@ public:
 	NODISCARD FORCEINLINE constexpr T* Get() const { return Storage.GetPointer(); }
 
 	/** @return The deleter that is used for destruction of the managed array. */
-	NODISCARD FORCEINLINE constexpr       E&  GetDeleter()       { return Storage.GetDeleter(); }
-	NODISCARD FORCEINLINE constexpr const E&  GetDeleter() const { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr       E& GetDeleter()       { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr const E& GetDeleter() const { return Storage.GetDeleter(); }
 
 	/** @return The element at index, i.e. Get()[Index]. */
 	NODISCARD FORCEINLINE constexpr T& operator[](size_t Index) const { return Get()[Index]; }
@@ -363,7 +364,7 @@ private:
 };
 
 /** Single-ownership smart pointer. Use this when you need an object's lifetime to be strictly bound to the lifetime of a single smart pointer. */
-template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && !CRValueReference<E>)
+template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
 class TUniquePtr final : private FNoncopyable
 {
 public:
@@ -393,10 +394,10 @@ public:
 	FORCEINLINE constexpr TUniquePtr(TUniquePtr<U, InE>&& InValue) : Storage(InValue.Release(), Forward<InE>(InValue.GetDeleter())) { }
 
 	/** If !IsValid() there are no effects. Otherwise, the owned object is destroyed. */
-	FORCEINLINE constexpr ~TUniquePtr() { if (IsValid()) GetDeleter()(Get()); }
+	FORCEINLINE constexpr ~TUniquePtr() { if (IsValid()) Invoke(GetDeleter(), Get()); }
 
 	/** Move assignment operator. Transfers ownership from 'InValue' to *this. */
-	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr&& InValue)
+	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr&& InValue) requires (!CReference<E> && CAssignableFrom<E&, E&&>)
 	{
 		Reset(InValue.Release());
 		GetDeleter() = Forward<E>(InValue.GetDeleter());
@@ -434,7 +435,7 @@ public:
 	/** Replaces the managed object. */
 	FORCEINLINE constexpr void Reset(T* InPtr = nullptr)
 	{
-		if (IsValid()) GetDeleter()(Get());
+		if (IsValid()) Invoke(GetDeleter(), Get());
 		Storage.GetPointer() = InPtr;
 	}
 
@@ -464,8 +465,8 @@ public:
 	NODISCARD FORCEINLINE constexpr T* Get() const { return Storage.GetPointer(); }
 
 	/** @return The deleter that is used for destruction of the managed object. */
-	NODISCARD FORCEINLINE constexpr       E&  GetDeleter()       { return Storage.GetDeleter(); }
-	NODISCARD FORCEINLINE constexpr const E&  GetDeleter() const { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr       E& GetDeleter()       { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr const E& GetDeleter() const { return Storage.GetDeleter(); }
 
 	/** @return true if *this owns an object, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool           IsValid() const { return Get() != nullptr; }
@@ -489,7 +490,7 @@ private:
 
 	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
 
-	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>)
+	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && (CDestructible<OtherE> || CLValueReference<OtherE>))
 	friend class TUniquePtr;
 
 };
@@ -525,15 +526,15 @@ public:
 	FORCEINLINE constexpr TUniquePtr(TUniquePtr&& InValue) : Storage(InValue.Release(), Forward<E>(InValue.GetDeleter())) { }
 
 	/** Constructs a TUniquePtr by transferring ownership from 'InValue' to *this and stores the nullptr in 'InValue'. */
-	template <typename U = T*, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>
+	template <typename U, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>
 		&& ((CReference<E> && CSameAs<InE, E>) || (!CReference<E> && CConvertibleTo<InE, E>)))
 	FORCEINLINE constexpr TUniquePtr(TUniquePtr<U, InE>&& InValue) : Storage(InValue.Release(), Forward<InE>(InValue.GetDeleter())) { }
 
 	/** If !IsValid() there are no effects. Otherwise, the owned array is destroyed. */
-	FORCEINLINE constexpr ~TUniquePtr() { if (IsValid()) GetDeleter()(Get()); }
+	FORCEINLINE constexpr ~TUniquePtr() { if (IsValid()) Invoke(GetDeleter(), Get()); }
 
 	/** Move assignment operator. Transfers ownership from 'InValue' to *this. */
-	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr&& InValue)
+	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr&& InValue) requires (!CReference<E> && CAssignableFrom<E&, E&&>)
 	{
 		Reset(InValue.Release());
 		GetDeleter() = Forward<E>(InValue.GetDeleter());
@@ -541,7 +542,7 @@ public:
 	}
 
 	/** Move assignment operator. Transfers ownership from 'InValue' to *this. */
-	template <typename U = T*, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]>
+	template <typename U, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]>
 		&& CArray<U> && !CReference<E> && CAssignableFrom<E&, InE&&>)
 	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr<U, E>&& InValue)
 	{
@@ -574,7 +575,7 @@ public:
 	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
 	FORCEINLINE constexpr void Reset(U InPtr = nullptr)
 	{
-		if (IsValid()) GetDeleter()(Get());
+		if (IsValid()) Invoke(GetDeleter(), Get());
 		Storage.GetPointer() = InPtr;
 	}
 
@@ -607,8 +608,8 @@ public:
 	NODISCARD FORCEINLINE constexpr T* Get() const { return Storage.GetPointer(); }
 
 	/** @return The deleter that is used for destruction of the managed array. */
-	NODISCARD FORCEINLINE constexpr       E&  GetDeleter()       { return Storage.GetDeleter(); }
-	NODISCARD FORCEINLINE constexpr const E&  GetDeleter() const { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr       E& GetDeleter()       { return Storage.GetDeleter(); }
+	NODISCARD FORCEINLINE constexpr const E& GetDeleter() const { return Storage.GetDeleter(); }
 
 	/** @return true if *this owns an array, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool           IsValid() const { return Get() != nullptr; }
@@ -631,7 +632,7 @@ private:
 
 	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
 	
-	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && !CRValueReference<OtherE>)
+	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && (CDestructible<OtherE> || CLValueReference<OtherE>))
 	friend class TUniquePtr;
 
 };
