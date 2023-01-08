@@ -31,6 +31,7 @@ template <typename T, size_t I = 0> inline constexpr size_t TExtent =  NAMESPACE
 template <typename T, typename U> concept CSameAs        = NAMESPACE_STD::is_same_v<T, U>;
 template <typename T, typename U> concept CBaseOf        = NAMESPACE_STD::is_base_of_v<T, U>;
 template <typename T, typename U> concept CConvertibleTo = NAMESPACE_STD::is_convertible_v<T, U>;
+template <typename T, typename U> concept CDerivedFrom   = CBaseOf<U, T> && CConvertibleTo<const volatile T*, const volatile U*>;
 
 template <typename T> using TRemoveConst      = NAMESPACE_STD::remove_const_t<T>;
 template <typename T> using TRemoveVolatile   = NAMESPACE_STD::remove_volatile_t<T>;

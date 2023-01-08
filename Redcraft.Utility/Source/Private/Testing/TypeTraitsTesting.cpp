@@ -322,6 +322,10 @@ void TestTypeTraits()
 	always_check(!(CConvertibleTo<FTestStructE*, FTestStructH*>));
 	always_check((CConvertibleTo<FTestStructW, FTestStructV>));
 
+	always_check(!(CDerivedFrom<FTestStructD, FTestStructH>));
+	always_check(!(CDerivedFrom<FTestStructE, FTestStructH>));
+	always_check((CDerivedFrom<FTestStructH, FTestStructE>));
+
 	always_check((CSameAs<int32, TRemoveConst<int32>>));
 	always_check(!(CSameAs<int32, TRemoveConst<int32*>>));
 	always_check(!(CSameAs<int32, TRemoveConst<int32&>>));
