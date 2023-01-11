@@ -407,7 +407,7 @@ public:
 	/** Move assignment operator. Transfers ownership from 'InValue' to *this. */
 	template <typename U, typename InE> requires (CConvertibleTo<U*, T*>
 		&& !CArray<U> && !CReference<E> && CAssignableFrom<E&, InE&&>)
-	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr<U, E>&& InValue)
+	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr<U, InE>&& InValue)
 	{
 		Reset(InValue.Release());
 		GetDeleter() = Forward<InE>(InValue.GetDeleter());
@@ -526,7 +526,7 @@ public:
 	FORCEINLINE constexpr TUniquePtr(TUniquePtr&& InValue) : Storage(InValue.Release(), Forward<E>(InValue.GetDeleter())) { }
 
 	/** Constructs a TUniquePtr by transferring ownership from 'InValue' to *this and stores the nullptr in 'InValue'. */
-	template <typename U, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>
+	template <typename U, typename InE> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>
 		&& ((CReference<E> && CSameAs<InE, E>) || (!CReference<E> && CConvertibleTo<InE, E>)))
 	FORCEINLINE constexpr TUniquePtr(TUniquePtr<U, InE>&& InValue) : Storage(InValue.Release(), Forward<InE>(InValue.GetDeleter())) { }
 
@@ -542,9 +542,9 @@ public:
 	}
 
 	/** Move assignment operator. Transfers ownership from 'InValue' to *this. */
-	template <typename U, typename InE> requires (CConvertibleTo<U(*)[], T(*)[]>
+	template <typename U, typename InE> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]>
 		&& CArray<U> && !CReference<E> && CAssignableFrom<E&, InE&&>)
-	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr<U, E>&& InValue)
+	FORCEINLINE constexpr TUniquePtr& operator=(TUniquePtr<U, InE>&& InValue)
 	{
 		Reset(InValue.Release());
 		GetDeleter() = Forward<InE>(InValue.GetDeleter());

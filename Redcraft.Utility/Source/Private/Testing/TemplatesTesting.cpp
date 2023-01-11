@@ -1750,6 +1750,20 @@ void TestUniquePointer()
 	always_check(     FCounter::Num == 0);
 	always_check(FArrayDeleter::Num == 4);
 
+	{
+		TUniquePtr<int32> TempA;
+		TUniquePtr<const int32> TempB = MoveTemp(TempA);
+		TUniquePtr<const int32> TempC;
+		TempC = MoveTemp(TempA);
+	}
+
+	{
+		TUniquePtr<int32[]> TempA;
+		TUniquePtr<const int32[]> TempB = MoveTemp(TempA);
+		TUniquePtr<const int32[]> TempC;
+		TempC = MoveTemp(TempA);
+	}
+
 }
 
 void TestSharedPointer()
@@ -2205,6 +2219,49 @@ void TestSharedPointer()
 			TSharedRef<FTest> TempB(Ptr->FuncTest());
 		}
 	}
+
+	{
+		TSharedRef<int32> TempA = MakeShared<int32>();
+		TSharedRef<const int32> TempB = TempA;
+		TSharedRef<const int32> TempC = MakeShared<int32>();
+		TempC = TempA;
+	}
+
+	{
+		TSharedRef<int32[]> TempA = MakeShared<int32[]>(4);
+		TSharedRef<const int32[]> TempB = TempA;
+		TSharedRef<const int32[]> TempC = MakeShared<int32[]>(4);
+		TempC = TempA;
+	}
+
+	{
+		TSharedPtr<int32> TempA;
+		TSharedPtr<const int32> TempB = TempA;
+		TSharedPtr<const int32> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TSharedPtr<int32[]> TempA;
+		TSharedPtr<const int32[]> TempB = TempA;
+		TSharedPtr<const int32[]> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TWeakPtr<int32> TempA;
+		TWeakPtr<const int32> TempB = TempA;
+		TWeakPtr<const int32> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TWeakPtr<int32[]> TempA;
+		TWeakPtr<const int32[]> TempB = TempA;
+		TWeakPtr<const int32[]> TempC;
+		TempC = TempA;
+	}
+
 }
 
 NAMESPACE_UNNAMED_BEGIN

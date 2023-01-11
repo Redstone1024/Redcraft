@@ -290,8 +290,21 @@ public:
 		: Pointer(InPtr), Controller(InController)
 	{ }
 
-	NODISCARD FORCEINLINE operator TSharedRef<T>() && { check_code({ return TSharedRef<T>(Pointer, Exchange(Controller, nullptr)); }); return TSharedRef<T>(Pointer, Controller); }
-	NODISCARD FORCEINLINE operator TSharedPtr<T>() && { check_code({ return TSharedPtr<T>(Pointer, Exchange(Controller, nullptr)); }); return TSharedPtr<T>(Pointer, Controller); }
+	template <typename U> requires (CArray<T> == CArray<U> && ((!CArray<U> && CConvertibleTo<T(*)[], U(*)[]>)
+		|| (CArray<U> && CConvertibleTo<TRemoveExtent<T>(*)[], TRemoveExtent<U>(*)[]>)))
+	NODISCARD FORCEINLINE operator TSharedRef<U>() &&
+	{
+		check_code({ return TSharedRef<U>(Pointer, Exchange(Controller, nullptr)); });
+		return TSharedRef<U>(Pointer, Controller);
+	}
+
+	template <typename U> requires (CArray<T> == CArray<U> && ((!CArray<U> && CConvertibleTo<T(*)[], U(*)[]>)
+		|| (CArray<U> && CConvertibleTo<TRemoveExtent<T>(*)[], TRemoveExtent<U>(*)[]>)))
+	NODISCARD FORCEINLINE operator TSharedPtr<U>() &&
+	{
+		check_code({ return TSharedPtr<U>(Pointer, Exchange(Controller, nullptr)); });
+		return TSharedPtr<U>(Pointer, Controller);
+	}
 
 #	if DO_CHECK
 
@@ -301,7 +314,7 @@ public:
 
 private:
 
-	TRemoveExtent<T>* Pointer;
+	TRemoveExtent<T>*  Pointer;
 	FSharedController* Controller;
 
 };
@@ -671,14 +684,14 @@ public:
 	FORCEINLINE TSharedRef(const TSharedRef& InValue) : TSharedRef(InValue, InValue.Get()) { }
 
 	/** Constructs a TSharedRef which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedRef(const TSharedRef<U>& InValue) : TSharedRef(InValue, InValue.Get()) { }
 
 	/** Constructs a TSharedRef which shares ownership of the array managed by 'InValue'. */
 	FORCEINLINE TSharedRef(TSharedRef&& InValue) : TSharedRef(InValue) { }
 
 	/** Constructs a TSharedRef which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedRef(TSharedRef<U>&& InValue) : TSharedRef(InValue) { }
 
 	/** If this owns an array and it is the last TSharedRef owning it, the array is destroyed through the owned deleter. */
@@ -704,7 +717,7 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return *this = *reinterpret_cast<const TSharedRef*>(&InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
@@ -715,7 +728,7 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedRef*>(&InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
@@ -1247,26 +1260,26 @@ public:
 	FORCEINLINE TSharedPtr(const TSharedPtr& InValue) : TSharedPtr(InValue, InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr(const TSharedPtr<U>& InValue) : TSharedPtr(InValue, InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr(const TSharedRef<U>& InValue) : TSharedPtr(InValue, InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
 	FORCEINLINE TSharedPtr(TSharedPtr&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr(TSharedPtr<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr(TSharedRef<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
 
 	/** Constructs a TSharedPtr which gets ownership of the array managed by 'InValue'. */
-	template <typename U, typename E> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
+	template <typename U, typename E> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
 	FORCEINLINE TSharedPtr(TUniquePtr<U, E>&& InValue) : TSharedPtr(InValue.Release(), Forward<E>(InValue.GetDeleter())) { }
 
 	/** If this owns an array and it is the last TSharedPtr owning it, the array is destroyed through the owned deleter. */
@@ -1298,11 +1311,11 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return *this = *reinterpret_cast<const TSharedPtr*>(&InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return *reinterpret_cast<TSharedRef<T[]>*>(this) = InValue; }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
@@ -1322,15 +1335,15 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedPtr*>(&InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr& operator=(TSharedRef<U>&& InValue) { return *reinterpret_cast<TSharedRef<T[]>*>(this) = MoveTemp(InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U, typename E> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
+	template <typename U, typename E> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
 	FORCEINLINE TSharedPtr& operator=(TUniquePtr<U, E>&& InValue) { return Swap(*this, TSharedPtr(MoveTemp(InValue))); }
 
 	/** Effectively the same as calling Reset(). */
@@ -1674,25 +1687,25 @@ public:
 	}
 
 	/** Constructs new TWeakPtr which shares an array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(const TWeakPtr<U>& InValue) : TWeakPtr(*reinterpret_cast<const TWeakPtr*>(&InValue)) { }
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	FORCEINLINE TWeakPtr(TWeakPtr&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : TWeakPtr(MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue))) { }
 
 	/** Constructs a weak pointer from a shared reference. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(const TSharedRef<U>& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		Controller->AddWeakReference();
 	}
 
 	/** Constructs a weak pointer from a shared pointer. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(const TSharedPtr<U>& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		if (Controller != nullptr)
@@ -1730,7 +1743,7 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return *this = *reinterpret_cast<const TWeakPtr*>(&InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
@@ -1750,11 +1763,11 @@ public:
 	}
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue)); }
 
 	/** Assignment operator sets this weak pointer from a shared reference. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue)
 	{
 		if (Controller != nullptr)
@@ -1771,7 +1784,7 @@ public:
 	}
 
 	/** Assignment operator sets this weak pointer from a shared pointer. */
-	template <typename U> requires (CConvertibleTo<U(*)[], T(*)[]> && CArray<U>)
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue)
 	{
 		if (Controller != nullptr)
