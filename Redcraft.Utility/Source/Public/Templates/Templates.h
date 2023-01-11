@@ -16,3 +16,4 @@
 #include "Templates/Atomic.h"
 #include "Templates/ScopeHelper.h"
 #include "Templates/UniquePointer.h"
+#include "Templates/SharedPointer.h"

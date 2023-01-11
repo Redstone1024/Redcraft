@@ -19,6 +19,7 @@ REDCRAFTUTILITY_API void TestFunction();
 REDCRAFTUTILITY_API void TestAtomic();
 REDCRAFTUTILITY_API void TestScopeHelper();
 REDCRAFTUTILITY_API void TestUniquePointer();
+REDCRAFTUTILITY_API void TestSharedPointer();
 REDCRAFTUTILITY_API void TestMiscTemplates();
 
 NAMESPACE_END(Testing)
