@@ -148,6 +148,7 @@ void TestMemoryMalloc()
 	always_check(PtrC->A == 0x01234567);
 	delete [] PtrC;
 
+	Memory::Free(Memory::Realloc(Memory::Malloc(0), 0));
 }
 
 NAMESPACE_UNNAMED_BEGIN

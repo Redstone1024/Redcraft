@@ -255,6 +255,7 @@ NODISCARD REDCRAFTUTILITY_API void* Malloc(size_t Count, size_t Alignment = Defa
 
 /**
  * Reallocates the given area of memory. It must be previously allocated by Malloc() or Realloc().
+ * If 'Ptr' is a nullptr, effectively the same as calling Malloc().
  *
  * @param  Ptr       - The pointer to the memory area to be reallocated.
  * @param  Count     - The number of bytes to allocate.
