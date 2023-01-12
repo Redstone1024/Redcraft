@@ -123,8 +123,30 @@ struct TDefaultDelete<T[]>
 
 };
 
-/** This is essentially a reference version of TUniquePtr. */
 template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
+class TUniqueRef;
+
+template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
+class TUniquePtr;
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T> struct TIsTUniqueRef                : FFalse { };
+template <typename T> struct TIsTUniqueRef<TUniqueRef<T>> : FTrue  { };
+
+template <typename T> struct TIsTUniquePtr                : FFalse { };
+template <typename T> struct TIsTUniquePtr<TUniquePtr<T>> : FTrue  { };
+
+NAMESPACE_PRIVATE_END
+
+template <typename T>
+concept CTUniqueRef = NAMESPACE_PRIVATE::TIsTUniqueRef<TRemoveCV<T>>::Value;
+
+template <typename T>
+concept CTUniquePtr = NAMESPACE_PRIVATE::TIsTUniquePtr<TRemoveCV<T>>::Value;
+
+/** This is essentially a reference version of TUniquePtr. */
+template <typename T, CInvocable<TRemoveExtent<T>*> E> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
 class TUniqueRef final : private FSingleton
 {
 public:
@@ -364,7 +386,7 @@ private:
 };
 
 /** Single-ownership smart pointer. Use this when you need an object's lifetime to be strictly bound to the lifetime of a single smart pointer. */
-template <typename T, CInvocable<TRemoveExtent<T>*> E = TDefaultDelete<T>> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
+template <typename T, CInvocable<TRemoveExtent<T>*> E> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
 class TUniquePtr final : private FNoncopyable
 {
 public:

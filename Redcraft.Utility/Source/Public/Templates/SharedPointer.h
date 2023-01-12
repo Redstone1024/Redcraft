@@ -31,6 +31,28 @@ class TWeakPtr;
 
 NAMESPACE_PRIVATE_BEGIN
 
+template <typename T> struct TIsTSharedRef                : FFalse { };
+template <typename T> struct TIsTSharedRef<TSharedRef<T>> : FTrue  { };
+
+template <typename T> struct TIsTSharedPtr                : FFalse { };
+template <typename T> struct TIsTSharedPtr<TSharedPtr<T>> : FTrue  { };
+
+template <typename T> struct TIsTWeakPtr              : FFalse { };
+template <typename T> struct TIsTWeakPtr<TWeakPtr<T>> : FTrue  { };
+
+NAMESPACE_PRIVATE_END
+
+template <typename T>
+concept CTSharedRef = NAMESPACE_PRIVATE::TIsTSharedRef<TRemoveCV<T>>::Value;
+
+template <typename T>
+concept CTSharedPtr = NAMESPACE_PRIVATE::TIsTSharedPtr<TRemoveCV<T>>::Value;
+
+template <typename T>
+concept CTWeakPtr = NAMESPACE_PRIVATE::TIsTWeakPtr<TRemoveCV<T>>::Value;
+
+NAMESPACE_PRIVATE_BEGIN
+
 // This is the base object for TSharedPtr and uses constructive interference alignment for performance.
 class alignas(Memory::ConstructiveInterference) FSharedController : private FSingleton
 {
