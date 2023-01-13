@@ -303,6 +303,130 @@ private:
 
 };
 
+struct FSharedHelper
+{
+	template <typename T, typename U> requires (CSameAs<T, TDecay<T>> && CSameAs<U, TDecay<U>>
+		&& (CTSharedRef<T> || CTSharedPtr<T>) && (CTSharedRef<U> || CTSharedPtr<U>))
+	static T& CopySharedReference(T& This, const U& InValue)
+	{
+		if (This.Controller == InValue.Controller)
+		{
+			This.Pointer = InValue.Pointer;
+			return This;
+		}
+
+		if constexpr (CTSharedRef<T>)
+		{
+			This.Controller->ReleaseSharedReference();
+		}
+		else if (This.Controller != nullptr)
+		{
+			This.Controller->ReleaseSharedReference();
+		}
+
+		This.Pointer    = InValue.Pointer;
+		This.Controller = InValue.Controller;
+
+		if constexpr (CTSharedRef<T> || CTSharedRef<U>)
+		{
+			This.Controller->AddSharedReference();
+		}
+		else if (This.Controller != nullptr)
+		{
+			This.Controller->AddSharedReference();
+		}
+
+		return This;
+	}
+
+	template <typename T, typename U> requires (CSameAs<T, TDecay<T>> && CSameAs<U, TDecay<U>>
+		&& (CTSharedRef<T> || CTSharedPtr<T>) && (CTSharedRef<U> || CTSharedPtr<U>))
+	static T& MoveSharedReference(T& This, U&& InValue)
+	{
+		if constexpr (CTSharedRef<T>)
+		{
+			Swap(This.Pointer,    InValue.Pointer);
+			Swap(This.Controller, InValue.Controller);
+		}
+		else if constexpr (CTSharedPtr<T> && CTSharedPtr<U>)
+		{
+			if (&InValue == &This) UNLIKELY return This;
+
+			if (This.Controller != nullptr)
+			{
+				This.Controller->ReleaseSharedReference();
+			}
+
+			This.Pointer    = Exchange(InValue.Pointer,    nullptr);
+			This.Controller = Exchange(InValue.Controller, nullptr);
+		}
+		else
+		{
+			CopySharedReference(This, InValue);
+		}
+
+		return This;
+	}
+
+	template <typename T, typename U> requires (CSameAs<T, TDecay<T>> && CSameAs<U, TDecay<U>>
+		&& CTWeakPtr<T> && (CTSharedRef<U> || CTSharedPtr<U> || CTWeakPtr<U>))
+	static T& CopyWeakReference(T& This, const U& InValue)
+	{
+		if constexpr (CTWeakPtr<T> && CTWeakPtr<U>)
+		{
+			if (This.Controller == InValue.Controller)
+			{
+				This.Pointer = InValue.Pointer;
+				return This;
+			}
+		}
+
+		if (This.Controller != nullptr)
+		{
+			This.Controller->ReleaseWeakReference();
+		}
+
+		This.Pointer    = InValue.Pointer;
+		This.Controller = InValue.Controller;
+
+		if constexpr (CTSharedRef<U>)
+		{
+			This.Controller->AddWeakReference();
+		}
+		else if (This.Controller != nullptr)
+		{
+			This.Controller->AddWeakReference();
+		}
+
+		return This;
+	}
+
+	template <typename T, typename U> requires (CSameAs<T, TDecay<T>> && CSameAs<U, TDecay<U>>
+		&& CTWeakPtr<T> && (CTSharedRef<U> || CTSharedPtr<U> || CTWeakPtr<U>))
+	static T& MoveWeakReference(T& This, U&& InValue)
+	{
+		if constexpr (CTWeakPtr<T> && CTWeakPtr<U>)
+		{
+			if (&InValue == &This) UNLIKELY return This;
+			
+			if (This.Controller != nullptr)
+			{
+				This.Controller->ReleaseWeakReference();
+			}
+			
+			This.Pointer    = Exchange(InValue.Pointer,    nullptr);
+			This.Controller = Exchange(InValue.Controller, nullptr);
+		}
+		else
+		{
+			CopyWeakReference(This, InValue);
+		}
+
+		return This;
+	}
+
+};
+
 template <typename T>
 class TSharedProxy : private FSingleton
 {
@@ -419,6 +543,10 @@ private:
 template <typename T> requires (CObject<T> && !CBoundedArray<T>)
 class TSharedRef final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -488,38 +616,18 @@ public:
 	FORCEINLINE ~TSharedRef() { Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	TSharedRef& operator=(const TSharedRef& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		Controller->ReleaseSharedReference();
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		Controller->AddSharedReference();
-
-		return *this;
-	}
+	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return *this = *reinterpret_cast<const TSharedRef*>(&InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue)
-	{
-		Swap(*this, InValue);
-		return *this;
-	}
+	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedRef*>(&InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() == RHS.Get(); }
@@ -643,12 +751,18 @@ private:
 
 	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
+
 };
 
 /** Shared-ownership non-nullable smart pointer. Use this when you need an array's lifetime to be managed by a shared smart pointer. */
 template <typename T>
 class TSharedRef<T[]> final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -720,38 +834,18 @@ public:
 	FORCEINLINE ~TSharedRef() { Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	TSharedRef& operator=(const TSharedRef& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		Controller->ReleaseSharedReference();
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		Controller->AddSharedReference();
-
-		return *this;
-	}
+	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return *this = *reinterpret_cast<const TSharedRef*>(&InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue)
-	{
-		Swap(*this, InValue);
-		return *this;
-	}
+	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedRef*>(&InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() == RHS.Get(); }
@@ -864,12 +958,18 @@ private:
 
 	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
+
 };
 
 /** Shared-ownership smart pointer. Use this when you need an object's lifetime to be managed by a shared smart pointer. */
 template <typename T> requires (CObject<T> && !CBoundedArray<T>)
 class TSharedPtr final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -943,20 +1043,6 @@ public:
 		InValue.Controller = nullptr;
 	}
 
-	/**
-	 * Aliasing constructor used to create a shared reference which shares its reference count with
-	 * another shared object, but pointing to a different object, typically a subobject.
-	 * Must not be nullptr.
-	 *
-	 * @param  InValue - The shared reference whose reference count should be shared.
-	 * @param  InPtr   - The object pointer to use (instead of the incoming shared pointer's object).
-	 */
-	template <typename U>
-	FORCEINLINE TSharedPtr(TSharedRef<U>&& InValue, T* InPtr)
-	{
-		new (this) TSharedRef<T>(MoveTemp(InValue), InPtr);
-	}
-
 	/** Constructs a TSharedPtr which shares ownership of the object managed by 'InValue'. */
 	FORCEINLINE TSharedPtr(const TSharedPtr& InValue) : TSharedPtr(InValue, InValue.Get()) { }
 
@@ -975,10 +1061,6 @@ public:
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
 	FORCEINLINE TSharedPtr(TSharedPtr<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
 
-	/** Constructs a TSharedPtr which shares ownership of the object managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr(TSharedRef<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
-
 	/** Constructs a TSharedPtr which gets ownership of the object managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<U*, T*> && !CArray<U> && (CDestructible<E> || CLValueReference<E>))
 	FORCEINLINE TSharedPtr(TUniquePtr<U, E>&& InValue) : TSharedPtr(InValue.Release(), Forward<E>(InValue.GetDeleter())) { }
@@ -987,61 +1069,22 @@ public:
 	FORCEINLINE ~TSharedPtr() { if (Controller != nullptr) Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	TSharedPtr& operator=(const TSharedPtr& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseSharedReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddSharedReference();
-		}
-
-		return *this;
-	}
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return *this = *reinterpret_cast<const TSharedPtr*>(&InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return *reinterpret_cast<TSharedRef<T>*>(this) = InValue; }
+	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	TSharedPtr& operator=(TSharedPtr&& InValue)
-	{
-		if (&InValue == this) UNLIKELY return *this;
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseSharedReference();
-		}
-		
-		Pointer    = Exchange(InValue.Pointer, nullptr);
-		Controller = Exchange(InValue.Controller, nullptr);
-
-		return *this;
-	}
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedPtr*>(&InValue)); }
-
-	/** Replaces the managed object with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedRef<U>&& InValue) { return *reinterpret_cast<TSharedRef<T>*>(this) = MoveTemp(InValue); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<U*, T*> && !CArray<U> && (CDestructible<E> || CLValueReference<E>))
@@ -1183,12 +1226,18 @@ private:
 
 	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
+
 };
 
 /** Shared-ownership smart pointer. Use this when you need an array's lifetime to be managed by a shared smart pointer. */
 template <typename T>
 class TSharedPtr<T[]> final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -1264,20 +1313,6 @@ public:
 		InValue.Controller = nullptr;
 	}
 
-	/**
-	 * Aliasing constructor used to create a shared reference which shares its reference count with
-	 * another shared array, but pointing to a different array, typically a subobject.
-	 * Must not be nullptr.
-	 *
-	 * @param  InValue - The shared reference whose reference count should be shared.
-	 * @param  InPtr   - The array pointer to use (instead of the incoming shared pointer's array).
-	 */
-	template <typename U, typename V = T*> requires (CNullPointer<V> || (CPointer<V> && CConvertibleTo<TRemovePointer<V>(*)[], T(*)[]>))
-	FORCEINLINE TSharedPtr(TSharedRef<U>&& InValue, V InPtr)
-	{
-		new (this) TSharedRef<T[]>(MoveTemp(InValue), InPtr);
-	}
-
 	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
 	FORCEINLINE TSharedPtr(const TSharedPtr& InValue) : TSharedPtr(InValue, InValue.Get()) { }
 
@@ -1296,10 +1331,6 @@ public:
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
 	FORCEINLINE TSharedPtr(TSharedPtr<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
 
-	/** Constructs a TSharedPtr which shares ownership of the array managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr(TSharedRef<U>&& InValue) : TSharedPtr(MoveTemp(InValue), InValue.Get()) { }
-
 	/** Constructs a TSharedPtr which gets ownership of the array managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
 	FORCEINLINE TSharedPtr(TUniquePtr<U, E>&& InValue) : TSharedPtr(InValue.Release(), Forward<E>(InValue.GetDeleter())) { }
@@ -1308,61 +1339,22 @@ public:
 	FORCEINLINE ~TSharedPtr() { if (Controller != nullptr) Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	TSharedPtr& operator=(const TSharedPtr& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseSharedReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddSharedReference();
-		}
-
-		return *this;
-	}
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return *this = *reinterpret_cast<const TSharedPtr*>(&InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return *reinterpret_cast<TSharedRef<T[]>*>(this) = InValue; }
+	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	TSharedPtr& operator=(TSharedPtr&& InValue)
-	{
-		if (&InValue == this) UNLIKELY return *this;
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseSharedReference();
-		}
-		
-		Pointer    = Exchange(InValue.Pointer, nullptr);
-		Controller = Exchange(InValue.Controller, nullptr);
-
-		return *this;
-	}
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TSharedPtr*>(&InValue)); }
-
-	/** Replaces the managed array with the one managed by 'InValue'. */
-	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedRef<U>&& InValue) { return *reinterpret_cast<TSharedRef<T[]>*>(this) = MoveTemp(InValue); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
@@ -1495,12 +1487,18 @@ private:
 
 	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
+
 };
 
 /** TWeakPtr is a smart pointer that holds a non-owning ("weak") reference to an object that is managed by shared pointer. */
 template <typename T> requires (CObject<T> && !CBoundedArray<T>)
 class TWeakPtr final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -1512,8 +1510,7 @@ public:
 	FORCEINLINE constexpr TWeakPtr(nullptr_t) : TWeakPtr() { }
 
 	/** Constructs new TWeakPtr which shares an object managed by 'InValue'. */
-	FORCEINLINE TWeakPtr(const TWeakPtr& InValue)
-		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	FORCEINLINE TWeakPtr(const TWeakPtr& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		if (Controller != nullptr)
 		{
@@ -1523,14 +1520,20 @@ public:
 
 	/** Constructs new TWeakPtr which shares an object managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE constexpr TWeakPtr(const TWeakPtr<U>& InValue) : TWeakPtr(*reinterpret_cast<const TWeakPtr*>(&InValue)) { }
+	FORCEINLINE constexpr TWeakPtr(const TWeakPtr<U>& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		if (Controller != nullptr)
+		{
+			Controller->AddWeakReference();
+		}
+	}
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	FORCEINLINE TWeakPtr(TWeakPtr&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : TWeakPtr(MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue))) { }
+	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
 	
 	/** Constructs a weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
@@ -1553,90 +1556,26 @@ public:
 	FORCEINLINE ~TWeakPtr() { if (Controller != nullptr) Controller->ReleaseWeakReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	TWeakPtr& operator=(const TWeakPtr& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddWeakReference();
-		}
-
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return *this = *reinterpret_cast<const TWeakPtr*>(&InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	TWeakPtr& operator=(TWeakPtr&& InValue)
-	{
-		if (&InValue == this) UNLIKELY return *this;
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-		
-		Pointer    = Exchange(InValue.Pointer, nullptr);
-		Controller = Exchange(InValue.Controller, nullptr);
-
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Assignment operator sets this weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue)
-	{
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		Controller->AddWeakReference();
-		
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Assignment operator sets this weak pointer from a shared pointer. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue)
-	{
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddWeakReference();
-		}
-		
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Effectively the same as calling Reset(). */
 	FORCEINLINE TWeakPtr& operator=(nullptr_t) { Reset(); return *this; }
@@ -1682,12 +1621,18 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
 
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
+
 };
 
 /** TWeakPtr is a smart pointer that holds a non-owning ("weak") reference to an array that is managed by shared pointer. */
 template <typename T>
 class TWeakPtr<T[]> final
 {
+private:
+
+	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+
 public:
 
 	using ElementType = T;
@@ -1699,8 +1644,7 @@ public:
 	FORCEINLINE constexpr TWeakPtr(nullptr_t) : TWeakPtr() { }
 
 	/** Constructs new TWeakPtr which shares an array managed by 'InValue'. */
-	FORCEINLINE TWeakPtr(const TWeakPtr& InValue)
-		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	FORCEINLINE TWeakPtr(const TWeakPtr& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		if (Controller != nullptr)
 		{
@@ -1710,14 +1654,20 @@ public:
 
 	/** Constructs new TWeakPtr which shares an array managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE constexpr TWeakPtr(const TWeakPtr<U>& InValue) : TWeakPtr(*reinterpret_cast<const TWeakPtr*>(&InValue)) { }
+	FORCEINLINE constexpr TWeakPtr(const TWeakPtr<U>& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		if (Controller != nullptr)
+		{
+			Controller->AddWeakReference();
+		}
+	}
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	FORCEINLINE TWeakPtr(TWeakPtr&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
 
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : TWeakPtr(MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue))) { }
+	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
 
 	/** Constructs a weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
@@ -1740,90 +1690,26 @@ public:
 	FORCEINLINE ~TWeakPtr() { if (Controller != nullptr) Controller->ReleaseWeakReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	TWeakPtr& operator=(const TWeakPtr& InValue)
-	{
-		if (Controller == InValue.Controller)
-		{
-			Pointer = InValue.Pointer;
-			return *this;
-		}
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddWeakReference();
-		}
-
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return *this = *reinterpret_cast<const TWeakPtr*>(&InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	TWeakPtr& operator=(TWeakPtr&& InValue)
-	{
-		if (&InValue == this) UNLIKELY return *this;
-
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-		
-		Pointer    = Exchange(InValue.Pointer, nullptr);
-		Controller = Exchange(InValue.Controller, nullptr);
-
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return *this = MoveTemp(*reinterpret_cast<TWeakPtr*>(&InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Assignment operator sets this weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue)
-	{
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		Controller->AddWeakReference();
-		
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Assignment operator sets this weak pointer from a shared pointer. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue)
-	{
-		if (Controller != nullptr)
-		{
-			Controller->ReleaseWeakReference();
-		}
-
-		Pointer    = InValue.Pointer;
-		Controller = InValue.Controller;
-
-		if (Controller != nullptr)
-		{
-			Controller->AddWeakReference();
-		}
-		
-		return *this;
-	}
+	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
 
 	/** Effectively the same as calling Reset(). */
 	FORCEINLINE TWeakPtr& operator=(nullptr_t) { Reset(); return *this; }
@@ -1868,6 +1754,8 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedRef;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
+
+	friend struct NAMESPACE_PRIVATE::FSharedHelper;
 
 };
 
