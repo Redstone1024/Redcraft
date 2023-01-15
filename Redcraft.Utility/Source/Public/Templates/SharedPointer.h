@@ -521,14 +521,17 @@ public:
 
 protected:
 
-	FORCEINLINE TSharedFromThis()                                  = default;
-	FORCEINLINE TSharedFromThis(const TSharedFromThis&)            = default;
-	FORCEINLINE TSharedFromThis(TSharedFromThis&&)                 = default;
-	FORCEINLINE TSharedFromThis& operator=(const TSharedFromThis&) = default;
-	FORCEINLINE TSharedFromThis& operator=(TSharedFromThis&&)      = default;
-	FORCEINLINE ~TSharedFromThis()                                 = default;
+	FORCEINLINE constexpr TSharedFromThis() : WeakThis() { }
+
+	FORCEINLINE TSharedFromThis(const TSharedFromThis&) : TSharedFromThis() { }
+
+	FORCEINLINE TSharedFromThis& operator=(const TSharedFromThis&) { return *this; }
+
+	FORCEINLINE ~TSharedFromThis() = default;
 
 private:
+
+	using SharedFromThisType = TSharedFromThis;
 
 	// Here it is updated by the private constructor of TSharedRef or TSharedPtr.
 	mutable TWeakPtr<T> WeakThis;
@@ -730,16 +733,18 @@ private:
 		: Pointer(InPtr), Controller(InController)
 	{
 		check(!((Pointer == nullptr) ^ (Controller == nullptr)));
-		
-		if constexpr (CClass<T>)
+
+		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::SharedFromThisType; })
 		{
-			if constexpr (CDerivedFrom<T, TSharedFromThis<T>>)
+			using SharedFromThisType = T::SharedFromThisType;
+
+			if constexpr (CDerivedFrom<T, SharedFromThisType>)
 			{
 				if (Pointer != nullptr)
 				{
-					const TSharedFromThis<T>& SharedFromThis = *Pointer;
+					const SharedFromThisType& SharedFromThis = *Pointer;
 					checkf(!SharedFromThis.DoesSharedInstanceExist(), TEXT("This object is incorrectly managed by multiple TSharedRef or TSharedPtr."));
-					SharedFromThis.WeakThis = *this;
+					SharedFromThis.WeakThis = ConstCast<TRemoveCV<T>>(*this);
 				}
 			}
 		}
@@ -1206,15 +1211,17 @@ private:
 	{
 		check(!((Pointer == nullptr) ^ (Controller == nullptr)));
 
-		if constexpr (CClass<T>)
+		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::SharedFromThisType; })
 		{
-			if constexpr (CDerivedFrom<T, TSharedFromThis<T>>)
+			using SharedFromThisType = T::SharedFromThisType;
+
+			if constexpr (CDerivedFrom<T, SharedFromThisType>)
 			{
 				if (Pointer != nullptr)
 				{
-					const TSharedFromThis<T>& SharedFromThis = *Pointer;
+					const SharedFromThisType& SharedFromThis = *Pointer;
 					checkf(!SharedFromThis.DoesSharedInstanceExist(), TEXT("This object is incorrectly managed by multiple TSharedRef or TSharedPtr."));
-					SharedFromThis.WeakThis = *this;
+					SharedFromThis.WeakThis = ConstCast<TRemoveCV<T>>(*this);
 				}
 			}
 		}
