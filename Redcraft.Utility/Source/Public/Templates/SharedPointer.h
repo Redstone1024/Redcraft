@@ -465,6 +465,10 @@ private:
 
 };
 
+struct FSharedPtrConstructor { explicit FSharedPtrConstructor() = default; };
+
+inline constexpr FSharedPtrConstructor SharedPtrConstructor{ };
+
 NAMESPACE_PRIVATE_END
 
 /**
@@ -714,20 +718,16 @@ private:
 	T* Pointer;
 	NAMESPACE_PRIVATE::FSharedController* Controller;
 
-	template <typename U>
-	FORCEINLINE TSharedRef(const TSharedPtr<U>& InValue, T* InPtr)
-		: Pointer(InPtr), Controller(InValue.Controller)
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::FSharedPtrConstructor, const TSharedPtr<T>& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		Controller->AddSharedReference();
 	}
 
-	template <typename U>
-	FORCEINLINE TSharedRef(TSharedPtr<U>&& InValue, T* InPtr)
-		: Pointer(InPtr), Controller(InValue.Controller)
-	{
-		InValue.Pointer    = nullptr;
-		InValue.Controller = nullptr;
-	}
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::FSharedPtrConstructor, TSharedPtr<T>&& InValue)
+		: Pointer(Exchange(InValue.Pointer, nullptr))
+		, Controller(Exchange(InValue.Controller, nullptr))
+	{ }
 
 	FORCEINLINE TSharedRef(T* InPtr, NAMESPACE_PRIVATE::FSharedController* InController)
 		: Pointer(InPtr), Controller(InController)
@@ -936,20 +936,16 @@ private:
 	T* Pointer;
 	NAMESPACE_PRIVATE::FSharedController* Controller;
 
-	template <typename U>
-	FORCEINLINE TSharedRef(const TSharedPtr<U>& InValue, T* InPtr)
-		: Pointer(InPtr), Controller(InValue.Controller)
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::FSharedPtrConstructor, const TSharedPtr<T[]>& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
 	{
 		Controller->AddSharedReference();
 	}
 
-	template <typename U>
-	FORCEINLINE TSharedRef(TSharedPtr<U>&& InValue, T* InPtr)
-		: Pointer(InPtr), Controller(InValue.Controller)
-	{
-		InValue.Pointer    = nullptr;
-		InValue.Controller = nullptr;
-	}
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::FSharedPtrConstructor, TSharedPtr<T[]>&& InValue)
+		: Pointer(Exchange(InValue.Pointer, nullptr))
+		, Controller(Exchange(InValue.Controller, nullptr))
+	{ }
 
 	FORCEINLINE TSharedRef(T* InPtr, NAMESPACE_PRIVATE::FSharedController* InController)
 		: Pointer(InPtr), Controller(InController)
@@ -1111,24 +1107,18 @@ public:
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(T* InPtr) const& { return Get() <=> InPtr; }
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T> ToSharedRef(T* InPtr) const&
+	FORCEINLINE TSharedRef<T> ToSharedRef() const&
 	{
-		checkf(IsValid() && InPtr != nullptr, TEXT("TSharedRef cannot be initialized by nullptr."));
-		return TSharedRef<T>(*this, InPtr);
+		checkf(IsValid(), TEXT("TSharedRef cannot be initialized by nullptr."));
+		return TSharedRef<T>(NAMESPACE_PRIVATE::SharedPtrConstructor, *this);
 	}
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T> ToSharedRef(T* InPtr) &&
+	FORCEINLINE TSharedRef<T> ToSharedRef() &&
 	{
-		checkf(IsValid() && InPtr != nullptr, TEXT("TSharedRef cannot be initialized by nullptr."));
-		return TSharedRef<T>(MoveTemp(*this), InPtr);
+		checkf(IsValid(), TEXT("TSharedRef cannot be initialized by nullptr."));
+		return TSharedRef<T>(NAMESPACE_PRIVATE::SharedPtrConstructor, *this);
 	}
-
-	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T> ToSharedRef() const& { return ToSharedRef(Get()); }
-
-	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T> ToSharedRef() &&     { return ToSharedRef(Get()); }
 
 	/** Replaces the managed object. */
 	FORCEINLINE void Reset(T* InPtr = nullptr) { *this = MoveTemp(TSharedPtr(InPtr)); }
@@ -1385,26 +1375,18 @@ public:
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(U InPtr) const& { return Get() <=> InPtr; }
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	template <typename U = T*> requires (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>)
-	FORCEINLINE TSharedRef<T[]> ToSharedRef(U InPtr) const&
+	FORCEINLINE TSharedRef<T[]> ToSharedRef() const&
 	{
-		checkf(IsValid() && InPtr != nullptr, TEXT("TSharedRef cannot be initialized by nullptr."));
-		return TSharedRef<T[]>(*this, InPtr);
+		checkf(IsValid(), TEXT("TSharedRef cannot be initialized by nullptr."));
+		return TSharedRef<T[]>(NAMESPACE_PRIVATE::SharedPtrConstructor, *this);
 	}
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	template <typename U = T*> requires (CPointer<U>&& CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>)
-	FORCEINLINE TSharedRef<T[]> ToSharedRef(U InPtr)&&
+	FORCEINLINE TSharedRef<T[]> ToSharedRef() &&
 	{
-		checkf(IsValid() && InPtr != nullptr, TEXT("TSharedRef cannot be initialized by nullptr."));
-		return TSharedRef<T[]>(MoveTemp(*this), InPtr);
+		checkf(IsValid(), TEXT("TSharedRef cannot be initialized by nullptr."));
+		return TSharedRef<T[]>(NAMESPACE_PRIVATE::SharedPtrConstructor, *this);
 	}
-
-	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T[]> ToSharedRef() const& { return ToSharedRef(Get()); }
-
-	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
-	FORCEINLINE TSharedRef<T[]> ToSharedRef() &&     { return ToSharedRef(Get()); }
 
 	/** Replaces the managed array. */
 	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
