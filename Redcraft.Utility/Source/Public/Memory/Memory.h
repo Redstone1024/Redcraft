@@ -299,7 +299,7 @@ NAMESPACE_REDCRAFT_END
 
 // The global overload operators new/delete do not cross .dll boundaries, and the macros should be placed in the .cpp of each module.
 #define REPLACEMENT_OPERATOR_NEW_AND_DELETE                                                                                                                                                  \
-	NODISCARD void* operator new(std::size_t Count)                                { return NAMESPACE_REDCRAFT::Memory::Malloc(Count);                                                     } \
+	NODISCARD void* operator new(std::size_t Count)                                { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, __STDCPP_DEFAULT_NEW_ALIGNMENT__);                   } \
 	NODISCARD void* operator new(std::size_t Count, std::align_val_t Alignment)    { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, static_cast<NAMESPACE_REDCRAFT::size_t>(Alignment)); } \
 	          void operator delete(void* Ptr)                             noexcept { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }                                                                \
 	          void operator delete(void* Ptr, std::align_val_t Alignment) noexcept { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }
