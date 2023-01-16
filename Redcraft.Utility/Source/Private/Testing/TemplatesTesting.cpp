@@ -2297,6 +2297,29 @@ void TestMiscTemplates()
 	always_check(TestFunctionB(&ObjectA) == 1);
 	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
 	always_check(AddressOf(TestMiscTemplates) == &TestMiscTemplates);
+
+	always_check(!TPointerTraits<int64>::bIsPointer);
+
+	always_check(TPointerTraits<int64*>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<int64*>::PointerType, int64*>));
+	always_check((CSameAs<TPointerTraits<int64*>::ElementType, int64>));
+	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<int64(*)[]>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::PointerType, int64(*)[]>));
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::ElementType, int64>));
+	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<TSharedPtr<int64>>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::PointerType, TSharedPtr<int64>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::ElementType, int64>));
+	always_check(TPointerTraits<TSharedPtr<int64>>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<TSharedPtr<int64[]>>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::PointerType, TSharedPtr<int64[]>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::ElementType, int64>));
+	always_check(TPointerTraits<TSharedPtr<int64[]>>::ToAddress(nullptr) == nullptr);
+
 }
 
 NAMESPACE_END(Testing)

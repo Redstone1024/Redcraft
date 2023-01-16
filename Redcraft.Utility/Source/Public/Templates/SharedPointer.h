@@ -8,6 +8,7 @@
 #include "Memory/MemoryOperator.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/PrimaryType.h"
+#include "Templates/PointerTraits.h"
 #include "Templates/UniquePointer.h"
 #include "TypeTraits/Miscellaneous.h"
 #include "TypeTraits/TypeProperties.h"
@@ -1895,6 +1896,9 @@ NODISCARD FORCEINLINE TSharedPtr<T> ReinterpretCast(TSharedPtr<U>&& InValue)
 {
 	return TSharedPtr<T>(MoveTemp(InValue), reinterpret_cast<T*>(InValue.Get()));
 }
+
+DEFINE_TPointerTraits(TSharedRef);
+DEFINE_TPointerTraits(TSharedPtr);
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

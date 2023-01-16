@@ -5,6 +5,7 @@
 #include "Templates/Utility.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/PrimaryType.h"
+#include "Templates/PointerTraits.h"
 #include "TypeTraits/Miscellaneous.h"
 #include "TypeTraits/TypeProperties.h"
 #include "TypeTraits/SupportedOperations.h"
@@ -681,6 +682,9 @@ void MakeUnique(Ts&&...) = delete;
 
 static_assert(sizeof(TUniqueRef<int32>) == sizeof(int32*), "The byte size of TUniqueRef is unexpected");
 static_assert(sizeof(TUniquePtr<int32>) == sizeof(int32*), "The byte size of TUniquePtr is unexpected");
+
+DEFINE_TPointerTraits(TUniqueRef);
+DEFINE_TPointerTraits(TUniquePtr);
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
