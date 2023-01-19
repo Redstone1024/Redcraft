@@ -15,6 +15,3 @@
 #include "Templates/Function.h"
 #include "Templates/Atomic.h"
 #include "Templates/ScopeHelper.h"
-#include "Templates/PointerTraits.h"
-#include "Templates/UniquePointer.h"
-#include "Templates/SharedPointer.h"

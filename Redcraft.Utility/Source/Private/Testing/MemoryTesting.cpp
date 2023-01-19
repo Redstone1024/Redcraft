@@ -2,6 +2,9 @@
 
 #include "Memory/Memory.h"
 #include "Memory/Alignment.h"
+#include "Memory/PointerTraits.h"
+#include "Memory/UniquePointer.h"
+#include "Memory/SharedPointer.h"
 #include "Memory/MemoryOperator.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -17,6 +20,9 @@ void TestMemory()
 	TestMemoryBuffer();
 	TestMemoryMalloc();
 	TestMemoryOperator();
+	TestPointerTraits();
+	TestUniquePointer();
+	TestSharedPointer();
 }
 
 void TestAlignment()
@@ -204,6 +210,825 @@ void TestMemoryOperator()
 
 	Memory::Free(PtrA);
 	Memory::Free(PtrB);
+}
+
+void TestPointerTraits()
+{
+	always_check(!TPointerTraits<int64>::bIsPointer);
+
+	always_check(TPointerTraits<int64*>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<int64*>::PointerType, int64*>));
+	always_check((CSameAs<TPointerTraits<int64*>::ElementType, int64>));
+	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<int64(*)[]>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::PointerType, int64(*)[]>));
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::ElementType, int64>));
+	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<TSharedPtr<int64>>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::PointerType, TSharedPtr<int64>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::ElementType, int64>));
+	always_check(TPointerTraits<TSharedPtr<int64>>::ToAddress(nullptr) == nullptr);
+
+	always_check(TPointerTraits<TSharedPtr<int64[]>>::bIsPointer);
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::PointerType, TSharedPtr<int64[]>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::ElementType, int64>));
+	always_check(TPointerTraits<TSharedPtr<int64[]>>::ToAddress(nullptr) == nullptr);
+
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+struct FCounter
+{
+	static int32 Num;
+	FCounter() { ++Num; }
+	~FCounter() { --Num; }
+};
+
+int32 FCounter::Num = 0;
+
+struct FDeleter
+{
+	static int32 Num;
+	void operator()(FCounter* Ptr) { delete Ptr; ++Num; }
+};
+
+int32 FDeleter::Num = 0;
+
+struct FArrayDeleter
+{
+	static int32 Num;
+	void operator()(FCounter* Ptr) { delete [] Ptr; ++Num; }
+};
+
+int32 FArrayDeleter::Num = 0;
+
+NAMESPACE_UNNAMED_END
+
+void TestUniquePointer()
+{
+	{
+		TUniqueRef<int32> Temp(new int32);
+		*Temp = 15;
+		always_check(*Temp.Get() = 15);
+	}
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TUniqueRef<FCounter> TempA(PtrA);
+		TUniqueRef<FCounter, FDeleter> TempB(PtrB);
+		TUniqueRef<FCounter, FDeleter> TempC(PtrC, FDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter);
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
+		always_check(FCounter::Num == TempNum + 1);
+		delete PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum + 1);
+		delete PtrY;
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempC.GetDeleter().Num == 2);
+	}
+
+	always_check(FCounter::Num == 0);
+	always_check(FDeleter::Num == 4);
+
+	{
+		TUniqueRef<int32[]> Temp(new int32[4]);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+	
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TUniqueRef<FCounter[]> TempA(PtrA);
+		TUniqueRef<FCounter[], FArrayDeleter> TempB(PtrB);
+		TUniqueRef<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4]);
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
+		always_check(FCounter::Num == TempNum + 4);
+		delete [] PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum + 4);
+		delete [] PtrY;
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempC.GetDeleter().Num == 2);
+	}
+
+	always_check(     FCounter::Num == 0);
+	always_check(FArrayDeleter::Num == 4);
+	
+	{
+		TUniquePtr<int32> Temp = MakeUnique<int32>(NoInit);
+		*Temp = 15;
+		always_check(*Temp.Get() = 15);
+	}
+
+	{
+		TUniquePtr<int32> Temp = MakeUnique<int32>();
+		*Temp = 15;
+		always_check(*Temp.Get() = 15);
+	}
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TUniquePtr<FCounter> TempA(PtrA);
+		TUniquePtr<FCounter, FDeleter> TempB(PtrB);
+		TUniquePtr<FCounter, FDeleter> TempC(PtrC, FDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter);
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
+		always_check(FCounter::Num == TempNum + 1);
+		delete PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum + 1);
+		delete PtrY;
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempC.GetDeleter().Num == 2);
+
+		TUniquePtr<FCounter, FDeleter> TempD(MoveTemp(TempB));
+
+		TUniquePtr<FCounter, FDeleter> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter);
+		always_check(!!TempB);
+		always_check(TempB.IsValid());
+		delete TempB.Release();
+
+	}
+
+	always_check(FCounter::Num == 0);
+	always_check(FDeleter::Num == 4);
+
+	{
+		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4, NoInit);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	{
+		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TUniquePtr<FCounter[]> TempA(PtrA);
+		TUniquePtr<FCounter[], FArrayDeleter> TempB(PtrB);
+		TUniquePtr<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4]);
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
+		always_check(FCounter::Num == TempNum + 4);
+		delete [] PtrX;
+		
+		TempNum = FCounter::Num;
+		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum + 4);
+		delete [] PtrY;
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempC.GetDeleter().Num == 2);
+
+		TUniquePtr<FCounter[], FArrayDeleter> TempD(MoveTemp(TempB));
+
+		TUniquePtr<FCounter[], FArrayDeleter> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter[4]);
+		always_check(!!TempB);
+		always_check(TempB.IsValid());
+		delete [] TempB.Release();
+
+	}
+
+	always_check(     FCounter::Num == 0);
+	always_check(FArrayDeleter::Num == 4);
+
+	{
+		TUniquePtr<int32> TempA;
+		TUniquePtr<const int32> TempB = MoveTemp(TempA);
+		TUniquePtr<const int32> TempC;
+		TempC = MoveTemp(TempA);
+	}
+
+	{
+		TUniquePtr<int32[]> TempA;
+		TUniquePtr<const int32[]> TempB = MoveTemp(TempA);
+		TUniquePtr<const int32[]> TempC;
+		TempC = MoveTemp(TempA);
+	}
+
+}
+
+void TestSharedPointer()
+{
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TSharedRef<FCounter> TempA(PtrA);
+		TSharedRef<FCounter> TempB(PtrB, FDeleter());
+		TSharedRef<FCounter> TempC(PtrC, FDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+		
+		TempNum = FCounter::Num;
+		TempC.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempA.GetDeleter<FDeleter>() == nullptr);
+		always_check(TempC.GetDeleter<FDeleter>() != nullptr);
+		always_check(TempC.GetDeleter<FDeleter>()->Num == 2);
+		
+		TSharedRef<FCounter> TempD(MoveTemp(TempB));
+	}
+
+	always_check(FCounter::Num == 0);
+	always_check(FDeleter::Num == 4);
+
+	{
+		TSharedRef<int32[]> Temp = MakeShared<int32[]>(4, NoInit);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	{
+		TSharedRef<int32[]> Temp = MakeShared<int32[]>(4);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TSharedRef<FCounter[]> TempA(PtrA);
+		TSharedRef<FCounter[]> TempB(PtrB, FArrayDeleter());
+		TSharedRef<FCounter[]> TempC(PtrC, FArrayDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempA.GetDeleter<FArrayDeleter>() == nullptr);
+		always_check(TempC.GetDeleter<FArrayDeleter>() != nullptr);
+		always_check(TempC.GetDeleter<FArrayDeleter>()->Num == 2);
+
+		TSharedRef<FCounter[]> TempD(MoveTemp(TempB));
+	}
+
+	always_check(     FCounter::Num == 0);
+	always_check(FArrayDeleter::Num == 4);
+
+	FCounter::Num = 0;
+	FDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter;
+		FCounter* PtrB = new FCounter;
+		FCounter* PtrC = new FCounter;
+
+		TSharedPtr<FCounter> TempA(PtrA);
+		TSharedPtr<FCounter> TempB(PtrB, FDeleter());
+		TSharedPtr<FCounter> TempC(PtrC, FDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempA.GetDeleter<FDeleter>() == nullptr);
+		always_check(TempC.GetDeleter<FDeleter>() != nullptr);
+		always_check(TempC.GetDeleter<FDeleter>()->Num == 2);
+
+		TSharedPtr<FCounter> TempD(MoveTemp(TempB));
+
+		TSharedPtr<FCounter> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter, FDeleter());
+		always_check(!!TempB);
+		always_check(TempB.IsValid());
+
+	}
+
+	always_check(FCounter::Num == 0);
+	always_check(FDeleter::Num == 5);
+
+	{
+		TSharedPtr<int32[]> Temp = MakeShared<int32[]>(4, NoInit);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	{
+		TSharedPtr<int32[]> Temp = MakeShared<int32[]>(4);
+		Temp[0] = 15;
+		always_check(Temp.Get()[0] = 15);
+	}
+
+	     FCounter::Num = 0;
+	FArrayDeleter::Num = 0;
+
+	{
+		FCounter* PtrA = new FCounter[4];
+		FCounter* PtrB = new FCounter[4];
+		FCounter* PtrC = new FCounter[4];
+
+		TSharedPtr<FCounter[]> TempA(PtrA);
+		TSharedPtr<FCounter[]> TempB(PtrB, FArrayDeleter());
+		TSharedPtr<FCounter[]> TempC(PtrC, FArrayDeleter());
+
+		always_check(TempA == PtrA);
+		always_check(TempC != TempB);
+		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempC <=> TempB) != strong_ordering::equal);
+		
+		int32 TempNum;
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		TempNum = FCounter::Num;
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(FCounter::Num == TempNum);
+
+		always_check(GetTypeHash(TempB) == GetTypeHash(TempB.Get()));
+
+		Swap(TempB, TempC);
+
+		always_check(TempA.GetDeleter<FArrayDeleter>() == nullptr);
+		always_check(TempC.GetDeleter<FArrayDeleter>() != nullptr);
+		always_check(TempC.GetDeleter<FArrayDeleter>()->Num == 2);
+
+		TSharedPtr<FCounter[]> TempD(MoveTemp(TempB));
+
+		TSharedPtr<FCounter[]> TempE;
+		TempE = MoveTemp(TempC);
+		TempE = nullptr;
+
+		TempB.Reset(new FCounter[4], FArrayDeleter());
+		always_check(!!TempB);
+		always_check(TempB.IsValid());
+
+	}
+
+	always_check(     FCounter::Num == 0);
+	always_check(FArrayDeleter::Num == 5);
+
+	{
+		TSharedPtr<bool> Temp;
+		always_check(!Temp.IsValid());
+		if (Temp.Get() == nullptr) { }
+	}
+
+	{
+		TSharedPtr<int32> Temp(new int32(123));
+
+		always_check(Temp.IsValid());
+		always_check(Temp.IsUnique());
+
+		const int32 DeferenceTest = *Temp;
+
+		Temp.Reset();
+
+		always_check(Temp.GetSharedReferenceCount() == 0);
+	}
+
+	{
+		TSharedPtr<bool> TempA(new bool(false));
+		TSharedPtr<bool> TempB(TempA);
+	}
+
+	{
+		TSharedPtr<bool> TempA(new bool(false));
+		TSharedPtr<bool> TempB;
+		TempB = TempA;
+	}
+
+	{
+		struct FSharedTest { bool bTest; };
+
+		TSharedPtr<FSharedTest> TempA(new FSharedTest());
+
+		TempA->bTest = true;
+
+		(*TempA).bTest = false;
+
+		TSharedPtr<FSharedTest> TempB(TempA);
+
+		TempA.Reset();
+	}
+
+	{
+		class FBase { bool bTest; };
+
+		class FDerived : public FBase { };
+
+		{
+			TSharedPtr<FBase> TempA(new FDerived());
+			TSharedPtr<FDerived> TempB(StaticCast<FDerived>(TempA));
+		}
+
+		{
+			TSharedPtr<FDerived> TempA(new FDerived());
+			TSharedPtr<FBase> TempB(TempA);
+		}
+
+		{
+			TSharedPtr<FDerived> TempA(new FDerived());
+			TSharedPtr<FBase> TempB;
+			TempB = TempA;
+		}
+	}
+
+	{
+		bool* Ptr = nullptr;
+		TSharedPtr<bool> Temp(Ptr);
+		always_check(!Temp.IsValid());
+	}
+
+	{
+		TSharedPtr<bool> Temp(new bool(true));
+		always_check(Temp.IsValid());
+	}
+
+	{
+		TWeakPtr<bool> Temp;
+		always_check(!Temp.Lock().IsValid());
+	}
+
+	{
+		TSharedPtr<int32> TempShared(new int32(64));
+		TWeakPtr<int32> TempWeak(TempShared);
+		always_check(TempWeak.Lock().IsValid());
+	}
+
+	{
+		TSharedPtr<int32> TempShared(new int32(64));
+		TWeakPtr<int32> TempWeak;
+		TempWeak = TempShared;
+
+		always_check(TempWeak.Lock().IsValid());
+
+		TempWeak.Reset();
+		always_check(!TempWeak.Lock().IsValid());
+	}
+
+	{
+		TSharedPtr<int32> TempShared(new int32(64));
+		TWeakPtr<int32> TempWeak = TempShared;
+		TempShared.Reset();
+		always_check(!TempWeak.Lock().IsValid());
+	}
+
+	{
+		TSharedPtr<int32> TempA(new int32(64));
+		TSharedPtr<int32> TempB(new int32(21));
+		TSharedPtr<int32> TempC(TempB);
+
+		always_check(!(TempA == TempB));
+		always_check(TempA != TempB);
+		always_check(TempB == TempC);
+	}
+
+	{
+		TSharedPtr<int32> TempA(new int32(64));
+		TSharedPtr<int32> TempB(new int32(21));
+
+		TWeakPtr<int32> WeakA(TempA);
+		TWeakPtr<int32> WeakB(TempB);
+		TWeakPtr<int32> WeakC(TempB);
+
+		always_check(!(WeakA.Lock() == WeakB.Lock()));
+		always_check(WeakA.Lock() != WeakB.Lock());
+		always_check(WeakB.Lock() == WeakC.Lock());
+	}
+
+	{
+		TSharedPtr<const int32> TempA(new int32(10));
+		TSharedPtr<const float32> TempB(new float32(1.0f));
+		TSharedPtr<const float32> TempC(new float32(2.0f));
+
+		if (TempB == TempC) { }
+
+		TempB = TempC;
+
+		TSharedPtr<float32> TempD(new float32(123.0f));
+
+		TempB = TempD;
+
+		TWeakPtr<const float32> TempE = TempB;
+		TWeakPtr<float32> TempF;
+
+		TempF = ConstCast<float32>(TempC);
+		*TempF.Lock() = 20.0f;
+	}
+
+	{
+		TSharedPtr<struct FTest> Temp;
+		struct FTest { int32 Value; };
+		Temp = TSharedPtr<FTest>(new FTest());
+		Temp->Value = 20;
+	}
+
+	{
+		TSharedPtr<bool> TempA(nullptr);
+		TSharedPtr<float32> TempB = nullptr;
+
+		TWeakPtr<bool> TempD(nullptr);
+		TWeakPtr<float32> TempE = nullptr;
+
+		TempB = TSharedPtr<float32>(new float32(0.1f));
+		TempB = nullptr;
+
+		TempB = MakeShared<float32>(30.0f);
+		TSharedPtr<float64> TempC(MakeShared<float64>(2.0));
+
+		struct FTest
+		{
+			TSharedPtr<float32> Value;
+
+			TSharedPtr<float32> FuncA() { return Value; }
+
+			TSharedPtr<float32> FuncB() { return MakeShared<float32>(123.0f); }
+		};
+	}
+
+	{
+		TSharedRef<float32> Temp(new float32(123.0f));
+	}
+
+	{
+		TSharedRef<float32> Temp(new float32(123.0f));
+		const float& RefA = *Temp;
+		const float& RefB = *Temp.Get();
+	}
+
+	{
+		TSharedRef<float32> Temp = MakeShared<float32>(123.0f);
+	}
+
+	{
+		TSharedRef<int32> TempA(new int32(1));
+		TSharedPtr<int32> TempB(TempA);
+	}
+
+	{
+		TSharedPtr<int32> TempA(new int32(1));
+		TSharedRef<int32> TempB(TempA.ToSharedRef());
+	}
+
+	{
+		TSharedRef<int32> Temp(new int32(10));
+		Temp = TSharedRef<int32>(new int32(20));
+	}
+
+	{
+		TSharedRef<int32> TempA(new int32(99));
+		TWeakPtr<int32> TempB = TempA;
+		always_check(TempB.Lock());
+	}
+
+	{
+		TSharedRef<int32> IntRef1(new int32(99));
+		TSharedRef<int32> IntRef2(new int32(21));
+		always_check(!(IntRef1 == IntRef2));
+		always_check(IntRef1 != IntRef2);
+	}
+
+	{
+		TSharedRef<int32> TempA(new int32(21));
+		TSharedPtr<int32> TempB(TempA);
+		TSharedPtr<int32> TempC;
+
+		always_check(TempA == TempB && TempB == TempA);
+		always_check(!(TempA != TempB || TempB != TempA));
+		always_check(!(TempA == TempC) && (TempA != TempC));
+	}
+
+	{
+		struct FTest : public TSharedFromThis<FTest>
+		{
+			TSharedRef<FTest> FuncTest() { return AsShared(); }
+		};
+
+		TSharedPtr<FTest> TempA(new FTest());
+
+		{
+			FTest* Ptr = TempA.Get();
+			TSharedRef<FTest> TempB(Ptr->FuncTest());
+		}
+	}
+
+	{
+		TSharedRef<int32> TempA = MakeShared<int32>();
+		TSharedRef<const int32> TempB = TempA;
+		TSharedRef<const int32> TempC = MakeShared<int32>();
+		TempC = TempA;
+	}
+
+	{
+		TSharedRef<int32[]> TempA = MakeShared<int32[]>(4);
+		TSharedRef<const int32[]> TempB = TempA;
+		TSharedRef<const int32[]> TempC = MakeShared<int32[]>(4);
+		TempC = TempA;
+	}
+
+	{
+		TSharedPtr<int32> TempA;
+		TSharedPtr<const int32> TempB = TempA;
+		TSharedPtr<const int32> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TSharedPtr<int32[]> TempA;
+		TSharedPtr<const int32[]> TempB = TempA;
+		TSharedPtr<const int32[]> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TWeakPtr<int32> TempA;
+		TWeakPtr<const int32> TempB = TempA;
+		TWeakPtr<const int32> TempC;
+		TempC = TempA;
+	}
+
+	{
+		TWeakPtr<int32[]> TempA;
+		TWeakPtr<const int32[]> TempB = TempA;
+		TWeakPtr<const int32[]> TempC;
+		TempC = TempA;
+	}
+
 }
 
 NAMESPACE_END(Testing)

@@ -5,14 +5,13 @@
 #include "Templates/Atomic.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
+#include "Memory/PointerTraits.h"
+#include "Memory/UniquePointer.h"
 #include "Memory/MemoryOperator.h"
 #include "Templates/Noncopyable.h"
-#include "TypeTraits/PrimaryType.h"
-#include "Templates/PointerTraits.h"
-#include "Templates/UniquePointer.h"
-#include "TypeTraits/Miscellaneous.h"
-#include "TypeTraits/TypeProperties.h"
-#include "TypeTraits/SupportedOperations.h"
+#include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/Compare.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)

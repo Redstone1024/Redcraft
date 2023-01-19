@@ -4,6 +4,7 @@
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/Optional.h"
+#include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 
 NAMESPACE_REDCRAFT_BEGIN

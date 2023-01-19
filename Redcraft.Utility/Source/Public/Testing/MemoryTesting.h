@@ -13,6 +13,9 @@ REDCRAFTUTILITY_API void TestAlignment();
 REDCRAFTUTILITY_API void TestMemoryBuffer();
 REDCRAFTUTILITY_API void TestMemoryMalloc();
 REDCRAFTUTILITY_API void TestMemoryOperator();
+REDCRAFTUTILITY_API void TestPointerTraits();
+REDCRAFTUTILITY_API void TestUniquePointer();
+REDCRAFTUTILITY_API void TestSharedPointer();
 
 NAMESPACE_END(Testing)
 

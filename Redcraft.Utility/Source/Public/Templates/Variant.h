@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Meta.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Templates/Meta.h"
 #include "Memory/MemoryOperator.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
