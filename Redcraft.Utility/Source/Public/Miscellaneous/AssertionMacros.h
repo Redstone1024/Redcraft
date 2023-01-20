@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Miscellaneous/ProgramSupport.h"
 #include "Miscellaneous/PreprocessorHelpers.h"
 
 #ifdef NDEBUG
@@ -67,12 +68,12 @@ NAMESPACE_PRIVATE_END
 
 #	define check(InExpr)
 #	define checkf(InExpr, InFormat, ...)
-#	define check_no_entry()
+#	define check_no_entry()                         { Unreachable(); }
 #	define check_no_reentry()
 #	define check_no_recursion()
 #	define verify(InExpr)                           { if(InExpr) { } }
 #	define verifyf(InExpr, InFormat, ...)           { if(InExpr) { } }
-#	define unimplemented()
+#	define unimplemented()                          { Unreachable(); }
 
 #endif
 
