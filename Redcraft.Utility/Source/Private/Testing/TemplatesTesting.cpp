@@ -25,6 +25,7 @@ void TestTemplates()
 	TestFunction();
 	TestAtomic();
 	TestScopeHelper();
+	TestPropagateConst();
 	TestMiscTemplates();
 }
 
@@ -1467,6 +1468,46 @@ void TestScopeHelper()
 		always_check(CheckNum == 1);
 	}
 
+}
+
+void TestPropagateConst()
+{
+	{
+		struct FTestA
+		{
+			void Check(bool bFlag) { check(!bFlag); }
+			void Check(bool bFlag) const { check(bFlag); }
+		};
+
+		struct FTestB
+		{
+			FTestB() { Ptr = &Object; }
+			FTestA Object;
+			TPropagateConst<FTestA*> Ptr;
+		};
+
+		      FTestB TempA;
+		const FTestB TempB;
+
+		TempA.Ptr->Check(false);
+		TempB.Ptr->Check(true);
+	}
+
+	{
+		int64 IntA;
+		int64 IntB;
+
+		TPropagateConst<int64*> TempA;
+		TPropagateConst<int64*> TempB = &IntA;
+		TPropagateConst<int64*> TempC = &IntB;
+
+		TempA = TempB;
+		TempB = TempC;
+
+		check(TempA.IsValid());
+		check(TempA == &IntA);
+		check(TempB == TempC);
+	}
 }
 
 NAMESPACE_UNNAMED_BEGIN

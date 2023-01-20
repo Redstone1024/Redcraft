@@ -15,3 +15,4 @@
 #include "Templates/Function.h"
 #include "Templates/Atomic.h"
 #include "Templates/ScopeHelper.h"
+#include "Templates/PropagateConst.h"
