@@ -34,9 +34,9 @@ enum class ESignalType : int
 	ArithmeticException = SIGFPE,  // Erroneous arithmetic operation such as divide by zero.
 };
 
-FSignalHandler* GSignalDefault = SIG_DFL; // Defines default signal handling strategies.
-FSignalHandler* GSignalIgnored = SIG_IGN; // Defines Signal is ignored strategies.
-FSignalHandler* GSignalError   = SIG_ERR; // Return value of signal specifying that an error was encountered.
+inline static FSignalHandler* GSignalDefault = SIG_DFL; // Defines default signal handling strategies.
+inline static FSignalHandler* GSignalIgnored = SIG_IGN; // Defines Signal is ignored strategies.
+inline static FSignalHandler* GSignalError   = SIG_ERR; // Return value of signal specifying that an error was encountered.
 
 /** The integer type that can be accessed as an atomic entity from an asynchronous signal handler. */
 using FSignalAtomic = NAMESPACE_STD::sig_atomic_t;
