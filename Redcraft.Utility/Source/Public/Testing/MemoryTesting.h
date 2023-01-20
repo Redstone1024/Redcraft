@@ -16,6 +16,7 @@ REDCRAFTUTILITY_API void TestMemoryOperator();
 REDCRAFTUTILITY_API void TestPointerTraits();
 REDCRAFTUTILITY_API void TestUniquePointer();
 REDCRAFTUTILITY_API void TestSharedPointer();
+REDCRAFTUTILITY_API void TestObserverPointer();
 
 NAMESPACE_END(Testing)
 
