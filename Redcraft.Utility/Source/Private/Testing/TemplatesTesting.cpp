@@ -1475,8 +1475,8 @@ void TestPropagateConst()
 	{
 		struct FTestA
 		{
-			void Check(bool bFlag) { check(!bFlag); }
-			void Check(bool bFlag) const { check(bFlag); }
+			void Check(bool bFlag)       { always_check(!bFlag); }
+			void Check(bool bFlag) const { always_check( bFlag); }
 		};
 
 		struct FTestB
@@ -1504,9 +1504,9 @@ void TestPropagateConst()
 		TempA = TempB;
 		TempB = TempC;
 
-		check(TempA.IsValid());
-		check(TempA == &IntA);
-		check(TempB == TempC);
+		always_check(TempA.IsValid());
+		always_check(TempA == &IntA);
+		always_check(TempB == TempC);
 	}
 }
 
@@ -1543,6 +1543,12 @@ void TestMiscTemplates()
 	always_check(TestFunctionB(&ObjectA) == 1);
 	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
 	always_check(AddressOf(TestMiscTemplates) == &TestMiscTemplates);
+
+	struct FTestRetainedRef { explicit FTestRetainedRef(TRetainedRef<const int64> InRef) { } };
+	
+	int64 IntA;
+	FTestRetainedRef TempA(IntA);
+//	FTestRetainedRef TempB(114514);
 
 }
 

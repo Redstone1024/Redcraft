@@ -16,3 +16,4 @@
 #include "Templates/Atomic.h"
 #include "Templates/ScopeHelper.h"
 #include "Templates/PropagateConst.h"
+#include "Templates/RetainedReference.h"
