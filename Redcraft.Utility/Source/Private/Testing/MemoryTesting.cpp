@@ -7,6 +7,7 @@
 #include "Memory/SharedPointer.h"
 #include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
+#include "Memory/InOutPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -25,6 +26,7 @@ void TestMemory()
 	TestUniquePointer();
 	TestSharedPointer();
 	TestObserverPointer();
+	TestInOutPointer();
 }
 
 void TestAlignment()
@@ -1095,6 +1097,33 @@ void TestObserverPointer()
 
 		always_check(TempA == IntB);
 		always_check(TempB == IntA);
+	}
+}
+
+void TestInOutPointer()
+{
+	{
+		TUniquePtr<int64> Temp;
+		
+		[](int64** InPtr) { *InPtr = new int64; } (OutPtr(Temp));
+		always_check(Temp.IsValid());
+
+		Temp.Reset();
+		
+		[](int64** InPtr) { *InPtr = new int64; } (OutPtr(Temp, TDefaultDelete<int64>()));
+		always_check(Temp.IsValid());
+	}
+
+	{
+		TUniquePtr<int64> Temp = MakeUnique<int64>(2485800585);
+
+		[](int64** InPtr) { always_check(**InPtr == 2485800585); delete* InPtr; *InPtr = new int64; } (InOutPtr(Temp));
+		always_check(Temp.IsValid());
+
+		Temp = MakeUnique<int64>(2821859274);
+
+		[](int64** InPtr) { always_check(**InPtr == 2821859274); delete* InPtr; *InPtr = new int64; } (InOutPtr(Temp, TDefaultDelete<int64>()));
+		always_check(Temp.IsValid());
 	}
 }
 
