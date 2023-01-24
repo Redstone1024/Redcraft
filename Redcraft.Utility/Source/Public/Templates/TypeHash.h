@@ -4,6 +4,7 @@
 #include "Templates/Utility.h"
 #include "TypeTraits/PrimaryType.h"
 #include "TypeTraits/Miscellaneous.h"
+#include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
