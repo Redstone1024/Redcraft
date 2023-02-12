@@ -127,6 +127,8 @@ void* Realloc(void* Ptr, size_t Count, size_t Alignment)
 
 void Free(void* Ptr)
 {
+	if (Ptr == nullptr) return;
+
 #	if PLATFORM_WINDOWS
 	{
 		_aligned_free(Ptr);
@@ -137,7 +139,7 @@ void Free(void* Ptr)
 	}
 #	endif
 
-	check_code({ if (Ptr != nullptr) MemoryLeakChecker.ReleaseMemoryAllocationCount(); });
+	check_code({ MemoryLeakChecker.ReleaseMemoryAllocationCount(); });
 }
 
 size_t QuantizeSize(size_t Count, size_t Alignment)
