@@ -4,7 +4,9 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Container.h"
+#include "Containers/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
 #include "Memory/DefaultAllocator.h"
@@ -89,14 +91,16 @@ private:
 
 };
 
-template <typename ArrayType, typename ElementType>
+template <typename ArrayType, typename T>
 class TArrayIterator
 {
 public:
 
+	using ElementType = T;
+
 #	if DO_CHECK
 	FORCEINLINE constexpr TArrayIterator() : Owner(nullptr) { }
-#	elif
+#	else
 	FORCEINLINE constexpr TArrayIterator() = default;
 #	endif
 
@@ -104,7 +108,7 @@ public:
 	FORCEINLINE constexpr TArrayIterator(const TArrayIterator<ArrayType, TRemoveConst<ElementType>>& InValue) requires (CConst<ElementType>)
 		: Owner(InValue.Owner), Pointer(InValue.Pointer)
 	{ }
-#	elif
+#	else
 	FORCEINLINE constexpr TArrayIterator(const TArrayIterator<ArrayType, TRemoveConst<ElementType>>& InValue) requires (CConst<ElementType>)
 		: Pointer(InValue.Pointer)
 	{ }
@@ -115,23 +119,27 @@ public:
 	FORCEINLINE constexpr TArrayIterator& operator=(const TArrayIterator&) = default;
 	FORCEINLINE constexpr TArrayIterator& operator=(TArrayIterator&&)      = default;
 
-	NODISCARD friend constexpr bool operator==(const TArrayIterator& LHS, const TArrayIterator& RHS) { return LHS.Pointer == RHS.Pointer; }
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TArrayIterator& LHS, const TArrayIterator& RHS) { return LHS.Pointer == RHS.Pointer; }
 
-	NODISCARD friend constexpr strong_ordering operator<=>(const TArrayIterator & LHS, const TArrayIterator & RHS) { return LHS.Pointer <=> RHS.Pointer; }
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TArrayIterator & LHS, const TArrayIterator & RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
 	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { CheckThis(true); return *Pointer; }
 	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { CheckThis(true); return  Pointer; }
 
+	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { TArrayIterator Temp = *this + Index; Temp.CheckThis(); return *Temp; }
+
 	FORCEINLINE constexpr TArrayIterator& operator++() { ++Pointer; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayIterator& operator--() { --Pointer; CheckThis(); return *this; }
-	
+
 	FORCEINLINE constexpr TArrayIterator operator++(int) { TArrayIterator Temp = *this; ++Pointer; CheckThis(); return Temp; }
 	FORCEINLINE constexpr TArrayIterator operator--(int) { TArrayIterator Temp = *this; --Pointer; CheckThis(); return Temp; }
 
 	FORCEINLINE constexpr TArrayIterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayIterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
 
-	NODISCARD FORCEINLINE constexpr TArrayIterator operator+(ptrdiff Offset) const { TArrayIterator Temp = *this; Temp += Offset; Temp.CheckThis(); return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(TArrayIterator Iter, ptrdiff Offset) { TArrayIterator Temp = Iter; Temp += Offset; Temp.CheckThis(); return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(ptrdiff Offset, TArrayIterator Iter) { TArrayIterator Temp = Iter; Temp += Offset; Temp.CheckThis(); return Temp; }
+
 	NODISCARD FORCEINLINE constexpr TArrayIterator operator-(ptrdiff Offset) const { TArrayIterator Temp = *this; Temp -= Offset; Temp.CheckThis(); return Temp; }
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TArrayIterator& LHS, const TArrayIterator& RHS)
@@ -142,7 +150,8 @@ public:
 		return LHS.Pointer - RHS.Pointer;
 	}
 
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { TArrayIterator Temp = *this + Index; Temp.CheckThis(); return *Temp; }
+	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (!CConst<ElementType>) { return Pointer; }
+	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const                                 { return Pointer; }
 
 private:
 
@@ -156,7 +165,7 @@ private:
 	FORCEINLINE constexpr TArrayIterator(const ArrayType* InContainer, ElementType* InPointer)
 		: Owner(InContainer), Pointer(InPointer)
 	{ }
-#	elif
+#	else
 	FORCEINLINE constexpr TArrayIterator(const ArrayType* InContainer, ElementType* InPointer)
 		: Pointer(InPointer)
 	{ }
@@ -189,13 +198,15 @@ public:
 	using      Iterator = NAMESPACE_PRIVATE::TArrayIterator<TArray,       ElementType>;
 	using ConstIterator = NAMESPACE_PRIVATE::TArrayIterator<TArray, const ElementType>;
 
+	static_assert(CContiguousIterator<     Iterator>);
+	static_assert(CContiguousIterator<ConstIterator>);
+
 	/** Default constructor. Constructs an empty container with a default-constructed allocator. */
 	FORCEINLINE constexpr TArray() : TArray(0) { }
 
 	/** Constructs the container with 'Count' default instances of T. */
-	constexpr explicit TArray(size_t Count)
-		requires (CDefaultConstructible<ElementType>)
-	{ 
+	constexpr explicit TArray(size_t Count) requires (CDefaultConstructible<ElementType>)
+	{
 		Storage.GetNum()     = Count;
 		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
 		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
@@ -204,8 +215,7 @@ public:
 	}
 	
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
-	constexpr TArray(size_t Count, const ElementType& InValue)
-		requires (CCopyConstructible<ElementType>)
+	constexpr TArray(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
 	{
 		Storage.GetNum()     = Count;
 		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
@@ -217,9 +227,41 @@ public:
 		}
 	}
 
+	/** Constructs the container with the contents of the range ['First', 'Last'). */
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>> && CMovable<ElementType>)
+	constexpr TArray(I First, S Last)
+	{
+		if constexpr (CForwardIterator<I>)
+		{
+			if constexpr (CRandomAccessIterator<I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
+
+			const size_t Count = Iteration::Distance(First, Last);
+
+			Storage.GetNum()     = Count;
+			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
+			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+
+			for (size_t Index = 0; Index != Count; ++Index)
+			{
+				new (Storage.GetPointer() + Index) ElementType(*First++);
+			}
+		}
+		else
+		{
+			Storage.GetNum()     = 0;
+			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
+			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+
+			while (First != Last)
+			{
+				PushBack(*First);
+				++First;
+			}
+		}
+	}
+
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
-	constexpr TArray(const TArray& InValue)
-		requires (CCopyConstructible<ElementType>)
+	constexpr TArray(const TArray& InValue) requires (CCopyConstructible<ElementType>)
 	{
 		Storage.GetNum()     = InValue.Num();
 		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
@@ -229,8 +271,7 @@ public:
 	}
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
-	constexpr TArray(TArray&& InValue)
-		requires (CMoveConstructible<ElementType>)
+	constexpr TArray(TArray&& InValue) requires (CMoveConstructible<ElementType>)
 	{
 		Storage.GetNum() = InValue.Num();
 
@@ -253,15 +294,7 @@ public:
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
-	constexpr TArray(initializer_list<ElementType> IL)
-		requires (CCopyConstructible<ElementType>)
-	{
-		Storage.GetNum()     = GetNum(IL);
-		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(GetNum(IL));
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
-
-		Memory::CopyConstruct<ElementType>(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL), Num());
-	}
+	FORCEINLINE constexpr TArray(initializer_list<ElementType> IL) requires (CCopyConstructible<ElementType>) : TArray(Iteration::Begin(IL), Iteration::End(IL)) { }
 
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	constexpr ~TArray()
@@ -271,8 +304,7 @@ public:
 	}
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
-	constexpr TArray& operator=(const TArray& InValue)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType>)
+	constexpr TArray& operator=(const TArray& InValue) requires (CCopyable<ElementType>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -313,8 +345,7 @@ public:
 	}
 
 	/** Move assignment operator. After the move, 'InValue' is guaranteed to be empty. */
-	constexpr TArray& operator=(TArray&& InValue)
-		requires (CMoveConstructible<ElementType>&& CMoveAssignable<ElementType>)
+	constexpr TArray& operator=(TArray&& InValue) requires (CMovable<ElementType>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -373,8 +404,7 @@ public:
 	}
 
 	/** Replaces the contents with those identified by initializer list. */
-	constexpr TArray& operator=(initializer_list<ElementType> IL)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType>)
+	constexpr TArray& operator=(initializer_list<ElementType> IL) requires (CCopyable<ElementType>)
 	{
 		size_t NumToAllocate = GetNum(IL);
 
@@ -460,8 +490,7 @@ public:
 	}
 	
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	constexpr Iterator Insert(ConstIterator Iter, const ElementType& InValue)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr Iterator Insert(ConstIterator Iter, const ElementType& InValue) requires (CCopyable<ElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -509,8 +538,7 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	constexpr Iterator Insert(ConstIterator Iter, ElementType&& InValue)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr Iterator Insert(ConstIterator Iter, ElementType&& InValue) requires (CMovable<ElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -558,8 +586,7 @@ public:
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
-	constexpr Iterator Insert(ConstIterator Iter, size_t Count, const ElementType& InValue)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr Iterator Insert(ConstIterator Iter, size_t Count, const ElementType& InValue) requires (CCopyable<ElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -630,107 +657,126 @@ public:
 		const size_t IndexC = InsertIndex + Count;
 		const size_t IndexB = Num() > IndexA ? (Num() < IndexC ? Num() : IndexC) : IndexA;
 		const size_t IndexD = Num() > IndexC ? Num() : IndexC;
+		const size_t IndexO = Num() + Count;
 
-		size_t TargetIndex = Num() + Count - 1;
-
-		for (; TargetIndex != IndexD - 1; --TargetIndex)
+		for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
 		{
 			new (Storage.GetPointer() + TargetIndex) ElementType(MoveTemp(Storage.GetPointer()[TargetIndex - Count]));
 		}
 
-		for (; TargetIndex != IndexC - 1; --TargetIndex)
+		for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
 		{
 			Storage.GetPointer()[TargetIndex] = MoveTemp(Storage.GetPointer()[TargetIndex - Count]);
 		}
 
-		for (; TargetIndex != IndexB - 1; --TargetIndex)
-		{
-			new (Storage.GetPointer() + TargetIndex) ElementType(InValue);
-		}
-
-		for (; TargetIndex != IndexA - 1; --TargetIndex)
+		for (size_t TargetIndex = IndexA; TargetIndex != IndexB; ++TargetIndex)
 		{
 			Storage.GetPointer()[TargetIndex] = InValue;
 		}
 
+		for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
+		{
+			new (Storage.GetPointer() + TargetIndex) ElementType(InValue);
+		}
+
 		Storage.GetNum() = Num() + Count;
 
 		return Iterator(this, Storage.GetPointer() + InsertIndex);
 	}
-
-	/** Inserts elements from initializer list before 'Iter' in the container. */
-	constexpr Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	
+	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>
+		&& CAssignableFrom<ElementType&, TIteratorReferenceType<I>> && CMovable<ElementType>)
+	constexpr Iterator Insert(ConstIterator Iter, I First, S Last)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		const size_t InsertIndex = Iter - Begin();
-		const size_t Count = GetNum(IL);
-
-		if (Count == 0) return Iterator(this, Storage.GetPointer() + InsertIndex);
-
-		const size_t NumToAllocate = Num() + Count > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + Count, Max()) : Max();
-
-		check(NumToAllocate >= Num() + Count);
-
-		if (NumToAllocate != Max())
+		if constexpr (CForwardIterator<I>)
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
-			const size_t NumToDestruct = Num();
+			if constexpr (CRandomAccessIterator<I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
 
-			Storage.GetNum()     = Num() + Count;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			const size_t InsertIndex = Iter - Begin();
+			const size_t Count = Iteration::Distance(First, Last);
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
+			if (Count == 0) return Iterator(this, Storage.GetPointer() + InsertIndex);
 
-			for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
+			const size_t NumToAllocate = Num() + Count > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + Count, Max()) : Max();
+
+			check(NumToAllocate >= Num() + Count);
+
+			if (NumToAllocate != Max())
 			{
-				new (Storage.GetPointer() + Index) ElementType(NAMESPACE_REDCRAFT::GetData(IL)[Index - InsertIndex]);
+				ElementType* OldAllocation = Storage.GetPointer();
+				const size_t NumToDestruct = Num();
+
+				Storage.GetNum()     = Num() + Count;
+				Storage.GetMax()     = NumToAllocate;
+				Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+
+				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
+
+				for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
+				{
+					new (Storage.GetPointer() + Index) ElementType(*First++);
+				}
+
+				Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+
+				Memory::Destruct(OldAllocation, NumToDestruct);
+				Storage.GetAllocator().Deallocate(OldAllocation);
+
+				return Iterator(this, Storage.GetPointer() + InsertIndex);
 			}
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			const size_t IndexA = InsertIndex;
+			const size_t IndexC = InsertIndex + Count;
+			const size_t IndexB = Num() > IndexA ? (Num() < IndexC ? Num() : IndexC) : IndexA;
+			const size_t IndexD = Num() > IndexC ? Num() : IndexC;
+			const size_t IndexO = Num() + Count;
 
-			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			size_t TargetIndex = Num() + Count - 1;
+
+			for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
+			{
+				new (Storage.GetPointer() + TargetIndex) ElementType(MoveTemp(Storage.GetPointer()[TargetIndex - Count]));
+			}
+
+			for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
+			{
+				Storage.GetPointer()[TargetIndex] = MoveTemp(Storage.GetPointer()[TargetIndex - Count]);
+			}
+
+			for (size_t TargetIndex = IndexA; TargetIndex != IndexB; ++TargetIndex)
+			{
+				Storage.GetPointer()[TargetIndex] = *First++;
+			}
+
+			for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
+			{
+				new (Storage.GetPointer() + TargetIndex) ElementType(*First++);
+			}
+
+			check(First == Last);
+
+			Storage.GetNum() = Num() + Count;
 
 			return Iterator(this, Storage.GetPointer() + InsertIndex);
 		}
-
-		const size_t IndexA = InsertIndex;
-		const size_t IndexC = InsertIndex + Count;
-		const size_t IndexB = Num() > IndexA ? (Num() < IndexC ? Num() : IndexC) : IndexA;
-		const size_t IndexD = Num() > IndexC ? Num() : IndexC;
-
-		size_t TargetIndex = Num() + Count - 1;
-
-		for (; TargetIndex != IndexD - 1; --TargetIndex)
+		else
 		{
-			new (Storage.GetPointer() + TargetIndex) ElementType(MoveTemp(Storage.GetPointer()[TargetIndex - Count]));
+			TArray Temp(MoveTemp(First), MoveTemp(Last));
+			return Insert(Iter, Temp.Begin(), Temp.End()); // FIXME: Fix to MoveIterator.
 		}
+	}
 
-		for (; TargetIndex != IndexC - 1; --TargetIndex)
-		{
-			Storage.GetPointer()[TargetIndex] = MoveTemp(Storage.GetPointer()[TargetIndex - Count]);
-		}
-
-		for (; TargetIndex != IndexB - 1; --TargetIndex)
-		{
-			new (Storage.GetPointer() + TargetIndex) ElementType(NAMESPACE_REDCRAFT::GetData(IL)[TargetIndex - InsertIndex]);
-		}
-
-		for (; TargetIndex != IndexA - 1; --TargetIndex)
-		{
-			Storage.GetPointer()[TargetIndex] = NAMESPACE_REDCRAFT::GetData(IL)[TargetIndex - InsertIndex];
-		}
-
-		Storage.GetNum() = Num() + Count;
-
-		return Iterator(this, Storage.GetPointer() + InsertIndex);
+	/** Inserts elements from initializer list before 'Iter' in the container. */
+	FORCEINLINE constexpr Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL) requires (CCopyable<ElementType>)
+	{
+		return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL));
 	}
 
 	/** Inserts a new element into the container directly before 'Iter'. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMovable<ElementType>)
 	constexpr Iterator Emplace(ConstIterator Iter, Ts&&... Args)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
@@ -779,22 +825,20 @@ public:
 	}
 
 	/** Removes the element at 'Iter' in the container. Without changing the order of elements. */
-	FORCEINLINE constexpr Iterator StableErase(ConstIterator Iter, bool bAllowShrinking = true)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	FORCEINLINE constexpr Iterator StableErase(ConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return StableErase(Iter, Iter + 1, bAllowShrinking);
 	}
 
-	/** Removes the elements in the range ['FirstIter', 'LastIter') in the container. Without changing the order of elements. */
-	constexpr Iterator StableErase(ConstIterator FirstIter, ConstIterator LastIter, bool bAllowShrinking = true)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	/** Removes the elements in the range ['First', 'Last') in the container. Without changing the order of elements. */
+	constexpr Iterator StableErase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
-		checkf(IsValidIterator(FirstIter) && IsValidIterator(LastIter) && FirstIter <= LastIter, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		const size_t EraseIndex = FirstIter - Begin();
-		const size_t EraseCount = LastIter - FirstIter;
+		const size_t EraseIndex = First - Begin();
+		const size_t EraseCount = Last - First;
 
 		if (EraseCount == 0) return Iterator(this, Storage.GetPointer() + EraseIndex);
 
@@ -831,22 +875,20 @@ public:
 	}
 
 	/** Removes the element at 'Iter' in the container. But it may change the order of elements. */
-	FORCEINLINE constexpr Iterator Erase(ConstIterator Iter, bool bAllowShrinking = true)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	FORCEINLINE constexpr Iterator Erase(ConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return Erase(Iter, Iter + 1, bAllowShrinking);
 	}
 
-	/** Removes the elements in the range ['FirstIter', 'LastIter') in the container. But it may change the order of elements. */
-	constexpr Iterator Erase(ConstIterator FirstIter, ConstIterator LastIter, bool bAllowShrinking = true)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	/** Removes the elements in the range ['First', 'Last') in the container. But it may change the order of elements. */
+	constexpr Iterator Erase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
-		checkf(IsValidIterator(FirstIter) && IsValidIterator(LastIter) && FirstIter <= LastIter, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 		
-		const size_t EraseIndex = FirstIter - Begin();
-		const size_t EraseCount = LastIter - FirstIter;
+		const size_t EraseIndex = First - Begin();
+		const size_t EraseCount = Last - First;
 
 		if (EraseCount == 0) return Iterator(this, Storage.GetPointer() + EraseIndex);
 
@@ -885,21 +927,19 @@ public:
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE constexpr void PushBack(const ElementType& InValue)
-		requires (CCopyConstructible<ElementType> && CCopyAssignable<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	FORCEINLINE constexpr void PushBack(const ElementType& InValue) requires (CCopyable<ElementType>)
 	{
 		EmplaceBack(InValue);
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE constexpr void PushBack(ElementType&& InValue)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	FORCEINLINE constexpr void PushBack(ElementType&& InValue) requires (CMovable<ElementType>)
 	{
 		EmplaceBack(MoveTemp(InValue));
 	}
 
 	/** Appends a new element to the end of the container. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMovable<ElementType>)
 	constexpr ElementType& EmplaceBack(Ts&&... Args)
 	{
 		const size_t NumToAllocate = Num() + 1 > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + 1, Max()) : Max();
@@ -932,15 +972,13 @@ public:
 	}
 
 	/** Removes the last element of the container. The array cannot be empty. */
-	FORCEINLINE constexpr void PopBack(bool bAllowShrinking = true)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	FORCEINLINE constexpr void PopBack(bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
 		Erase(End() - 1, bAllowShrinking);
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional default elements are appended. */
-	constexpr void SetNum(size_t Count, bool bAllowShrinking = true)
-		requires (CDefaultConstructible<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<ElementType> && CMovable<ElementType>)
 	{
 		size_t NumToAllocate = Count;
 		
@@ -986,8 +1024,7 @@ public:
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional copies of 'InValue' are appended. */
-	constexpr void SetNum(size_t Count, const ElementType& InValue, bool bAllowShrinking = true)
-		requires (CCopyConstructible<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr void SetNum(size_t Count, const ElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<ElementType> && CMovable<ElementType>)
 	{
 		size_t NumToAllocate = Count;
 		
@@ -1040,8 +1077,7 @@ public:
 	}
 
 	/** Increase the max capacity of the array to a value that's greater or equal to 'Count'. */
-	constexpr void Reserve(size_t Count)
-		requires (CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	constexpr void Reserve(size_t Count) requires (CMovable<ElementType>)
 	{
 		if (Count <= Max()) return;
 
@@ -1112,11 +1148,11 @@ public:
 	NODISCARD FORCEINLINE constexpr const ElementType& Back()  const { return *(End() - 1); }
 
 	/** Erases all elements from the container. After this call, Num() returns zero. */
-	constexpr void Reset()
+	constexpr void Reset(bool bAllowShrinking = true)
 	{
 		const size_t NumToAllocate = Storage.GetAllocator().CalculateSlackReserve(0);
 
-		if (NumToAllocate != Max())
+		if (bAllowShrinking && NumToAllocate != Max())
 		{
 			Memory::Destruct(Storage.GetPointer(), Num());
 			Storage.GetAllocator().Deallocate(Storage.GetPointer());
@@ -1146,8 +1182,7 @@ public:
 	}
 
 	/** Overloads the Swap algorithm for TArray. */
-	friend constexpr void Swap(TArray& A, TArray& B)
-		requires (CSwappable<ElementType> && CMoveConstructible<ElementType> && CMoveAssignable<ElementType>)
+	friend constexpr void Swap(TArray& A, TArray& B) requires (CMovable<ElementType>)
 	{
 		const bool bIsTransferable =
 			A.Storage.GetAllocator().IsTransferable(A.Storage.GetPointer()) &&
