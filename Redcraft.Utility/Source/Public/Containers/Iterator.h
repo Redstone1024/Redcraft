@@ -128,6 +128,83 @@ concept CContiguousIterator = CRandomAccessIterator<I> && CLValueReference<TIter
 
 static_assert(CContiguousIterator<int32*>);
 
+/** A iterator adaptor for reverse-order traversal. */
+template <CBidirectionalIterator I>
+class TReverseIterator
+{
+public:
+
+	using IteratorType = I;
+
+	using ElementType = TIteratorElementType<I>;
+	
+	FORCEINLINE constexpr TReverseIterator() = default;
+
+	FORCEINLINE constexpr TReverseIterator(const TReverseIterator&)            = default;
+	FORCEINLINE constexpr TReverseIterator(TReverseIterator&&)                 = default;
+	FORCEINLINE constexpr TReverseIterator& operator=(const TReverseIterator&) = default;
+	FORCEINLINE constexpr TReverseIterator& operator=(TReverseIterator&&)      = default;
+
+	FORCEINLINE constexpr explicit TReverseIterator(IteratorType InValue) : Current(InValue) { }
+
+	template <typename J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType>)
+	FORCEINLINE constexpr TReverseIterator(const TReverseIterator<J>& InValue) : Current(InValue.Current) { }
+
+	template <typename J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
+	FORCEINLINE constexpr TReverseIterator& operator=(const TReverseIterator<J>& InValue) { Current = InValue.Current; return *this; }
+	
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TReverseIterator& LHS, const TReverseIterator& RHS) { return LHS.Current == RHS.Current; }
+
+	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<IteratorType> operator<=>(const TReverseIterator& LHS, const TReverseIterator& RHS) requires (CRandomAccessIterator<IteratorType>) { return RHS.Current <=> LHS.Current; }
+
+	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { IteratorType Temp = Current; return *--Temp; }
+	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { return AddressOf(operator*());               }
+
+	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return Current[-Index - 1]; }
+	
+	FORCEINLINE constexpr TReverseIterator& operator++() { --Current; return *this; }
+	FORCEINLINE constexpr TReverseIterator& operator--() { ++Current; return *this; }
+	
+	FORCEINLINE constexpr TReverseIterator operator++(int) { TReverseIterator Temp = *this; --Current; return Temp; }
+	FORCEINLINE constexpr TReverseIterator operator--(int) { TReverseIterator Temp = *this; ++Current; return Temp; }
+
+	FORCEINLINE constexpr TReverseIterator& operator+=(ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { Current -= Offset; return *this; }
+	FORCEINLINE constexpr TReverseIterator& operator-=(ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { Current += Offset; return *this; }
+	
+	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(TReverseIterator Iter, ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { TReverseIterator Temp = Iter; Temp += Offset; return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset, TReverseIterator Iter) requires (CRandomAccessIterator<IteratorType>) { TReverseIterator Temp = Iter; Temp += Offset; return Temp; }
+
+	NODISCARD FORCEINLINE constexpr TReverseIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { return TReverseIterator(Current + Offset); }
+
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) requires (CRandomAccessIterator<IteratorType>) { return TReverseIterator(RHS.Current - LHS.Current); }
+
+	NODISCARD FORCEINLINE constexpr       IteratorType GetBase()       { return Current; }
+	NODISCARD FORCEINLINE constexpr const IteratorType GetBase() const { return Current; }
+
+private:
+
+	IteratorType Current;
+
+	template <CBidirectionalIterator J>
+	friend class TReverseIterator;
+
+};
+
+static_assert(CRandomAccessIterator<TReverseIterator<int32*>>);
+
+template <typename I>
+TReverseIterator(I) -> TReverseIterator<I>;
+
+/** Creates a TReverseIterator of type inferred from the argument. */
+template <typename I>
+constexpr TReverseIterator<I> MakeReverseIterator(I Iter)
+{
+	return TReverseIterator<I>(Iter);
+}
+
+template <typename I, typename J> requires (!CSizedSentinelFor<I, J>)
+inline constexpr bool bDisableSizedSentinelFor<TReverseIterator<I>, TReverseIterator<J>> = true;
+
 NAMESPACE_BEGIN(Iteration)
 
 /** Increments given iterator 'Iter' by 'N' elements. */
@@ -195,9 +272,9 @@ template <typename T, size_t N> FORCEINLINE constexpr       T* Begin(      T(&& 
 template <typename T, size_t N> FORCEINLINE constexpr const T* Begin(const T(&  Container)[N]) { return Container; }
 template <typename T, size_t N> FORCEINLINE constexpr const T* Begin(const T(&& Container)[N]) { return Container; }
 
-/** Overloads the Begin algorithm for T::begin(). */
-template <typename T> requires (requires(T&& Container) { { Container.begin() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) Begin(T&& Container)
+/** Overloads the Begin algorithm for initializer_list. */
+template <typename T>
+FORCEINLINE constexpr decltype(auto) Begin(initializer_list<T> Container)
 {
 	return Container.begin();
 }
@@ -215,11 +292,51 @@ template <typename T, size_t N> FORCEINLINE constexpr       T* End(      T(&& Co
 template <typename T, size_t N> FORCEINLINE constexpr const T* End(const T(&  Container)[N]) { return Container + N; }
 template <typename T, size_t N> FORCEINLINE constexpr const T* End(const T(&& Container)[N]) { return Container + N; }
 
-/** Overloads the End algorithm for T::end(). */
-template <typename T> requires (requires(T&& Container) { { Container.end() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) End(T&& Container)
+/** Overloads the End algorithm for initializer_list. */
+template <typename T>
+FORCEINLINE constexpr decltype(auto) End(initializer_list<T> Container)
 {
 	return Container.end();
+}
+
+/** @return The reverse iterator to the beginning of a container. */
+template <typename T> requires (requires(T&& Container) { { Container.RBegin() } -> CForwardIterator; })
+FORCEINLINE constexpr decltype(auto) RBegin(T&& Container)
+{
+	return Container.RBegin();
+}
+
+/** Overloads the RBegin algorithm for arrays. */
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&  Container)[N]) { return MakeReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&& Container)[N]) { return MakeReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&  Container)[N]) { return MakeReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&& Container)[N]) { return MakeReverseIterator(End(Container)); }
+
+/** Overloads the RBegin algorithm for T::rbegin(). */
+template <typename T>
+FORCEINLINE constexpr decltype(auto) RBegin(initializer_list<T> Container)
+{
+	return MakeReverseIterator(Container.end());
+}
+
+/** @return The reverse iterator to the end of a container. */
+template <typename T> requires (requires(T&& Container) { { Container.REnd() } -> CForwardIterator; })
+FORCEINLINE constexpr decltype(auto) REnd(T&& Container)
+{
+	return Container.REnd();
+}
+
+/** Overloads the REnd algorithm for arrays. */
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&  Container)[N]) { return MakeReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&& Container)[N]) { return MakeReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&  Container)[N]) { return MakeReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&& Container)[N]) { return MakeReverseIterator(Begin(Container)); }
+
+/** Overloads the REnd algorithm for T::end(). */
+template <typename T>
+FORCEINLINE constexpr decltype(auto) REnd(initializer_list<T> Container)
+{
+	return MakeReverseIterator(Container.begin());
 }
 
 NAMESPACE_END(Iteration)

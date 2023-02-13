@@ -197,6 +197,9 @@ public:
 	using      Iterator = NAMESPACE_PRIVATE::TArrayIterator<TArray,       ElementType>;
 	using ConstIterator = NAMESPACE_PRIVATE::TArrayIterator<TArray, const ElementType>;
 
+	using      ReverseIterator = TReverseIterator<     Iterator>;
+	using ConstReverseIterator = TReverseIterator<ConstIterator>;
+
 	static_assert(CContiguousIterator<     Iterator>);
 	static_assert(CContiguousIterator<ConstIterator>);
 
@@ -1123,6 +1126,12 @@ public:
 	NODISCARD FORCEINLINE constexpr ConstIterator Begin() const { return ConstIterator(this, Storage.GetPointer());         }
 	NODISCARD FORCEINLINE constexpr      Iterator End()         { return      Iterator(this, Storage.GetPointer() + Num()); }
 	NODISCARD FORCEINLINE constexpr ConstIterator End()   const { return ConstIterator(this, Storage.GetPointer() + Num()); }
+	
+	/** @return The reverse iterator to the first or end element. */
+	NODISCARD FORCEINLINE constexpr      ReverseIterator RBegin()       { return MakeReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr ConstReverseIterator RBegin() const { return MakeReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr      ReverseIterator REnd()         { return MakeReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr ConstReverseIterator REnd()   const { return MakeReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
 	NODISCARD FORCEINLINE constexpr size_t Num() const { return Storage.GetNum(); }
