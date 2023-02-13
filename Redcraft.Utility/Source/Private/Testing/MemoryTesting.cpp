@@ -291,9 +291,9 @@ void TestUniquePointer()
 		TUniqueRef<FCounter, FDeleter> TempB(PtrB);
 		TUniqueRef<FCounter, FDeleter> TempC(PtrC, FDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -344,9 +344,9 @@ void TestUniquePointer()
 		TUniqueRef<FCounter[], FArrayDeleter> TempB(PtrB);
 		TUniqueRef<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -397,9 +397,9 @@ void TestUniquePointer()
 		TUniquePtr<FCounter, FDeleter> TempB(PtrB);
 		TUniquePtr<FCounter, FDeleter> TempC(PtrC, FDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -462,9 +462,9 @@ void TestUniquePointer()
 		TUniquePtr<FCounter[], FArrayDeleter> TempB(PtrB);
 		TUniquePtr<FCounter[], FArrayDeleter> TempC(PtrC, FArrayDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -540,9 +540,9 @@ void TestSharedPointer()
 		TSharedRef<FCounter> TempB(PtrB, FDeleter());
 		TSharedRef<FCounter> TempC(PtrC, FDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -587,9 +587,9 @@ void TestSharedPointer()
 		TSharedRef<FCounter[]> TempB(PtrB, FArrayDeleter());
 		TSharedRef<FCounter[]> TempC(PtrC, FArrayDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -628,9 +628,9 @@ void TestSharedPointer()
 		TSharedPtr<FCounter> TempB(PtrB, FDeleter());
 		TSharedPtr<FCounter> TempC(PtrC, FDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;
@@ -684,9 +684,9 @@ void TestSharedPointer()
 		TSharedPtr<FCounter[]> TempB(PtrB, FArrayDeleter());
 		TSharedPtr<FCounter[]> TempC(PtrC, FArrayDeleter());
 
-		always_check(TempA == PtrA);
+		always_check(TempA != nullptr);
 		always_check(TempC != TempB);
-		always_check((TempA <=> PtrA) == strong_ordering::equal);
+		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
 		
 		int32 TempNum;

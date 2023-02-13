@@ -177,16 +177,18 @@ public:
 	FORCEINLINE constexpr ~TUniqueRef() { Invoke(GetDeleter(), Get()); }
 
 	/** Compares the pointer values of two TUniqueRef. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U, typename InE> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef<U, InE>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TUniqueRef. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U, typename InE> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniqueRef& LHS, const TUniqueRef<U, InE>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr bool operator==(T* InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(T* InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** TUniqueRef cannot be reset to nullptr. */
 	void Reset(nullptr_t) = delete;
@@ -297,18 +299,18 @@ public:
 	FORCEINLINE constexpr ~TUniqueRef() { Invoke(GetDeleter(), Get()); }
 
 	/** Compares the pointer values of two TUniqueRef. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U, typename InE> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniqueRef& LHS, const TUniqueRef<U, InE>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TUniqueRef. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniqueRef& LHS, const TUniqueRef& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U, typename InE> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniqueRef& LHS, const TUniqueRef<U, InE>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr bool operator==(U InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(U InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** TUniqueRef cannot be reset to nullptr. */
 	void Reset(nullptr_t) = delete;
@@ -440,16 +442,18 @@ public:
 	FORCEINLINE constexpr TUniquePtr& operator=(nullptr_t) { Reset(); return *this; }
 
 	/** Compares the pointer values of two TUniquePtr. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniquePtr& LHS, const TUniquePtr& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U, typename InE> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniquePtr& LHS, const TUniquePtr<U, InE>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TUniquePtr. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniquePtr& LHS, const TUniquePtr& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U, typename InE> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniquePtr& LHS, const TUniquePtr<U, InE>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr bool operator==(T* InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(T* InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** Returns a pointer to the managed object and releases the ownership. */
 	NODISCARD FORCEINLINE constexpr T* Release() { return Exchange(Storage.GetPointer(), nullptr); }
@@ -577,18 +581,18 @@ public:
 	FORCEINLINE constexpr TUniquePtr& operator=(nullptr_t) { Reset(); return *this; }
 
 	/** Compares the pointer values of two TUniquePtr. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniquePtr& LHS, const TUniquePtr& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U, typename InE> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TUniquePtr& LHS, const TUniquePtr<U, InE>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TUniquePtr. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniquePtr& LHS, const TUniquePtr& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U, typename InE> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TUniquePtr& LHS, const TUniquePtr<U, InE>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr bool operator==(U InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(U InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** Returns a pointer to the managed array and releases the ownership. */
 	NODISCARD FORCEINLINE constexpr T* Release() { return Exchange(Storage.GetPointer(), nullptr); }

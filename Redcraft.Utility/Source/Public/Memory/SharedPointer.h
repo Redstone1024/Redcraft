@@ -636,16 +636,18 @@ public:
 	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef<U>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TSharedRef. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedRef& LHS, const TSharedRef<U>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr bool operator==(T* InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(T* InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** TSharedRef cannot be initialized by nullptr. */
 	void Reset(nullptr_t) = delete;
@@ -852,18 +854,18 @@ public:
 	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedRef& LHS, const TSharedRef<U>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TSharedRef. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedRef& LHS, const TSharedRef& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedRef& LHS, const TSharedRef<U>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr bool operator==(U InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(U InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** TSharedRef cannot be initialized by nullptr. */
 	void Reset(nullptr_t) = delete;
@@ -1094,16 +1096,18 @@ public:
 	FORCEINLINE TSharedPtr& operator=(nullptr_t) { Reset(); return *this; }
 
 	/** Compares the pointer values of two TSharedPtr. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedPtr& LHS, const TSharedPtr& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedPtr& LHS, const TSharedPtr<U>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TSharedPtr. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedPtr& LHS, const TSharedPtr& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedPtr& LHS, const TSharedPtr<U>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr bool operator==(T* InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(T* InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
 	FORCEINLINE TSharedRef<T> ToSharedRef() const&
@@ -1360,18 +1364,18 @@ public:
 	FORCEINLINE TSharedPtr& operator=(nullptr_t) { Reset(); return *this; }
 
 	/** Compares the pointer values of two TSharedPtr. */
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedPtr& LHS, const TSharedPtr& RHS) { return LHS.Get() == RHS.Get(); }
+	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TSharedPtr& LHS, const TSharedPtr<U>& RHS) { return LHS.Get() == RHS.Get(); }
 
 	/** Compares the pointer values of two TSharedPtr. */
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedPtr& LHS, const TSharedPtr& RHS) { return LHS.Get() <=> RHS.Get(); }
+	template <typename U> requires (CThreeWayComparable<T*, TRemoveExtent<U>*>)
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TSharedPtr& LHS, const TSharedPtr<U>& RHS) { return LHS.Get() <=> RHS.Get(); }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr bool operator==(U InPtr) const& { return Get() == InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& { return Get() == nullptr; }
 
-	/** Compares the pointer values with a raw pointer. */
-	template <typename U = T*> requires (CNullPointer<U> || (CPointer<U> && CConvertibleTo<TRemovePointer<U>(*)[], T(*)[]>))
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(U InPtr) const& { return Get() <=> InPtr; }
+	/** Compares the pointer values with nullptr. */
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(nullptr_t) const& { return Get() <=> static_cast<T*>(nullptr); }
 
 	/** Converts a shared pointer to a shared reference. The pointer MUST be valid or an assertion will trigger. */
 	FORCEINLINE TSharedRef<T[]> ToSharedRef() const&
