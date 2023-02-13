@@ -245,14 +245,14 @@ public:
 	}
 
 	/** Check if the optional value is equivalent to 'InValue'. */
-	template <typename T = OptionalType> requires (!CTOptional<T>&& CWeaklyEqualityComparable<OptionalType, T>)
+	template <typename T = OptionalType> requires (!CTOptional<T> && CWeaklyEqualityComparable<OptionalType, T>)
 	NODISCARD FORCEINLINE constexpr bool operator==(const T& InValue) const&
 	{
 		return IsValid() ? GetValue() == InValue : false;
 	}
 
 	/** Check that the optional value is in ordered relationship with 'InValue'. */
-	template <typename T = OptionalType> requires (!CTOptional<T>&& CSynthThreeWayComparable<OptionalType, T>)
+	template <typename T = OptionalType> requires (!CTOptional<T> && CSynthThreeWayComparable<OptionalType, T>)
 	NODISCARD FORCEINLINE constexpr partial_ordering operator<=>(const T& InValue) const&
 	{
 		return IsValid() ? SynthThreeWayCompare(GetValue(), InValue) : partial_ordering::unordered;

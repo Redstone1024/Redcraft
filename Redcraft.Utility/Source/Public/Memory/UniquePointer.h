@@ -659,21 +659,23 @@ private:
 
 };
 
-/** Constructs an object of type T and wraps it in a TUniquePtr. Without initialization. */
-template <typename T> requires (CObject<T> && !CArray<T> && !CConstructibleFrom<T, FNoInit> && CDestructible<T>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(FNoInit) { return TUniquePtr<T>(new T); }
-
 /** Constructs an object of type T and wraps it in a TUniquePtr. */
 template <typename T, typename... Ts> requires (CObject<T> && !CArray<T> && CConstructibleFrom<T, Ts...> && CDestructible<T>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(Ts&&... Args) { return TUniquePtr<T>(new T(Forward<Ts>(Args)...)); }
-
-/** Constructs an array of type T and wraps it in a TUniquePtr. Without initialization. */
-template <typename T> requires (CUnboundedArray<T> && CDefaultConstructible<TRemoveExtent<T>> && CDestructible<TRemoveExtent<T>>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(size_t N, FNoInit) { return TUniquePtr<T>(new TRemoveExtent<T>[N]); }
+NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(Ts&&... Args)
+{
+	if constexpr (sizeof...(Ts) == 0)
+	{
+		return TUniquePtr<T>(new T);
+	}
+	else
+	{
+		return TUniquePtr<T>(new T(Forward<Ts>(Args)...));
+	}
+}
 
 /** Constructs an array of type T and wraps it in a TUniquePtr. */
 template <typename T> requires (CUnboundedArray<T> && CDefaultConstructible<TRemoveExtent<T>> && CDestructible<TRemoveExtent<T>>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(size_t N) { return TUniquePtr<T>(new TRemoveExtent<T>[N]()); }
+NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(size_t N) { return TUniquePtr<T>(new TRemoveExtent<T>[N]); }
 
 /** Construction of arrays of known bound is disallowed. */
 template <typename T, typename... Ts> requires (CBoundedArray<T>)

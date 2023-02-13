@@ -241,10 +241,18 @@ class TSharedControllerWithObject final : public FSharedController
 {
 public:
 
-	FORCEINLINE explicit TSharedControllerWithObject(FNoInit) requires (!CConstructibleFrom<T, FNoInit>) { new (&Storage) T; }
-
-	template <typename... Ts> requires (CConstructibleFrom<T, Ts...>)
-	FORCEINLINE explicit TSharedControllerWithObject(Ts&&... Args) { new (&Storage) T(Forward<Ts>(Args)...); }
+	template <typename... Ts>
+	FORCEINLINE explicit TSharedControllerWithObject(Ts&&... Args)
+	{
+		if constexpr (sizeof...(Ts) == 0)
+		{
+			new (&Storage) T;
+		}
+		else
+		{
+			new (&Storage) T(Forward<Ts>(Args)...);
+		}
+	}
 
 	virtual ~TSharedControllerWithObject() = default;
 
@@ -263,20 +271,11 @@ class TSharedControllerWithArray final : public FSharedController
 {
 public:
 
-	static TSharedControllerWithArray* New(size_t N, FNoInit)
-	{
-		void* Buffer = Memory::Malloc(sizeof(TSharedControllerWithArray) + sizeof(T) * (N - 1), alignof(TSharedControllerWithArray));
-		const auto Controller = new (Buffer) TSharedControllerWithArray(N);
-		const T* ElementPtr = new (Controller->GetPointer()) T[N];
-		check(ElementPtr == Controller->GetPointer());
-		return Controller;
-	}
-
 	static TSharedControllerWithArray* New(size_t N)
 	{
 		void* Buffer = Memory::Malloc(sizeof(TSharedControllerWithArray) + sizeof(T) * (N - 1), alignof(TSharedControllerWithArray));
 		const auto Controller = new (Buffer) TSharedControllerWithArray(N);
-		const T* ElementPtr = new (Controller->GetPointer()) T[N]();
+		const T* ElementPtr = new (Controller->GetPointer()) T[N];
 		check(ElementPtr == Controller->GetPointer());
 		return Controller;
 	}
@@ -674,7 +673,7 @@ public:
 		return ControllerWithDeleter != nullptr ? &ControllerWithDeleter->GetDeleter() : nullptr;
 	}
 
-	/** @return The a reference or pointer to the object owned by *this, i.e. Get(). */
+	/** @return The reference or pointer to the object owned by *this, i.e. Get(). */
 	NODISCARD FORCEINLINE constexpr T& operator*()  const { return *Get(); }
 	NODISCARD FORCEINLINE constexpr T* operator->() const { return  Get(); }
 
@@ -1143,7 +1142,7 @@ public:
 	NODISCARD FORCEINLINE constexpr bool           IsValid() const { return Get() != nullptr; }
 	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return Get() != nullptr; }
 
-	/** @return The a reference or pointer to the object owned by *this, i.e. Get(). */
+	/** @return The reference or pointer to the object owned by *this, i.e. Get(). */
 	NODISCARD FORCEINLINE constexpr T& operator*()  const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
 	NODISCARD FORCEINLINE constexpr T* operator->() const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
 
@@ -1748,27 +1747,11 @@ private:
 
 };
 
-/** Constructs an object of type T and wraps it in a TSharedRef or TSharedPtr. Without initialization. */
-template <typename T> requires (CObject<T> && !CArray<T> && !CConstructibleFrom<T, FNoInit> && CDestructible<T>)
-NODISCARD FORCEINLINE NAMESPACE_PRIVATE::TSharedProxy<T> MakeShared(FNoInit)
-{
-	const auto Controller = new NAMESPACE_PRIVATE::TSharedControllerWithObject<T>(NoInit);
-	return NAMESPACE_PRIVATE::TSharedProxy<T>(Controller->GetPointer(), Controller);
-}
-
 /** Constructs an object of type T and wraps it in a TSharedRef or TSharedPtr. */
 template <typename T, typename... Ts> requires (CObject<T> && !CArray<T> && CConstructibleFrom<T, Ts...> && CDestructible<T>)
 NODISCARD FORCEINLINE NAMESPACE_PRIVATE::TSharedProxy<T> MakeShared(Ts&&... Args)
 {
 	const auto Controller = new NAMESPACE_PRIVATE::TSharedControllerWithObject<T>(Forward<Ts>(Args)...);
-	return NAMESPACE_PRIVATE::TSharedProxy<T>(Controller->GetPointer(), Controller);
-}
-
-/** Constructs an array of type T and wraps it in a TSharedRef or TSharedPtr. Without initialization. */
-template <typename T> requires (CUnboundedArray<T> && CDefaultConstructible<TRemoveExtent<T>> && CDestructible<TRemoveExtent<T>>)
-NODISCARD FORCEINLINE NAMESPACE_PRIVATE::TSharedProxy<T> MakeShared(size_t N, FNoInit)
-{
-	const auto Controller = NAMESPACE_PRIVATE::TSharedControllerWithArray<TRemoveExtent<T>>::New(N, NoInit);
 	return NAMESPACE_PRIVATE::TSharedProxy<T>(Controller->GetPointer(), Controller);
 }
 

@@ -380,12 +380,6 @@ void TestUniquePointer()
 	always_check(FArrayDeleter::Num == 4);
 	
 	{
-		TUniquePtr<int32> Temp = MakeUnique<int32>(NoInit);
-		*Temp = 15;
-		always_check(*Temp.Get() = 15);
-	}
-
-	{
 		TUniquePtr<int32> Temp = MakeUnique<int32>();
 		*Temp = 15;
 		always_check(*Temp.Get() = 15);
@@ -449,12 +443,6 @@ void TestUniquePointer()
 
 	always_check(FCounter::Num == 0);
 	always_check(FDeleter::Num == 4);
-
-	{
-		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4, NoInit);
-		Temp[0] = 15;
-		always_check(Temp.Get()[0] = 15);
-	}
 
 	{
 		TUniquePtr<int32[]> Temp = MakeUnique<int32[]>(4);
@@ -582,12 +570,6 @@ void TestSharedPointer()
 	always_check(FDeleter::Num == 4);
 
 	{
-		TSharedRef<int32[]> Temp = MakeShared<int32[]>(4, NoInit);
-		Temp[0] = 15;
-		always_check(Temp.Get()[0] = 15);
-	}
-
-	{
 		TSharedRef<int32[]> Temp = MakeShared<int32[]>(4);
 		Temp[0] = 15;
 		always_check(Temp.Get()[0] = 15);
@@ -683,12 +665,6 @@ void TestSharedPointer()
 
 	always_check(FCounter::Num == 0);
 	always_check(FDeleter::Num == 5);
-
-	{
-		TSharedPtr<int32[]> Temp = MakeShared<int32[]>(4, NoInit);
-		Temp[0] = 15;
-		always_check(Temp.Get()[0] = 15);
-	}
 
 	{
 		TSharedPtr<int32[]> Temp = MakeShared<int32[]>(4);
