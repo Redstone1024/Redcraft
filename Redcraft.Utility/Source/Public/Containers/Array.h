@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Allocator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Container.h"
@@ -9,8 +10,6 @@
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
-#include "Memory/DefaultAllocator.h"
-#include "Memory/AllocatorInterface.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
