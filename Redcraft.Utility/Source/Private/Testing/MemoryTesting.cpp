@@ -274,7 +274,7 @@ NAMESPACE_UNNAMED_END
 void TestUniquePointer()
 {
 	{
-		TUniqueRef<int32> Temp(new int32);
+		TUniqueRef<int32> Temp = MakeUnique<int32>();
 		*Temp = 15;
 		always_check(*Temp.Get() = 15);
 	}
@@ -327,7 +327,7 @@ void TestUniquePointer()
 	always_check(FDeleter::Num == 4);
 
 	{
-		TUniqueRef<int32[]> Temp(new int32[4]);
+		TUniqueRef<int32[]> Temp = MakeUnique<int32[]>(4);
 		Temp[0] = 15;
 		always_check(Temp.Get()[0] = 15);
 	}

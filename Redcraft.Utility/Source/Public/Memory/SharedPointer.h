@@ -435,22 +435,6 @@ public:
 		: Pointer(InPtr), Controller(InController)
 	{ }
 
-	template <typename U> requires (CArray<T> == CArray<U> && ((!CArray<U> && CConvertibleTo<T(*)[], U(*)[]>)
-		|| (CArray<U> && CConvertibleTo<TRemoveExtent<T>(*)[], TRemoveExtent<U>(*)[]>)))
-	NODISCARD FORCEINLINE operator TSharedRef<U>() &&
-	{
-		check_code({ return TSharedRef<U>(Pointer, Exchange(Controller, nullptr)); });
-		return TSharedRef<U>(Pointer, Controller);
-	}
-
-	template <typename U> requires (CArray<T> == CArray<U> && ((!CArray<U> && CConvertibleTo<T(*)[], U(*)[]>)
-		|| (CArray<U> && CConvertibleTo<TRemoveExtent<T>(*)[], TRemoveExtent<U>(*)[]>)))
-	NODISCARD FORCEINLINE operator TSharedPtr<U>() &&
-	{
-		check_code({ return TSharedPtr<U>(Pointer, Exchange(Controller, nullptr)); });
-		return TSharedPtr<U>(Pointer, Controller);
-	}
-
 #	if DO_CHECK
 
 	FORCEINLINE ~TSharedProxy() { checkf(Controller == nullptr, TEXT("The return value from MakeShared() is incorrectly ignored.")); }
@@ -461,6 +445,10 @@ private:
 
 	TRemoveExtent<T>*  Pointer;
 	FSharedController* Controller;
+
+	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class NAMESPACE_REDCRAFT::TSharedRef;
+	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class NAMESPACE_REDCRAFT::TSharedPtr;
+	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class NAMESPACE_REDCRAFT::TWeakPtr;
 
 };
 
@@ -714,6 +702,15 @@ public:
 		Swap(A.Controller, B.Controller);
 	}
 
+public:
+
+	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::TSharedProxy<U>&& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		check_code({ InValue.Controller = nullptr; });
+	}
+
 private:
 
 	T* Pointer;
@@ -754,8 +751,6 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedRef;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
-
-	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
 	friend struct NAMESPACE_PRIVATE::FSharedHelper;
 
@@ -932,6 +927,15 @@ public:
 		Swap(A.Controller, B.Controller);
 	}
 
+public:
+
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
+	FORCEINLINE TSharedRef(NAMESPACE_PRIVATE::TSharedProxy<U>&& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		check_code({ InValue.Controller = nullptr; });
+	}
+
 private:
 
 	T* Pointer;
@@ -957,8 +961,6 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedRef;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
-
-	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
 	friend struct NAMESPACE_PRIVATE::FSharedHelper;
 
@@ -1185,6 +1187,15 @@ public:
 		Swap(A.Controller, B.Controller);
 	}
 
+public:
+
+	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
+	FORCEINLINE TSharedPtr(NAMESPACE_PRIVATE::TSharedProxy<U>&& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		check_code({ InValue.Controller = nullptr; });
+	}
+
 private:
 
 	T* Pointer;
@@ -1223,8 +1234,6 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedRef;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
-
-	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
 	friend struct NAMESPACE_PRIVATE::FSharedHelper;
 
@@ -1453,6 +1462,15 @@ public:
 		Swap(A.Controller, B.Controller);
 	}
 
+public:
+
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
+	FORCEINLINE TSharedPtr(NAMESPACE_PRIVATE::TSharedProxy<U>&& InValue)
+		: Pointer(InValue.Pointer), Controller(InValue.Controller)
+	{
+		check_code({ InValue.Controller = nullptr; });
+	}
+
 private:
 
 	T* Pointer;
@@ -1476,8 +1494,6 @@ private:
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedRef;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TSharedPtr;
 	template <typename U> requires (CObject<U> && !CBoundedArray<U>) friend class TWeakPtr;
-
-	template <typename U> friend class NAMESPACE_PRIVATE::TSharedProxy;
 
 	friend struct NAMESPACE_PRIVATE::FSharedHelper;
 

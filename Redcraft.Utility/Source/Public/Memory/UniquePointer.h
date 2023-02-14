@@ -145,6 +145,34 @@ concept CTUniqueRef = NAMESPACE_PRIVATE::TIsTUniqueRef<TRemoveCV<T>>::Value;
 template <typename T>
 concept CTUniquePtr = NAMESPACE_PRIVATE::TIsTUniquePtr<TRemoveCV<T>>::Value;
 
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T>
+class TUniqueProxy : private FSingleton
+{
+public:
+
+	FORCEINLINE TUniqueProxy(TRemoveExtent<T>* InPtr)
+		: Pointer(InPtr)
+	{ }
+
+#	if DO_CHECK
+
+	FORCEINLINE ~TUniqueProxy() { checkf(Pointer == nullptr, TEXT("The return value from MakeUnique() is incorrectly ignored.")); }
+
+#	endif
+
+private:
+
+	TRemoveExtent<T>* Pointer;
+
+	template <typename U, CInvocable<TRemoveExtent<U>*> E> requires (CObject<U> && !CBoundedArray<U> && (CDestructible<E> || CLValueReference<E>)) friend class NAMESPACE_REDCRAFT::TUniqueRef;
+	template <typename U, CInvocable<TRemoveExtent<U>*> E> requires (CObject<U> && !CBoundedArray<U> && (CDestructible<E> || CLValueReference<E>)) friend class NAMESPACE_REDCRAFT::TUniquePtr;
+
+};
+
+NAMESPACE_PRIVATE_END
+
 /** This is essentially a reference version of TUniquePtr. */
 template <typename T, CInvocable<TRemoveExtent<T>*> E> requires (CObject<T> && !CBoundedArray<T> && (CDestructible<E> || CLValueReference<E>))
 class TUniqueRef final : private FSingleton
@@ -254,6 +282,15 @@ public:
 	{
 		Swap(A.Storage.GetPointer(), B.Storage.GetPointer());
 		Swap(A.Storage.GetDeleter(), B.Storage.GetDeleter());
+	}
+
+public:
+
+	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U> && CSameAs<E, TDefaultDelete<T>>)
+	FORCEINLINE TUniqueRef(NAMESPACE_PRIVATE::TUniqueProxy<U>&& InValue)
+		: Storage(InValue.Pointer)
+	{
+		check_code({ InValue.Pointer = nullptr; });
 	}
 
 private:
@@ -379,6 +416,15 @@ public:
 	{
 		Swap(A.Storage.GetPointer(), B.Storage.GetPointer());
 		Swap(A.Storage.GetDeleter(), B.Storage.GetDeleter());
+	}
+
+public:
+
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && CSameAs<E, TDefaultDelete<T[]>>)
+	FORCEINLINE TUniqueRef(NAMESPACE_PRIVATE::TUniqueProxy<U>&& InValue)
+		: Storage(InValue.Pointer)
+	{
+		check_code({ InValue.Pointer = nullptr; });
 	}
 
 private:
@@ -510,6 +556,15 @@ public:
 	{
 		Swap(A.Storage.GetPointer(), B.Storage.GetPointer());
 		Swap(A.Storage.GetDeleter(), B.Storage.GetDeleter());
+	}
+
+public:
+
+	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U> && CSameAs<E, TDefaultDelete<T>>)
+	FORCEINLINE TUniquePtr(NAMESPACE_PRIVATE::TUniqueProxy<U>&& InValue)
+		: Storage(InValue.Pointer)
+	{
+		check_code({ InValue.Pointer = nullptr; });
 	}
 
 private:
@@ -654,6 +709,15 @@ public:
 		Swap(A.Storage.GetDeleter(), B.Storage.GetDeleter());
 	}
 
+public:
+
+	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && CSameAs<E, TDefaultDelete<T[]>>)
+	FORCEINLINE TUniquePtr(NAMESPACE_PRIVATE::TUniqueProxy<U>&& InValue)
+		: Storage(InValue.Pointer)
+	{
+		check_code({ InValue.Pointer = nullptr; });
+	}
+
 private:
 
 	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
@@ -665,21 +729,21 @@ private:
 
 /** Constructs an object of type T and wraps it in a TUniquePtr. */
 template <typename T, typename... Ts> requires (CObject<T> && !CArray<T> && CConstructibleFrom<T, Ts...> && CDestructible<T>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(Ts&&... Args)
+NODISCARD FORCEINLINE constexpr NAMESPACE_PRIVATE::TUniqueProxy<T> MakeUnique(Ts&&... Args)
 {
 	if constexpr (sizeof...(Ts) == 0)
 	{
-		return TUniquePtr<T>(new T);
+		return NAMESPACE_PRIVATE::TUniqueProxy<T>(new T);
 	}
 	else
 	{
-		return TUniquePtr<T>(new T(Forward<Ts>(Args)...));
+		return NAMESPACE_PRIVATE::TUniqueProxy<T>(new T(Forward<Ts>(Args)...));
 	}
 }
 
 /** Constructs an array of type T and wraps it in a TUniquePtr. */
 template <typename T> requires (CUnboundedArray<T> && CDefaultConstructible<TRemoveExtent<T>> && CDestructible<TRemoveExtent<T>>)
-NODISCARD FORCEINLINE constexpr TUniquePtr<T> MakeUnique(size_t N) { return TUniquePtr<T>(new TRemoveExtent<T>[N]); }
+NODISCARD FORCEINLINE constexpr NAMESPACE_PRIVATE::TUniqueProxy<T> MakeUnique(size_t N) { return NAMESPACE_PRIVATE::TUniqueProxy<T>(new TRemoveExtent<T>[N]); }
 
 /** Construction of arrays of known bound is disallowed. */
 template <typename T, typename... Ts> requires (CBoundedArray<T>)
