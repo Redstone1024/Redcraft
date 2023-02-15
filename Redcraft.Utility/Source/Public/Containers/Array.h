@@ -235,7 +235,7 @@ public:
 	{
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CRandomAccessIterator<I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
+			if constexpr (CSizedSentinelFor<S, I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
 
 			const size_t Count = Iteration::Distance(First, Last);
 
@@ -695,7 +695,7 @@ public:
 
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CRandomAccessIterator<I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
+			if constexpr (CSizedSentinelFor<S, I>) checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last."));
 
 			const size_t InsertIndex = Iter - Begin();
 			const size_t Count = Iteration::Distance(First, Last);
@@ -767,7 +767,7 @@ public:
 		else
 		{
 			TArray Temp(MoveTemp(First), MoveTemp(Last));
-			return Insert(Iter, Temp.Begin(), Temp.End()); // FIXME: Fix to MoveIterator.
+			return Insert(Iter, TMoveIterator(Temp.Begin()), TMoveSentinel(Temp.End()));
 		}
 	}
 
@@ -1128,10 +1128,10 @@ public:
 	NODISCARD FORCEINLINE constexpr ConstIterator End()   const { return ConstIterator(this, Storage.GetPointer() + Num()); }
 	
 	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr      ReverseIterator RBegin()       { return MakeReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator RBegin() const { return MakeReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr      ReverseIterator REnd()         { return MakeReverseIterator(Begin()); }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator REnd()   const { return MakeReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr      ReverseIterator REnd()         { return      ReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
 	NODISCARD FORCEINLINE constexpr size_t Num() const { return Storage.GetNum(); }
