@@ -449,6 +449,12 @@ FORCEINLINE constexpr decltype(auto) REnd(initializer_list<T> Container)
 
 NAMESPACE_END(Iteration)
 
+#define ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT public:                                  \
+	NODISCARD FORCEINLINE constexpr decltype(auto) begin()       { return Begin(); } \
+	NODISCARD FORCEINLINE constexpr decltype(auto) begin() const { return Begin(); } \
+	NODISCARD FORCEINLINE constexpr decltype(auto) end()         { return End();   } \
+	NODISCARD FORCEINLINE constexpr decltype(auto) end()   const { return End();   }
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

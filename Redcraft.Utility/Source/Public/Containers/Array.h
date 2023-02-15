@@ -1210,12 +1210,7 @@ public:
 		B = MoveTemp(Temp);
 	}
 
-public: // STL-like iterators to enable range-based for loop support, should not be directly used.
-
-	NODISCARD FORCEINLINE constexpr      Iterator begin()       { return Begin(); }
-	NODISCARD FORCEINLINE constexpr ConstIterator begin() const { return Begin(); }
-	NODISCARD FORCEINLINE constexpr      Iterator end()         { return End();   }
-	NODISCARD FORCEINLINE constexpr ConstIterator end()   const { return End();   }
+	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
 
 private:
 
