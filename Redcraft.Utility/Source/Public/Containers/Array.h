@@ -125,7 +125,7 @@ public:
 	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { CheckThis(true); return *Pointer; }
 	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { CheckThis(true); return  Pointer; }
 
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { TArrayIterator Temp = *this + Index; Temp.CheckThis(); return *Temp; }
+	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { TArrayIterator Temp = *this + Index; return *Temp; }
 
 	FORCEINLINE constexpr TArrayIterator& operator++() { ++Pointer; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayIterator& operator--() { --Pointer; CheckThis(); return *this; }
@@ -136,21 +136,15 @@ public:
 	FORCEINLINE constexpr TArrayIterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayIterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
 
-	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(TArrayIterator Iter, ptrdiff Offset) { TArrayIterator Temp = Iter; Temp += Offset; Temp.CheckThis(); return Temp; }
-	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(ptrdiff Offset, TArrayIterator Iter) { TArrayIterator Temp = Iter; Temp += Offset; Temp.CheckThis(); return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(TArrayIterator Iter, ptrdiff Offset) { TArrayIterator Temp = Iter; Temp += Offset; return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TArrayIterator operator+(ptrdiff Offset, TArrayIterator Iter) { TArrayIterator Temp = Iter; Temp += Offset; return Temp; }
 
-	NODISCARD FORCEINLINE constexpr TArrayIterator operator-(ptrdiff Offset) const { TArrayIterator Temp = *this; Temp -= Offset; Temp.CheckThis(); return Temp; }
+	NODISCARD FORCEINLINE constexpr TArrayIterator operator-(ptrdiff Offset) const { TArrayIterator Temp = *this; Temp -= Offset; return Temp; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TArrayIterator& LHS, const TArrayIterator& RHS)
-	{
-		LHS.CheckThis();
-		RHS.CheckThis();
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TArrayIterator& LHS, const TArrayIterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
 
-		return LHS.Pointer - RHS.Pointer;
-	}
-
-	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (!CConst<ElementType>) { return Pointer; }
-	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const                                 { return Pointer; }
+	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (!CConst<ElementType>) { CheckThis(); return Pointer; }
+	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const                                 { CheckThis(); return Pointer; }
 
 private:
 

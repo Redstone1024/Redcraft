@@ -153,11 +153,11 @@ public:
 	template <CBidirectionalIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
 	FORCEINLINE constexpr TReverseIterator& operator=(const TReverseIterator<J>& InValue) { Current = InValue.GetBase(); return *this; }
 
-	template <CBidirectionalIterator J> requires (CWeaklyEqualityComparable<IteratorType, J>)
+	template <CBidirectionalIterator J> requires (CSentinelFor<J, IteratorType>)
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
 
-	template <CBidirectionalIterator J> requires (CThreeWayComparable<IteratorType, J>)
-	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<IteratorType, J> operator<=>(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
+	template <CBidirectionalIterator J> requires (CSizedSentinelFor<J, IteratorType>)
+	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<J, IteratorType> operator<=>(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { IteratorType Temp = GetBase(); return *--Temp; }
 	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { return AddressOf(operator*());                 }
@@ -176,10 +176,9 @@ public:
 	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(TReverseIterator Iter, ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { TReverseIterator Temp = Iter; Temp -= Offset; return Temp; }
 	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset, TReverseIterator Iter) requires (CRandomAccessIterator<IteratorType>) { TReverseIterator Temp = Iter; Temp -= Offset; return Temp; }
 
-	NODISCARD FORCEINLINE constexpr TReverseIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { return TReverseIterator(GetBase() + Offset); }
+	NODISCARD FORCEINLINE constexpr TReverseIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { TReverseIterator Temp = *this; Temp += Offset; return Temp; }
 
-	template <CBidirectionalIterator J> requires (requires(IteratorType Iter, J Jter) { { Iter - Jter } -> CSameAs<ptrdiff>; })
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() - LHS.GetBase(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) { return RHS.GetBase() - LHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { return Current; }
 
@@ -197,9 +196,7 @@ TReverseIterator(I) -> TReverseIterator<I>;
 template <typename I, typename J> requires (!CSizedSentinelFor<I, J>)
 inline constexpr bool bDisableSizedSentinelFor<TReverseIterator<I>, TReverseIterator<J>> = true;
 
-template <CSemiregular S>
-class TMoveSentinel;
-
+/** An iterator adaptor which dereferences to an rvalue reference. */
 template <CInputIterator I>
 class TMoveIterator final
 {
@@ -224,21 +221,21 @@ public:
 	template <CInputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
 	FORCEINLINE constexpr TMoveIterator& operator=(const TMoveIterator<J>& InValue) { Current = InValue.GetBase(); return *this; }
 
-	template <CInputIterator J> requires (CWeaklyEqualityComparable<IteratorType, J>)
+	template <CInputIterator J> requires (CSentinelFor<J, IteratorType>)
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
 
-	template <CInputIterator J> requires (CThreeWayComparable<IteratorType, J>)
-	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<IteratorType, J> operator<=>(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
+	template <CInputIterator J> requires (CSizedSentinelFor<J, IteratorType>)
+	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<J, IteratorType> operator<=>(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr ElementType&& operator*()  const { return MoveTemp(*GetBase()); }
 	NODISCARD FORCEINLINE constexpr ElementType*  operator->() const = delete;
 
-	NODISCARD FORCEINLINE constexpr ElementType&& operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return  MoveTemp(GetBase()[Index]); }
+	NODISCARD FORCEINLINE constexpr ElementType&& operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return MoveTemp(GetBase()[Index]); }
 
 	FORCEINLINE constexpr TMoveIterator& operator++()                                                 { ++Current; return *this; }
 	FORCEINLINE constexpr TMoveIterator& operator--() requires (CBidirectionalIterator<IteratorType>) { --Current; return *this; }
 
-	FORCEINLINE constexpr void          operator++(int)                                                 { return TMoveIterator(Current++); }
+	FORCEINLINE constexpr void          operator++(int)                                                 {                      Current++;  }
 	FORCEINLINE constexpr TMoveIterator operator++(int) requires       (CForwardIterator<IteratorType>) { return TMoveIterator(Current++); }
 	FORCEINLINE constexpr TMoveIterator operator--(int) requires (CBidirectionalIterator<IteratorType>) { return TMoveIterator(Current--); }
 
@@ -248,10 +245,9 @@ public:
 	NODISCARD friend FORCEINLINE constexpr TMoveIterator operator+(TMoveIterator Iter, ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { TMoveIterator Temp = Iter; Temp += Offset; return Temp; }
 	NODISCARD friend FORCEINLINE constexpr TMoveIterator operator+(ptrdiff Offset, TMoveIterator Iter) requires (CRandomAccessIterator<IteratorType>) { TMoveIterator Temp = Iter; Temp += Offset; return Temp; }
 
-	NODISCARD FORCEINLINE constexpr TMoveIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { return TMoveIterator(GetBase() - Offset); }
+	NODISCARD FORCEINLINE constexpr TMoveIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { TMoveIterator Temp = *this; Temp -= Offset; return Temp; }
 
-	template <CInputIterator J> requires (requires(IteratorType Iter, J Jter) { { Iter - Jter } -> CSameAs<ptrdiff>; })
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() - RHS.GetBase(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) { return LHS.GetBase() - RHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { return Current; }
 
@@ -266,6 +262,7 @@ static_assert(CRandomAccessIterator<TMoveIterator<int32*>>);
 template <typename I>
 TMoveIterator(I) -> TMoveIterator<I>;
 
+/** A sentinel adaptor for use with TMoveIterator. */
 template <CSemiregular S>
 class TMoveSentinel
 {
@@ -312,6 +309,113 @@ static_assert(CSizedSentinelFor<TMoveSentinel<int32*>, TMoveIterator<int32*>>);
 
 template <typename I>
 TMoveSentinel(I) -> TMoveSentinel<I>;
+
+struct FDefaultSentinel { explicit FDefaultSentinel() = default; };
+
+inline constexpr FDefaultSentinel DefaultSentinel{ };
+
+struct FUnreachableSentinel
+{
+	explicit FUnreachableSentinel() = default;
+
+	template<CInputOrOutputIterator I>
+	NODISCARD FORCEINLINE constexpr bool operator==(const I&) const& { return false; }
+};
+
+inline constexpr FUnreachableSentinel UnreachableSentinel{ };
+
+/** An iterator adaptor that tracks the distance to the end of the range. */
+template <CInputOrOutputIterator I>
+class TCountedIterator final
+{
+public:
+
+	using IteratorType = I;
+
+	using ElementType = TIteratorElementType<I>;
+
+#	if DO_CHECK
+	FORCEINLINE constexpr TCountedIterator() requires CDefaultConstructible<IteratorType> : Length(1), MaxLength(0) { };
+#	else
+	FORCEINLINE constexpr TCountedIterator() requires CDefaultConstructible<IteratorType> = default;
+#	endif
+
+	FORCEINLINE constexpr TCountedIterator(const TCountedIterator&)            = default;
+	FORCEINLINE constexpr TCountedIterator(TCountedIterator&&)                 = default;
+	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator&) = default;
+	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator&&)      = default;
+
+	FORCEINLINE constexpr explicit TCountedIterator(IteratorType InValue, ptrdiff N) : Current(InValue), Length(N) { check_code({ MaxLength = N; }); }
+
+	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType>)
+	FORCEINLINE constexpr TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.GetBase()), Length(InValue.Num()) { check_code({ MaxLength = InValue.Max(); }); }
+
+	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
+	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator<J>& InValue) { Current = InValue.GetBase(); Length = InValue.Num(); check_code({ MaxLength = InValue.Max(); }); return *this; }
+
+	template <CInputOrOutputIterator J> requires (CSentinelFor<J, IteratorType>)
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
+
+	template <CInputOrOutputIterator J> requires (CSizedSentinelFor<J, IteratorType>)
+	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<IteratorType, J> operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
+
+	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Length == static_cast<ptrdiff>(0); }
+
+	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
+
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()  const { CheckThis(true); return *Current;               }
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator->() const { CheckThis(true); return AddressOf(operator*()); }
+
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
+
+	FORCEINLINE constexpr TCountedIterator& operator++()                                                 { ++Current; --Length; CheckThis(); return *this; }
+	FORCEINLINE constexpr TCountedIterator& operator--() requires (CBidirectionalIterator<IteratorType>) { --Current; ++Length; CheckThis(); return *this; }
+
+	FORCEINLINE constexpr decltype(auto)   operator++(int)                                                 {                                           --Length; CheckThis(); return Current++; }
+	FORCEINLINE constexpr TCountedIterator operator++(int) requires       (CForwardIterator<IteratorType>) { TCountedIterator Temp = *this; ++Current; --Length; CheckThis(); return Temp;      }
+	FORCEINLINE constexpr TCountedIterator operator--(int) requires (CBidirectionalIterator<IteratorType>) { TCountedIterator Temp = *this; --Current; ++Length; CheckThis(); return Temp;      }
+
+	FORCEINLINE constexpr TCountedIterator& operator+=(ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { Current += Offset; Length -= Offset; CheckThis(); return *this; }
+	FORCEINLINE constexpr TCountedIterator& operator-=(ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { Current -= Offset; Length += Offset; CheckThis(); return *this; }
+
+	NODISCARD friend FORCEINLINE constexpr TCountedIterator operator+(TCountedIterator Iter, ptrdiff Offset) requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = Iter; Temp += Offset; return Temp; }
+	NODISCARD friend FORCEINLINE constexpr TCountedIterator operator+(ptrdiff Offset, TCountedIterator Iter) requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = Iter; Temp += Offset; return Temp; }
+
+	NODISCARD FORCEINLINE constexpr TCountedIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this; Temp -= Offset; return Temp; }
+
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.GetBase() - RHS.GetBase(); }
+
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { CheckThis(); return -LHS.Num(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { CheckThis(); return  RHS.Num(); }
+
+	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (CContiguousIterator<IteratorType> && !CConst<ElementType>) { CheckThis(); return Current; }
+	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const requires (CContiguousIterator<IteratorType>)                         { CheckThis(); return Current; }
+
+	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { CheckThis(); return Current; }
+	NODISCARD FORCEINLINE constexpr ptrdiff          Num() const { CheckThis(); return Length;  }
+
+private:
+
+	IteratorType Current;
+	ptrdiff      Length;
+
+#	if DO_CHECK
+	ptrdiff MaxLength;
+#	endif
+
+	FORCEINLINE void CheckThis(bool bExceptEnd = false) const
+	{
+		checkf(static_cast<ptrdiff>(0) <= Length && Length <= MaxLength, TEXT("Read access violation. Please check Num()."));
+		checkf(!(bExceptEnd && Length == static_cast<ptrdiff>(0)),       TEXT("Read access violation. Please check Num()."));
+	}
+
+	template <CInputOrOutputIterator J>
+	friend class TCountedIterator;
+
+};
+
+static_assert(CContiguousIterator<TCountedIterator<int32*>>);
+static_assert(CSizedSentinelFor<FDefaultSentinel, TCountedIterator<int32*>>);
 
 NAMESPACE_BEGIN(Iteration)
 
@@ -415,16 +519,16 @@ FORCEINLINE constexpr decltype(auto) RBegin(T&& Container)
 }
 
 /** Overloads the RBegin algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&  Container)[N]) { return MakeReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&& Container)[N]) { return MakeReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&  Container)[N]) { return MakeReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&& Container)[N]) { return MakeReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&  Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&& Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&  Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&& Container)[N]) { return TReverseIterator(End(Container)); }
 
 /** Overloads the RBegin algorithm for T::rbegin(). */
 template <typename T>
 FORCEINLINE constexpr decltype(auto) RBegin(initializer_list<T> Container)
 {
-	return MakeReverseIterator(Container.end());
+	return TReverseIterator(Container.end());
 }
 
 /** @return The reverse iterator to the end of a container. */
@@ -435,16 +539,16 @@ FORCEINLINE constexpr decltype(auto) REnd(T&& Container)
 }
 
 /** Overloads the REnd algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&  Container)[N]) { return MakeReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&& Container)[N]) { return MakeReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&  Container)[N]) { return MakeReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&& Container)[N]) { return MakeReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
 
 /** Overloads the REnd algorithm for T::end(). */
 template <typename T>
 FORCEINLINE constexpr decltype(auto) REnd(initializer_list<T> Container)
 {
-	return MakeReverseIterator(Container.begin());
+	return TReverseIterator(Container.begin());
 }
 
 NAMESPACE_END(Iteration)
