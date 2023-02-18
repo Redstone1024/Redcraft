@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Templates/Invoke.h"
 #include "Templates/Utility.h"
+#include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -35,17 +37,17 @@ template <typename T>
 concept CDereferenceable = requires(T& A) { { *A } -> CReferenceable; };
 
 template <typename I>
-using TIteratorElementType = typename NAMESPACE_PRIVATE::TIteratorElementType<I>::Type;
+using TIteratorElementType = typename NAMESPACE_PRIVATE::TIteratorElementType<TRemoveCVRef<I>>::Type;
 
 template <CReferenceable I>
 using TIteratorReferenceType = decltype(*DeclVal<I&>());
 
-template <CReferenceable T> requires (requires(T& Iter) { { MoveTemp(*Iter) } -> CReferenceable; })
-using TIteratorRValueReferenceType = decltype(MoveTemp(*DeclVal<T&>()));
+template <CReferenceable I> requires (requires(I& Iter) { { MoveTemp(*Iter) } -> CReferenceable; })
+using TIteratorRValueReferenceType = decltype(MoveTemp(*DeclVal<I&>()));
 
 template <typename I>
 concept CIndirectlyReadable =
-	requires(const I Iter)
+	requires(const TRemoveCVRef<I> Iter)
 	{
 		typename TIteratorElementType<I>;
 		typename TIteratorReferenceType<I>;
@@ -59,7 +61,7 @@ concept CIndirectlyReadable =
 
 template <typename I, typename T>
 concept CIndirectlyWritable =
-	requires(I && Iter, T && A)
+	requires(I&& Iter, T&& A)
 	{
 		*Iter             = Forward<T>(A);
 		*Forward<I>(Iter) = Forward<T>(A);
@@ -68,7 +70,7 @@ concept CIndirectlyWritable =
 	};
 
 template <typename I>
-concept CWeaklyIncrementable = CDefaultConstructible<I> && CMovable<I>
+concept CWeaklyIncrementable = CMovable<I>
 	&& requires(I Iter) { { ++Iter } -> CSameAs<I&>; Iter++; };
 
 template <typename I>
@@ -180,7 +182,8 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) { return RHS.GetBase() - LHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { return Current; }
+	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return Current; }
+	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return Current; }
 
 private:
 
@@ -249,7 +252,8 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) { return LHS.GetBase() - RHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { return Current; }
+	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return Current; }
+	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return Current; }
 
 private:
 
@@ -297,7 +301,8 @@ public:
 	template <CInputIterator I> requires (CSizedSentinelFor<SentinelType, I>)
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator<I>& Iter, const TMoveSentinel& Sentinel) { return Iter.GetBase() - Sentinel.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr SentinelType GetBase() const { return Last; }
+	NODISCARD FORCEINLINE constexpr const SentinelType& GetBase() const& { return Last; }
+	NODISCARD FORCEINLINE constexpr       SentinelType  GetBase() &&     { return Last; }
 
 private:
 
@@ -391,8 +396,9 @@ public:
 	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (CContiguousIterator<IteratorType> && !CConst<ElementType>) { CheckThis(); return Current; }
 	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const requires (CContiguousIterator<IteratorType>)                         { CheckThis(); return Current; }
 
-	NODISCARD FORCEINLINE constexpr IteratorType GetBase() const { CheckThis(); return Current; }
-	NODISCARD FORCEINLINE constexpr ptrdiff          Num() const { CheckThis(); return Length;  }
+	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return Current; }
+	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return Current; }
+	NODISCARD FORCEINLINE constexpr       ptrdiff           Num() const  { CheckThis(); return Length;  }
 
 private:
 
@@ -416,6 +422,57 @@ private:
 
 static_assert(CContiguousIterator<TCountedIterator<int32*>>);
 static_assert(CSizedSentinelFor<FDefaultSentinel, TCountedIterator<int32*>>);
+
+template <typename I>
+TCountedIterator(I, ptrdiff) -> TCountedIterator<I>;
+
+template <CInvocable F, CInvocable G> requires (CReferenceable<TInvokeResult<F>> && CBooleanTestable<TInvokeResult<G>> && CMovable<F> && CMovable<G>)
+class TFunctionalInputIterator final : private FNoncopyable
+{
+public:
+
+	using Inputer  = F;
+	using Sentinel = G;
+
+	using ElementType = TRemoveReference<TInvokeResult<Inputer>>;
+
+	FORCEINLINE constexpr TFunctionalInputIterator() = default;
+
+	FORCEINLINE constexpr TFunctionalInputIterator(TFunctionalInputIterator&&)                 = default;
+	FORCEINLINE constexpr TFunctionalInputIterator& operator=(TFunctionalInputIterator&&)      = default;
+
+	template <typename T, typename U> requires (CConvertibleTo<T, Inputer> && CConvertibleTo<U, Sentinel>)
+	FORCEINLINE constexpr TFunctionalInputIterator(T&& InInputer, U&& InSentinel) : InputerStorage(Forward<T>(InInputer)), SentinelStorage(Forward<U>(InSentinel)), bIsConsumed(false) { }
+
+	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Invoke(SentinelStorage); }
+
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()  const { checkf(!bIsConsumed, TEXT("The element are consumed. Please check IsConsumed().")); bIsConsumed = true; return Invoke(InputerStorage); }
+	NODISCARD FORCEINLINE constexpr void           operator->() const = delete;
+
+	FORCEINLINE constexpr TFunctionalInputIterator& operator++() { if (!bIsConsumed) Invoke(InputerStorage); bIsConsumed = false; return *this; }
+
+	FORCEINLINE constexpr void operator++(int) { if (!bIsConsumed) Invoke(InputerStorage); bIsConsumed = false; }
+
+	NODISCARD FORCEINLINE constexpr const Inputer& GetInputer() const& { return InputerStorage; }
+	NODISCARD FORCEINLINE constexpr       Inputer  GetInputer() &&     { return InputerStorage; }
+
+	NODISCARD FORCEINLINE constexpr const Sentinel& GetSentinel() const& { return SentinelStorage; }
+	NODISCARD FORCEINLINE constexpr       Sentinel  GetSentinel() &&     { return SentinelStorage; }
+
+	NODISCARD FORCEINLINE constexpr bool IsConsumed() const { return bIsConsumed; }
+
+private:
+
+	Inputer   InputerStorage;
+	Sentinel SentinelStorage;
+	mutable bool bIsConsumed;
+
+};
+
+static_assert(CInputIterator<TFunctionalInputIterator<int32(*)(), bool(*)()>>);
+
+template <typename F, typename G>
+TFunctionalInputIterator(F, G) -> TFunctionalInputIterator<F, G>;
 
 NAMESPACE_BEGIN(Iteration)
 
