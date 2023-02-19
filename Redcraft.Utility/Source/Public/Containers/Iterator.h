@@ -65,8 +65,8 @@ concept CIndirectlyWritable =
 	{
 		*Iter             = Forward<T>(A);
 		*Forward<I>(Iter) = Forward<T>(A);
-		const_cast<const TIteratorElementType<I>&&>(*Iter)             = Forward<T>(A);
-		const_cast<const TIteratorElementType<I>&&>(*Forward<I>(Iter)) = Forward<T>(A);
+		const_cast<const TIteratorReferenceType<I>&&>(*Iter)             = Forward<T>(A);
+		const_cast<const TIteratorReferenceType<I>&&>(*Forward<I>(Iter)) = Forward<T>(A);
 	};
 
 template <typename I>
@@ -340,9 +340,9 @@ public:
 	using ElementType = TIteratorElementType<I>;
 
 #	if DO_CHECK
-	FORCEINLINE constexpr TCountedIterator() requires CDefaultConstructible<IteratorType> : Length(1), MaxLength(0) { };
+	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) : Length(1), MaxLength(0) { };
 #	else
-	FORCEINLINE constexpr TCountedIterator() requires CDefaultConstructible<IteratorType> = default;
+	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) = default;
 #	endif
 
 	FORCEINLINE constexpr TCountedIterator(const TCountedIterator&)            = default;
@@ -426,7 +426,7 @@ static_assert(CSizedSentinelFor<FDefaultSentinel, TCountedIterator<int32*>>);
 template <typename I>
 TCountedIterator(I, ptrdiff) -> TCountedIterator<I>;
 
-template <CInvocable F, CInvocable G> requires (CReferenceable<TInvokeResult<F>> && CBooleanTestable<TInvokeResult<G>> && CMovable<F> && CMovable<G>)
+template <CRegularInvocable F, CPredicate G> requires (CReferenceable<TInvokeResult<F>> && CMovable<F> && CMovable<G>)
 class TFunctionalInputIterator final : private FNoncopyable
 {
 public:
@@ -436,10 +436,7 @@ public:
 
 	using ElementType = TRemoveReference<TInvokeResult<Inputer>>;
 
-	FORCEINLINE constexpr TFunctionalInputIterator() = default;
-
-	FORCEINLINE constexpr TFunctionalInputIterator(TFunctionalInputIterator&&)                 = default;
-	FORCEINLINE constexpr TFunctionalInputIterator& operator=(TFunctionalInputIterator&&)      = default;
+	FORCEINLINE constexpr TFunctionalInputIterator() requires (CDefaultConstructible<Inputer> && CDefaultConstructible<Sentinel>) : bIsConsumed(false) { };
 
 	template <typename T, typename U> requires (CConvertibleTo<T, Inputer> && CConvertibleTo<U, Sentinel>)
 	FORCEINLINE constexpr TFunctionalInputIterator(T&& InInputer, U&& InSentinel) : InputerStorage(Forward<T>(InInputer)), SentinelStorage(Forward<U>(InSentinel)), bIsConsumed(false) { }
@@ -473,6 +470,117 @@ static_assert(CInputIterator<TFunctionalInputIterator<int32(*)(), bool(*)()>>);
 
 template <typename F, typename G>
 TFunctionalInputIterator(F, G) -> TFunctionalInputIterator<F, G>;
+
+template <CMovable F>
+class TFunctionalOutputIterator final : private FNoncopyable
+{
+public:
+
+	using Outputer = F;
+
+private:
+
+	class FIndirectionProxy : private FSingleton
+	{
+	public:
+
+		FORCEINLINE constexpr FIndirectionProxy(const TFunctionalOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
+
+#		if	DO_CHECK
+		FORCEINLINE ~FIndirectionProxy()
+		{
+			checkf(bIsProduced, TEXT("Exception output, Ensures that the value is assigned to the output iterator."));
+		}
+#		endif
+
+		template <typename T> requires (CInvocable<Outputer, T>)
+		FORCEINLINE constexpr void operator=(T&& InValue) const
+		{
+			checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
+			Invoke(Iter.OutputerStorage, Forward<T>(InValue));
+			check_code({ bIsProduced = true; });
+		}
+
+	private:
+
+		const TFunctionalOutputIterator& Iter;
+
+#		if	DO_CHECK
+		mutable bool bIsProduced;
+#		endif
+
+	};
+
+	class FPostIncrementProxy : private FSingleton
+	{
+	public:
+
+		FORCEINLINE constexpr FPostIncrementProxy(const TFunctionalOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
+
+#		if	DO_CHECK
+		FORCEINLINE ~FPostIncrementProxy()
+		{
+			checkf(bIsProduced, TEXT("Exception output, Ensures that the value is assigned to the output iterator."));
+		}
+#		endif
+
+		NODISCARD FORCEINLINE constexpr FIndirectionProxy operator*() const
+		{
+			checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
+			check_code({ bIsProduced = true; });
+			return FIndirectionProxy(Iter);
+		}
+
+	private:
+
+		const TFunctionalOutputIterator& Iter;
+
+#		if	DO_CHECK
+		mutable bool bIsProduced;
+#		endif
+
+	};
+
+public:
+
+	FORCEINLINE constexpr TFunctionalOutputIterator() requires (CDefaultConstructible<Outputer>) { check_code({ bIsProduced = false; }); }
+	
+	template <typename T> requires (CConvertibleTo<T, Outputer>)
+	FORCEINLINE constexpr TFunctionalOutputIterator(T&& InOutputer) : OutputerStorage(Forward<T>(InOutputer)) { check_code({ bIsProduced = false; }); }
+
+	NODISCARD FORCEINLINE constexpr FIndirectionProxy operator*() const
+	{
+		checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
+		check_code({ bIsProduced = true; });
+		return FIndirectionProxy(*this);
+	}
+
+	FORCEINLINE constexpr TFunctionalOutputIterator& operator++() { check_code({ bIsProduced = false; }); return *this; }
+
+	FORCEINLINE constexpr FPostIncrementProxy operator++(int)
+	{
+		checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
+		return FPostIncrementProxy(*this);
+	}
+
+	NODISCARD FORCEINLINE constexpr const Outputer& GetOutputer() const& { return OutputerStorage; }
+	NODISCARD FORCEINLINE constexpr       Outputer  GetOutputer() &&     { return OutputerStorage; }
+
+private:
+
+	Outputer OutputerStorage;
+
+#	if DO_CHECK
+	mutable bool bIsProduced;
+#	endif
+
+};
+
+static_assert(CIndirectlyWritable<TFunctionalOutputIterator<void(*)(int32)>, int32>);
+static_assert(COutputIterator<TFunctionalOutputIterator<void(*)(int32)>, int32>);
+
+template <typename F>
+TFunctionalOutputIterator(F) -> TFunctionalOutputIterator<F>;
 
 NAMESPACE_BEGIN(Iteration)
 
