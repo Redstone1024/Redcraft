@@ -599,6 +599,34 @@ static_assert(sizeof(FAny) == 64, "The byte size of FAny is unexpected");
 
 static_assert(alignof(FAny) == 16, "The byte alignment of FAny is unexpected");
 
+/** Creates an any object that does not contain a value. */
+template <typename T> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T>)
+NODISCARD FORCEINLINE constexpr FAny MakeAny(FInvalid)
+{
+	return FAny(Invalid);
+}
+
+/** Creates an any object from value. */
+template <typename T> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T>)
+NODISCARD FORCEINLINE constexpr FAny MakeAny(T&& InValue)
+{
+	return FAny(Forward<T>(InValue));
+}
+
+/** Creates an any object constructed in-place from Args.... */
+template <typename T, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<T, Ts...>)
+NODISCARD FORCEINLINE constexpr FAny MakeAny(Ts&&... Args)
+{
+	return FAny(InPlaceType<TDecay<T>>, Forward<T>(Args)...);
+}
+
+/** Creates an any object constructed in-place from IL, Args.... */
+template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<T, initializer_list<U>, Ts...>)
+NODISCARD FORCEINLINE constexpr FAny MakeAny(initializer_list<U> IL, Ts&&... Args)
+{
+	return FAny(InPlaceType<TDecay<T>>, IL, Forward<T>(Args)...);
+}
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END

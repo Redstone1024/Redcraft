@@ -377,23 +377,30 @@ TOptional(T) -> TOptional<T>;
 
 /** Creates an optional object that does not contain a value. */
 template <typename T> requires (CDestructible<T>)
-NODISCARD FORCEINLINE constexpr TOptional<TDecay<T>> MakeOptional(FInvalid)
+NODISCARD FORCEINLINE constexpr TOptional<T> MakeOptional(FInvalid)
 {
-	return TOptional<TDecay<T>>(Invalid);
+	return TOptional<T>(Invalid);
 }
 
 /** Creates an optional object from value. */
-template <typename T> requires (CDestructible<T> && CConstructibleFrom<T, T&&>)
-NODISCARD FORCEINLINE constexpr TOptional<T> MakeOptional(T&& InValue)
+template <typename T> requires (CDestructible<TDecay<T>> && CConstructibleFrom<TDecay<T>, T>)
+NODISCARD FORCEINLINE constexpr TOptional<TDecay<T>> MakeOptional(T&& InValue)
 {
-	return TOptional<T>(Forward<T>(InValue));
+	return TOptional<TDecay<T>>(Forward<T>(InValue));
 }
 
-/** Creates an optional object constructed in-place from args.... */
+/** Creates an optional object constructed in-place from Args.... */
 template <typename T, typename... Ts> requires (CDestructible<T> && CConstructibleFrom<T, Ts...>)
 NODISCARD FORCEINLINE constexpr TOptional<T> MakeOptional(Ts&&... Args)
 {
 	return TOptional<T>(InPlace, Forward<T>(Args)...);
+}
+
+/** Creates an optional object constructed in-place from IL, Args.... */
+template <typename T, typename U, typename... Ts> requires (CDestructible<T> && CConstructibleFrom<T, initializer_list<U>, Ts...>)
+NODISCARD FORCEINLINE constexpr TOptional<T> MakeOptional(initializer_list<U> IL, Ts&&... Args)
+{
+	return TOptional<T>(InPlace, IL, Forward<T>(Args)...);
 }
 
 NAMESPACE_MODULE_END(Utility)
