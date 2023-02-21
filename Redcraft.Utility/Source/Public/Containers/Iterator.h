@@ -3,6 +3,7 @@
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
+#include "Templates/Optional.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
@@ -16,17 +17,9 @@ NAMESPACE_PRIVATE_BEGIN
 
 template <typename T> using WithReference = T&;
 
-template <typename I>
-struct TIteratorElementType
-{
-	using Type = typename I::ElementType;
-};
+template <typename I> struct TIteratorElementType { using Type = typename I::ElementType; };
 
-template <typename T>
-struct TIteratorElementType<T*>
-{
-	using Type = T;
-};
+template <typename T> struct TIteratorElementType<T*> { using Type = T; };
 
 NAMESPACE_PRIVATE_END
 
@@ -147,13 +140,13 @@ public:
 	FORCEINLINE constexpr TReverseIterator& operator=(const TReverseIterator&) = default;
 	FORCEINLINE constexpr TReverseIterator& operator=(TReverseIterator&&)      = default;
 
-	template <typename T = IteratorType> requires (!CSameAs<TReverseIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T&&>)
+	template <typename T = IteratorType> requires (!CSameAs<TReverseIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T>)
 	FORCEINLINE constexpr explicit TReverseIterator(T&& InValue) : Current(Forward<T>(InValue)) { }
 
 	template <CBidirectionalIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TReverseIterator(const TReverseIterator<J>& InValue) : Current(InValue.GetBase()) { }
 
-	template <CBidirectionalIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J&&>)
+	template <CBidirectionalIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TReverseIterator(TReverseIterator<J>&& InValue) : Current(MoveTemp(InValue).GetBase()) { }
 
 	template <CBidirectionalIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
@@ -223,13 +216,13 @@ public:
 	FORCEINLINE constexpr TMoveIterator& operator=(const TMoveIterator&) = default;
 	FORCEINLINE constexpr TMoveIterator& operator=(TMoveIterator&&)      = default;
 
-	template <typename T = IteratorType> requires (!CSameAs<TMoveIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T&&>)
+	template <typename T = IteratorType> requires (!CSameAs<TMoveIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T>)
 	FORCEINLINE constexpr explicit TMoveIterator(T&& InValue) : Current(Forward<T>(InValue)) { }
 
 	template <CInputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TMoveIterator(const TMoveIterator<J>& InValue) : Current(InValue.GetBase()) { }
 
-	template <CInputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J&&>)
+	template <CInputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TMoveIterator(TMoveIterator<J>&& InValue) : Current(MoveTemp(InValue).GetBase()) { }
 
 	template <CInputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
@@ -295,13 +288,13 @@ public:
 	FORCEINLINE constexpr TMoveSentinel& operator=(const TMoveSentinel&) = default;
 	FORCEINLINE constexpr TMoveSentinel& operator=(TMoveSentinel&&)      = default;
 
-	template <typename T = SentinelType> requires (!CSameAs<TMoveSentinel, TRemoveCVRef<T>> && CConstructibleFrom<SentinelType, T&&>)
+	template <typename T = SentinelType> requires (!CSameAs<TMoveSentinel, TRemoveCVRef<T>> && CConstructibleFrom<SentinelType, T>)
 	FORCEINLINE constexpr explicit TMoveSentinel(T&& InValue) : Last(Forward<T>(InValue)) { }
 
 	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConstructibleFrom<SentinelType, const T&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, SentinelType>) TMoveSentinel(const TMoveSentinel<T>& InValue) : Last(InValue.GetBase()) { }
 	
-	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConstructibleFrom<SentinelType, T&&>)
+	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConstructibleFrom<SentinelType, T>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, SentinelType>) TMoveSentinel(TMoveSentinel<T>&& InValue) : Last(MoveTemp(InValue).GetBase()) { }
 
 	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConvertibleTo<const T&, SentinelType> && CAssignableFrom<SentinelType&, const T&>)
@@ -371,13 +364,13 @@ public:
 	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator&) = default;
 	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator&&)      = default;
 
-	template <typename T = IteratorType> requires (!CSameAs<TCountedIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T&&>)
+	template <typename T = IteratorType> requires (!CSameAs<TCountedIterator, TRemoveCVRef<T>> && CConstructibleFrom<IteratorType, T>)
 	FORCEINLINE constexpr explicit TCountedIterator(T&& InValue, ptrdiff N) : Current(Forward<T>(InValue)), Length(N) { check_code({ MaxLength = N; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.GetBase()), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
-	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J&&>)
+	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TCountedIterator(TCountedIterator<J>&& InValue) : Current(MoveTemp(InValue).GetBase()), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
@@ -396,7 +389,9 @@ public:
 
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
 
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()        { CheckThis(true); return *Current;               }
 	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()  const { CheckThis(true); return *Current;               }
+	NODISCARD FORCEINLINE constexpr decltype(auto) operator->()       { CheckThis(true); return AddressOf(operator*()); }
 	NODISCARD FORCEINLINE constexpr decltype(auto) operator->() const { CheckThis(true); return AddressOf(operator*()); }
 
 	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
@@ -454,53 +449,48 @@ static_assert(CSizedSentinelFor<FDefaultSentinel, TCountedIterator<int32*>>);
 template <typename I>
 TCountedIterator(I, ptrdiff) -> TCountedIterator<I>;
 
-template <CRegularInvocable F, CPredicate G> requires (CReferenceable<TInvokeResult<F>> && CMovable<F> && CMovable<G>)
-class TFunctionalInputIterator final : private FNoncopyable
+/** An input iterator adapter that wraps a callable object. */
+template <CRegularInvocable F> requires (CTOptional<TRemoveCVRef<TInvokeResult<F>>> && CMoveConstructible<F>
+	&& CConstructibleFrom<TRemoveCVRef<TInvokeResult<F>>, TInvokeResult<F>> && CAssignableFrom<TRemoveCVRef<TInvokeResult<F>>&, TInvokeResult<F>>)
+class TInputIterator final : private FNoncopyable
 {
 public:
 
-	using Inputer  = F;
-	using Sentinel = G;
+	using Inputer = F;
 
-	using ElementType = TRemoveReference<TInvokeResult<Inputer>>;
+	using ElementType = typename TRemoveCVRef<TInvokeResult<Inputer>>::ValueType;
 
-	FORCEINLINE constexpr TFunctionalInputIterator() requires (CDefaultConstructible<Inputer> && CDefaultConstructible<Sentinel>) : bIsConsumed(false) { };
+	FORCEINLINE constexpr TInputIterator() requires (CDefaultConstructible<Inputer>) : LookAhead(Invoke(Storage)) { };
 
-	template <typename T, typename U> requires (CConstructibleFrom<Inputer, T&&> && CConstructibleFrom<Sentinel, U&&>)
-	FORCEINLINE constexpr TFunctionalInputIterator(T&& InInputer, U&& InSentinel) : InputerStorage(Forward<T>(InInputer)), SentinelStorage(Forward<U>(InSentinel)), bIsConsumed(false) { }
+	template <typename T> requires (!CSameAs<TInputIterator, TRemoveCVRef<T>> && CConstructibleFrom<Inputer, T>)
+	FORCEINLINE constexpr explicit TInputIterator(T&& InInputer) : Storage(Forward<T>(InInputer)), LookAhead(Invoke(Storage)) { }
 
-	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Invoke(SentinelStorage); }
+	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return !LookAhead.IsValid(); }
 
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()  const { checkf(!bIsConsumed, TEXT("The element are consumed. Please check IsConsumed().")); bIsConsumed = true; return Invoke(InputerStorage); }
-	NODISCARD FORCEINLINE constexpr void           operator->() const = delete;
+	NODISCARD FORCEINLINE constexpr const ElementType& operator*() const { return LookAhead.GetValue(); }
 
-	FORCEINLINE constexpr TFunctionalInputIterator& operator++() { if (!bIsConsumed) Invoke(InputerStorage); bIsConsumed = false; return *this; }
+	FORCEINLINE constexpr TInputIterator& operator++() { LookAhead = Invoke(Storage); return *this; }
 
-	FORCEINLINE constexpr void operator++(int) { if (!bIsConsumed) Invoke(InputerStorage); bIsConsumed = false; }
+	FORCEINLINE constexpr void operator++(int) { LookAhead = Invoke(Storage); }
 
-	NODISCARD FORCEINLINE constexpr const Inputer& GetInputer() const& { return InputerStorage; }
-	NODISCARD FORCEINLINE constexpr       Inputer  GetInputer() &&     { return InputerStorage; }
-
-	NODISCARD FORCEINLINE constexpr const Sentinel& GetSentinel() const& { return SentinelStorage; }
-	NODISCARD FORCEINLINE constexpr       Sentinel  GetSentinel() &&     { return SentinelStorage; }
-
-	NODISCARD FORCEINLINE constexpr bool IsConsumed() const { return bIsConsumed; }
+	NODISCARD FORCEINLINE constexpr const Inputer& GetInputer() const& { return Storage; }
+	NODISCARD FORCEINLINE constexpr       Inputer  GetInputer() &&     { return Storage; }
 
 private:
 
-	Inputer   InputerStorage;
-	Sentinel SentinelStorage;
-	mutable bool bIsConsumed;
+	Inputer Storage;
+	TOptional<ElementType> LookAhead;
 
 };
 
-static_assert(CInputIterator<TFunctionalInputIterator<int32(*)(), bool(*)()>>);
+static_assert(CInputIterator<TInputIterator<TOptional<int32>(*)()>>);
 
-template <typename F, typename G>
-TFunctionalInputIterator(F, G) -> TFunctionalInputIterator<F, G>;
+template <typename F>
+TInputIterator(F) -> TInputIterator<F>;
 
-template <CMovable F>
-class TFunctionalOutputIterator final : private FNoncopyable
+/** An output iterator adapter that wraps a callable object. */
+template <CMoveConstructible F>
+class TOutputIterator final : private FNoncopyable
 {
 public:
 
@@ -512,7 +502,7 @@ private:
 	{
 	public:
 
-		FORCEINLINE constexpr FIndirectionProxy(const TFunctionalOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
+		FORCEINLINE constexpr FIndirectionProxy(TOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
 
 #		if	DO_CHECK
 		FORCEINLINE ~FIndirectionProxy()
@@ -525,13 +515,13 @@ private:
 		FORCEINLINE constexpr void operator=(T&& InValue) const
 		{
 			checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
-			Invoke(Iter.OutputerStorage, Forward<T>(InValue));
+			Invoke(Iter.Storage, Forward<T>(InValue));
 			check_code({ bIsProduced = true; });
 		}
 
 	private:
 
-		const TFunctionalOutputIterator& Iter;
+		TOutputIterator& Iter;
 
 #		if	DO_CHECK
 		mutable bool bIsProduced;
@@ -543,7 +533,7 @@ private:
 	{
 	public:
 
-		FORCEINLINE constexpr FPostIncrementProxy(const TFunctionalOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
+		FORCEINLINE constexpr FPostIncrementProxy(TOutputIterator& InIter) : Iter(InIter) { check_code({ bIsProduced = false; }); }
 
 #		if	DO_CHECK
 		FORCEINLINE ~FPostIncrementProxy()
@@ -561,7 +551,7 @@ private:
 
 	private:
 
-		const TFunctionalOutputIterator& Iter;
+		TOutputIterator& Iter;
 
 #		if	DO_CHECK
 		mutable bool bIsProduced;
@@ -571,19 +561,19 @@ private:
 
 public:
 
-	FORCEINLINE constexpr TFunctionalOutputIterator() requires (CDefaultConstructible<Outputer>) { check_code({ bIsProduced = false; }); }
+	FORCEINLINE constexpr TOutputIterator() requires (CDefaultConstructible<Outputer>) { check_code({ bIsProduced = false; }); }
 	
-	template <typename T> requires (!CSameAs<TFunctionalOutputIterator, TRemoveCVRef<T>> && CConstructibleFrom<Outputer, T&&>)
-	FORCEINLINE constexpr explicit TFunctionalOutputIterator(T&& InOutputer) : OutputerStorage(Forward<T>(InOutputer)) { check_code({ bIsProduced = false; }); }
+	template <typename T> requires (!CSameAs<TOutputIterator, TRemoveCVRef<T>> && CConstructibleFrom<Outputer, T>)
+	FORCEINLINE constexpr explicit TOutputIterator(T&& InOutputer) : Storage(Forward<T>(InOutputer)) { check_code({ bIsProduced = false; }); }
 
-	NODISCARD FORCEINLINE constexpr FIndirectionProxy operator*() const
+	NODISCARD FORCEINLINE constexpr FIndirectionProxy operator*()
 	{
 		checkf(!bIsProduced, TEXT("Exception output, Ensure that no multiple values are assigned to the output iterator."));
 		check_code({ bIsProduced = true; });
 		return FIndirectionProxy(*this);
 	}
 
-	FORCEINLINE constexpr TFunctionalOutputIterator& operator++() { check_code({ bIsProduced = false; }); return *this; }
+	FORCEINLINE constexpr TOutputIterator& operator++() { check_code({ bIsProduced = false; }); return *this; }
 
 	FORCEINLINE constexpr FPostIncrementProxy operator++(int)
 	{
@@ -591,24 +581,72 @@ public:
 		return FPostIncrementProxy(*this);
 	}
 
-	NODISCARD FORCEINLINE constexpr const Outputer& GetOutputer() const& { return OutputerStorage; }
-	NODISCARD FORCEINLINE constexpr       Outputer  GetOutputer() &&     { return OutputerStorage; }
+	NODISCARD FORCEINLINE constexpr const Outputer& GetOutputer() const& { return Storage; }
+	NODISCARD FORCEINLINE constexpr       Outputer  GetOutputer() &&     { return Storage; }
 
 private:
 
-	Outputer OutputerStorage;
+	Outputer Storage;
 
 #	if DO_CHECK
-	mutable bool bIsProduced;
+	bool bIsProduced;
 #	endif
 
 };
 
-static_assert(CIndirectlyWritable<TFunctionalOutputIterator<void(*)(int32)>, int32>);
-static_assert(COutputIterator<TFunctionalOutputIterator<void(*)(int32)>, int32>);
+static_assert(COutputIterator<TOutputIterator<void(*)(int32)>, int32>);
 
 template <typename F>
-TFunctionalOutputIterator(F) -> TFunctionalOutputIterator<F>;
+TOutputIterator(F) -> TOutputIterator<F>;
+
+/** Creates a TReverseIterator of type inferred from the argument. */
+template <typename I> requires (CBidirectionalIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
+NODISCARD FORCEINLINE constexpr TReverseIterator<I> MakeReverseIterator(I&& Iter)
+{
+	return TReverseIterator<TDecay<I>>(Forward<I>(Iter));
+}
+
+/** Creates a TMoveIterator of type inferred from the argument. */
+template <typename I> requires (CInputIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
+NODISCARD FORCEINLINE constexpr TMoveIterator<I> MakeMoveIterator(I&& Iter)
+{
+	return TMoveIterator<TDecay<I>>(Forward<I>(Iter));
+}
+
+/** Creates a TMoveSentinel of type inferred from the argument. */
+template <typename I> requires (CSemiregular<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
+NODISCARD FORCEINLINE constexpr TMoveSentinel<I> MakeMoveSentinel(I&& Iter)
+{
+	return TMoveSentinel<TDecay<I>>(Forward<I>(Iter));
+}
+
+/** Creates a TCountedIterator of type inferred from the argument. */
+template <typename I> requires (CInputOrOutputIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
+NODISCARD FORCEINLINE constexpr TCountedIterator<I> MakeCountedIterator(I&& Iter, ptrdiff N)
+{
+	return TCountedIterator<TDecay<I>>(Forward<I>(Iter), N);
+}
+
+/** Creates an iterator adapter inserted in the front of the container. */
+template <typename C>
+NODISCARD FORCEINLINE constexpr auto MakeFrontInserter(C& Container)
+{
+	return TOutputIterator([&Container]<typename T>(T&& A) { Container.PushFront(Forward<T>(A)); });
+}
+
+/** Creates an iterator adapter inserted in the back of the container. */
+template <typename C>
+NODISCARD FORCEINLINE constexpr auto MakeBackInserter(C& Container)
+{
+	return TOutputIterator([&Container]<typename T>(T&& A) { Container.PushBack(Forward<T>(A)); });
+}
+
+/** Creates an iterator adapter inserted in the container. */
+template <typename C>
+NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::ConstIterator& InIter)
+{
+	return TOutputIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); });
+}
 
 NAMESPACE_BEGIN(Iteration)
 
