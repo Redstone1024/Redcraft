@@ -35,22 +35,22 @@ struct FAllocatorInterface
 		 * this is to support special allocators such as TInlineAllocator.
 		 * If 'InNum' is zero, return nullptr.
 		 */
-		NODISCARD FORCEINLINE constexpr T* Allocate(size_t InNum) = delete;
+		NODISCARD FORCEINLINE T* Allocate(size_t InNum) = delete;
 
 		/** Deallocates storage. */
-		FORCEINLINE constexpr void Deallocate(T* InPtr) = delete;
+		FORCEINLINE void Deallocate(T* InPtr) = delete;
 
 		/** @return true if allocation can be deallocated by another allocator, otherwise false. */
-		NODISCARD FORCEINLINE constexpr bool IsTransferable(T* InPtr) const { return true; }
+		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const { return true; }
 
 		/** Calculates the amount of slack to allocate for an array that has just grown to a given number of elements. */
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const = delete;
+		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const = delete;
 
 		/** Calculates the amount of slack to allocate for an array that has just shrunk to a given number of elements. */
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const = delete;
+		NODISCARD FORCEINLINE size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const = delete;
 
 		/** Calculates the amount of slack to allocate for an array that has just grown or shrunk to a given number of elements. */
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const = delete;
+		NODISCARD FORCEINLINE size_t CalculateSlackReserve(size_t Num) const = delete;
 
 	};
 };
@@ -73,7 +73,7 @@ struct FHeapAllocator : public FAllocatorInterface
 			Memory::Free(InPtr);
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
+		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
 		{
 			const size_t FirstGrow    = 4;
 			const size_t ConstantGrow = 16;
@@ -89,7 +89,7 @@ struct FHeapAllocator : public FAllocatorInterface
 			return Result;
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
+		NODISCARD FORCEINLINE size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
 		{
 			size_t Result;
 
@@ -112,7 +112,7 @@ struct FHeapAllocator : public FAllocatorInterface
 			return Result;
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const
+		NODISCARD FORCEINLINE size_t CalculateSlackReserve(size_t Num) const
 		{
 			return Num != 0 ? Memory::QuantizeSize(Num * sizeof(T), alignof(T)) / sizeof(T) : 0;
 		}
@@ -159,7 +159,7 @@ struct TInlineAllocator : public FAllocatorInterface
 			return Secondary.IsTransferable(InPtr);
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
+		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
 		{
 			check(Num > NumAllocated);
 			check(NumAllocated >= NumInline);
@@ -169,7 +169,7 @@ struct TInlineAllocator : public FAllocatorInterface
 			return Secondary.CalculateSlackGrow(Num, NumAllocated <= NumInline ? 0 : NumAllocated);
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
+		NODISCARD FORCEINLINE size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
 		{
 			check(Num < NumAllocated);
 			check(NumAllocated >= NumInline);
@@ -179,7 +179,7 @@ struct TInlineAllocator : public FAllocatorInterface
 			return Secondary.CalculateSlackShrink(Num, NumAllocated);
 		}
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const
+		NODISCARD FORCEINLINE size_t CalculateSlackReserve(size_t Num) const
 		{
 			if (Num <= NumInline) return NumInline;
 
@@ -203,17 +203,17 @@ struct FNullAllocator : public FAllocatorInterface
 	{
 	public:
 
-		NODISCARD FORCEINLINE constexpr T* Allocate(size_t InNum) { check_no_entry(); return nullptr; }
+		NODISCARD FORCEINLINE T* Allocate(size_t InNum) { check_no_entry(); return nullptr; }
 
-		FORCEINLINE constexpr void Deallocate(T* InPtr) { check_no_entry(); }
+		FORCEINLINE void Deallocate(T* InPtr) { check_no_entry(); }
 
-		NODISCARD FORCEINLINE constexpr bool IsTransferable(T* InPtr) const { check_no_entry(); return false; }
+		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const { check_no_entry(); return false; }
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
+		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
+		NODISCARD FORCEINLINE size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
 
-		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const { check_no_entry(); return 0; }
+		NODISCARD FORCEINLINE size_t CalculateSlackReserve(size_t Num) const { check_no_entry(); return 0; }
 
 	};
 };
