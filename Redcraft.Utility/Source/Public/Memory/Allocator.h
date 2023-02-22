@@ -24,8 +24,10 @@ concept CInstantiableAllocator = CDerivedFrom<T, FAllocatorInterface> && !CSameA
 struct FAllocatorInterface
 {
 	template <CObject T>
-	struct ForElementType : private FSingleton
+	class ForElementType : private FSingleton
 	{
+	public:
+
 		/** 
 		 * Allocates uninitialized storage.
 		 * Should be allocated according to the results given by the CalculateSlackReserve() family,
@@ -33,13 +35,13 @@ struct FAllocatorInterface
 		 * this is to support special allocators such as TInlineAllocator.
 		 * If 'InNum' is zero, return nullptr.
 		 */
-		NODISCARD FORCEINLINE T* Allocate(size_t InNum) = delete;
+		NODISCARD FORCEINLINE constexpr T* Allocate(size_t InNum) = delete;
 
 		/** Deallocates storage. */
-		FORCEINLINE void Deallocate(T* InPtr) = delete;
+		FORCEINLINE constexpr void Deallocate(T* InPtr) = delete;
 
 		/** @return true if allocation can be deallocated by another allocator, otherwise false. */
-		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) { return true; }
+		NODISCARD FORCEINLINE constexpr bool IsTransferable(T* InPtr) const { return true; }
 
 		/** Calculates the amount of slack to allocate for an array that has just grown to a given number of elements. */
 		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const = delete;
@@ -57,8 +59,10 @@ struct FAllocatorInterface
 struct FHeapAllocator : public FAllocatorInterface
 {
 	template <CObject T>
-	struct ForElementType : public FAllocatorInterface::ForElementType<T>
+	class ForElementType : public FAllocatorInterface::ForElementType<T>
 	{
+	public:
+
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
 		{
 			return InNum != 0 ? static_cast<T*>(Memory::Malloc(Memory::QuantizeSize(InNum * sizeof(T)), alignof(T))) : nullptr;
@@ -117,6 +121,105 @@ struct FHeapAllocator : public FAllocatorInterface
 };
 
 using FDefaultAllocator = FHeapAllocator;
+
+/**
+ * The inline allocator allocates up to a specified number of elements in the same allocation as the container.
+ * Any allocation needed beyond that causes all data to be moved into an indirect allocation.
+ */
+template <size_t NumInline, CInstantiableAllocator SecondaryAllocator = FDefaultAllocator>
+struct TInlineAllocator : public FAllocatorInterface
+{
+	template <CObject T>
+	class ForElementType : public FAllocatorInterface::ForElementType<T>
+	{
+	public:
+
+		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
+		{
+			if (InNum == 0) return nullptr;
+
+			check(InNum >= NumInline);
+
+			if (InNum == NumInline) return reinterpret_cast<T*>(&InlineStorage);
+
+			return Secondary.Allocate(InNum);
+		}
+
+		FORCEINLINE void Deallocate(T* InPtr)
+		{
+			if (InPtr == reinterpret_cast<T*>(&InlineStorage)) return;
+
+			Secondary.Deallocate(InPtr);
+		}
+
+		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const
+		{
+			if (InPtr == reinterpret_cast<const T*>(&InlineStorage)) return false;
+
+			return Secondary.IsTransferable(InPtr);
+		}
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
+		{
+			check(Num > NumAllocated);
+			check(NumAllocated >= NumInline);
+
+			if (Num <= NumInline) return NumInline;
+
+			return Secondary.CalculateSlackGrow(Num, NumAllocated <= NumInline ? 0 : NumAllocated);
+		}
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
+		{
+			check(Num < NumAllocated);
+			check(NumAllocated >= NumInline);
+
+			if (Num <= NumInline) return NumInline;
+
+			return Secondary.CalculateSlackShrink(Num, NumAllocated);
+		}
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const
+		{
+			if (Num <= NumInline) return NumInline;
+
+			return Secondary.CalculateSlackReserve(Num);
+		}
+
+	private:
+
+		TAlignedStorage<sizeof(T), alignof(T)> InlineStorage[NumInline];
+
+		typename SecondaryAllocator::template ForElementType<T> Secondary;
+
+	};
+};
+
+/** This is a null allocator for which all operations are illegal. */
+struct FNullAllocator : public FAllocatorInterface
+{
+	template <CObject T>
+	class ForElementType : public FAllocatorInterface::ForElementType<T>
+	{
+	public:
+
+		NODISCARD FORCEINLINE constexpr T* Allocate(size_t InNum) { check_no_entry(); return nullptr; }
+
+		FORCEINLINE constexpr void Deallocate(T* InPtr) { check_no_entry(); }
+
+		NODISCARD FORCEINLINE constexpr bool IsTransferable(T* InPtr) const { check_no_entry(); return false; }
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const { check_no_entry(); return 0; }
+
+		NODISCARD FORCEINLINE constexpr size_t CalculateSlackReserve(size_t Num) const { check_no_entry(); return 0; }
+
+	};
+};
+
+template <size_t Num>
+using TFixedAllocator = TInlineAllocator<Num, FNullAllocator>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
