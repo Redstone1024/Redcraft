@@ -10,6 +10,7 @@ NAMESPACE_BEGIN(Testing)
 
 REDCRAFTUTILITY_API void TestContainers();
 REDCRAFTUTILITY_API void TestArray();
+REDCRAFTUTILITY_API void TestStaticArray();
 
 NAMESPACE_END(Testing)
 

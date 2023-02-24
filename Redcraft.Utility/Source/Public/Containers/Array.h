@@ -97,11 +97,7 @@ public:
 
 	using ElementType = T;
 
-#	if DO_CHECK
-	FORCEINLINE TArrayIterator() : Owner(nullptr) { }
-#	else
 	FORCEINLINE TArrayIterator() = default;
-#	endif
 
 #	if DO_CHECK
 	FORCEINLINE TArrayIterator(const TArrayIterator<ArrayType, TRemoveConst<ElementType>>& InValue) requires (CConst<ElementType>)
@@ -149,10 +145,10 @@ public:
 private:
 
 #	if DO_CHECK
-	const ArrayType* Owner;
+	const ArrayType* Owner = nullptr;
 #	endif
 
-	ElementType* Pointer;
+	ElementType* Pointer = nullptr;
 
 #	if DO_CHECK
 	FORCEINLINE TArrayIterator(const ArrayType* InContainer, ElementType* InPointer)
@@ -1112,8 +1108,8 @@ public:
 	}
 	
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return Storage.GetPointer(); }
-	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return Storage.GetPointer(); }
+	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(Storage.GetPointer()); }
+	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(Storage.GetPointer()); }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(this, Storage.GetPointer());         }
@@ -1175,9 +1171,9 @@ public:
 	{
 		size_t Result = 0;
 
-		for (Iterator Iter = Begin(); Iter != End(); ++Iter)
+		for (ConstIterator Iter = A.Begin(); Iter != A.End(); ++Iter)
 		{
-			HashCombine(Result, GetTypeHash(*Iter));
+			Result = HashCombine(Result, GetTypeHash(*Iter));
 		}
 
 		return Result;

@@ -12,6 +12,7 @@ NAMESPACE_BEGIN(Testing)
 void TestContainers()
 {
 	TestArray();
+	TestStaticArray();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -126,6 +127,55 @@ void TestArray()
 	TestArrayTemplate<FHeapAllocator,       0>();
 	TestArrayTemplate<TInlineAllocator<8>,  8>();
 	TestArrayTemplate<TFixedAllocator<64>, 64>();
+}
+
+void TestStaticArray()
+{
+	{
+		TStaticArray<int32, 4> ArrayA = { 0, 0, 0, 0 };
+		TStaticArray<int32, 4> ArrayB = { 0, 0, 0, 0 };
+		TStaticArray<int32, 4> ArrayC = { 4, 4, 4, 4 };
+		TStaticArray<int32, 4> ArrayD(ArrayC);
+		TStaticArray<int32, 4> ArrayE(MoveTemp(ArrayB));
+		TStaticArray<int32, 4> ArrayF = { 0, 1, 2, 3 };
+
+		TStaticArray<int32, 4> ArrayG;
+		TStaticArray<int32, 4> ArrayH;
+		TStaticArray<int32, 4> ArrayI;
+
+		ArrayG = ArrayD;
+		ArrayH = MoveTemp(ArrayE);
+		ArrayI = { 0, 1, 2, 3 };
+
+		always_check((ArrayC == TStaticArray<int32, 4>({ 4, 4, 4, 4 })));
+		always_check((ArrayD == TStaticArray<int32, 4>({ 4, 4, 4, 4 })));
+		always_check((ArrayG == TStaticArray<int32, 4>({ 4, 4, 4, 4 })));
+		always_check((ArrayF == TStaticArray<int32, 4>({ 0, 1, 2, 3 })));
+		always_check((ArrayI == TStaticArray<int32, 4>({ 0, 1, 2, 3 })));
+	}
+
+	{
+		TStaticArray ArrayA = { 1, 2, 3 };
+		TStaticArray ArrayC = { 1, 2, 3 };
+
+		always_check(( (ArrayA == ArrayC)));
+		always_check((!(ArrayA != ArrayC)));
+		always_check((!(ArrayA <  ArrayC)));
+		always_check(( (ArrayA <= ArrayC)));
+		always_check((!(ArrayA >  ArrayC)));
+		always_check(( (ArrayA >= ArrayC)));
+	}
+
+	{
+		int32 ArrayA[4] = { 1, 2, 3, 4 };
+		TStaticArray<int32, 4> ArrayB = ToArray(ArrayA);
+		auto [A, B, C, D] = ArrayB;
+
+		always_check(A == 1);
+		always_check(B == 2);
+		always_check(C == 3);
+		always_check(D == 4);
+	}
 }
 
 NAMESPACE_END(Testing)

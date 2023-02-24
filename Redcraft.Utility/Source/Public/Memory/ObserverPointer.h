@@ -79,6 +79,9 @@ private:
 
 	T* Pointer;
 
+	template <typename U> requires (CObject<U> && !CBoundedArray<U>)
+	friend class TObserverPtr;
+
 };
 
 template <typename T>
@@ -138,6 +141,9 @@ public:
 private:
 
 	T* Pointer;
+
+	template <typename U> requires (CObject<U> && !CBoundedArray<U>)
+	friend class TObserverPtr;
 
 };
 
