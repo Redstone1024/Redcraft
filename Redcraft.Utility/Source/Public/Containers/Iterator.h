@@ -7,6 +7,7 @@
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
+#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -117,7 +118,7 @@ concept CContiguousIterator = CRandomAccessIterator<I> && CLValueReference<TIter
 	&& CSameAs<TIteratorElementType<I>, TRemoveReference<TIteratorReferenceType<I>>>
 	&& requires(I& Iter)
 	{
-		static_cast<TAddPointer<TIteratorReferenceType<I>>>(Iter);
+		static_cast<TObserverPtr<TIteratorElementType<I>[]>>(Iter);
 		{ AddressOf(*Iter) } -> CSameAs<TAddPointer<TIteratorReferenceType<I>>>;
 	};
 
@@ -416,8 +417,7 @@ public:
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { CheckThis(); return  RHS.Num(); }
 
-	NODISCARD FORCEINLINE constexpr explicit operator       ElementType*()       requires (CContiguousIterator<IteratorType> && !CConst<ElementType>) { CheckThis(); return Current; }
-	NODISCARD FORCEINLINE constexpr explicit operator const ElementType*() const requires (CContiguousIterator<IteratorType>)                         { CheckThis(); return Current; }
+	NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const requires (CContiguousIterator<IteratorType>) { CheckThis(); return TObserverPtr<ElementType[]>(Current); }
 
 	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return Current; }
 	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return Current; }
@@ -755,7 +755,7 @@ template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(    
 template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&  Container)[N]) { return TReverseIterator(End(Container)); }
 template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&& Container)[N]) { return TReverseIterator(End(Container)); }
 
-/** Overloads the RBegin algorithm for T::rbegin(). */
+/** Overloads the RBegin algorithm for initializer_list. */
 template <typename T>
 FORCEINLINE constexpr decltype(auto) RBegin(initializer_list<T> Container)
 {
@@ -775,7 +775,7 @@ template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      
 template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
 template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
 
-/** Overloads the REnd algorithm for T::end(). */
+/** Overloads the REnd algorithm for initializer_list. */
 template <typename T>
 FORCEINLINE constexpr decltype(auto) REnd(initializer_list<T> Container)
 {

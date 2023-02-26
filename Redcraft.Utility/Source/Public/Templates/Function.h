@@ -567,16 +567,16 @@ public:
 	/** Remove the default initialization and disallow the construction of a TFunctionRef that does not store the function target. */
 	FORCEINLINE constexpr TFunctionRef() = delete;
 
-	FORCEINLINE constexpr TFunctionRef(const TFunctionRef& InValue) = default;
-	FORCEINLINE constexpr TFunctionRef(TFunctionRef&& InValue)      = default;
+	FORCEINLINE constexpr TFunctionRef(const TFunctionRef&) = default;
+	FORCEINLINE constexpr TFunctionRef(TFunctionRef&&)      = default;
 
 	/**
 	 * We delete the assignment operators because we don't want it to be confused with being related to
 	 * regular C++ reference assignment - i.e. calling the assignment operator of whatever the reference
 	 * is bound to - because that's not what TFunctionRef does, nor is it even capable of doing that.
 	 */
-	FORCEINLINE constexpr TFunctionRef& operator=(const TFunctionRef& InValue) = delete;
-	FORCEINLINE constexpr TFunctionRef& operator=(TFunctionRef&& InValue)      = delete;
+	FORCEINLINE constexpr TFunctionRef& operator=(const TFunctionRef&) = delete;
+	FORCEINLINE constexpr TFunctionRef& operator=(TFunctionRef&&)      = delete;
 
 	/** Constructor which binds a TFunctionRef to a callable object. */
 	template <typename T> requires (!CTFunctionRef<TDecay<T>>
@@ -617,10 +617,10 @@ public:
 	/**  Default constructor. */
 	FORCEINLINE constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
-	FORCEINLINE TFunction(const TFunction& InValue)            = default;
-	FORCEINLINE TFunction(TFunction&& InValue)                 = default;
-	FORCEINLINE TFunction& operator=(const TFunction& InValue) = default;
-	FORCEINLINE TFunction& operator=(TFunction&& InValue)      = default;
+	FORCEINLINE TFunction(const TFunction&)            = default;
+	FORCEINLINE TFunction(TFunction&&)                 = default;
+	FORCEINLINE TFunction& operator=(const TFunction&) = default;
+	FORCEINLINE TFunction& operator=(TFunction&&)      = default;
 
 	/**
 	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
@@ -746,10 +746,10 @@ public:
 	/**  Default constructor. */
 	FORCEINLINE constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
 
-	FORCEINLINE TUniqueFunction(const TUniqueFunction& InValue)            = delete;
-	FORCEINLINE TUniqueFunction(TUniqueFunction&& InValue)                 = default;
-	FORCEINLINE TUniqueFunction& operator=(const TUniqueFunction& InValue) = delete;
-	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&& InValue)      = default;
+	FORCEINLINE TUniqueFunction(const TUniqueFunction&)            = delete;
+	FORCEINLINE TUniqueFunction(TUniqueFunction&&)                 = default;
+	FORCEINLINE TUniqueFunction& operator=(const TUniqueFunction&) = delete;
+	FORCEINLINE TUniqueFunction& operator=(TUniqueFunction&&)      = default;
 
 	/** Constructor from TFunction to TUniqueFunction. */
 	FORCEINLINE TUniqueFunction(const TFunction<F>& InValue)

@@ -139,8 +139,7 @@ public:
 
 	NODISCARD friend FORCEINLINE ptrdiff operator-(const TArrayIterator& LHS, const TArrayIterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
 
-	NODISCARD FORCEINLINE explicit operator       ElementType*()       requires (!CConst<ElementType>) { CheckThis(); return Pointer; }
-	NODISCARD FORCEINLINE explicit operator const ElementType*() const                                 { CheckThis(); return Pointer; }
+	NODISCARD FORCEINLINE explicit operator TObserverPtr<ElementType[]>() const { CheckThis(); return TObserverPtr<ElementType[]>(Pointer); }
 
 private:
 

@@ -13,6 +13,7 @@ void TestContainers()
 {
 	TestArray();
 	TestStaticArray();
+	TestArrayView();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -175,6 +176,68 @@ void TestStaticArray()
 		always_check(B == 2);
 		always_check(C == 3);
 		always_check(D == 4);
+	}
+}
+
+void TestArrayView()
+{
+	{
+		int32        ArrayA[] = { 0, 0, 0, 0 };
+		TStaticArray ArrayB   = { 4, 4, 4, 4 };
+		TArray       ArrayC   = { 0, 1, 2, 3 };
+
+		TArrayView<int32, 0> ViewA;
+		TArrayView<int32, 4> ViewB(ArrayA);
+		TArrayView<int32, 4> ViewC(ArrayB);
+		TArrayView<int32, 4> ViewD(ViewC);
+		TArrayView<int32, 4> ViewE(MoveTemp(ViewB));
+		TArrayView<int32, 4> ViewF(ArrayC);
+
+		TArrayView<int32> ViewG;
+		TArrayView<int32> ViewH;
+		TArrayView<int32> ViewI;
+
+		ViewG = ViewD;
+		ViewH = MoveTemp(ViewE);
+		ViewI = ArrayC;
+
+		always_check(ViewC == ArrayB);
+		always_check(ViewD == ArrayB);
+		always_check(ViewG == ArrayB);
+		always_check(ViewF == ArrayC);
+		always_check(ViewI == ArrayC);
+	}
+
+	{
+		int32 Array[] = { 0, 1, 2, 3 };
+
+		TArrayView<int32, 4> View = Array;
+
+		int32 First2[] = { 0, 1 };
+		always_check(View.First<2>() == First2);
+		always_check(View.First(2) == First2);
+
+		int32 Last2[] = { 2, 3 };
+		always_check(View.Last<2>() == Last2);
+		always_check(View.Last(2) == Last2);
+
+		int32 Subview2[] = { 1, 2 };
+		always_check((View.Subview<1, 2>() == Subview2));
+		always_check((View.Subview(1, 2) == Subview2));
+	}
+
+	{
+		int32 Array[] = { 0, 1, 2, 3 };
+
+		TArrayView<int32, 4> View = Array;
+
+		always_check(View.Num() == 4);
+		always_check(View.NumBytes() == 16);
+
+		TArrayView ViewBytes = View.AsBytes();
+
+		always_check(ViewBytes.Num() == 16);
+		always_check(ViewBytes.NumBytes() == 16);
 	}
 }
 
