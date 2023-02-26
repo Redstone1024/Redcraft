@@ -14,6 +14,9 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+template <typename T>
+concept CElementalObject = CObject<T> && CDestructible<T>;
+
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename T> using WithReference = T&;

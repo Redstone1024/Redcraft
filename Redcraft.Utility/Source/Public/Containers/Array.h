@@ -175,7 +175,7 @@ private:
 NAMESPACE_PRIVATE_END
 
 /** Dynamic array. The elements are stored contiguously, which means that elements can be accessed not only through iterators, but also using offsets to regular pointers to elements. */
-template <CObject T, typename Allocator = FDefaultAllocator> requires (!CConst<T> && CDestructible<T> && CInstantiableAllocator<Allocator>)
+template <CElementalObject T, CInstantiableAllocator Allocator = FDefaultAllocator> requires (!CConst<T>)
 class TArray final
 {
 public:

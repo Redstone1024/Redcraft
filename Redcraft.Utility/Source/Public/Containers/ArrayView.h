@@ -14,7 +14,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <CObject T, size_t InExtent>
+template <CElementalObject T, size_t InExtent>
 class TArrayView;
 
 NAMESPACE_PRIVATE_BEGIN
@@ -103,7 +103,7 @@ private:
 	template <typename U>
 	friend class TArrayViewIterator;
 
-	template <CObject U, size_t InExtent>
+	template <CElementalObject U, size_t InExtent>
 	friend class NAMESPACE_REDCRAFT::TArrayView;
 
 };
@@ -116,10 +116,10 @@ struct TEnableArrayNum<false> { size_t ArrayNum; };
 
 NAMESPACE_PRIVATE_END
 
-template <CObject T, size_t N>
+template <CElementalObject T, size_t N>
 struct TStaticArray;
 
-template <CObject T, typename A> requires (!CConst<T> && CDestructible<T> && CInstantiableAllocator<A>)
+template <CElementalObject T, CInstantiableAllocator A> requires (!CConst<T>)
 class TArray;
 
 inline constexpr size_t DynamicExtent = INDEX_NONE;
@@ -129,7 +129,7 @@ inline constexpr size_t DynamicExtent = INDEX_NONE;
  * the sequence at position zero. A TArrayView can either have a static extent, in which case the number of elements in the sequence
  * is known at compile-time and encoded in the type, or a dynamic extent.
  */
-template <CObject T, size_t InExtent = DynamicExtent>
+template <CElementalObject T, size_t InExtent = DynamicExtent>
 class TArrayView final : private NAMESPACE_PRIVATE::TEnableArrayNum<InExtent == DynamicExtent>
 {
 private:
