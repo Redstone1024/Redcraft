@@ -176,7 +176,7 @@ private:
 NAMESPACE_PRIVATE_END
 
 /** Dynamic array. The elements are stored contiguously, which means that elements can be accessed not only through iterators, but also using offsets to regular pointers to elements. */
-template <typename T, typename Allocator = FDefaultAllocator> requires (!CConst<T> && CDestructible<T> && CInstantiableAllocator<Allocator>)
+template <CObject T, typename Allocator = FDefaultAllocator> requires (!CConst<T> && CDestructible<T> && CInstantiableAllocator<Allocator>)
 class TArray final
 {
 public:
@@ -412,20 +412,20 @@ public:
 			Storage.GetMax()     = NumToAllocate;
 			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL), Num());
+			Memory::CopyConstruct<ElementType>(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
 
 			return *this;
 		}
 
 		if (GetNum(IL) <= Num())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL), GetNum(IL));
+			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), GetNum(IL));
 			Memory::Destruct(Storage.GetPointer() + GetNum(IL), Num() - GetNum(IL));
 		}
 		else if (GetNum(IL) <= Max())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL), Num());
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer() + Num(), NAMESPACE_REDCRAFT::GetData(IL) + Num(), GetNum(IL) - Num());
+			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
+			Memory::CopyConstruct<ElementType>(Storage.GetPointer() + Num(), NAMESPACE_REDCRAFT::GetData(IL).Get() + Num(), GetNum(IL) - Num());
 		}
 		else check_no_entry();
 
@@ -1207,6 +1207,12 @@ private:
 	NAMESPACE_PRIVATE::TArrayStorage<T, typename AllocatorType::template ForElementType<T>> Storage;
 
 };
+
+template <typename I, typename S>
+TArray(I, S) -> TArray<TIteratorElementType<I>>;
+
+template <typename T>
+TArray(initializer_list<T>) -> TArray<T>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

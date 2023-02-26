@@ -68,8 +68,7 @@ public:
 	NODISCARD FORCEINLINE constexpr T& operator*()  const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
 	NODISCARD FORCEINLINE constexpr T* operator->() const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
 
-	NODISCARD FORCEINLINE constexpr operator       ElementType*()       { return Get(); }
-	NODISCARD FORCEINLINE constexpr operator const ElementType*() const { return Get(); }
+	NODISCARD FORCEINLINE constexpr explicit operator ElementType*() const { return Get(); }
 
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TObserverPtr& A) { return GetTypeHash(A.Get()); }
 
@@ -131,8 +130,7 @@ public:
 
 	NODISCARD FORCEINLINE constexpr T& operator[](size_t Index) const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return Get()[Index]; }
 
-	NODISCARD FORCEINLINE constexpr operator       ElementType*()       { return Get(); }
-	NODISCARD FORCEINLINE constexpr operator const ElementType*() const { return Get(); }
+	NODISCARD FORCEINLINE constexpr explicit operator ElementType*() const { return Get(); }
 
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TObserverPtr& A) { return GetTypeHash(A.Get()); }
 
