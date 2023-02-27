@@ -120,13 +120,11 @@ struct FHeapAllocator : public FAllocatorInterface
 	};
 };
 
-using FDefaultAllocator = FHeapAllocator;
-
 /**
  * The inline allocator allocates up to a specified number of elements in the same allocation as the container.
  * Any allocation needed beyond that causes all data to be moved into an indirect allocation.
  */
-template <size_t NumInline, CInstantiableAllocator SecondaryAllocator = FDefaultAllocator>
+template <size_t NumInline, CInstantiableAllocator SecondaryAllocator = FHeapAllocator>
 struct TInlineAllocator : public FAllocatorInterface
 {
 	template <CObject T>

@@ -55,8 +55,8 @@ public:
 	FORCEINLINE constexpr TArrayViewIterator& operator++() { ++Pointer; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayViewIterator& operator--() { --Pointer; CheckThis(); return *this; }
 
-	FORCEINLINE constexpr TArrayViewIterator operator++(int) { TArrayViewIterator Temp = *this; ++Pointer; CheckThis(); return Temp; }
-	FORCEINLINE constexpr TArrayViewIterator operator--(int) { TArrayViewIterator Temp = *this; --Pointer; CheckThis(); return Temp; }
+	FORCEINLINE constexpr TArrayViewIterator operator++(int) { TArrayViewIterator Temp = *this; ++*this; return Temp; }
+	FORCEINLINE constexpr TArrayViewIterator operator--(int) { TArrayViewIterator Temp = *this; --*this; return Temp; }
 
 	FORCEINLINE constexpr TArrayViewIterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
 	FORCEINLINE constexpr TArrayViewIterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }

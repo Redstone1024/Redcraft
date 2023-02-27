@@ -124,7 +124,6 @@ NAMESPACE_UNNAMED_END
 
 void TestArray()
 {
-	TestArrayTemplate<FDefaultAllocator,    0>();
 	TestArrayTemplate<FHeapAllocator,       0>();
 	TestArrayTemplate<TInlineAllocator<8>,  8>();
 	TestArrayTemplate<TFixedAllocator<64>, 64>();

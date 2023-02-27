@@ -18,78 +18,6 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename T, typename A, bool = CEmpty<A> && !CFinal<A>>
-class TArrayStorage;
-
-template <typename T, typename A>
-class TArrayStorage<T, A, true> : private A
-{
-public:
-
-	FORCEINLINE TArrayStorage() = default;
-
-	FORCEINLINE TArrayStorage(const TArrayStorage&)            = delete;
-	FORCEINLINE TArrayStorage(TArrayStorage&& InValue)         = delete;
-	FORCEINLINE TArrayStorage& operator=(const TArrayStorage&) = delete;
-	FORCEINLINE TArrayStorage& operator=(TArrayStorage&&)      = delete;
-
-	FORCEINLINE T*& GetPointer()       { return Pointer; }
-	FORCEINLINE T*  GetPointer() const { return Pointer; }
-	
-	FORCEINLINE size_t& GetNum()       { return ArrayNum; }
-	FORCEINLINE size_t  GetNum() const { return ArrayNum; }
-	FORCEINLINE size_t& GetMax()       { return ArrayMax; }
-	FORCEINLINE size_t  GetMax() const { return ArrayMax; }
-
-	FORCEINLINE       A& GetAllocator()       { return *this;   }
-	FORCEINLINE const A& GetAllocator() const { return *this;   }
-
-private:
-
-	// NOTE: NO_UNIQUE_ADDRESS is not valid in MSVC, use base class instead of member variable
-	//NO_UNIQUE_ADDRESS A Allocator;
-
-	T* Pointer;
-
-	size_t ArrayNum;
-	size_t ArrayMax;
-
-};
-
-template <typename T, typename A>
-class TArrayStorage<T, A, false>
-{
-public:
-
-	FORCEINLINE TArrayStorage() = default;
-
-	FORCEINLINE TArrayStorage(const TArrayStorage&)            = delete;
-	FORCEINLINE TArrayStorage(TArrayStorage&& InValue)         = delete;
-	FORCEINLINE TArrayStorage& operator=(const TArrayStorage&) = delete;
-	FORCEINLINE TArrayStorage& operator=(TArrayStorage&&)      = delete;
-
-	FORCEINLINE T*& GetPointer()       { return Pointer; }
-	FORCEINLINE T*  GetPointer() const { return Pointer; }
-	
-	FORCEINLINE size_t& GetNum()       { return ArrayNum; }
-	FORCEINLINE size_t  GetNum() const { return ArrayNum; }
-	FORCEINLINE size_t& GetMax()       { return ArrayMax; }
-	FORCEINLINE size_t  GetMax() const { return ArrayMax; }
-
-	FORCEINLINE       A& GetAllocator()       { return Allocator; }
-	FORCEINLINE const A& GetAllocator() const { return Allocator; }
-
-private:
-
-	T* Pointer;
-
-	size_t ArrayNum;
-	size_t ArrayMax;
-
-	A Allocator;
-
-};
-
 template <typename ArrayType, typename T>
 class TArrayIterator
 {
@@ -126,8 +54,8 @@ public:
 	FORCEINLINE TArrayIterator& operator++() { ++Pointer; CheckThis(); return *this; }
 	FORCEINLINE TArrayIterator& operator--() { --Pointer; CheckThis(); return *this; }
 
-	FORCEINLINE TArrayIterator operator++(int) { TArrayIterator Temp = *this; ++Pointer; CheckThis(); return Temp; }
-	FORCEINLINE TArrayIterator operator--(int) { TArrayIterator Temp = *this; --Pointer; CheckThis(); return Temp; }
+	FORCEINLINE TArrayIterator operator++(int) { TArrayIterator Temp = *this; ++*this; return Temp; }
+	FORCEINLINE TArrayIterator operator--(int) { TArrayIterator Temp = *this; --*this; return Temp; }
 
 	FORCEINLINE TArrayIterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
 	FORCEINLINE TArrayIterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
@@ -175,7 +103,7 @@ private:
 NAMESPACE_PRIVATE_END
 
 /** Dynamic array. The elements are stored contiguously, which means that elements can be accessed not only through iterators, but also using offsets to regular pointers to elements. */
-template <CElementalObject T, CInstantiableAllocator Allocator = FDefaultAllocator> requires (!CConst<T>)
+template <CElementalObject T, CInstantiableAllocator Allocator = FHeapAllocator> requires (!CConst<T>)
 class TArray final
 {
 public:
@@ -1105,7 +1033,7 @@ public:
 
 		Storage.GetAllocator().Deallocate(OldAllocation);
 	}
-	
+
 	/** @return The pointer to the underlying element storage. */
 	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(Storage.GetPointer()); }
 	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(Storage.GetPointer()); }
@@ -1115,7 +1043,7 @@ public:
 	NODISCARD FORCEINLINE ConstIterator Begin() const { return ConstIterator(this, Storage.GetPointer());         }
 	NODISCARD FORCEINLINE      Iterator End()         { return      Iterator(this, Storage.GetPointer() + Num()); }
 	NODISCARD FORCEINLINE ConstIterator End()   const { return ConstIterator(this, Storage.GetPointer() + Num()); }
-	
+
 	/** @return The reverse iterator to the first or end element. */
 	NODISCARD FORCEINLINE      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
 	NODISCARD FORCEINLINE ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
@@ -1203,7 +1131,79 @@ public:
 
 private:
 
-	NAMESPACE_PRIVATE::TArrayStorage<T, typename AllocatorType::template ForElementType<T>> Storage;
+	template <typename A, bool = CEmpty<A> && !CFinal<A>>
+	class TStorage;
+
+	template <typename A>
+	class TStorage<A, true> : private A
+	{
+	public:
+
+		FORCEINLINE TStorage() = default;
+
+		FORCEINLINE TStorage(const TStorage&)            = delete;
+		FORCEINLINE TStorage(TStorage&& InValue)         = delete;
+		FORCEINLINE TStorage& operator=(const TStorage&) = delete;
+		FORCEINLINE TStorage& operator=(TStorage&&)      = delete;
+
+		FORCEINLINE T*& GetPointer()       { return Pointer; }
+		FORCEINLINE T*  GetPointer() const { return Pointer; }
+
+		FORCEINLINE size_t& GetNum()       { return ArrayNum; }
+		FORCEINLINE size_t  GetNum() const { return ArrayNum; }
+		FORCEINLINE size_t& GetMax()       { return ArrayMax; }
+		FORCEINLINE size_t  GetMax() const { return ArrayMax; }
+
+		FORCEINLINE       A& GetAllocator()       { return *this;   }
+		FORCEINLINE const A& GetAllocator() const { return *this;   }
+
+	private:
+
+		// NOTE: NO_UNIQUE_ADDRESS is not valid in MSVC, use base class instead of member variable
+		//NO_UNIQUE_ADDRESS A Allocator;
+
+		T* Pointer;
+
+		size_t ArrayNum;
+		size_t ArrayMax;
+
+	};
+
+	template <typename A>
+	class TStorage<A, false>
+	{
+	public:
+
+		FORCEINLINE TStorage() = default;
+
+		FORCEINLINE TStorage(const TStorage&)            = delete;
+		FORCEINLINE TStorage(TStorage&& InValue)         = delete;
+		FORCEINLINE TStorage& operator=(const TStorage&) = delete;
+		FORCEINLINE TStorage& operator=(TStorage&&)      = delete;
+
+		FORCEINLINE T*& GetPointer()       { return Pointer; }
+		FORCEINLINE T*  GetPointer() const { return Pointer; }
+
+		FORCEINLINE size_t& GetNum()       { return ArrayNum; }
+		FORCEINLINE size_t  GetNum() const { return ArrayNum; }
+		FORCEINLINE size_t& GetMax()       { return ArrayMax; }
+		FORCEINLINE size_t  GetMax() const { return ArrayMax; }
+
+		FORCEINLINE       A& GetAllocator()       { return Allocator; }
+		FORCEINLINE const A& GetAllocator() const { return Allocator; }
+
+	private:
+
+		T* Pointer;
+
+		size_t ArrayNum;
+		size_t ArrayMax;
+
+		A Allocator;
+
+	};
+
+	TStorage<typename AllocatorType::template ForElementType<T>> Storage;
 
 };
 
