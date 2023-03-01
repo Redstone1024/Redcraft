@@ -22,7 +22,10 @@ struct TStaticArray final
 {
 
 	using ElementType = T;
-	
+
+	using      Reference =       T&;
+	using ConstReference = const T&;
+
 	using      Iterator = TArrayView<      T, N>::Iterator;
 	using ConstIterator = TArrayView<const T, N>::Iterator;
 

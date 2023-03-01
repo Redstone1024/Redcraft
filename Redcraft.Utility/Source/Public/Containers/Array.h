@@ -111,6 +111,9 @@ public:
 	using ElementType   = T;
 	using AllocatorType = Allocator;
 
+	using      Reference =       T&;
+	using ConstReference = const T&;
+
 	using      Iterator = NAMESPACE_PRIVATE::TArrayIterator<TArray,       ElementType>;
 	using ConstIterator = NAMESPACE_PRIVATE::TArrayIterator<TArray, const ElementType>;
 
@@ -1189,8 +1192,8 @@ private:
 		FORCEINLINE size_t& GetMax()       { return ArrayMax; }
 		FORCEINLINE size_t  GetMax() const { return ArrayMax; }
 
-		FORCEINLINE       A& GetAllocator()       { return Allocator; }
-		FORCEINLINE const A& GetAllocator() const { return Allocator; }
+		FORCEINLINE       A& GetAllocator()       { return AllocatorInstance; }
+		FORCEINLINE const A& GetAllocator() const { return AllocatorInstance; }
 
 	private:
 
@@ -1199,7 +1202,7 @@ private:
 		size_t ArrayNum;
 		size_t ArrayMax;
 
-		A Allocator;
+		A AllocatorInstance;
 
 	};
 

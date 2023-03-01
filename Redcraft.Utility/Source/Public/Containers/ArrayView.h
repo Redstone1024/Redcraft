@@ -140,6 +140,8 @@ public:
 
 	using ElementType = T;
 
+	using Reference = T&;
+
 	using Iterator = NAMESPACE_PRIVATE::TArrayViewIterator<ElementType>;
 
 	using ReverseIterator = TReverseIterator<Iterator>;
