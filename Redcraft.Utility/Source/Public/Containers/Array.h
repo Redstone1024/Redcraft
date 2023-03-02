@@ -129,23 +129,23 @@ public:
 	/** Constructs the container with 'Count' default instances of T. */
 	explicit TArray(size_t Count) requires (CDefaultConstructible<ElementType>)
 	{
-		Storage.GetNum()     = Count;
-		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+		Impl.ArrayNum = Count;
+		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::DefaultConstruct<ElementType>(Storage.GetPointer(), Num());
+		Memory::DefaultConstruct<ElementType>(Impl.Pointer, Num());
 	}
 	
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TArray(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
 	{
-		Storage.GetNum()     = Count;
-		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+		Impl.ArrayNum = Count;
+		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+		Impl.Pointer  = Impl->Allocate(Max());
 
 		for (size_t Index = 0; Index < Num(); ++Index)
 		{
-			new (Storage.GetPointer() + Index) ElementType(InValue);
+			new (Impl.Pointer + Index) ElementType(InValue);
 		}
 	}
 
@@ -159,20 +159,20 @@ public:
 
 			const size_t Count = Iteration::Distance(First, Last);
 
-			Storage.GetNum()     = Count;
-			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Count;
+			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+			Impl.Pointer  = Impl->Allocate(Max());
 
 			for (size_t Index = 0; Index != Count; ++Index)
 			{
-				new (Storage.GetPointer() + Index) ElementType(*First++);
+				new (Impl.Pointer + Index) ElementType(*First++);
 			}
 		}
 		else
 		{
-			Storage.GetNum()     = 0;
-			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = 0;
+			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+			Impl.Pointer  = Impl->Allocate(Max());
 
 			while (First != Last)
 			{
@@ -185,33 +185,33 @@ public:
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
 	TArray(const TArray& InValue) requires (CCopyConstructible<ElementType>)
 	{
-		Storage.GetNum()     = InValue.Num();
-		Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+		Impl.ArrayNum = InValue.Num();
+		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::CopyConstruct<ElementType>(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
+		Memory::CopyConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 	}
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
 	TArray(TArray&& InValue) requires (CMoveConstructible<ElementType>)
 	{
-		Storage.GetNum() = InValue.Num();
+		Impl.ArrayNum = InValue.Num();
 
-		if (InValue.Storage.GetAllocator().IsTransferable(InValue.Storage.GetPointer()))
+		if (InValue.Impl->IsTransferable(InValue.Impl.Pointer))
 		{
-			Storage.GetMax()     = InValue.Max();
-			Storage.GetPointer() = InValue.Storage.GetPointer();
+			Impl.ArrayMax = InValue.Max();
+			Impl.Pointer  = InValue.Impl.Pointer;
 
-			InValue.Storage.GetNum()     = 0;
-			InValue.Storage.GetMax()     = InValue.Storage.GetAllocator().CalculateSlackReserve(InValue.Num());
-			InValue.Storage.GetPointer() = InValue.Storage.GetAllocator().Allocate(InValue.Max());
+			InValue.Impl.ArrayNum = 0;
+			InValue.Impl.ArrayMax = InValue.Impl->CalculateSlackReserve(InValue.Num());
+			InValue.Impl.Pointer  = InValue.Impl->Allocate(InValue.Max());
 		}
 		else
 		{
-			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 		}
 	}
 
@@ -221,8 +221,8 @@ public:
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	~TArray()
 	{
-		Memory::Destruct(Storage.GetPointer(),Num());
-		Storage.GetAllocator().Deallocate(Storage.GetPointer());
+		Memory::Destruct(Impl.Pointer,Num());
+		Impl->Deallocate(Impl.Pointer);
 	}
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
@@ -232,36 +232,36 @@ public:
 
 		size_t NumToAllocate = InValue.Num();
 
-		NumToAllocate = NumToAllocate > Max() ? Storage.GetAllocator().CalculateSlackGrow(InValue.Num(), Max())   : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? Storage.GetAllocator().CalculateSlackShrink(InValue.Num(), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow(InValue.Num(), Max())   : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(InValue.Num(), Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
-			Memory::Destruct(Storage.GetPointer(), Num());
-			Storage.GetAllocator().Deallocate(Storage.GetPointer());
+			Memory::Destruct(Impl.Pointer, Num());
+			Impl->Deallocate(Impl.Pointer);
 			
-			Storage.GetNum()     = InValue.Num();
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = InValue.Num();
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 
 			return *this;
 		}
 
 		if (InValue.Num() <= Num())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), InValue.Storage.GetPointer(), InValue.Num());
-			Memory::Destruct(Storage.GetPointer() + InValue.Num(), Num() - InValue.Num());
+			Memory::CopyAssign(Impl.Pointer, InValue.Impl.Pointer, InValue.Num());
+			Memory::Destruct(Impl.Pointer + InValue.Num(), Num() - InValue.Num());
 		}
 		else if (InValue.Num() <= Max())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer() + Num(), InValue.Storage.GetPointer() + Num(), InValue.Num() - Num());
+			Memory::CopyAssign(Impl.Pointer, InValue.Impl.Pointer, Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
 		}
 		else check_no_entry();
 
-		Storage.GetNum() = InValue.Num();
+		Impl.ArrayNum = InValue.Num();
 
 		return *this;
 	}
@@ -271,35 +271,35 @@ public:
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
-		if (InValue.Storage.GetAllocator().IsTransferable(InValue.Storage.GetPointer()))
+		if (InValue.Impl->IsTransferable(InValue.Impl.Pointer))
 		{
-			Memory::Destruct(Storage.GetPointer(), Num());
-			Storage.GetAllocator().Deallocate(Storage.GetPointer());
+			Memory::Destruct(Impl.Pointer, Num());
+			Impl->Deallocate(Impl.Pointer);
 
-			Storage.GetPointer() = InValue.Storage.GetPointer();
+			Impl.Pointer = InValue.Impl.Pointer;
 
-			InValue.Storage.GetNum()     = 0;
-			InValue.Storage.GetMax()     = InValue.Storage.GetAllocator().CalculateSlackReserve(InValue.Num());
-			InValue.Storage.GetPointer() = InValue.Storage.GetAllocator().Allocate(InValue.Max());
+			InValue.Impl.ArrayNum = 0;
+			InValue.Impl.ArrayMax = InValue.Impl->CalculateSlackReserve(InValue.Num());
+			InValue.Impl.Pointer  = InValue.Impl->Allocate(InValue.Max());
 
 			return *this;
 		}
 
 		size_t NumToAllocate = InValue.Num();
 
-		NumToAllocate = NumToAllocate > Max() ? Storage.GetAllocator().CalculateSlackGrow(InValue.Num(), Max())   : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? Storage.GetAllocator().CalculateSlackShrink(InValue.Num(), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow(InValue.Num(), Max())   : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(InValue.Num(), Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
-			Memory::Destruct(Storage.GetPointer(), Num());
-			Storage.GetAllocator().Deallocate(Storage.GetPointer());
+			Memory::Destruct(Impl.Pointer, Num());
+			Impl->Deallocate(Impl.Pointer);
 			
-			Storage.GetNum()     = InValue.Num();
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = InValue.Num();
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 			
 			InValue.Reset();
 
@@ -308,17 +308,17 @@ public:
 
 		if (InValue.Num() <= Num())
 		{
-			Memory::MoveAssign(Storage.GetPointer(), InValue.Storage.GetPointer(), InValue.Num());
-			Memory::Destruct(Storage.GetPointer() + InValue.Num(), Num() - InValue.Num());
+			Memory::MoveAssign(Impl.Pointer, InValue.Impl.Pointer, InValue.Num());
+			Memory::Destruct(Impl.Pointer + InValue.Num(), Num() - InValue.Num());
 		}
 		else if (InValue.Num() <= Max())
 		{
-			Memory::MoveAssign(Storage.GetPointer(), InValue.Storage.GetPointer(), Num());
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + Num(), InValue.Storage.GetPointer() + Num(), InValue.Num() - Num());
+			Memory::MoveAssign(Impl.Pointer, InValue.Impl.Pointer, Num());
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
 		}
 		else check_no_entry();
 
-		Storage.GetNum() = InValue.Num();
+		Impl.ArrayNum = InValue.Num();
 
 		InValue.Reset();
 
@@ -330,36 +330,36 @@ public:
 	{
 		size_t NumToAllocate = GetNum(IL);
 
-		NumToAllocate = NumToAllocate > Max() ? Storage.GetAllocator().CalculateSlackGrow(GetNum(IL), Max())   : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? Storage.GetAllocator().CalculateSlackShrink(GetNum(IL), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow(GetNum(IL), Max())   : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(GetNum(IL), Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
-			Memory::Destruct(Storage.GetPointer(), Num());
-			Storage.GetAllocator().Deallocate(Storage.GetPointer());
+			Memory::Destruct(Impl.Pointer, Num());
+			Impl->Deallocate(Impl.Pointer);
 			
-			Storage.GetNum()     = GetNum(IL);
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = GetNum(IL);
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
 
 			return *this;
 		}
 
 		if (GetNum(IL) <= Num())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), GetNum(IL));
-			Memory::Destruct(Storage.GetPointer() + GetNum(IL), Num() - GetNum(IL));
+			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), GetNum(IL));
+			Memory::Destruct(Impl.Pointer + GetNum(IL), Num() - GetNum(IL));
 		}
 		else if (GetNum(IL) <= Max())
 		{
-			Memory::CopyAssign(Storage.GetPointer(), NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
-			Memory::CopyConstruct<ElementType>(Storage.GetPointer() + Num(), NAMESPACE_REDCRAFT::GetData(IL).Get() + Num(), GetNum(IL) - Num());
+			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL).Get() + Num(), GetNum(IL) - Num());
 		}
 		else check_no_entry();
 
-		Storage.GetNum() = GetNum(IL);
+		Impl.ArrayNum = GetNum(IL);
 
 		return *this;
 	}
@@ -418,45 +418,45 @@ public:
 
 		const size_t InsertIndex = Iter - Begin();
 
-		const size_t NumToAllocate = Num() + 1 > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + 1, Max()) : Max();
+		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
 
 		check(NumToAllocate >= Num() + 1);
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() + 1;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() + 1;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
-			new (Storage.GetPointer() + InsertIndex) ElementType(InValue);
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) ElementType(InValue);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + InsertIndex);
+			return Iterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Storage.GetPointer() + Num()) ElementType(MoveTemp(Storage.GetPointer()[Num() - 1]));
+			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
-				Storage.GetPointer()[Index] = MoveTemp(Storage.GetPointer()[Index - 1]);
+				Impl.Pointer[Index] = MoveTemp(Impl.Pointer[Index - 1]);
 			}
 
-			Storage.GetPointer()[InsertIndex] = InValue;
+			Impl.Pointer[InsertIndex] = InValue;
 		}
-		else new (Storage.GetPointer() + Num()) ElementType(InValue);
+		else new (Impl.Pointer + Num()) ElementType(InValue);
 
-		Storage.GetNum() = Num() + 1;
+		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Storage.GetPointer() + InsertIndex);
+		return Iterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
@@ -466,45 +466,45 @@ public:
 
 		const size_t InsertIndex = Iter - Begin();
 
-		const size_t NumToAllocate = Num() + 1 > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + 1, Max()) : Max();
+		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
 
 		check(NumToAllocate >= Num() + 1);
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() + 1;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() + 1;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
-			new (Storage.GetPointer() + InsertIndex) ElementType(MoveTemp(InValue));
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) ElementType(MoveTemp(InValue));
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + InsertIndex);
+			return Iterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Storage.GetPointer() + Num()) ElementType(MoveTemp(Storage.GetPointer()[Num() - 1]));
+			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
-				Storage.GetPointer()[Index] = MoveTemp(Storage.GetPointer()[Index - 1]);
+				Impl.Pointer[Index] = MoveTemp(Impl.Pointer[Index - 1]);
 			}
 
-			Storage.GetPointer()[InsertIndex] = MoveTemp(InValue);
+			Impl.Pointer[InsertIndex] = MoveTemp(InValue);
 		}
-		else new (Storage.GetPointer() + Num()) ElementType(MoveTemp(InValue));
+		else new (Impl.Pointer + Num()) ElementType(MoveTemp(InValue));
 		
-		Storage.GetNum() = Num() + 1;
+		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Storage.GetPointer() + InsertIndex);
+		return Iterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
@@ -514,34 +514,34 @@ public:
 
 		const size_t InsertIndex = Iter - Begin();
 
-		if (Count == 0) return Iterator(this, Storage.GetPointer() + InsertIndex);
+		if (Count == 0) return Iterator(this, Impl.Pointer + InsertIndex);
 
-		const size_t NumToAllocate = Num() + Count > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + Count, Max()) : Max();
+		const size_t NumToAllocate = Num() + Count > Max() ? Impl->CalculateSlackGrow(Num() + Count, Max()) : Max();
 
 		check(NumToAllocate >= Num() + Count);
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() + Count;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() + Count;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
 
 			for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
 			{
-				new (Storage.GetPointer() + Index) ElementType(InValue);
+				new (Impl.Pointer + Index) ElementType(InValue);
 			}
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + InsertIndex);
+			return Iterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		/*
@@ -583,27 +583,27 @@ public:
 
 		for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
 		{
-			new (Storage.GetPointer() + TargetIndex) ElementType(MoveTemp(Storage.GetPointer()[TargetIndex - Count]));
+			new (Impl.Pointer + TargetIndex) ElementType(MoveTemp(Impl.Pointer[TargetIndex - Count]));
 		}
 
 		for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
 		{
-			Storage.GetPointer()[TargetIndex] = MoveTemp(Storage.GetPointer()[TargetIndex - Count]);
+			Impl.Pointer[TargetIndex] = MoveTemp(Impl.Pointer[TargetIndex - Count]);
 		}
 
 		for (size_t TargetIndex = IndexA; TargetIndex != IndexB; ++TargetIndex)
 		{
-			Storage.GetPointer()[TargetIndex] = InValue;
+			Impl.Pointer[TargetIndex] = InValue;
 		}
 
 		for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
 		{
-			new (Storage.GetPointer() + TargetIndex) ElementType(InValue);
+			new (Impl.Pointer + TargetIndex) ElementType(InValue);
 		}
 
-		Storage.GetNum() = Num() + Count;
+		Impl.ArrayNum = Num() + Count;
 
-		return Iterator(this, Storage.GetPointer() + InsertIndex);
+		return Iterator(this, Impl.Pointer + InsertIndex);
 	}
 	
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
@@ -620,34 +620,34 @@ public:
 			const size_t InsertIndex = Iter - Begin();
 			const size_t Count = Iteration::Distance(First, Last);
 
-			if (Count == 0) return Iterator(this, Storage.GetPointer() + InsertIndex);
+			if (Count == 0) return Iterator(this, Impl.Pointer + InsertIndex);
 
-			const size_t NumToAllocate = Num() + Count > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + Count, Max()) : Max();
+			const size_t NumToAllocate = Num() + Count > Max() ? Impl->CalculateSlackGrow(Num() + Count, Max()) : Max();
 
 			check(NumToAllocate >= Num() + Count);
 
 			if (NumToAllocate != Max())
 			{
-				ElementType* OldAllocation = Storage.GetPointer();
+				ElementType* OldAllocation = Impl.Pointer;
 				const size_t NumToDestruct = Num();
 
-				Storage.GetNum()     = Num() + Count;
-				Storage.GetMax()     = NumToAllocate;
-				Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+				Impl.ArrayNum = Num() + Count;
+				Impl.ArrayMax = NumToAllocate;
+				Impl.Pointer  = Impl->Allocate(Max());
 
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
+				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
 
 				for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
 				{
-					new (Storage.GetPointer() + Index) ElementType(*First++);
+					new (Impl.Pointer + Index) ElementType(*First++);
 				}
 
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+				Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 				Memory::Destruct(OldAllocation, NumToDestruct);
-				Storage.GetAllocator().Deallocate(OldAllocation);
+				Impl->Deallocate(OldAllocation);
 
-				return Iterator(this, Storage.GetPointer() + InsertIndex);
+				return Iterator(this, Impl.Pointer + InsertIndex);
 			}
 
 			const size_t IndexA = InsertIndex;
@@ -660,29 +660,29 @@ public:
 
 			for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
 			{
-				new (Storage.GetPointer() + TargetIndex) ElementType(MoveTemp(Storage.GetPointer()[TargetIndex - Count]));
+				new (Impl.Pointer + TargetIndex) ElementType(MoveTemp(Impl.Pointer[TargetIndex - Count]));
 			}
 
 			for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
 			{
-				Storage.GetPointer()[TargetIndex] = MoveTemp(Storage.GetPointer()[TargetIndex - Count]);
+				Impl.Pointer[TargetIndex] = MoveTemp(Impl.Pointer[TargetIndex - Count]);
 			}
 
 			for (size_t TargetIndex = IndexA; TargetIndex != IndexB; ++TargetIndex)
 			{
-				Storage.GetPointer()[TargetIndex] = *First++;
+				Impl.Pointer[TargetIndex] = *First++;
 			}
 
 			for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
 			{
-				new (Storage.GetPointer() + TargetIndex) ElementType(*First++);
+				new (Impl.Pointer + TargetIndex) ElementType(*First++);
 			}
 
 			check(First == Last);
 
-			Storage.GetNum() = Num() + Count;
+			Impl.ArrayNum = Num() + Count;
 
-			return Iterator(this, Storage.GetPointer() + InsertIndex);
+			return Iterator(this, Impl.Pointer + InsertIndex);
 		}
 		else
 		{
@@ -705,45 +705,45 @@ public:
 
 		const size_t InsertIndex = Iter - Begin();
 
-		const size_t NumToAllocate = Num() + 1 > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + 1, Max()) : Max();
+		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
 
 		check(NumToAllocate >= Num() + 1);
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() + 1;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() + 1;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, InsertIndex);
-			new (Storage.GetPointer() + InsertIndex) ElementType(Forward<Ts>(Args)...);
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) ElementType(Forward<Ts>(Args)...);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + InsertIndex);
+			return Iterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Storage.GetPointer() + Num()) ElementType(MoveTemp(Storage.GetPointer()[Num() - 1]));
+			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
-				Storage.GetPointer()[Index] = MoveTemp(Storage.GetPointer()[Index - 1]);
+				Impl.Pointer[Index] = MoveTemp(Impl.Pointer[Index - 1]);
 			}
 
-			Storage.GetPointer()[InsertIndex] = ElementType(Forward<Ts>(Args)...);
+			Impl.Pointer[InsertIndex] = ElementType(Forward<Ts>(Args)...);
 		}
-		else new (Storage.GetPointer() + Num()) ElementType(Forward<Ts>(Args)...);
+		else new (Impl.Pointer + Num()) ElementType(Forward<Ts>(Args)...);
 
-		Storage.GetNum() = Num() + 1;
+		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Storage.GetPointer() + InsertIndex);
+		return Iterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Removes the element at 'Iter' in the container. Without changing the order of elements. */
@@ -762,38 +762,38 @@ public:
 		const size_t EraseIndex = First - Begin();
 		const size_t EraseCount = Last - First;
 
-		if (EraseCount == 0) return Iterator(this, Storage.GetPointer() + EraseIndex);
+		if (EraseCount == 0) return Iterator(this, Impl.Pointer + EraseIndex);
 
-		const size_t NumToAllocate = bAllowShrinking ? Storage.GetAllocator().CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
+		const size_t NumToAllocate = bAllowShrinking ? Impl->CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() - EraseCount;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() - EraseCount;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, EraseIndex);
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, EraseIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + EraseIndex);
+			return Iterator(this, Impl.Pointer + EraseIndex);
 		}
 
 		for (size_t Index = EraseIndex + EraseCount; Index != Num(); ++Index)
 		{
-			Storage.GetPointer()[Index - EraseCount] = MoveTemp(Storage.GetPointer()[Index]);
+			Impl.Pointer[Index - EraseCount] = MoveTemp(Impl.Pointer[Index]);
 		}
 
-		Memory::Destruct(Storage.GetPointer() + Num() - EraseCount, EraseCount);
+		Memory::Destruct(Impl.Pointer + Num() - EraseCount, EraseCount);
 
-		Storage.GetNum() = Num() - EraseCount;
+		Impl.ArrayNum = Num() - EraseCount;
 
-		return Iterator(this, Storage.GetPointer() + EraseIndex);
+		return Iterator(this, Impl.Pointer + EraseIndex);
 	}
 
 	/** Removes the element at 'Iter' in the container. But it may change the order of elements. */
@@ -812,40 +812,40 @@ public:
 		const size_t EraseIndex = First - Begin();
 		const size_t EraseCount = Last - First;
 
-		if (EraseCount == 0) return Iterator(this, Storage.GetPointer() + EraseIndex);
+		if (EraseCount == 0) return Iterator(this, Impl.Pointer + EraseIndex);
 
-		const size_t NumToAllocate = bAllowShrinking ? Storage.GetAllocator().CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
+		const size_t NumToAllocate = bAllowShrinking ? Impl->CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Num() - EraseCount;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() - EraseCount;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, EraseIndex);
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer() + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, EraseIndex);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Storage.GetPointer() + EraseIndex);
+			return Iterator(this, Impl.Pointer + EraseIndex);
 		}
 
 		for (size_t Index = 0; Index != EraseCount; ++Index)
 		{
 			if (EraseIndex + Index >= Num() - EraseCount) break;
 
-			Storage.GetPointer()[EraseIndex + Index] = MoveTemp(Storage.GetPointer()[Num() - Index - 1]);
+			Impl.Pointer[EraseIndex + Index] = MoveTemp(Impl.Pointer[Num() - Index - 1]);
 		}
 
-		Memory::Destruct(Storage.GetPointer() + Num() - EraseCount, EraseCount);
+		Memory::Destruct(Impl.Pointer + Num() - EraseCount, EraseCount);
 
-		Storage.GetNum() = Num() - EraseCount;
+		Impl.ArrayNum = Num() - EraseCount;
 
-		return Iterator(this, Storage.GetPointer() + EraseIndex);
+		return Iterator(this, Impl.Pointer + EraseIndex);
 	}
 
 	/** Appends the given element value to the end of the container. */
@@ -864,33 +864,33 @@ public:
 	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMovable<ElementType>)
 	ElementType& EmplaceBack(Ts&&... Args)
 	{
-		const size_t NumToAllocate = Num() + 1 > Max() ? Storage.GetAllocator().CalculateSlackGrow(Num() + 1, Max()) : Max();
+		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
 
 		check(NumToAllocate >= Num() + 1);
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 			
-			Storage.GetNum()     = Num() + 1;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Num() + 1;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, Num() - 1);
-			new (Storage.GetPointer() + Num() - 1) ElementType(Forward<Ts>(Args)...);
+			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num() - 1);
+			new (Impl.Pointer + Num() - 1) ElementType(Forward<Ts>(Args)...);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
-			return Storage.GetPointer()[Num() - 1];
+			return Impl.Pointer[Num() - 1];
 		}
 
-		new (Storage.GetPointer() + Num()) ElementType(Forward<Ts>(Args)...);
+		new (Impl.Pointer + Num()) ElementType(Forward<Ts>(Args)...);
 
-		Storage.GetNum() = Num() + 1;
+		Impl.ArrayNum = Num() + 1;
 
-		return Storage.GetPointer()[Num() - 1];
+		return Impl.Pointer[Num() - 1];
 	}
 
 	/** Removes the last element of the container. The array cannot be empty. */
@@ -904,45 +904,45 @@ public:
 	{
 		size_t NumToAllocate = Count;
 		
-		NumToAllocate = NumToAllocate > Max()                    ? Storage.GetAllocator().CalculateSlackGrow(Count, Max())            : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Storage.GetAllocator().CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max()                    ? Impl->CalculateSlackGrow(Count, Max())            : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Impl->CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Count;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Count;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
 			if (NumToDestruct <= Num())
 			{
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, NumToDestruct);
-				Memory::DefaultConstruct<ElementType>(Storage.GetPointer() + NumToDestruct, Num() - NumToDestruct);
+				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
+				Memory::DefaultConstruct<ElementType>(Impl.Pointer + NumToDestruct, Num() - NumToDestruct);
 			}
 			else
 			{
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, Num());
+				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
 			}
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
 			return;
 		}
 		
 		if (Count <= Num())
 		{
-			Memory::Destruct(Storage.GetPointer() + Count, Num() - Count);
+			Memory::Destruct(Impl.Pointer + Count, Num() - Count);
 		}
 		else if (Count <= Max())
 		{
-			Memory::DefaultConstruct<ElementType>(Storage.GetPointer() + Num(), Count - Num());
+			Memory::DefaultConstruct<ElementType>(Impl.Pointer + Num(), Count - Num());
 		}
 		else check_no_entry();
 
-		Storage.GetNum() = Count;
+		Impl.ArrayNum = Count;
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional copies of 'InValue' are appended. */
@@ -950,52 +950,52 @@ public:
 	{
 		size_t NumToAllocate = Count;
 		
-		NumToAllocate = NumToAllocate > Max()                    ? Storage.GetAllocator().CalculateSlackGrow(Count, Max())            : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Storage.GetAllocator().CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max()                    ? Impl->CalculateSlackGrow(Count, Max())            : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Impl->CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Storage.GetPointer();
+			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
 
-			Storage.GetNum()     = Count;
-			Storage.GetMax()     = NumToAllocate;
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = Count;
+			Impl.ArrayMax = NumToAllocate;
+			Impl.Pointer  = Impl->Allocate(Max());
 
 			if (NumToDestruct <= Num())
 			{
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, NumToDestruct);
+				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
 
 				for (size_t Index = NumToDestruct; Index != Num(); ++Index)
 				{
-					new (Storage.GetPointer() + Index) ElementType(InValue);
+					new (Impl.Pointer + Index) ElementType(InValue);
 				}
 			}
 			else
 			{
-				Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, Num());
+				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
 			}
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
-			Storage.GetAllocator().Deallocate(OldAllocation);
+			Impl->Deallocate(OldAllocation);
 
 			return;
 		}
 		
 		if (Count <= Num())
 		{
-			Memory::Destruct(Storage.GetPointer() + Count, Num() - Count);
+			Memory::Destruct(Impl.Pointer + Count, Num() - Count);
 		}
 		else if (Count <= Max())
 		{
 			for (size_t Index = Num(); Index != Count; ++Index)
 			{
-				new (Storage.GetPointer() + Index) ElementType(InValue);
+				new (Impl.Pointer + Index) ElementType(InValue);
 			}
 		}
 		else check_no_entry();
 
-		Storage.GetNum() = Count;
+		Impl.ArrayNum = Count;
 	}
 
 	/** Increase the max capacity of the array to a value that's greater or equal to 'Count'. */
@@ -1003,49 +1003,49 @@ public:
 	{
 		if (Count <= Max()) return;
 
-		const size_t NumToAllocate = Storage.GetAllocator().CalculateSlackReserve(Count);
-		ElementType* OldAllocation = Storage.GetPointer();
+		const size_t NumToAllocate = Impl->CalculateSlackReserve(Count);
+		ElementType* OldAllocation = Impl.Pointer;
 
 		check(NumToAllocate > Max());
 
-		Storage.GetMax()     = NumToAllocate;
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+		Impl.ArrayMax = NumToAllocate;
+		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, Num());
+		Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
 
 		Memory::Destruct(OldAllocation, Num());
-		Storage.GetAllocator().Deallocate(OldAllocation);
+		Impl->Deallocate(OldAllocation);
 	}
 
 	/** Requests the removal of unused capacity. */
 	void Shrink()
 	{
-		size_t NumToAllocate = Storage.GetAllocator().CalculateSlackReserve(Num());
+		size_t NumToAllocate = Impl->CalculateSlackReserve(Num());
 
 		check(NumToAllocate <= Max());
 
 		if (NumToAllocate == Max()) return;
 
-		ElementType* OldAllocation = Storage.GetPointer();
+		ElementType* OldAllocation = Impl.Pointer;
 		
-		Storage.GetMax()     = NumToAllocate;
-		Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+		Impl.ArrayMax = NumToAllocate;
+		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::MoveConstruct<ElementType>(Storage.GetPointer(), OldAllocation, Num());
+		Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
 		Memory::Destruct(OldAllocation, Num());
 
-		Storage.GetAllocator().Deallocate(OldAllocation);
+		Impl->Deallocate(OldAllocation);
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(Storage.GetPointer()); }
-	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(Storage.GetPointer()); }
+	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(Impl.Pointer); }
+	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(Impl.Pointer); }
 
 	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(this, Storage.GetPointer());         }
-	NODISCARD FORCEINLINE ConstIterator Begin() const { return ConstIterator(this, Storage.GetPointer());         }
-	NODISCARD FORCEINLINE      Iterator End()         { return      Iterator(this, Storage.GetPointer() + Num()); }
-	NODISCARD FORCEINLINE ConstIterator End()   const { return ConstIterator(this, Storage.GetPointer() + Num()); }
+	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(this, Impl.Pointer);         }
+	NODISCARD FORCEINLINE ConstIterator Begin() const { return ConstIterator(this, Impl.Pointer);         }
+	NODISCARD FORCEINLINE      Iterator End()         { return      Iterator(this, Impl.Pointer + Num()); }
+	NODISCARD FORCEINLINE ConstIterator End()   const { return ConstIterator(this, Impl.Pointer + Num()); }
 
 	/** @return The reverse iterator to the first or end element. */
 	NODISCARD FORCEINLINE      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
@@ -1054,10 +1054,10 @@ public:
 	NODISCARD FORCEINLINE ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
-	NODISCARD FORCEINLINE size_t Num() const { return Storage.GetNum(); }
+	NODISCARD FORCEINLINE size_t Num() const { return Impl.ArrayNum; }
 
 	/** @return The number of elements that can be held in currently allocated storage. */
-	NODISCARD FORCEINLINE size_t Max() const { return Storage.GetMax(); }
+	NODISCARD FORCEINLINE size_t Max() const { return Impl.ArrayMax; }
 
 	/** @return true if the container is empty, false otherwise. */
 	NODISCARD FORCEINLINE bool IsEmpty() const { return Num() == 0; }
@@ -1066,8 +1066,8 @@ public:
 	NODISCARD FORCEINLINE bool IsValidIterator(ConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE       ElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Storage.GetPointer()[Index]; }
-	NODISCARD FORCEINLINE const ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Storage.GetPointer()[Index]; }
+	NODISCARD FORCEINLINE       ElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
+	NODISCARD FORCEINLINE const ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
 
 	/** @return The reference to the first or last element. */
 	NODISCARD FORCEINLINE       ElementType& Front()       { return *Begin();     }
@@ -1078,22 +1078,22 @@ public:
 	/** Erases all elements from the container. After this call, Num() returns zero. */
 	void Reset(bool bAllowShrinking = true)
 	{
-		const size_t NumToAllocate = Storage.GetAllocator().CalculateSlackReserve(0);
+		const size_t NumToAllocate = Impl->CalculateSlackReserve(0);
 
 		if (bAllowShrinking && NumToAllocate != Max())
 		{
-			Memory::Destruct(Storage.GetPointer(), Num());
-			Storage.GetAllocator().Deallocate(Storage.GetPointer());
+			Memory::Destruct(Impl.Pointer, Num());
+			Impl->Deallocate(Impl.Pointer);
 
-			Storage.GetNum()     = 0;
-			Storage.GetMax()     = Storage.GetAllocator().CalculateSlackReserve(Num());
-			Storage.GetPointer() = Storage.GetAllocator().Allocate(Max());
+			Impl.ArrayNum = 0;
+			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
+			Impl.Pointer  = Impl->Allocate(Max());
 
 			return;
 		}
 
-		Memory::Destruct(Storage.GetPointer(), Num());
-		Storage.GetNum() = 0;
+		Memory::Destruct(Impl.Pointer, Num());
+		Impl.ArrayNum = 0;
 	}
 
 	/** Overloads the GetTypeHash algorithm for TArray. */
@@ -1113,14 +1113,14 @@ public:
 	friend void Swap(TArray& A, TArray& B) requires (CMovable<ElementType>)
 	{
 		const bool bIsTransferable =
-			A.Storage.GetAllocator().IsTransferable(A.Storage.GetPointer()) &&
-			B.Storage.GetAllocator().IsTransferable(B.Storage.GetPointer());
+			A.Impl->IsTransferable(A.Impl.Pointer) &&
+			B.Impl->IsTransferable(B.Impl.Pointer);
 
 		if (bIsTransferable)
 		{
-			Swap(A.Storage.GetNum(),     B.Storage.GetNum());
-			Swap(A.Storage.GetMax(),     B.Storage.GetMax());
-			Swap(A.Storage.GetPointer(), B.Storage.GetPointer());
+			Swap(A.Impl.ArrayNum, B.Impl.ArrayNum);
+			Swap(A.Impl.ArrayMax, B.Impl.ArrayMax);
+			Swap(A.Impl.Pointer,  B.Impl.Pointer);
 
 			return;
 		}
@@ -1134,79 +1134,13 @@ public:
 
 private:
 
-	template <typename A, bool = CEmpty<A> && !CFinal<A>>
-	class TStorage;
-
-	template <typename A>
-	class TStorage<A, true> : private A
+	ALLOCATOR_WRAPPER_BEGIN(AllocatorType, ElementType, Impl)
 	{
-	public:
-
-		FORCEINLINE TStorage() = default;
-
-		FORCEINLINE TStorage(const TStorage&)            = delete;
-		FORCEINLINE TStorage(TStorage&& InValue)         = delete;
-		FORCEINLINE TStorage& operator=(const TStorage&) = delete;
-		FORCEINLINE TStorage& operator=(TStorage&&)      = delete;
-
-		FORCEINLINE T*& GetPointer()       { return Pointer; }
-		FORCEINLINE T*  GetPointer() const { return Pointer; }
-
-		FORCEINLINE size_t& GetNum()       { return ArrayNum; }
-		FORCEINLINE size_t  GetNum() const { return ArrayNum; }
-		FORCEINLINE size_t& GetMax()       { return ArrayMax; }
-		FORCEINLINE size_t  GetMax() const { return ArrayMax; }
-
-		FORCEINLINE       A& GetAllocator()       { return *this;   }
-		FORCEINLINE const A& GetAllocator() const { return *this;   }
-
-	private:
-
-		// NOTE: NO_UNIQUE_ADDRESS is not valid in MSVC, use base class instead of member variable
-		//NO_UNIQUE_ADDRESS A Allocator;
-
-		T* Pointer;
-
 		size_t ArrayNum;
 		size_t ArrayMax;
-
-	};
-
-	template <typename A>
-	class TStorage<A, false>
-	{
-	public:
-
-		FORCEINLINE TStorage() = default;
-
-		FORCEINLINE TStorage(const TStorage&)            = delete;
-		FORCEINLINE TStorage(TStorage&& InValue)         = delete;
-		FORCEINLINE TStorage& operator=(const TStorage&) = delete;
-		FORCEINLINE TStorage& operator=(TStorage&&)      = delete;
-
-		FORCEINLINE T*& GetPointer()       { return Pointer; }
-		FORCEINLINE T*  GetPointer() const { return Pointer; }
-
-		FORCEINLINE size_t& GetNum()       { return ArrayNum; }
-		FORCEINLINE size_t  GetNum() const { return ArrayNum; }
-		FORCEINLINE size_t& GetMax()       { return ArrayMax; }
-		FORCEINLINE size_t  GetMax() const { return ArrayMax; }
-
-		FORCEINLINE       A& GetAllocator()       { return AllocatorInstance; }
-		FORCEINLINE const A& GetAllocator() const { return AllocatorInstance; }
-
-	private:
-
-		T* Pointer;
-
-		size_t ArrayNum;
-		size_t ArrayMax;
-
-		A AllocatorInstance;
-
-	};
-
-	TStorage<typename AllocatorType::template ForElementType<T>> Storage;
+		ElementType* Pointer;
+	}
+	ALLOCATOR_WRAPPER_END(AllocatorType, ElementType, Impl)
 
 };
 

@@ -55,6 +55,40 @@ struct FAllocatorInterface
 	};
 };
 
+#define ALLOCATOR_WRAPPER_BEGIN(Allocator, Type, Name)     \
+	                                                       \
+	struct PREPROCESSOR_JOIN(F, Name) : private FSingleton
+
+#define ALLOCATOR_WRAPPER_END(Allocator, Type, Name) ;                                             \
+	                                                                                               \
+	template <typename A, bool = CEmpty<A> && !CFinal<A>>                                          \
+	struct PREPROCESSOR_JOIN(T, Name);                                                             \
+	                                                                                               \
+	template <typename A>                                                                          \
+	struct PREPROCESSOR_JOIN(T, Name)<A, true> : public PREPROCESSOR_JOIN(F, Name), private A      \
+	{                                                                                              \
+		NODISCARD FORCEINLINE       A& operator*()        { return *this; }                        \
+		NODISCARD FORCEINLINE const A& operator*()  const { return *this; }                        \
+		NODISCARD FORCEINLINE       A* operator->()       { return  this; }                        \
+		NODISCARD FORCEINLINE const A* operator->() const { return  this; }                        \
+	};                                                                                             \
+	                                                                                               \
+	template <typename A>                                                                          \
+	struct PREPROCESSOR_JOIN(T, Name)<A, false> : public PREPROCESSOR_JOIN(F, Name)                \
+	{                                                                                              \
+		NODISCARD FORCEINLINE       A& operator*()        { return  AllocatorInstance; }           \
+		NODISCARD FORCEINLINE const A& operator*()  const { return  AllocatorInstance; }           \
+		NODISCARD FORCEINLINE       A* operator->()       { return &AllocatorInstance; }           \
+		NODISCARD FORCEINLINE const A* operator->() const { return &AllocatorInstance; }           \
+		                                                                                           \
+	private:                                                                                       \
+		                                                                                           \
+		A AllocatorInstance;                                                                       \
+		                                                                                           \
+	};                                                                                             \
+	                                                                                               \
+	PREPROCESSOR_JOIN(T, Name)<typename Allocator::template ForElementType<Type>> Name;
+
 /** This is heap allocator that calls Memory::Malloc() directly for memory allocation. */
 struct FHeapAllocator : public FAllocatorInterface
 {
@@ -138,23 +172,23 @@ struct TInlineAllocator : public FAllocatorInterface
 
 			check(InNum >= NumInline);
 
-			if (InNum == NumInline) return reinterpret_cast<T*>(&InlineStorage);
+			if (InNum == NumInline) return Impl.GetInline();
 
-			return Secondary.Allocate(InNum);
+			return Impl->Allocate(InNum);
 		}
 
 		FORCEINLINE void Deallocate(T* InPtr)
 		{
-			if (InPtr == reinterpret_cast<T*>(&InlineStorage)) return;
+			if (InPtr == Impl.GetInline()) return;
 
-			Secondary.Deallocate(InPtr);
+			Impl->Deallocate(InPtr);
 		}
 
 		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const
 		{
-			if (InPtr == reinterpret_cast<const T*>(&InlineStorage)) return false;
+			if (InPtr == Impl.GetInline()) return false;
 
-			return Secondary.IsTransferable(InPtr);
+			return Impl->IsTransferable(InPtr);
 		}
 
 		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
@@ -164,7 +198,7 @@ struct TInlineAllocator : public FAllocatorInterface
 
 			if (Num <= NumInline) return NumInline;
 
-			return Secondary.CalculateSlackGrow(Num, NumAllocated <= NumInline ? 0 : NumAllocated);
+			return Impl->CalculateSlackGrow(Num, NumAllocated <= NumInline ? 0 : NumAllocated);
 		}
 
 		NODISCARD FORCEINLINE size_t CalculateSlackShrink(size_t Num, size_t NumAllocated) const
@@ -174,21 +208,26 @@ struct TInlineAllocator : public FAllocatorInterface
 
 			if (Num <= NumInline) return NumInline;
 
-			return Secondary.CalculateSlackShrink(Num, NumAllocated);
+			return Impl->CalculateSlackShrink(Num, NumAllocated);
 		}
 
 		NODISCARD FORCEINLINE size_t CalculateSlackReserve(size_t Num) const
 		{
 			if (Num <= NumInline) return NumInline;
 
-			return Secondary.CalculateSlackReserve(Num);
+			return Impl->CalculateSlackReserve(Num);
 		}
 
 	private:
 
-		TAlignedStorage<sizeof(T), alignof(T)> InlineStorage[NumInline];
+		ALLOCATOR_WRAPPER_BEGIN(SecondaryAllocator, T, Impl)
+		{
+			TAlignedStorage<sizeof(T), alignof(T)> InlineStorage[NumInline];
 
-		typename SecondaryAllocator::template ForElementType<T> Secondary;
+			NODISCARD FORCEINLINE       T* GetInline()       { return reinterpret_cast<      T*>(&InlineStorage); }
+			NODISCARD FORCEINLINE const T* GetInline() const { return reinterpret_cast<const T*>(&InlineStorage); }
+		}
+		ALLOCATOR_WRAPPER_END(SecondaryAllocator, T, Impl)
 
 	};
 };
