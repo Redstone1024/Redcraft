@@ -6,6 +6,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+// WARNING: Using these helper classes as base classes may raise potential EBO issues and is not recommended for objects with strict size constraints.
+
 /** A class indicates that a derived class cannot be copied. */
 struct FNoncopyable
 {

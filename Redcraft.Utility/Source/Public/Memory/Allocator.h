@@ -12,8 +12,17 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 struct FAllocatorInterface;
 
-template <typename T>
-concept CInstantiableAllocator = CDerivedFrom<T, FAllocatorInterface> && !CSameAs<T, FAllocatorInterface>;
+template <typename A, typename T = int>
+concept CInstantiableAllocator = !CSameAs<A, FAllocatorInterface>
+	&& requires (typename A::template ForElementType<T>& Allocator, T* InPtr, size_t Num, size_t NumAllocated)
+	{
+		{         Allocator.Allocate(Num)          } -> CSameAs<T*>;
+		{         Allocator.Deallocate(InPtr)      } -> CSameAs<void>;
+		{ AsConst(Allocator).IsTransferable(InPtr) } -> CBooleanTestable;
+		{ AsConst(Allocator).CalculateSlackGrow(Num, NumAllocated)   } -> CSameAs<size_t>;
+		{ AsConst(Allocator).CalculateSlackShrink(Num, NumAllocated) } -> CSameAs<size_t>;
+		{ AsConst(Allocator).CalculateSlackReserve(Num)              } -> CSameAs<size_t>;
+	};
 
 /**
  * This is the allocator interface, the allocator does not use virtual, this contains the default of
@@ -24,9 +33,15 @@ concept CInstantiableAllocator = CDerivedFrom<T, FAllocatorInterface> && !CSameA
 struct FAllocatorInterface
 {
 	template <CObject T>
-	class ForElementType : private FSingleton
+	class ForElementType /*: private FSingleton*/
 	{
 	public:
+
+		ForElementType()                                 = default;
+		ForElementType(const ForElementType&)            = delete;
+		ForElementType(ForElementType&&)                 = delete;
+		ForElementType& operator=(const ForElementType&) = delete;
+		ForElementType& operator=(ForElementType&&)      = delete;
 
 		/** 
 		 * Allocates uninitialized storage.
@@ -57,7 +72,7 @@ struct FAllocatorInterface
 
 #define ALLOCATOR_WRAPPER_BEGIN(Allocator, Type, Name)     \
 	                                                       \
-	struct PREPROCESSOR_JOIN(F, Name) : private FSingleton
+	struct PREPROCESSOR_JOIN(F, Name) /*: private FSingleton*/
 
 #define ALLOCATOR_WRAPPER_END(Allocator, Type, Name) ;                                             \
 	                                                                                               \
@@ -90,12 +105,18 @@ struct FAllocatorInterface
 	PREPROCESSOR_JOIN(T, Name)<typename Allocator::template ForElementType<Type>> Name;
 
 /** This is heap allocator that calls Memory::Malloc() directly for memory allocation. */
-struct FHeapAllocator : public FAllocatorInterface
+struct FHeapAllocator
 {
 	template <CObject T>
-	class ForElementType : public FAllocatorInterface::ForElementType<T>
+	class ForElementType
 	{
 	public:
+
+		ForElementType()                                 = default;
+		ForElementType(const ForElementType&)            = delete;
+		ForElementType(ForElementType&&)                 = delete;
+		ForElementType& operator=(const ForElementType&) = delete;
+		ForElementType& operator=(ForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
 		{
@@ -106,6 +127,8 @@ struct FHeapAllocator : public FAllocatorInterface
 		{
 			Memory::Free(InPtr);
 		}
+
+		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const { return true; }
 
 		NODISCARD FORCEINLINE size_t CalculateSlackGrow(size_t Num, size_t NumAllocated) const
 		{
@@ -159,12 +182,18 @@ struct FHeapAllocator : public FAllocatorInterface
  * Any allocation needed beyond that causes all data to be moved into an indirect allocation.
  */
 template <size_t NumInline, CInstantiableAllocator SecondaryAllocator = FHeapAllocator>
-struct TInlineAllocator : public FAllocatorInterface
+struct TInlineAllocator
 {
 	template <CObject T>
-	class ForElementType : public FAllocatorInterface::ForElementType<T>
+	class ForElementType
 	{
 	public:
+
+		ForElementType()                                 = default;
+		ForElementType(const ForElementType&)            = delete;
+		ForElementType(ForElementType&&)                 = delete;
+		ForElementType& operator=(const ForElementType&) = delete;
+		ForElementType& operator=(ForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
 		{
@@ -233,12 +262,18 @@ struct TInlineAllocator : public FAllocatorInterface
 };
 
 /** This is a null allocator for which all operations are illegal. */
-struct FNullAllocator : public FAllocatorInterface
+struct FNullAllocator
 {
 	template <CObject T>
-	class ForElementType : public FAllocatorInterface::ForElementType<T>
+	class ForElementType
 	{
 	public:
+
+		ForElementType()                                 = default;
+		ForElementType(const ForElementType&)            = delete;
+		ForElementType(ForElementType&&)                 = delete;
+		ForElementType& operator=(const ForElementType&) = delete;
+		ForElementType& operator=(ForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum) { check_no_entry(); return nullptr; }
 

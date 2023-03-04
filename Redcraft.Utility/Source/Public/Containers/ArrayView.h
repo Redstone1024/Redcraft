@@ -14,108 +14,6 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <CElementalObject T, size_t InExtent>
-class TArrayView;
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T>
-class TArrayViewIterator
-{
-public:
-
-	using ElementType = T;
-
-	FORCEINLINE constexpr TArrayViewIterator() = default;
-
-#	if DO_CHECK
-	FORCEINLINE constexpr TArrayViewIterator(const TArrayViewIterator<TRemoveConst<ElementType>>& InValue) requires (CConst<ElementType>)
-		: Pointer(InValue.Pointer), FirstSentinel(InValue.FirstSentinel), EndSentinel(InValue.EndSentinel)
-	{ }
-#	else
-	FORCEINLINE constexpr TArrayViewIterator(const TArrayViewIterator<TRemoveConst<ElementType>>& InValue) requires (CConst<ElementType>)
-		: Pointer(InValue.Pointer)
-	{ }
-#	endif
-
-	FORCEINLINE constexpr TArrayViewIterator(const TArrayViewIterator&)            = default;
-	FORCEINLINE constexpr TArrayViewIterator(TArrayViewIterator&&)                 = default;
-	FORCEINLINE constexpr TArrayViewIterator& operator=(const TArrayViewIterator&) = default;
-	FORCEINLINE constexpr TArrayViewIterator& operator=(TArrayViewIterator&&)      = default;
-
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TArrayViewIterator& LHS, const TArrayViewIterator& RHS) { return LHS.Pointer == RHS.Pointer; }
-
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TArrayViewIterator & LHS, const TArrayViewIterator & RHS) { return LHS.Pointer <=> RHS.Pointer; }
-
-	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { CheckThis(true); return *Pointer; }
-	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { CheckThis(true); return  Pointer; }
-
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { TArrayViewIterator Temp = *this + Index; return *Temp; }
-
-	FORCEINLINE constexpr TArrayViewIterator& operator++() { ++Pointer; CheckThis(); return *this; }
-	FORCEINLINE constexpr TArrayViewIterator& operator--() { --Pointer; CheckThis(); return *this; }
-
-	FORCEINLINE constexpr TArrayViewIterator operator++(int) { TArrayViewIterator Temp = *this; ++*this; return Temp; }
-	FORCEINLINE constexpr TArrayViewIterator operator--(int) { TArrayViewIterator Temp = *this; --*this; return Temp; }
-
-	FORCEINLINE constexpr TArrayViewIterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
-	FORCEINLINE constexpr TArrayViewIterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
-
-	NODISCARD friend FORCEINLINE constexpr TArrayViewIterator operator+(TArrayViewIterator Iter, ptrdiff Offset) { TArrayViewIterator Temp = Iter; Temp += Offset; return Temp; }
-	NODISCARD friend FORCEINLINE constexpr TArrayViewIterator operator+(ptrdiff Offset, TArrayViewIterator Iter) { TArrayViewIterator Temp = Iter; Temp += Offset; return Temp; }
-
-	NODISCARD FORCEINLINE constexpr TArrayViewIterator operator-(ptrdiff Offset) const { TArrayViewIterator Temp = *this; Temp -= Offset; return Temp; }
-
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TArrayViewIterator& LHS, const TArrayViewIterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
-
-	NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const { CheckThis(); return TObserverPtr<ElementType[]>(Pointer); }
-
-private:
-
-	ElementType* Pointer = nullptr;
-
-#	if DO_CHECK
-	ElementType* FirstSentinel = nullptr;
-	ElementType*   EndSentinel = nullptr;
-#	endif
-
-#	if DO_CHECK
-	FORCEINLINE constexpr TArrayViewIterator(ElementType* InPointer, ElementType* InFirstSentinel, ElementType* InEndSentinel)
-		: Pointer(InPointer), FirstSentinel(InFirstSentinel), EndSentinel(InEndSentinel)
-	{ }
-#	else
-	FORCEINLINE constexpr TArrayViewIterator(ElementType* InPointer, ElementType* InFirstSentinel, ElementType* InEndSentinel)
-		: Pointer(InPointer)
-	{ }
-#	endif
-
-	FORCEINLINE constexpr void CheckThis(bool bExceptEnd = false) const
-	{
-		check_code
-		({
-			const bool bInLegalRange = FirstSentinel && EndSentinel && FirstSentinel <= Pointer && Pointer <= EndSentinel;
-			const bool bIsDereferenceable = Pointer != EndSentinel;
-
-			checkf(bInLegalRange && (!bExceptEnd || bIsDereferenceable), TEXT("Read access violation. Please check IsValidIterator()."));
-		});
-	}
-
-	template <typename U>
-	friend class TArrayViewIterator;
-
-	template <CElementalObject U, size_t InExtent>
-	friend class NAMESPACE_REDCRAFT::TArrayView;
-
-};
-
-template <bool bEnable>
-struct TEnableArrayNum { size_t ArrayNum; };
-
-template <>
-struct TEnableArrayNum<false> { size_t ArrayNum; };
-
-NAMESPACE_PRIVATE_END
-
 template <CElementalObject T, size_t N>
 struct TStaticArray;
 
@@ -130,19 +28,15 @@ inline constexpr size_t DynamicExtent = INDEX_NONE;
  * is known at compile-time and encoded in the type, or a dynamic extent.
  */
 template <CElementalObject T, size_t InExtent = DynamicExtent>
-class TArrayView final : private NAMESPACE_PRIVATE::TEnableArrayNum<InExtent == DynamicExtent>
+class TArrayView final
 {
-private:
-
-	using Impl = NAMESPACE_PRIVATE::TEnableArrayNum<InExtent == DynamicExtent>;
-
 public:
 
 	using ElementType = T;
 
 	using Reference = T&;
 
-	using Iterator = NAMESPACE_PRIVATE::TArrayViewIterator<ElementType>;
+	class Iterator;
 
 	using ReverseIterator = TReverseIterator<Iterator>;
 
@@ -155,35 +49,41 @@ public:
 
 	/** Constructs an array view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
 	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, size_t InCount) : Pointer(static_cast<TObserverPtr<TIteratorElementType<I>[]>>(InFirst))
+	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, size_t InCount)
 	{
 		checkf(Extent == DynamicExtent || Extent == InCount, TEXT("Illegal range count. Please check InCount."));
 
+		Impl.Pointer = AddressOf(*InFirst);
+
 		if constexpr (Extent == DynamicExtent)
 		{
-			Impl::ArrayNum = InCount;
+			Impl.ArrayNum = InCount;
 		}
 	}
 
 	/** Constructs an array view that is a view over the range ['InFirst', 'InLast'). */
 	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, S InLast) : Pointer(static_cast<TObserverPtr<TIteratorElementType<I>[]>>(InFirst))
+	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, S InLast)
 	{
 		checkf(Extent == DynamicExtent || Extent == InLast - InFirst, TEXT("Illegal range iterator. Please check InLast - InFirst."));
 
+		Impl.Pointer = AddressOf(*InFirst);
+
 		if constexpr (Extent == DynamicExtent)
 		{
-			Impl::ArrayNum = InLast - InFirst;
+			Impl.ArrayNum = InLast - InFirst;
 		}
 	}
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
 	template <size_t N> requires (Extent == DynamicExtent || N == Extent)
-	FORCEINLINE constexpr TArrayView(ElementType(&InArray)[N]) : Pointer(InArray)
+	FORCEINLINE constexpr TArrayView(ElementType(&InArray)[N])
 	{
+		Impl.Pointer = AddressOf(InArray[0]);
+
 		if constexpr (Extent == DynamicExtent)
 		{
-			Impl::ArrayNum = N;
+			Impl.ArrayNum = N;
 		}
 	}
 
@@ -211,13 +111,15 @@ public:
 
 	/** Converting constructor from another array view 'InValue'. */
 	template <typename U, size_t N> requires ((Extent == DynamicExtent || N == DynamicExtent || N == Extent) && CConvertibleTo<U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr explicit (Extent != DynamicExtent && N == DynamicExtent) TArrayView(TArrayView<U, N> InValue) : Pointer(InValue.GetData())
+	FORCEINLINE constexpr explicit (Extent != DynamicExtent && N == DynamicExtent) TArrayView(TArrayView<U, N> InValue)
 	{
 		checkf(Extent == DynamicExtent || Extent == InValue.Num(), TEXT("Illegal view extent. Please check InValue.Num()."));
 
+		Impl.Pointer = AddressOf(InValue[0]);
+
 		if constexpr (Extent == DynamicExtent)
 		{
-			Impl::ArrayNum = InValue.Num();
+			Impl.ArrayNum = InValue.Num();
 		}
 	}
 
@@ -365,18 +267,18 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr TObserverPtr<ElementType[]> GetData() const { return Pointer; }
+	NODISCARD FORCEINLINE constexpr TObserverPtr<ElementType[]> GetData() const { return TObserverPtr<ElementType[]>(Impl.Pointer); }
 
 	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(Pointer.Get()        , Pointer.Get(), Pointer.Get() + Num()); }
-	NODISCARD FORCEINLINE constexpr Iterator End()   const { return Iterator(Pointer.Get() + Num(), Pointer.Get(), Pointer.Get() + Num()); }
+	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(this, Impl.Pointer);         }
+	NODISCARD FORCEINLINE constexpr Iterator End()   const { return Iterator(this, Impl.Pointer + Num()); }
 
 	/** @return The reverse iterator to the first or end element. */
 	NODISCARD FORCEINLINE constexpr ReverseIterator RBegin() const { return ReverseIterator(End());   }
 	NODISCARD FORCEINLINE constexpr ReverseIterator REnd()   const { return ReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
-	NODISCARD FORCEINLINE constexpr size_t Num() const { if constexpr (Extent == DynamicExtent) return Impl::ArrayNum; return Extent; }
+	NODISCARD FORCEINLINE constexpr size_t Num() const { if constexpr (Extent == DynamicExtent) { return Impl.ArrayNum; } return Extent; }
 
 	/** @return The number of bytes in the container. */
 	NODISCARD FORCEINLINE constexpr size_t NumBytes() const { return Num() * sizeof(ElementType); }
@@ -388,7 +290,7 @@ public:
 	NODISCARD FORCEINLINE constexpr bool IsValidIterator(Iterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Pointer[Index]; }
+	NODISCARD FORCEINLINE constexpr ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
 
 	/** @return The reference to the first or last element. */
 	NODISCARD FORCEINLINE constexpr ElementType& Front() const { return *Begin();     }
@@ -411,7 +313,80 @@ public:
 
 private:
 
-	TObserverPtr<ElementType[]> Pointer;
+	struct FImplWithoutNum { ElementType* Pointer; };
+
+	struct FImplWithNum : FImplWithoutNum { size_t ArrayNum; };
+
+	TConditional<InExtent == DynamicExtent, FImplWithNum, FImplWithoutNum> Impl;
+
+public:
+
+	class Iterator
+	{
+	public:
+
+		using ElementType = T;
+
+		FORCEINLINE constexpr Iterator()                           = default;
+		FORCEINLINE constexpr Iterator(const Iterator&)            = default;
+		FORCEINLINE constexpr Iterator(Iterator&&)                 = default;
+		FORCEINLINE constexpr Iterator& operator=(const Iterator&) = default;
+		FORCEINLINE constexpr Iterator& operator=(Iterator&&)      = default;
+
+		NODISCARD friend FORCEINLINE constexpr bool operator==(const Iterator& LHS, const Iterator& RHS) { return LHS.Pointer == RHS.Pointer; }
+
+		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const Iterator& LHS, const Iterator& RHS) { return LHS.Pointer <=> RHS.Pointer; }
+
+		NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { CheckThis(true); return *Pointer; }
+		NODISCARD FORCEINLINE constexpr ElementType* operator->() const { CheckThis(true); return  Pointer; }
+
+		NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { Iterator Temp = *this + Index; return *Temp; }
+
+		FORCEINLINE constexpr Iterator& operator++() { ++Pointer; CheckThis(); return *this; }
+		FORCEINLINE constexpr Iterator& operator--() { --Pointer; CheckThis(); return *this; }
+
+		FORCEINLINE constexpr Iterator operator++(int) { Iterator Temp = *this; ++*this; return Temp; }
+		FORCEINLINE constexpr Iterator operator--(int) { Iterator Temp = *this; --*this; return Temp; }
+
+		FORCEINLINE constexpr Iterator& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
+		FORCEINLINE constexpr Iterator& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
+
+		NODISCARD friend FORCEINLINE constexpr Iterator operator+(Iterator Iter, ptrdiff Offset) { Iterator Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr Iterator operator+(ptrdiff Offset, Iterator Iter) { Iterator Temp = Iter; Temp += Offset; return Temp; }
+
+		NODISCARD FORCEINLINE constexpr Iterator operator-(ptrdiff Offset) const { Iterator Temp = *this; Temp -= Offset; return Temp; }
+
+		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const Iterator& LHS, const Iterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
+
+		NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const { CheckThis(); return TObserverPtr<ElementType[]>(Pointer); }
+
+	private:
+
+#		if DO_CHECK
+		const TArrayView* Owner = nullptr;
+#		endif
+
+		ElementType* Pointer = nullptr;
+
+#		if DO_CHECK
+		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, ElementType* InPointer)
+			: Owner(InContainer), Pointer(InPointer)
+		{ }
+#		else
+		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, ElementType* InPointer)
+			: Pointer(InPointer)
+		{ }
+#		endif
+
+		FORCEINLINE constexpr void CheckThis(bool bExceptEnd = false) const
+		{
+			checkf(Owner && Owner->IsValidIterator(*this), TEXT("Read access violation. Please check IsValidIterator()."));
+			checkf(!(bExceptEnd && Owner->End() == *this), TEXT("Read access violation. Please check IsValidIterator()."));
+		}
+
+		friend TArrayView;
+
+	};
 
 };
 
