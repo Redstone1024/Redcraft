@@ -25,6 +25,13 @@ template <typename I> struct TIteratorElementType { using Type = typename I::Ele
 
 template <typename T> struct TIteratorElementType<T*> { using Type = T; };
 
+template <typename I> struct TIteratorPointerType { using Type = void; };
+
+template <typename T> struct TIteratorPointerType<T*> { using Type = T*; };
+
+template <typename I> requires (requires(I& Iter) { { Iter.operator->() } -> CPointer; })
+struct TIteratorPointerType<I> { using Type = decltype(DeclVal<I&>().operator->()); };
+
 NAMESPACE_PRIVATE_END
 
 template <typename T>
@@ -35,6 +42,9 @@ concept CDereferenceable = requires(T& A) { { *A } -> CReferenceable; };
 
 template <typename I>
 using TIteratorElementType = typename NAMESPACE_PRIVATE::TIteratorElementType<TRemoveCVRef<I>>::Type;
+
+template <typename I>
+using TIteratorPointerType = typename NAMESPACE_PRIVATE::TIteratorPointerType<TRemoveCVRef<I>>::Type;
 
 template <CReferenceable I>
 using TIteratorReferenceType = decltype(*DeclVal<I&>());
@@ -165,10 +175,10 @@ public:
 	template <CBidirectionalIterator J> requires (CSizedSentinelFor<J, IteratorType>)
 	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<J, IteratorType> operator<=>(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { IteratorType Temp = GetBase(); return *--Temp; }
-	NODISCARD FORCEINLINE constexpr ElementType* operator->() const { return AddressOf(operator*());                 }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()  const { IteratorType Temp = GetBase(); return *--Temp; }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->() const { return AddressOf(operator*());                 }
 
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return GetBase()[-Index - 1]; }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return GetBase()[-Index - 1]; }
 
 	FORCEINLINE constexpr TReverseIterator& operator++() { --Current; return *this; }
 	FORCEINLINE constexpr TReverseIterator& operator--() { ++Current; return *this; }
@@ -241,10 +251,10 @@ public:
 	template <CInputIterator J> requires (CSizedSentinelFor<J, IteratorType>)
 	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<J, IteratorType> operator<=>(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr ElementType&& operator*()  const { return MoveTemp(*GetBase()); }
-	NODISCARD FORCEINLINE constexpr ElementType*  operator->() const = delete;
+	NODISCARD FORCEINLINE constexpr TIteratorRValueReferenceType<IteratorType> operator*()  const { return MoveTemp(*GetBase()); }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>         operator->() const = delete;
 
-	NODISCARD FORCEINLINE constexpr ElementType&& operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return MoveTemp(GetBase()[Index]); }
+	NODISCARD FORCEINLINE constexpr TIteratorRValueReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return MoveTemp(GetBase()[Index]); }
 
 	FORCEINLINE constexpr TMoveIterator& operator++()                                                 { ++Current; return *this; }
 	FORCEINLINE constexpr TMoveIterator& operator--() requires (CBidirectionalIterator<IteratorType>) { --Current; return *this; }
@@ -393,12 +403,12 @@ public:
 
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
 
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()        { CheckThis(true); return *Current;               }
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator*()  const { CheckThis(true); return *Current;               }
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator->()       { CheckThis(true); return AddressOf(operator*()); }
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator->() const { CheckThis(true); return AddressOf(operator*()); }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()        { CheckThis(true); return *Current;               }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()  const { CheckThis(true); return *Current;               }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->()       { CheckThis(true); return AddressOf(operator*()); }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->() const { CheckThis(true); return AddressOf(operator*()); }
 
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
 
 	FORCEINLINE constexpr TCountedIterator& operator++()                                                 { ++Current; --Length; CheckThis(); return *this; }
 	FORCEINLINE constexpr TCountedIterator& operator--() requires (CBidirectionalIterator<IteratorType>) { --Current; ++Length; CheckThis(); return *this; }

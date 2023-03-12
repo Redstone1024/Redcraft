@@ -14,6 +14,7 @@ void TestContainers()
 	TestArray();
 	TestStaticArray();
 	TestArrayView();
+	TestBitset();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -237,6 +238,166 @@ void TestArrayView()
 
 		always_check(ViewBytes.Num() == 16);
 		always_check(ViewBytes.NumBytes() == 16);
+	}
+}
+
+void TestBitset()
+{
+	{
+		FBitset BitsetA;
+		FBitset BitsetB(16);
+		FBitset BitsetC(16, 0b1010'0100'0100'0010);
+		FBitset BitsetD(BitsetC);
+		FBitset BitsetE(MoveTemp(BitsetB));
+		FBitset BitsetF({ true, false, true, false });
+
+		FBitset BitsetG;
+		FBitset BitsetH;
+		FBitset BitsetI;
+
+		BitsetG = BitsetD;
+		BitsetH = MoveTemp(BitsetE);
+		BitsetI = { true, false, true, false };
+
+		always_check((BitsetF == FBitset({ true, false, true, false })));
+		always_check((BitsetI == FBitset({ true, false, true, false })));
+	}
+
+	{
+		FBitset BitsetA = { false, true, false };
+		FBitset BitsetB = { true, false, true, false };
+		FBitset BitsetC = { false, true, false };
+
+		always_check((!(BitsetA == BitsetB)));
+		always_check(( (BitsetA != BitsetB)));
+		always_check(( (BitsetA <  BitsetB)));
+		always_check(( (BitsetA <= BitsetB)));
+		always_check((!(BitsetA >  BitsetB)));
+		always_check((!(BitsetA >= BitsetB)));
+
+		always_check(( (BitsetA == BitsetC)));
+		always_check((!(BitsetA != BitsetC)));
+		always_check((!(BitsetA <  BitsetC)));
+		always_check(( (BitsetA <= BitsetC)));
+		always_check((!(BitsetA >  BitsetC)));
+		always_check(( (BitsetA >= BitsetC)));
+	}
+
+	{
+		FBitset BitsetA(64, 0x0339'0339'0339'0339ull);
+		uint64  IntA =      0x0339'0339'0339'0339ull;
+
+		FBitset BitsetB(32, 0x017F'017Full);
+		uint32  IntB =      0x017F'017Full;
+
+		FBitset BitsetANDA = BitsetA; BitsetANDA &= BitsetB;
+		FBitset BitsetANDB = BitsetB; BitsetANDB &= BitsetA;
+
+		FBitset BitsetORA  = BitsetA; BitsetORA  &= BitsetB;
+		FBitset BitsetORB  = BitsetB; BitsetORB  &= BitsetA;
+
+		FBitset BitsetXORA = BitsetA; BitsetXORA &= BitsetB;
+		FBitset BitsetXORB = BitsetB; BitsetXORB &= BitsetA;
+		
+		uint64 IntANDA = IntA; IntANDA &= IntB;
+		uint32 IntANDB = IntB; IntANDB &= IntA;
+
+		uint64 IntORA  = IntA; IntORA  &= IntB;
+		uint32 IntORB  = IntB; IntORB  &= IntA;
+
+		uint64 IntXORA = IntA; IntXORA &= IntB;
+		uint32 IntXORB = IntB; IntXORB &= IntA;
+
+		always_check((BitsetANDA.ToIntegral() == IntANDA));
+		always_check((BitsetANDB.ToIntegral() == IntANDB));
+		always_check((BitsetORA.ToIntegral()  == IntORA));
+		always_check((BitsetORB.ToIntegral()  == IntORB));
+		always_check((BitsetXORA.ToIntegral() == IntXORA));
+		always_check((BitsetXORB.ToIntegral() == IntXORB));
+	}
+	
+	{
+		FBitset BitsetA(64, 0x0339'0339'0339'0339ull);
+		uint64  IntA =      0x0339'0339'0339'0339ull;
+
+		FBitset BitsetB(32, 0x017F'017Full);
+		uint32  IntB =      0x017F'017Full;
+
+		always_check(((BitsetA & BitsetB).ToIntegral() == (IntA & IntB)));
+		always_check(((BitsetA | BitsetB).ToIntegral() == (IntA | IntB)));
+		always_check(((BitsetA ^ BitsetB).ToIntegral() == (IntA ^ IntB)));
+	}
+
+	{
+		FBitset Bitset(64, 0x0339'0339'0339'0339ull);
+		uint64  Int      = 0x0339'0339'0339'0339ull;
+
+		always_check(((Bitset << 40).ToIntegral() == (Int << 40)));
+		always_check(((Bitset >> 40).ToIntegral() == (Int >> 40)));
+	}
+
+	{
+		FBitset BitsetA(4, 0b0000ull);
+		FBitset BitsetB(4, 0b0101ull);
+		FBitset BitsetC(4, 0b1111ull);
+
+		always_check((!BitsetA.All() && !BitsetA.Any() &&  BitsetA.None()));
+		always_check((!BitsetB.All() &&  BitsetB.Any() && !BitsetB.None()));
+		always_check(( BitsetC.All() &&  BitsetC.Any() && !BitsetC.None()));
+	}
+
+	{
+		FBitset Bitset(16);
+
+		Bitset.Set();
+
+		always_check((Bitset.Count() == 16));
+
+		Bitset.Flip(8);
+
+		always_check((Bitset.Count() == 15));
+
+		Bitset.Flip(8);
+
+		always_check((Bitset.Count() == 16));
+
+		Bitset.Flip();
+
+		always_check((Bitset.Count() == 0));
+
+		Bitset.PushBack(true);
+
+		always_check((Bitset.Num()   == 17));
+		always_check((Bitset.Count() ==  1));
+
+		Bitset.PopBack();
+
+		always_check((Bitset.Num()   == 16));
+		always_check((Bitset.Count() ==  0));
+
+		Bitset.SetNum(32, true, true);
+
+		always_check((Bitset.Num()   == 32));
+		always_check((Bitset.Count() == 16));
+	}
+
+	{
+		FBitset BitsetA(4);
+		FBitset BitsetB(4);
+
+		BitsetA[0] = true;
+		BitsetA[1] = false;
+		BitsetA[2] = true;
+		BitsetA[3] = false;
+
+		BitsetB[0] = true;
+		BitsetB[1] = false;
+		BitsetB[2] = true;
+		BitsetB[3] = false;
+
+		Swap(BitsetA, BitsetB);
+
+		always_check((GetTypeHash(BitsetA) == GetTypeHash(BitsetB)));
 	}
 }
 
