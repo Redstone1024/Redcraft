@@ -62,18 +62,15 @@ public:
 		return true;
 	}
 
-	/** Compares the contents of two arrays. */
+	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
 	NODISCARD friend constexpr auto operator<=>(const TStaticArray& LHS, const TStaticArray& RHS) requires (CSynthThreeWayComparable<ElementType>)
 	{
 		using OrderingType = TSynthThreeWayResult<ElementType>;
 
-		if (LHS.Num() < RHS.Num()) return OrderingType::less;
-		if (LHS.Num() > RHS.Num()) return OrderingType::greater;
-
 		ConstIterator LHSIter = LHS.Begin();
 		ConstIterator RHSIter = RHS.Begin();
 
-		while (LHSIter != LHS.End())
+		while (LHSIter != LHS.End() || RHSIter != RHS.End())
 		{
 			TSynthThreeWayResult<ElementType> Ordering = SynthThreeWayCompare(*LHSIter, *RHSIter);
 
@@ -83,9 +80,7 @@ public:
 			++RHSIter;
 		}
 
-		check(RHSIter == RHS.End());
-
-		return OrderingType::equivalent;
+		return LHS.Num() <=> RHS.Num();
 	}
 
 	/** @return The pointer to the underlying element storage. */
