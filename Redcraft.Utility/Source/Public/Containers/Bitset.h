@@ -17,7 +17,14 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <CInstantiableAllocator Allocator> 
+NAMESPACE_PRIVATE_BEGIN
+
+template <CUnsignedIntegral InBlockType> requires (!CSameAs<InBlockType, bool>)
+using TDefaultBitsetAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(InBlockType)>;
+
+NAMESPACE_PRIVATE_END
+
+template <CUnsignedIntegral InBlockType, CInstantiableAllocator Allocator = NAMESPACE_PRIVATE::TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
 class TBitset final
 {
 private:
@@ -27,7 +34,7 @@ private:
 
 public:
 
-	using BlockType     = uint64;
+	using BlockType     = InBlockType;
 	using ElementType   = bool;
 	using AllocatorType = Allocator;
 
@@ -59,9 +66,38 @@ public:
 	/** Constructs a bitset from an integer. */
 	TBitset(size_t InCount, uint64 InValue) : TBitset(InCount > 64 ? InCount : 64)
 	{
-		size_t BlockInteger = sizeof(uint64) / sizeof(BlockType);
+		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TBitset is unexpected");
 
-		*reinterpret_cast<uint64*>(Impl.Pointer) = InValue;
+		if constexpr (sizeof(BlockType) == sizeof(uint8))
+		{
+			Impl.Pointer[0] = static_cast<BlockType>(InValue >>  0);
+			Impl.Pointer[1] = static_cast<BlockType>(InValue >>  8);
+			Impl.Pointer[2] = static_cast<BlockType>(InValue >> 16);
+			Impl.Pointer[3] = static_cast<BlockType>(InValue >> 24);
+			Impl.Pointer[4] = static_cast<BlockType>(InValue >> 32);
+			Impl.Pointer[5] = static_cast<BlockType>(InValue >> 40);
+			Impl.Pointer[6] = static_cast<BlockType>(InValue >> 48);
+			Impl.Pointer[7] = static_cast<BlockType>(InValue >> 56);
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint16))
+		{
+			Impl.Pointer[0] = static_cast<BlockType>(InValue >>  0);
+			Impl.Pointer[1] = static_cast<BlockType>(InValue >> 16);
+			Impl.Pointer[2] = static_cast<BlockType>(InValue >> 32);
+			Impl.Pointer[3] = static_cast<BlockType>(InValue >> 48);
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint32))
+		{
+			Impl.Pointer[0] = static_cast<BlockType>(InValue >>  0);
+			Impl.Pointer[1] = static_cast<BlockType>(InValue >> 32);
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint64))
+		{
+			Impl.Pointer[0] = static_cast<BlockType>(InValue >>  0);
+		}
+		else check_no_entry();
+
+		size_t BlockInteger = sizeof(uint64) / sizeof(BlockType);
 
 		Memory::Memset(Impl.Pointer + BlockInteger, 0, (NumBlocks() - BlockInteger) * sizeof(BlockType));
 
@@ -151,7 +187,7 @@ public:
 		if (NumToAllocate != MaxBlocks())
 		{
 			Impl->Deallocate(Impl.Pointer);
-			
+
 			Impl.BitsetNum = InValue.Num();
 			Impl.BlocksMax = NumToAllocate;
 			Impl.Pointer   = Impl->Allocate(MaxBlocks());
@@ -199,7 +235,7 @@ public:
 	TBitset& operator=(initializer_list<bool> IL)
 	{
 		auto First = Iteration::Begin(IL);
-		
+
 		const size_t BlocksCount = (GetNum(IL) + BlockWidth - 1) / BlockWidth;
 
 		size_t NumToAllocate = BlocksCount;
@@ -210,7 +246,7 @@ public:
 		if (NumToAllocate != MaxBlocks())
 		{
 			Impl->Deallocate(Impl.Pointer);
-			
+
 			Impl.BitsetNum = GetNum(IL);
 			Impl.BlocksMax = NumToAllocate;
 			Impl.Pointer   = Impl->Allocate(MaxBlocks());
@@ -497,6 +533,8 @@ public:
 
 		static constexpr auto BlockCount = [](BlockType Block)
 		{
+			static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TBitset is unexpected");
+
 			if constexpr (sizeof(BlockType) == sizeof(uint8))
 			{
 				Block = (Block & 0x55ull) + ((Block >> 1) & 0x55ull);
@@ -576,9 +614,42 @@ public:
 	{
 		checkf(Num() <= 64, TEXT("The bitset can not be represented in uint64. Please check Num()."));
 
+		uint64 Result = 0;
+
+		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TBitset is unexpected");
+		
+		if constexpr (sizeof(BlockType) == sizeof(uint8))
+		{
+			Result |= static_cast<uint64>(Impl.Pointer[0]) <<  0;
+			Result |= static_cast<uint64>(Impl.Pointer[1]) <<  8;
+			Result |= static_cast<uint64>(Impl.Pointer[2]) << 16;
+			Result |= static_cast<uint64>(Impl.Pointer[3]) << 24;
+			Result |= static_cast<uint64>(Impl.Pointer[4]) << 32;
+			Result |= static_cast<uint64>(Impl.Pointer[5]) << 40;
+			Result |= static_cast<uint64>(Impl.Pointer[6]) << 48;
+			Result |= static_cast<uint64>(Impl.Pointer[7]) << 56;
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint16))
+		{
+			Result |= static_cast<uint64>(Impl.Pointer[0]) <<  0;
+			Result |= static_cast<uint64>(Impl.Pointer[1]) << 16;
+			Result |= static_cast<uint64>(Impl.Pointer[2]) << 32;
+			Result |= static_cast<uint64>(Impl.Pointer[3]) << 48;
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint32))
+		{
+			Result |= static_cast<uint64>(Impl.Pointer[0]) <<  0;
+			Result |= static_cast<uint64>(Impl.Pointer[1]) << 32;
+		}
+		else if constexpr (sizeof(BlockType) == sizeof(uint64))
+		{
+			Result |= static_cast<uint64>(Impl.Pointer[0]) <<  0;
+		}
+		else check_no_entry();
+
 		const uint64 Mask = Num() < 64 ? (1ull << Num()) - 1 : -1;
 
-		return *reinterpret_cast<uint64*>(Impl.Pointer) & Mask;
+		return Result & Mask;
 	}
 
 	/** Appends the given bit value to the end of the bitset. */
@@ -960,7 +1031,7 @@ private:
 
 };
 
-using FBitset = TBitset<TInlineAllocator<((40 - 3 * sizeof(size_t)) / sizeof(TBitset<FHeapAllocator>::BlockType))>>;
+using FBitset = TBitset<uint64>;
 
 static_assert(sizeof(FBitset) == 40, "The byte size of FBitset is unexpected");
 

@@ -284,11 +284,11 @@ void TestBitset()
 	}
 
 	{
-		FBitset BitsetA(64, 0x0339'0339'0339'0339ull);
-		uint64  IntA =      0x0339'0339'0339'0339ull;
+		FBitset BitsetA(64, 0x0139'0239'0339'0439ull);
+		uint64  IntA =      0x0139'0239'0339'0439ull;
 
-		FBitset BitsetB(32, 0x017F'017Full);
-		uint32  IntB =      0x017F'017Full;
+		FBitset BitsetB(32, 0x017F'027Full);
+		uint32  IntB =      0x017F'027Full;
 
 		FBitset BitsetANDA = BitsetA; BitsetANDA &= BitsetB;
 		FBitset BitsetANDB = BitsetB; BitsetANDB &= BitsetA;
@@ -317,11 +317,11 @@ void TestBitset()
 	}
 	
 	{
-		FBitset BitsetA(64, 0x0339'0339'0339'0339ull);
-		uint64  IntA =      0x0339'0339'0339'0339ull;
+		FBitset BitsetA(64, 0x0139'0239'0339'0439ull);
+		uint64  IntA =      0x0139'0239'0339'0439ull;
 
-		FBitset BitsetB(32, 0x017F'017Full);
-		uint32  IntB =      0x017F'017Full;
+		FBitset BitsetB(32, 0x017F'027Full);
+		uint32  IntB =      0x017F'027Full;
 
 		always_check(((BitsetA & BitsetB).ToIntegral() == (IntA & IntB)));
 		always_check(((BitsetA | BitsetB).ToIntegral() == (IntA | IntB)));
@@ -329,8 +329,8 @@ void TestBitset()
 	}
 
 	{
-		FBitset Bitset(64, 0x0339'0339'0339'0339ull);
-		uint64  Int      = 0x0339'0339'0339'0339ull;
+		FBitset Bitset(64, 0x0139'0239'0339'0439ull);
+		uint64  Int      = 0x0139'0239'0339'0439ull;
 
 		always_check(((Bitset << 40).ToIntegral() == (Int << 40)));
 		always_check(((Bitset >> 40).ToIntegral() == (Int >> 40)));
