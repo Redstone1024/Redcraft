@@ -280,26 +280,6 @@ public:
 		return (LHS.Impl.Pointer[LHS.NumBlocks() - 1] & LastBlockBitmask) == (RHS.Impl.Pointer[LHS.NumBlocks() - 1] & LastBlockBitmask);
 	}
 
-	/** Compares the bits of two bitsets. */
-	NODISCARD friend strong_ordering operator<=>(const TBitset& LHS, const TBitset& RHS)
-	{
-		if (LHS.Num() < RHS.Num()) return strong_ordering::less;
-		if (LHS.Num() > RHS.Num()) return strong_ordering::greater;
-
-		if (LHS.NumBlocks() == 0) return strong_ordering::equivalent;
-
-		for (size_t Index = 0; Index != LHS.NumBlocks() - 1; ++Index)
-		{
-			strong_ordering Ordering = LHS.Impl.Pointer[Index] <=> RHS.Impl.Pointer[Index];
-
-			if (Ordering != strong_ordering::equivalent) return Ordering;
-		}
-
-		const BlockType LastBlockBitmask = LHS.Num() % BlockWidth != 0 ? (1ull << LHS.Num() % BlockWidth) - 1 : -1;
-
-		return (LHS.Impl.Pointer[LHS.NumBlocks() - 1] & LastBlockBitmask) <=> (RHS.Impl.Pointer[LHS.NumBlocks() - 1] & LastBlockBitmask);
-	}
-
 	/** Sets the bits to the result of binary AND on corresponding pairs of bits of *this and other. */
 	TBitset& operator&=(const TBitset& InValue)
 	{
@@ -531,7 +511,7 @@ public:
 
 		size_t Result = 0;
 
-		static constexpr auto BlockCount = [](BlockType Block)
+		constexpr auto BlockCount = [](BlockType Block)
 		{
 			static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TBitset is unexpected");
 
@@ -842,7 +822,7 @@ public:
 	/** @return The reference to the first or last bit. */
 	NODISCARD FORCEINLINE      Reference Front()       { return *Begin();     }
 	NODISCARD FORCEINLINE ConstReference Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE      Reference Back() { return *(End() - 1); }
+	NODISCARD FORCEINLINE      Reference Back()        { return *(End() - 1); }
 	NODISCARD FORCEINLINE ConstReference Back()  const { return *(End() - 1); }
 
 	/** Erases all bits from the bitset. After this call, Num() returns zero. */
@@ -959,11 +939,11 @@ private:
 		FORCEINLINE IteratorImpl() = default;
 
 #		if DO_CHECK
-		FORCEINLINE IteratorImpl(const IteratorImpl<false> &InValue) requires (bConst)
+		FORCEINLINE IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
 			: Owner(InValue.Owner), Pointer(InValue.Pointer), Offset(InValue.Offset)
 		{ }
 #		else
-		FORCEINLINE IteratorImpl(const IteratorImpl<false> &InValue) requires (bConst)
+		FORCEINLINE IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
 			: Pointer(InValue.Pointer), Offset(InValue.Offset)
 		{ }
 #		endif
@@ -973,9 +953,9 @@ private:
 		FORCEINLINE IteratorImpl& operator=(const IteratorImpl&) = default;
 		FORCEINLINE IteratorImpl& operator=(IteratorImpl&&)      = default;
 
-		NODISCARD friend FORCEINLINE bool operator==(const IteratorImpl& LHS, const IteratorImpl& RHS) { return LHS.Pointer == RHS.Pointer && LHS.Offset == RHS.Offset; }
+		NODISCARD friend FORCEINLINE bool operator==(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset == RHS.Offset; }
 
-		NODISCARD friend FORCEINLINE strong_ordering operator<=>(const IteratorImpl& LHS, const IteratorImpl& RHS) { return 0 <=> LHS.Offset - RHS.Offset; }
+		NODISCARD friend FORCEINLINE strong_ordering operator<=>(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset <=> RHS.Offset; }
 
 		NODISCARD FORCEINLINE      Reference operator*() const requires (!bConst) { CheckThis(true); return Reference(*(Pointer + Offset / BlockWidth), 1ull << Offset % BlockWidth); }
 		NODISCARD FORCEINLINE ConstReference operator*() const requires ( bConst) { CheckThis(true); return       (*(Pointer + Offset / BlockWidth) & (1ull << Offset % BlockWidth)); }
@@ -996,7 +976,7 @@ private:
 
 		NODISCARD FORCEINLINE IteratorImpl operator-(ptrdiff Offset) const { IteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
-		NODISCARD friend FORCEINLINE ptrdiff operator-(const IteratorImpl& LHS, const IteratorImpl& RHS) { return (reinterpret_cast<uintptr>(LHS.Pointer) * BlockWidth + LHS.Offset) - (reinterpret_cast<uintptr>(RHS.Pointer) * BlockWidth + RHS.Offset); }
+		NODISCARD friend FORCEINLINE ptrdiff operator-(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset - RHS.Offset; }
 
 	private:
 
@@ -1004,15 +984,17 @@ private:
 		const TBitset* Owner = nullptr;
 #		endif
 
-		BlockType* Pointer = nullptr;
-		size_t     Offset = 0;
+		using BlockPtr = TConditional<bConst, const BlockType*, BlockType*>;
+
+		BlockPtr Pointer = nullptr;
+		size_t   Offset = 0;
 
 #		if DO_CHECK
-		FORCEINLINE IteratorImpl(const TBitset* InContainer, BlockType* InPointer, size_t InOffset)
+		FORCEINLINE IteratorImpl(const TBitset* InContainer, BlockPtr InPointer, size_t InOffset)
 			: Owner(InContainer), Pointer(InPointer), Offset(InOffset)
 		{ }
 #		else
-		FORCEINLINE IteratorImpl(const TBitset* InContainer, BlockType* InPointer, size_t InOffset)
+		FORCEINLINE IteratorImpl(const TBitset* InContainer, BlockPtr InPointer, size_t InOffset)
 			: Pointer(InPointer), Offset(InOffset)
 		{ }
 #		endif

@@ -264,26 +264,6 @@ void TestBitset()
 	}
 
 	{
-		FBitset BitsetA = { false, true, false };
-		FBitset BitsetB = { true, false, true, false };
-		FBitset BitsetC = { false, true, false };
-
-		always_check((!(BitsetA == BitsetB)));
-		always_check(( (BitsetA != BitsetB)));
-		always_check(( (BitsetA <  BitsetB)));
-		always_check(( (BitsetA <= BitsetB)));
-		always_check((!(BitsetA >  BitsetB)));
-		always_check((!(BitsetA >= BitsetB)));
-
-		always_check(( (BitsetA == BitsetC)));
-		always_check((!(BitsetA != BitsetC)));
-		always_check((!(BitsetA <  BitsetC)));
-		always_check(( (BitsetA <= BitsetC)));
-		always_check((!(BitsetA >  BitsetC)));
-		always_check(( (BitsetA >= BitsetC)));
-	}
-
-	{
 		FBitset BitsetA(64, 0x0139'0239'0339'0439ull);
 		uint64  IntA =      0x0139'0239'0339'0439ull;
 
