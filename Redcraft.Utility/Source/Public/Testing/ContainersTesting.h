@@ -13,6 +13,7 @@ REDCRAFTUTILITY_API void TestArray();
 REDCRAFTUTILITY_API void TestStaticArray();
 REDCRAFTUTILITY_API void TestArrayView();
 REDCRAFTUTILITY_API void TestBitset();
+REDCRAFTUTILITY_API void TestStaticBitset();
 
 NAMESPACE_END(Testing)
 

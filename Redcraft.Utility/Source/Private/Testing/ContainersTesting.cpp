@@ -15,6 +15,7 @@ void TestContainers()
 	TestStaticArray();
 	TestArrayView();
 	TestBitset();
+	TestStaticBitset();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -310,7 +311,7 @@ void TestBitset()
 
 	{
 		FBitset Bitset(64, 0x0139'0239'0339'0439ull);
-		uint64  Int      = 0x0139'0239'0339'0439ull;
+		uint64  Int =      0x0139'0239'0339'0439ull;
 
 		always_check(((Bitset << 40).ToIntegral() == (Int << 40)));
 		always_check(((Bitset >> 40).ToIntegral() == (Int >> 40)));
@@ -364,6 +365,131 @@ void TestBitset()
 	{
 		FBitset BitsetA(4);
 		FBitset BitsetB(4);
+
+		BitsetA[0] = true;
+		BitsetA[1] = false;
+		BitsetA[2] = true;
+		BitsetA[3] = false;
+
+		BitsetB[0] = true;
+		BitsetB[1] = false;
+		BitsetB[2] = true;
+		BitsetB[3] = false;
+
+		Swap(BitsetA, BitsetB);
+
+		always_check((GetTypeHash(BitsetA) == GetTypeHash(BitsetB)));
+	}
+}
+
+void TestStaticBitset()
+{
+	{
+		TStaticBitset< 0> BitsetA;
+		TStaticBitset<16> BitsetB;
+		TStaticBitset<16> BitsetC(0b1010'0100'0100'0010);
+		TStaticBitset<16> BitsetD(BitsetC);
+		TStaticBitset<16> BitsetE(MoveTemp(BitsetB));
+		TStaticBitset< 4> BitsetF(0b0101);
+
+		TStaticBitset<16> BitsetG;
+		TStaticBitset<16> BitsetH;
+		TStaticBitset< 4> BitsetI;
+
+		BitsetG = BitsetD;
+		BitsetH = MoveTemp(BitsetE);
+		BitsetI = 0b0101;
+
+		always_check((BitsetF == TStaticBitset<4>(0b0101)));
+		always_check((BitsetI == TStaticBitset<4>(0b0101)));
+	}
+
+	{
+		TStaticBitset<32> BitsetA(0x0139'0239ull);
+		uint32            IntA =  0x0139'0239ull;
+
+		TStaticBitset<32> BitsetB(0x017F'027Full);
+		uint32            IntB =  0x017F'027Full;
+
+		TStaticBitset<32> BitsetANDA = BitsetA; BitsetANDA &= BitsetB;
+		TStaticBitset<32> BitsetANDB = BitsetB; BitsetANDB &= BitsetA;
+
+		TStaticBitset<32> BitsetORA  = BitsetA; BitsetORA  &= BitsetB;
+		TStaticBitset<32> BitsetORB  = BitsetB; BitsetORB  &= BitsetA;
+
+		TStaticBitset<32> BitsetXORA = BitsetA; BitsetXORA &= BitsetB;
+		TStaticBitset<32> BitsetXORB = BitsetB; BitsetXORB &= BitsetA;
+		
+		uint32 IntANDA = IntA; IntANDA &= IntB;
+		uint32 IntANDB = IntB; IntANDB &= IntA;
+
+		uint32 IntORA  = IntA; IntORA  &= IntB;
+		uint32 IntORB  = IntB; IntORB  &= IntA;
+
+		uint32 IntXORA = IntA; IntXORA &= IntB;
+		uint32 IntXORB = IntB; IntXORB &= IntA;
+
+		always_check((BitsetANDA.ToIntegral() == IntANDA));
+		always_check((BitsetANDB.ToIntegral() == IntANDB));
+		always_check((BitsetORA.ToIntegral()  == IntORA));
+		always_check((BitsetORB.ToIntegral()  == IntORB));
+		always_check((BitsetXORA.ToIntegral() == IntXORA));
+		always_check((BitsetXORB.ToIntegral() == IntXORB));
+	}
+	
+	{
+		TStaticBitset<32> BitsetA(0x0139'0239ull);
+		uint32            IntA =  0x0139'0239ull;
+
+		TStaticBitset<32> BitsetB(0x017F'027Full);
+		uint32            IntB =  0x017F'027Full;
+
+		always_check(((BitsetA & BitsetB).ToIntegral() == (IntA & IntB)));
+		always_check(((BitsetA | BitsetB).ToIntegral() == (IntA | IntB)));
+		always_check(((BitsetA ^ BitsetB).ToIntegral() == (IntA ^ IntB)));
+	}
+
+	{
+		TStaticBitset<64> Bitset(0x0139'0239'0339'0439ull);
+		uint64            Int =  0x0139'0239'0339'0439ull;
+
+		always_check(((Bitset << 40).ToIntegral() == (Int << 40)));
+		always_check(((Bitset >> 40).ToIntegral() == (Int >> 40)));
+	}
+
+	{
+		TStaticBitset<4> BitsetA(0b0000ull);
+		TStaticBitset<4> BitsetB(0b0101ull);
+		TStaticBitset<4> BitsetC(0b1111ull);
+
+		always_check((!BitsetA.All() && !BitsetA.Any() &&  BitsetA.None()));
+		always_check((!BitsetB.All() &&  BitsetB.Any() && !BitsetB.None()));
+		always_check(( BitsetC.All() &&  BitsetC.Any() && !BitsetC.None()));
+	}
+
+	{
+		TStaticBitset<16> Bitset;
+
+		Bitset.Set();
+
+		always_check((Bitset.Count() == 16));
+
+		Bitset.Flip(8);
+
+		always_check((Bitset.Count() == 15));
+
+		Bitset.Flip(8);
+
+		always_check((Bitset.Count() == 16));
+
+		Bitset.Flip();
+
+		always_check((Bitset.Count() == 0));
+	}
+
+	{
+		TStaticBitset<4> BitsetA;
+		TStaticBitset<4> BitsetB;
 
 		BitsetA[0] = true;
 		BitsetA[1] = false;
