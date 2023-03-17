@@ -383,7 +383,18 @@ public:
 	/** Converts the contents of the bitset to an uint64 integer. */
 	NODISCARD constexpr uint64 ToIntegral()
 	{
-		checkf(Num() <= 64, TEXT("The bitset can not be represented in uint64. Please check Num()."));
+		if constexpr (N > 64)
+		{
+			for (size_t Index = 64 / BlockWidth; Index < NumBlocks() - 1; ++Index)
+			{
+				checkf(Impl.Pointer[Index] != 0, TEXT("The bitset can not be represented in uint64. Please check Num()."));
+			}
+
+			const BlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
+			const BlockType LastBlock = Impl.Pointer[NumBlocks() - 1] & LastBlockBitmask;
+
+			checkf(LastBlock != 0, TEXT("The bitset can not be represented in uint64. Please check Num()."));
+		}
 
 		uint64 Result = 0;
 
