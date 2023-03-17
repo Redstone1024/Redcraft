@@ -285,7 +285,9 @@ public:
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
-		if (Num() == 0 || InValue.Num() == 0) return *this;
+		if (Num() == 0) return *this;
+
+		if (InValue.Num() == 0) return Set(false);
 
 		if (Num() <= InValue.Num())
 		{
@@ -309,7 +311,7 @@ public:
 
 			for (size_t Index = LastBlock + 1; Index != NumBlocks(); ++Index)
 			{
-				Impl.Pointer[Index] &= 0;
+				Impl.Pointer[Index] = 0;
 			}
 		}
 
@@ -321,7 +323,9 @@ public:
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
-		if (Num() == 0 || InValue.Num() == 0) return *this;
+		if (Num() == 0) return *this;
+
+		if (InValue.Num() == 0) return *this;
 
 		if (Num() <= InValue.Num())
 		{
@@ -342,11 +346,6 @@ public:
 			const BlockType LastBlockBitmask = InValue.Num() % BlockWidth != 0 ? (1ull << InValue.Num() % BlockWidth) - 1 : -1;
 
 			Impl.Pointer[LastBlock] |= InValue.Impl.Pointer[LastBlock] & LastBlockBitmask;
-
-			for (size_t Index = LastBlock + 1; Index != NumBlocks(); ++Index)
-			{
-				Impl.Pointer[Index] |= 0;
-			}
 		}
 
 		return *this;
@@ -357,7 +356,9 @@ public:
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
-		if (Num() == 0 || InValue.Num() == 0) return *this;
+		if (Num() == 0) return *this;
+
+		if (InValue.Num() == 0) return *this;
 
 		if (Num() <= InValue.Num())
 		{
@@ -378,11 +379,6 @@ public:
 			const BlockType LastBlockBitmask = InValue.Num() % BlockWidth != 0 ? (1ull << InValue.Num() % BlockWidth) - 1 : -1;
 
 			Impl.Pointer[LastBlock] ^= InValue.Impl.Pointer[LastBlock] & LastBlockBitmask;
-
-			for (size_t Index = LastBlock + 1; Index != NumBlocks(); ++Index)
-			{
-				Impl.Pointer[Index] ^= 0;
-			}
 		}
 
 		return *this;
