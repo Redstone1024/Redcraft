@@ -24,7 +24,7 @@ using TDefaultBitsetAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / siz
 
 NAMESPACE_PRIVATE_END
 
-template <CUnsignedIntegral InBlockType, CInstantiableAllocator Allocator = NAMESPACE_PRIVATE::TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
+template <CUnsignedIntegral InBlockType, CAllocator<InBlockType> Allocator = NAMESPACE_PRIVATE::TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
 class TBitset final
 {
 private:

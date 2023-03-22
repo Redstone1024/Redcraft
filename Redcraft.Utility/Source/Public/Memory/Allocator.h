@@ -13,7 +13,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 struct FAllocatorInterface;
 
 template <typename A, typename T = int>
-concept CInstantiableAllocator = !CSameAs<A, FAllocatorInterface>
+concept CAllocator = !CSameAs<A, FAllocatorInterface>
 	&& requires (typename A::template ForElementType<T>& Allocator, T* InPtr, size_t Num, size_t NumAllocated)
 	{
 		{         Allocator.Allocate(Num)          } -> CSameAs<T*>;
@@ -24,6 +24,9 @@ concept CInstantiableAllocator = !CSameAs<A, FAllocatorInterface>
 		{ AsConst(Allocator).CalculateSlackReserve(Num)              } -> CSameAs<size_t>;
 	};
 
+template <typename A, typename T = int>
+concept CMultipleAllocator = CAllocator<A, T> && A::bSupportsMultipleAllocation;
+
 /**
  * This is the allocator interface, the allocator does not use virtual, this contains the default of
  * the allocator interface functions. Unlike std::allocator, IAllocator should be bound to only a object,
@@ -32,6 +35,14 @@ concept CInstantiableAllocator = !CSameAs<A, FAllocatorInterface>
  */
 struct FAllocatorInterface
 {
+	/**
+	 * If this flag is false, it is possible to allocate an address that has already been allocated.
+	 * Should be allocated according to the results given by the CalculateSlackReserve() family,
+	 * without needing to allocate memory of the same size as the allocated memory,
+	 * this is to support special allocators such as TInlineAllocator.
+	 */
+	static constexpr bool bSupportsMultipleAllocation = true;
+
 	template <CObject T>
 	class ForElementType /*: private FSingleton*/
 	{
@@ -43,13 +54,7 @@ struct FAllocatorInterface
 		ForElementType& operator=(const ForElementType&) = delete;
 		ForElementType& operator=(ForElementType&&)      = delete;
 
-		/** 
-		 * Allocates uninitialized storage.
-		 * Should be allocated according to the results given by the CalculateSlackReserve() family,
-		 * without needing to allocate memory of the same size as the allocated memory,
-		 * this is to support special allocators such as TInlineAllocator.
-		 * If 'InNum' is zero, return nullptr.
-		 */
+		/** Allocates uninitialized storage. If 'InNum' is zero, return nullptr. */
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum) = delete;
 
 		/** Deallocates storage. */
@@ -107,6 +112,8 @@ struct FAllocatorInterface
 /** This is heap allocator that calls Memory::Malloc() directly for memory allocation. */
 struct FHeapAllocator
 {
+	static constexpr bool bSupportsMultipleAllocation = true;
+
 	template <CObject T>
 	class ForElementType
 	{
@@ -181,9 +188,11 @@ struct FHeapAllocator
  * The inline allocator allocates up to a specified number of elements in the same allocation as the container.
  * Any allocation needed beyond that causes all data to be moved into an indirect allocation.
  */
-template <size_t NumInline, CInstantiableAllocator SecondaryAllocator = FHeapAllocator>
+template <size_t NumInline, CAllocator SecondaryAllocator = FHeapAllocator>
 struct TInlineAllocator
 {
+	static constexpr bool bSupportsMultipleAllocation = false;
+
 	template <CObject T>
 	class ForElementType
 	{
@@ -264,6 +273,8 @@ struct TInlineAllocator
 /** This is a null allocator for which all operations are illegal. */
 struct FNullAllocator
 {
+	static constexpr bool bSupportsMultipleAllocation = true;
+
 	template <CObject T>
 	class ForElementType
 	{

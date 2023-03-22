@@ -17,7 +17,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <CElementalObject T, size_t N>
 struct TStaticArray;
 
-template <CElementalObject T, CInstantiableAllocator A> requires (!CConst<T>)
+template <CElementalObject T, CAllocator<T> A> requires (!CConst<T>)
 class TArray;
 
 inline constexpr size_t DynamicExtent = INDEX_NONE;
