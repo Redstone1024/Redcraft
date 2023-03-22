@@ -12,8 +12,11 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 struct FAllocatorInterface;
 
+template <typename T>
+concept CAllocatableObject = CObject<T> && !CConst<T> && !CVolatile<T>;
+
 template <typename A, typename T = int>
-concept CAllocator = !CSameAs<A, FAllocatorInterface>
+concept CAllocator = !CSameAs<A, FAllocatorInterface> && CAllocatableObject<T>
 	&& requires (typename A::template ForElementType<T>& Allocator, T* InPtr, size_t Num, size_t NumAllocated)
 	{
 		{         Allocator.Allocate(Num)          } -> CSameAs<T*>;
@@ -43,7 +46,7 @@ struct FAllocatorInterface
 	 */
 	static constexpr bool bSupportsMultipleAllocation = true;
 
-	template <CObject T>
+	template <CAllocatableObject T>
 	class ForElementType /*: private FSingleton*/
 	{
 	public:
@@ -114,8 +117,8 @@ struct FHeapAllocator
 {
 	static constexpr bool bSupportsMultipleAllocation = true;
 
-	template <CObject T>
-	class ForElementType
+	template <CAllocatableObject T>
+	class ForElementType /*: private FSingleton*/
 	{
 	public:
 
@@ -193,8 +196,8 @@ struct TInlineAllocator
 {
 	static constexpr bool bSupportsMultipleAllocation = false;
 
-	template <CObject T>
-	class ForElementType
+	template <CAllocatableObject T>
+	class ForElementType /*: private FSingleton*/
 	{
 	public:
 
@@ -275,8 +278,8 @@ struct FNullAllocator
 {
 	static constexpr bool bSupportsMultipleAllocation = true;
 
-	template <CObject T>
-	class ForElementType
+	template <CAllocatableObject T>
+	class ForElementType /*: private FSingleton*/
 	{
 	public:
 

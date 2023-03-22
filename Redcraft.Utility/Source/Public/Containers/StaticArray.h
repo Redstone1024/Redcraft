@@ -17,7 +17,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 /** TStaticArray is a container that encapsulates fixed size arrays. */
-template <CElementalObject T, size_t N>
+template <CObject T, size_t N>
 struct TStaticArray final
 {
 private:

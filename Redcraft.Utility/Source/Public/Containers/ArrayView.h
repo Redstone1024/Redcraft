@@ -14,10 +14,10 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <CElementalObject T, size_t N>
+template <CObject T, size_t N>
 struct TStaticArray;
 
-template <CElementalObject T, CAllocator<T> A> requires (!CConst<T>)
+template <CAllocatableObject T, CAllocator<T> A>
 class TArray;
 
 inline constexpr size_t DynamicExtent = INDEX_NONE;
@@ -27,7 +27,7 @@ inline constexpr size_t DynamicExtent = INDEX_NONE;
  * the sequence at position zero. A TArrayView can either have a static extent, in which case the number of elements in the sequence
  * is known at compile-time and encoded in the type, or a dynamic extent.
  */
-template <CElementalObject T, size_t InExtent = DynamicExtent>
+template <CObject T, size_t InExtent = DynamicExtent>
 class TArrayView final
 {
 public:
