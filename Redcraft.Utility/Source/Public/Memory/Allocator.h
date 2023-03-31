@@ -13,7 +13,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 struct FAllocatorInterface;
 
 template <typename T>
-concept CAllocatableObject = CObject<T> && !CConst<T> && !CVolatile<T>;
+concept CAllocatableObject = CObject<T> && !CConst<T> && !CVolatile<T> && CDestructible<T>;
 
 template <typename A, typename T = int>
 concept CAllocator = !CSameAs<A, FAllocatorInterface> && CAllocatableObject<T>
@@ -63,7 +63,7 @@ struct FAllocatorInterface
 		/** Deallocates storage. */
 		FORCEINLINE void Deallocate(T* InPtr) = delete;
 
-		/** @return true if allocation can be deallocated by another allocator, otherwise false. */
+		/** @return true if allocation can be deallocated by another allocator, otherwise false. always return true when bSupportsMultipleAllocation is true. */
 		NODISCARD FORCEINLINE bool IsTransferable(T* InPtr) const { return true; }
 
 		/** Calculates the amount of slack to allocate for an array that has just grown to a given number of elements. */
