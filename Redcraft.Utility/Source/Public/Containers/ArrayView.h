@@ -134,18 +134,10 @@ public:
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
-		Iterator LHSIter = LHS.Begin();
-		Iterator RHSIter = RHS.Begin();
-
-		while (LHSIter != LHS.End())
+		for (size_t Index = 0; Index < LHS.Num(); ++Index)
 		{
-			if (*LHSIter != *RHSIter) return false;
-
-			++LHSIter;
-			++RHSIter;
+			if (LHS[Index] != RHS[Index]) return false;
 		}
-
-		check(RHSIter == RHS.End());
 
 		return true;
 	}
@@ -153,27 +145,14 @@ public:
 	/** Compares the contents of two array views. */
 	NODISCARD friend constexpr auto operator<=>(TArrayView LHS, TArrayView RHS) requires (CSynthThreeWayComparable<ElementType>)
 	{
-		using OrderingType = TSynthThreeWayResult<ElementType>;
+		const size_t NumToCompare = LHS.Num() < RHS.Num() ? LHS.Num() : RHS.Num();
 
-		if (LHS.Num() < RHS.Num()) return OrderingType::less;
-		if (LHS.Num() > RHS.Num()) return OrderingType::greater;
-
-		Iterator LHSIter = LHS.Begin();
-		Iterator RHSIter = RHS.Begin();
-
-		while (LHSIter != LHS.End())
+		for (size_t Index = 0; Index < NumToCompare; ++Index)
 		{
-			TSynthThreeWayResult<ElementType> Ordering = SynthThreeWayCompare(*LHSIter, *RHSIter);
-
-			if (Ordering != OrderingType::equivalent) return Ordering;
-
-			++LHSIter;
-			++RHSIter;
+			if (const auto Result = SynthThreeWayCompare(LHS[Index], RHS[Index]); Result != 0) return Result;
 		}
 
-		check(RHSIter == RHS.End());
-
-		return OrderingType::equivalent;
+		return LHS.Num() <=> RHS.Num();
 	}
 
 	/** Obtains an array view that is a view over the first 'Count' elements of this array view. */

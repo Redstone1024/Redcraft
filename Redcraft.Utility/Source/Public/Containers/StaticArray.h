@@ -46,18 +46,10 @@ public:
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
-		ConstIterator LHSIter = LHS.Begin();
-		ConstIterator RHSIter = RHS.Begin();
-
-		while (LHSIter != LHS.End())
+		for (size_t Index = 0; Index < LHS.Num(); ++Index)
 		{
-			if (*LHSIter != *RHSIter) return false;
-
-			++LHSIter;
-			++RHSIter;
+			if (LHS[Index] != RHS[Index]) return false;
 		}
-
-		check(RHSIter == RHS.End());
 
 		return true;
 	}
@@ -65,19 +57,11 @@ public:
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
 	NODISCARD friend constexpr auto operator<=>(const TStaticArray& LHS, const TStaticArray& RHS) requires (CSynthThreeWayComparable<ElementType>)
 	{
-		using OrderingType = TSynthThreeWayResult<ElementType>;
+		const size_t NumToCompare = LHS.Num() < RHS.Num() ? LHS.Num() : RHS.Num();
 
-		ConstIterator LHSIter = LHS.Begin();
-		ConstIterator RHSIter = RHS.Begin();
-
-		while (LHSIter != LHS.End() || RHSIter != RHS.End())
+		for (size_t Index = 0; Index < NumToCompare; ++Index)
 		{
-			TSynthThreeWayResult<ElementType> Ordering = SynthThreeWayCompare(*LHSIter, *RHSIter);
-
-			if (Ordering != OrderingType::equivalent) return Ordering;
-
-			++LHSIter;
-			++RHSIter;
+			if (const auto Result = SynthThreeWayCompare(LHS[Index], RHS[Index]); Result != 0) return Result;
 		}
 
 		return LHS.Num() <=> RHS.Num();
