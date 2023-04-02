@@ -16,6 +16,7 @@ void TestContainers()
 	TestArrayView();
 	TestBitset();
 	TestStaticBitset();
+	TestList();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -504,6 +505,99 @@ void TestStaticBitset()
 		Swap(BitsetA, BitsetB);
 
 		always_check((GetTypeHash(BitsetA) == GetTypeHash(BitsetB)));
+	}
+}
+
+void TestList()
+{
+	{
+		TList<int32> ListA;
+		TList<int32> ListB(4);
+		TList<int32> ListC(4, 4);
+		TList<int32> ListD(ListC);
+		TList<int32> ListE(MoveTemp(ListB));
+		TList<int32> ListF({ 0, 1, 2, 3 });
+
+		TList<int32> ListG;
+		TList<int32> ListH;
+		TList<int32> ListI;
+
+		ListG = ListD;
+		ListH = MoveTemp(ListE);
+		ListI = { 0, 1, 2, 3 };
+
+		always_check((ListC == TList<int32>({ 4, 4, 4, 4 })));
+		always_check((ListD == TList<int32>({ 4, 4, 4, 4 })));
+		always_check((ListG == TList<int32>({ 4, 4, 4, 4 })));
+		always_check((ListF == TList<int32>({ 0, 1, 2, 3 })));
+		always_check((ListI == TList<int32>({ 0, 1, 2, 3 })));
+	}
+
+	{
+		TList<int32> ListA = { 1, 2, 3 };
+		TList<int32> ListB = { 7, 8, 9, 10 };
+		TList<int32> ListC = { 1, 2, 3 };
+
+		always_check((!(ListA == ListB)));
+		always_check(( (ListA != ListB)));
+		always_check(( (ListA <  ListB)));
+		always_check(( (ListA <= ListB)));
+		always_check((!(ListA >  ListB)));
+		always_check((!(ListA >= ListB)));
+
+		always_check(( (ListA == ListC)));
+		always_check((!(ListA != ListC)));
+		always_check((!(ListA <  ListC)));
+		always_check(( (ListA <= ListC)));
+		always_check((!(ListA >  ListC)));
+		always_check(( (ListA >= ListC)));
+	}
+
+	{
+		TList<int32> List = { 1, 2, 3 };
+
+		List.Insert(++List.Begin(), 2);
+		always_check((List == TList<int32>({ 1, 2, 2, 3 })));
+
+		List.Insert(List.End(), 2, 4);
+		always_check((List == TList<int32>({ 1, 2, 2, 3, 4, 4 })));
+
+		List.Insert(List.Begin(), { 1, 1, 4, 5, 1, 4 });
+		always_check((List == TList<int32>({ 1, 1, 4, 5, 1, 4, 1, 2, 2, 3, 4, 4 })));
+
+		List.Emplace(List.End(), 5);
+		always_check((List == TList<int32>({ 1, 1, 4, 5, 1, 4, 1, 2, 2, 3, 4, 4, 5 })));
+
+		List.Erase(--List.End());
+		always_check((List == TList<int32>({ 1, 1, 4, 5, 1, 4, 1, 2, 2, 3, 4, 4 })));
+
+		List.Erase(----List.End(), List.End());
+		always_check((List == TList<int32>({ 1, 1, 4, 5, 1, 4, 1, 2, 2, 3 })));
+	}
+
+	{
+		TList<int32> List = { 1, 2, 3 };
+
+		List.PushBack(4);
+		always_check((List == TList<int32>({ 1, 2, 3, 4 })));
+
+		List.EmplaceBack(5);
+		always_check((List == TList<int32>({ 1, 2, 3, 4, 5 })));
+
+		List.EmplaceBack(5) = 6;
+		always_check((List == TList<int32>({ 1, 2, 3, 4, 5, 6 })));
+
+		List.PopBack();
+		always_check((List == TList<int32>({ 1, 2, 3, 4, 5 })));
+		
+		List.EmplaceFront(1) = 0;
+		always_check((List == TList<int32>({ 0, 1, 2, 3, 4, 5 })));
+
+		List.PopFront();
+		always_check((List == TList<int32>({ 1, 2, 3, 4, 5 })));
+
+		List.SetNum(4);
+		always_check((List == TList<int32>({ 1, 2, 3, 4 })));
 	}
 }
 
