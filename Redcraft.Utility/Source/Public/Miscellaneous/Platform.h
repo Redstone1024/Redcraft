@@ -159,15 +159,6 @@ using int64 = NAMESPACE_STD::int64_t;
 using float32 = float;
 using float64 = double;
 
-// Character types
-
-using chara  = char;
-using charw  = wchar_t;
-using chart  = charw;
-using char8  = char8_t;
-using char16 = char16_t;
-using char32 = char32_t;
-
 // Pointer types
 
 using uintptr = NAMESPACE_STD::uintptr_t;
@@ -181,20 +172,23 @@ using ssize_t = intptr_t;
 using null_t    = decltype(NULL);
 using nullptr_t = NAMESPACE_STD::nullptr_t;
 
-#if PLATFORM_LINUX
-#	define PLATFORM_TCHAR_IS_CHAR16 1
-#else
-#	define PLATFORM_TCHAR_IS_CHAR16 0
-#endif
-
 // Define the TEXT macro
 
-#if PLATFORM_TCHAR_IS_CHAR16
-#	define TEXT_PASTE(x) u ## x
-#else
-#	define TEXT_PASTE(x) L ## x
-#endif
-#define TEXT(x) TEXT_PASTE(x)
+NAMESPACE_PRIVATE_BEGIN
+
+#define TEXT_PASTE(X)    X
+#define WTEXT_PASTE(X)   L##X
+#define U8TEXT_PASTE(X)  u8##X
+#define U16TEXT_PASTE(X) u##X
+#define U32TEXT_PASTE(X) U##X
+
+NAMESPACE_PRIVATE_END
+
+#define TEXT(X)    TEXT_PASTE(X)
+#define WTEXT(X)   WTEXT_PASTE(X)
+#define U8TEXT(X)  U8TEXT_PASTE(X)
+#define U16TEXT(X) U16TEXT_PASTE(X)
+#define U32TEXT(X) U32TEXT_PASTE(X)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

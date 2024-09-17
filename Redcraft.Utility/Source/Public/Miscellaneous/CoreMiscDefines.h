@@ -20,7 +20,6 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #define NO_UNIQUE_ADDRESS      [[no_unique_address]]
 
 constexpr size_t   INDEX_NONE = -1;
-constexpr charw    UNICODE_BOM = 0xfeff;
 
 struct FForceInit { explicit FForceInit() = default; };
 struct FNoInit    { explicit FNoInit()    = default; };
