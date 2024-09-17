@@ -36,7 +36,7 @@ inline constexpr size_t MinimumAlignment = 8;
  *	};
  *
  */
-inline constexpr size_t DestructiveInterference = std::hardware_destructive_interference_size;
+inline constexpr size_t DestructiveInterference = NAMESPACE_STD::hardware_destructive_interference_size;
 
 /**
  * Maximum size of contiguous memory to promote true sharing.
@@ -47,7 +47,7 @@ inline constexpr size_t DestructiveInterference = std::hardware_destructive_inte
  *	};
  *
  */
-inline constexpr size_t ConstructiveInterference = std::hardware_constructive_interference_size;
+inline constexpr size_t ConstructiveInterference = NAMESPACE_STD::hardware_constructive_interference_size;
 
 #else
 
@@ -88,7 +88,7 @@ inline constexpr size_t ConstructiveInterference = 64;
  */
 FORCEINLINE void* Memmove(void* Destination, const void* Source, size_t Count)
 {
-	return std::memmove(Destination, Source, Count);
+	return NAMESPACE_STD::memmove(Destination, Source, Count);
 }
 
 /**
@@ -107,7 +107,7 @@ FORCEINLINE void* Memmove(void* Destination, const void* Source, size_t Count)
  */
 FORCEINLINE int32 Memcmp(const void* BufferLHS, const void* BufferRHS, size_t Count)
 {
-	return std::memcmp(BufferLHS, BufferRHS, Count);
+	return NAMESPACE_STD::memcmp(BufferLHS, BufferRHS, Count);
 }
 
 /**
@@ -121,7 +121,7 @@ FORCEINLINE int32 Memcmp(const void* BufferLHS, const void* BufferRHS, size_t Co
  */
 FORCEINLINE void* Memset(void* Destination, uint8 ValueToSet, size_t Count)
 {
-	return std::memset(Destination, ValueToSet, Count);
+	return NAMESPACE_STD::memset(Destination, ValueToSet, Count);
 }
 
 /**
@@ -134,7 +134,7 @@ FORCEINLINE void* Memset(void* Destination, uint8 ValueToSet, size_t Count)
  */
 FORCEINLINE void* Memzero(void* Destination, size_t Count)
 {
-	return std::memset(Destination, 0, Count);
+	return NAMESPACE_STD::memset(Destination, 0, Count);
 }
 
 /**
@@ -149,7 +149,7 @@ FORCEINLINE void* Memzero(void* Destination, size_t Count)
  */
 FORCEINLINE void* Memcpy(void* Destination, const void* Source, size_t Count)
 {
-	return std::memcpy(Destination, Source, Count);
+	return NAMESPACE_STD::memcpy(Destination, Source, Count);
 }
 
 /**
@@ -225,19 +225,19 @@ FORCEINLINE void Memcpy(T& Destination, const T& Source)
 /** Fallback to std::malloc(). */
 NODISCARD FORCEINLINE void* SystemMalloc(size_t Count)
 {
-	return std::malloc(Count);
+	return NAMESPACE_STD::malloc(Count);
 }
 
 /** Fallback to std::realloc(). */
 NODISCARD FORCEINLINE void* SystemRealloc(void* Ptr, size_t Count)
 {
-	return std::realloc(Ptr, Count);
+	return NAMESPACE_STD::realloc(Ptr, Count);
 }
 
 /** Fallback to std::free(). */
 FORCEINLINE void SystemFree(void* Ptr)
 {
-	std::free(Ptr);
+	NAMESPACE_STD::free(Ptr);
 }
 
 /**
@@ -298,8 +298,8 @@ NAMESPACE_REDCRAFT_END
 #pragma warning(disable : 28251)
 
 // The global overload operators new/delete do not cross .dll boundaries, and the macros should be placed in the .cpp of each module.
-#define REPLACEMENT_OPERATOR_NEW_AND_DELETE                                                                                                                                                  \
-	NODISCARD void* operator new(std::size_t Count)                                { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, __STDCPP_DEFAULT_NEW_ALIGNMENT__);                   } \
-	NODISCARD void* operator new(std::size_t Count, std::align_val_t Alignment)    { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, static_cast<NAMESPACE_REDCRAFT::size_t>(Alignment)); } \
-	          void operator delete(void* Ptr)                             noexcept { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }                                                                \
-	          void operator delete(void* Ptr, std::align_val_t Alignment) noexcept { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }
+#define REPLACEMENT_OPERATOR_NEW_AND_DELETE                                                                                                                                                                   \
+	NODISCARD void* operator new(NAMESPACE_STD::size_t Count)                                       { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, __STDCPP_DEFAULT_NEW_ALIGNMENT__);                   } \
+	NODISCARD void* operator new(NAMESPACE_STD::size_t Count, NAMESPACE_STD::align_val_t Alignment) { return NAMESPACE_REDCRAFT::Memory::Malloc(Count, static_cast<NAMESPACE_REDCRAFT::size_t>(Alignment)); } \
+	          void operator delete(void* Ptr)                                       noexcept        { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }                                                                \
+	          void operator delete(void* Ptr, NAMESPACE_STD::align_val_t Alignment) noexcept        { NAMESPACE_REDCRAFT::Memory::Free(Ptr); }
