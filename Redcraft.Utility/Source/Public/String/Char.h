@@ -59,7 +59,7 @@ NAMESPACE_PRIVATE_END
 /** Templated literal struct to allow selection of string literals based on the character type provided, and not on compiler switches. */
 #define LITERAL(CharType, StringLiteral) NAMESPACE_PRIVATE::TLiteral<CharType>::Select(StringLiteral, WTEXT(StringLiteral), U8TEXT(StringLiteral), U16TEXT(StringLiteral), U32TEXT(StringLiteral))
 
-/** Set of utility functions operating on a single character. Implemented based on ISO 30112 "i18n" */
+/** Set of utility functions operating on a single character. Implemented based on ISO 30112 "i18n". */
 template <CCharType T>
 struct TChar
 {

@@ -19,7 +19,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #define UNLIKELY               [[unlikely]]
 #define NO_UNIQUE_ADDRESS      [[no_unique_address]]
 
-constexpr size_t   INDEX_NONE = -1;
+constexpr size_t INDEX_NONE = -1;
 
 struct FForceInit { explicit FForceInit() = default; };
 struct FNoInit    { explicit FNoInit()    = default; };

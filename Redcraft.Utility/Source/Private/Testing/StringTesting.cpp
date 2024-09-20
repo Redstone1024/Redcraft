@@ -1,6 +1,8 @@
 #include "Testing/StringTesting.h"
 
 #include "String/Char.h"
+#include "Memory/Memory.h"
+#include "String/CString.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -12,6 +14,7 @@ NAMESPACE_BEGIN(Testing)
 void TestString()
 {
 	TestChar();
+	TestCString();
 }
 
 void TestChar()
@@ -68,31 +71,31 @@ void TestChar()
 	}
 
 	{
-		//always_check(FU16Char::IsAlnum(U16TEXT('0')));
-		//always_check(FU16Char::IsAlpha(U16TEXT('A')));
-		//always_check(FU16Char::IsLower(U16TEXT('a')));
-		//always_check(FU16Char::IsUpper(U16TEXT('A')));
+//		always_check(FU16Char::IsAlnum(U16TEXT('0')));
+//		always_check(FU16Char::IsAlpha(U16TEXT('A')));
+//		always_check(FU16Char::IsLower(U16TEXT('a')));
+//		always_check(FU16Char::IsUpper(U16TEXT('A')));
 		always_check(FU16Char::IsDigit(U16TEXT('0')));
 		always_check(FU16Char::IsCntrl(U16TEXT('\n')));
-		//always_check(FU16Char::IsGraph(U16TEXT('!')));
+//		always_check(FU16Char::IsGraph(U16TEXT('!')));
 		always_check(FU16Char::IsSpace(U16TEXT('\t')));
 		always_check(FU16Char::IsBlank(U16TEXT(' ')));
-		//always_check(FU16Char::IsPrint(U16TEXT('#')));
-		//always_check(FU16Char::IsPunct(U16TEXT('[')));
+//		always_check(FU16Char::IsPrint(U16TEXT('#')));
+//		always_check(FU16Char::IsPunct(U16TEXT('[')));
 	}
 
 	{
-		//always_check(FU32Char::IsAlnum(U32TEXT('0')));
-		//always_check(FU32Char::IsAlpha(U32TEXT('A')));
-		//always_check(FU32Char::IsLower(U32TEXT('a')));
-		//always_check(FU32Char::IsUpper(U32TEXT('A')));
+//		always_check(FU32Char::IsAlnum(U32TEXT('0')));
+//		always_check(FU32Char::IsAlpha(U32TEXT('A')));
+//		always_check(FU32Char::IsLower(U32TEXT('a')));
+//		always_check(FU32Char::IsUpper(U32TEXT('A')));
 		always_check(FU32Char::IsDigit(U32TEXT('0')));
 		always_check(FU32Char::IsCntrl(U32TEXT('\n')));
-		//always_check(FU32Char::IsGraph(U32TEXT('!')));
+//		always_check(FU32Char::IsGraph(U32TEXT('!')));
 		always_check(FU32Char::IsSpace(U32TEXT('\t')));
 		always_check(FU32Char::IsBlank(U32TEXT(' ')));
-		//always_check(FU32Char::IsPrint(U32TEXT('#')));
-		//always_check(FU32Char::IsPunct(U32TEXT('[')));
+//		always_check(FU32Char::IsPrint(U32TEXT('#')));
+//		always_check(FU32Char::IsPunct(U32TEXT('[')));
 	}
 
 	{
@@ -138,31 +141,31 @@ void TestChar()
 	}
 
 	{
-		//always_check(!FU16Char::IsAlnum(U16TEXT('$')));
-		//always_check(!FU16Char::IsAlpha(U16TEXT('0')));
-		//always_check(!FU16Char::IsLower(U16TEXT('A')));
-		//always_check(!FU16Char::IsUpper(U16TEXT('a')));
+//		always_check(!FU16Char::IsAlnum(U16TEXT('$')));
+//		always_check(!FU16Char::IsAlpha(U16TEXT('0')));
+//		always_check(!FU16Char::IsLower(U16TEXT('A')));
+//		always_check(!FU16Char::IsUpper(U16TEXT('a')));
 		always_check(!FU16Char::IsDigit(U16TEXT('I')));
 		always_check(!FU16Char::IsCntrl(U16TEXT('_')));
-		//always_check(!FU16Char::IsGraph(U16TEXT(' ')));
+//		always_check(!FU16Char::IsGraph(U16TEXT(' ')));
 		always_check(!FU16Char::IsSpace(U16TEXT('=')));
 		always_check(!FU16Char::IsBlank(U16TEXT('\r')));
-		//always_check(!FU16Char::IsPrint(U16TEXT('\n')));
-		//always_check(!FU16Char::IsPunct(U16TEXT('H')));
+//		always_check(!FU16Char::IsPrint(U16TEXT('\n')));
+//		always_check(!FU16Char::IsPunct(U16TEXT('H')));
 	}
 
 	{
-		//always_check(!FU32Char::IsAlnum(U32TEXT('$')));
-		//always_check(!FU32Char::IsAlpha(U32TEXT('0')));
-		//always_check(!FU32Char::IsLower(U32TEXT('A')));
-		//always_check(!FU32Char::IsUpper(U32TEXT('a')));
+//		always_check(!FU32Char::IsAlnum(U32TEXT('$')));
+//		always_check(!FU32Char::IsAlpha(U32TEXT('0')));
+//		always_check(!FU32Char::IsLower(U32TEXT('A')));
+//		always_check(!FU32Char::IsUpper(U32TEXT('a')));
 		always_check(!FU32Char::IsDigit(U32TEXT('I')));
 		always_check(!FU32Char::IsCntrl(U32TEXT('_')));
-		//always_check(!FU32Char::IsGraph(U32TEXT(' ')));
+//		always_check(!FU32Char::IsGraph(U32TEXT(' ')));
 		always_check(!FU32Char::IsSpace(U32TEXT('=')));
 		always_check(!FU32Char::IsBlank(U32TEXT('\r')));
-		//always_check(!FU32Char::IsPrint(U32TEXT('\n')));
-		//always_check(!FU32Char::IsPunct(U32TEXT('H')));
+//		always_check(!FU32Char::IsPrint(U32TEXT('\n')));
+//		always_check(!FU32Char::IsPunct(U32TEXT('H')));
 	}
 
 	{
@@ -185,10 +188,10 @@ void TestChar()
 		always_check(FWChar::ToLower(WTEXT('i')) == WTEXT('i'));
 		always_check(FU8Char::ToLower(U8TEXT('i')) == U8TEXT('i'));
 		always_check(FU8Char::ToUpper(U8TEXT('l')) == U8TEXT('L'));
-		//always_check(FU16Char::ToLower(U16TEXT('i')) == U16TEXT('i'));
-		//always_check(FU16Char::ToUpper(U16TEXT('l')) == U16TEXT('L'));
-		//always_check(FU32Char::ToLower(U32TEXT('i')) == U32TEXT('i'));
-		//always_check(FU32Char::ToUpper(U32TEXT('l')) == U32TEXT('L'));
+//		always_check(FU16Char::ToLower(U16TEXT('i')) == U16TEXT('i'));
+//		always_check(FU16Char::ToUpper(U16TEXT('l')) == U16TEXT('L'));
+//		always_check(FU32Char::ToLower(U32TEXT('i')) == U32TEXT('i'));
+//		always_check(FU32Char::ToUpper(U32TEXT('l')) == U32TEXT('L'));
 	}
 
 	{
@@ -226,6 +229,169 @@ void TestChar()
 		always_check(U16TEXT('f') != FU16Char::FromDigit(0xF));
 		always_check(U16TEXT('F') == FU16Char::FromDigit(0xF));
 	}
+}
+
+void TestCString()
+{
+	auto TestTCString = []<typename T>(TInPlaceType<T>)
+	{
+		constexpr size_t BUFFER_SIZE = 64;
+
+		T StrA[BUFFER_SIZE];
+		T StrB[BUFFER_SIZE];
+		T StrC[BUFFER_SIZE];
+		T StrD[BUFFER_SIZE];
+
+		always_check(TCString<T>::Copy(StrA, IGNORE_SIZE, LITERAL(T, "Hello"), IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Copy(StrB, IGNORE_SIZE, LITERAL(T, "Hello"), IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Copy(StrC, IGNORE_SIZE, LITERAL(T, "World"), IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Copy(StrD, IGNORE_SIZE, LITERAL(T, "     "), IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::Length(StrA,           4) == 4);
+		always_check(TCString<T>::Length(StrA, BUFFER_SIZE) == 5);
+		always_check(TCString<T>::Length(StrA, IGNORE_SIZE) == 5);
+
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrB, IGNORE_SIZE) == TCString<T>::Compare(StrA, BUFFER_SIZE, StrB, BUFFER_SIZE));
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrC, IGNORE_SIZE) == TCString<T>::Compare(StrA, BUFFER_SIZE, StrC, BUFFER_SIZE));
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrC, IGNORE_SIZE) < 0);
+
+		Memory::Memzero(StrD);
+
+		always_check(TCString<T>::Compare(StrA, BUFFER_SIZE, StrD, BUFFER_SIZE) > 0);
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrD, IGNORE_SIZE) > 0);
+
+		always_check(TCString<T>::Copy(StrD, IGNORE_SIZE, StrA, IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::Compare(StrA, BUFFER_SIZE, StrD, BUFFER_SIZE) == 0);
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrD, IGNORE_SIZE) == 0);
+
+		Memory::Memzero(StrC);
+		Memory::Memzero(StrD);
+
+		always_check(TCString<T>::Copy(StrD, 4, StrA, IGNORE_SIZE) == nullptr);
+		
+		always_check(TCString<T>::Compare(StrC, BUFFER_SIZE, StrD, BUFFER_SIZE) == 0);
+		always_check(TCString<T>::Compare(StrC, IGNORE_SIZE, StrD, IGNORE_SIZE) == 0);
+
+		always_check(TCString<T>::Copy(StrD, IGNORE_SIZE, StrA, 4) != nullptr);
+
+		always_check(TCString<T>::Length(StrD, IGNORE_SIZE) == 4);
+		
+		always_check(TCString<T>::Compare(StrA,           4, StrD,           4) == 0);
+		always_check(TCString<T>::Compare(StrA, IGNORE_SIZE, StrD, IGNORE_SIZE) > 0);
+
+		always_check(TCString<T>::Copy(   StrB, IGNORE_SIZE, LITERAL(T, "World!"), 5) != nullptr);
+		always_check(TCString<T>::Compare(StrB, IGNORE_SIZE, LITERAL(T, "World" ), IGNORE_SIZE) == 0);
+
+		Memory::Memzero(StrD);
+
+		always_check(TCString<T>::Cat(StrD, 8, StrA,            IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Cat(StrD, 8, LITERAL(T, " "), IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Cat(StrD, 8, StrB,            IGNORE_SIZE) == nullptr);
+
+		always_check(TCString<T>::Compare(StrD, IGNORE_SIZE, LITERAL(T, "Hello "), IGNORE_SIZE) == 0);
+
+		Memory::Memzero(StrD);
+		
+		always_check(TCString<T>::Cat(StrD, IGNORE_SIZE, StrA,            IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Cat(StrD, IGNORE_SIZE, LITERAL(T, " "), IGNORE_SIZE) != nullptr);
+		always_check(TCString<T>::Cat(StrD, IGNORE_SIZE, StrB,            IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::Compare(StrD, IGNORE_SIZE, LITERAL(T, "Hello World"), IGNORE_SIZE) == 0);
+
+		always_check(TCString<T>::Copy(StrA, IGNORE_SIZE, LITERAL(T, "Hello"), IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T, '\0'); }) == StrA + 5);
+		always_check(TCString<T>::Find(StrA, BUFFER_SIZE, [](T A) { return A == LITERAL(T, '\0'); }) == StrA + 5);
+		always_check(TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T,  'o'); }) == StrA + 4);
+		always_check(TCString<T>::Find(StrA,           4, [](T A) { return A == LITERAL(T,  'o'); }) == nullptr);
+
+		always_check(TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T, 'o'); })
+			      == TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T, 'l'); })
+			      != TCString<T>::Find(StrA, IGNORE_SIZE, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
+				  
+		always_check(TCString<T>::Find(StrA, BUFFER_SIZE, [](T A) { return A == LITERAL(T, 'o'); })
+			      == TCString<T>::Find(StrA, BUFFER_SIZE, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::Find(StrA, BUFFER_SIZE, [](T A) { return A == LITERAL(T, 'l'); })
+			      != TCString<T>::Find(StrA, BUFFER_SIZE, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
+				  
+		always_check(TCString<T>::Find(StrA,           4, [](T A) { return A == LITERAL(T, 'o'); })
+			      == TCString<T>::Find(StrA,           4, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::Find(StrA,           3, [](T A) { return A == LITERAL(T, 'l'); })
+			      == TCString<T>::Find(StrA,           3, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, '\0')) == StrA + 5);
+		always_check(TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T, '\0')) == StrA + 5);
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T,  'o')) == StrA + 4);
+		always_check(TCString<T>::FindChar(StrA,           4, LITERAL(T,  'o')) == nullptr);
+
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, 'o'))
+			      == TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, 'o'), ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, 'l'))
+			      != TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, 'l'), ESearchDirection::FromEnd));
+				  
+		always_check(TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T, 'o'))
+			      == TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T, 'o'), ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T, 'l'))
+			      != TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T, 'l'), ESearchDirection::FromEnd));
+				  
+		always_check(TCString<T>::FindChar(StrA,           4, LITERAL(T, 'o'))
+			      == TCString<T>::FindChar(StrA,           4, LITERAL(T, 'o'), ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::FindChar(StrA,           3, LITERAL(T, 'l'))
+			      == TCString<T>::FindChar(StrA,           3, LITERAL(T, 'l'), ESearchDirection::FromEnd));
+
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T,  ""), IGNORE_SIZE) == nullptr);
+		always_check(TCString<T>::FindChar(StrA, BUFFER_SIZE, LITERAL(T,  ""), IGNORE_SIZE) == nullptr);
+		always_check(TCString<T>::FindChar(StrA, IGNORE_SIZE, LITERAL(T, "o"), IGNORE_SIZE) == StrA + 4);
+		always_check(TCString<T>::FindChar(StrA,           4, LITERAL(T, "o"), IGNORE_SIZE) == nullptr);
+
+		always_check(TCString<T>::Copy(StrA, IGNORE_SIZE, LITERAL(T, "HIH"), IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T, '\0')) == StrA);
+		always_check(TCString<T>::FindNotChar(StrA, BUFFER_SIZE, LITERAL(T, '\0')) == StrA);
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T,  'I')) == StrA);
+		always_check(TCString<T>::FindNotChar(StrA,           2, LITERAL(T,  'I')) == StrA);
+		
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
+		always_check(TCString<T>::FindNotChar(StrA, BUFFER_SIZE, LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T,  'I'), ESearchDirection::FromEnd) == StrA + 3);
+		always_check(TCString<T>::FindNotChar(StrA,           2, LITERAL(T,  'I'), ESearchDirection::FromEnd) == StrA + 0);
+
+		always_check(TCString<T>::Copy(StrA, IGNORE_SIZE, LITERAL(T, "HIJIH"), IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T, "HIJ"), IGNORE_SIZE) == nullptr);
+		always_check(TCString<T>::FindNotChar(StrA, BUFFER_SIZE, LITERAL(T, "HIJ"), IGNORE_SIZE) == nullptr);
+
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T, "H J"), IGNORE_SIZE) == StrA + 1);
+		always_check(TCString<T>::FindNotChar(StrA, BUFFER_SIZE, LITERAL(T, "H J"), IGNORE_SIZE) == StrA + 1);
+
+		always_check(TCString<T>::FindNotChar(StrA, IGNORE_SIZE, LITERAL(T, "H J"), IGNORE_SIZE, ESearchDirection::FromEnd) == StrA + 3);
+		always_check(TCString<T>::FindNotChar(StrA, BUFFER_SIZE, LITERAL(T, "H J"), IGNORE_SIZE, ESearchDirection::FromEnd) == StrA + 3);
+
+		always_check(TCString<T>::Copy(StrA, IGNORE_SIZE, LITERAL(T, "01234567890123456789"), IGNORE_SIZE) != nullptr);
+
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                               ""), IGNORE_SIZE)                            == StrA);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                               ""), IGNORE_SIZE, ESearchDirection::FromEnd) == StrA + 20);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                            "345"), IGNORE_SIZE)                            == StrA + 3);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                            "345"), IGNORE_SIZE, ESearchDirection::FromEnd) == StrA + 13);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T, "012345678901234567890123456789"), IGNORE_SIZE)                            == nullptr);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T, "012345678901234567890123456789"), IGNORE_SIZE, ESearchDirection::FromEnd) == nullptr);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                            "ABC"), IGNORE_SIZE)                            == nullptr);
+		always_check(TCString<T>::FindString(StrA, IGNORE_SIZE, LITERAL(T,                            "ABC"), IGNORE_SIZE, ESearchDirection::FromEnd) == nullptr);
+	};
+
+	TestTCString(InPlaceType<char>);
+	TestTCString(InPlaceType<wchar_t>);
+	TestTCString(InPlaceType<char8_t>);
+	TestTCString(InPlaceType<char16_t>);
+	TestTCString(InPlaceType<char32_t>);
 }
 
 NAMESPACE_END(Testing)
