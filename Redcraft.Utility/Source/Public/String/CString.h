@@ -97,7 +97,7 @@ struct TCString
 	}
 
 	/** @return The length of a given string. The maximum length is the buffer size. */
-	FORCEINLINE static size_t Length(const CharType* InString, size_t SourceSize)
+	NODISCARD FORCEINLINE static size_t Length(const CharType* InString, size_t SourceSize)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -126,7 +126,7 @@ struct TCString
 	}
 
 	/** Compares two strings. The size is used only for buffer safety not for comparison. */
-	FORCEINLINE static strong_ordering Compare(const CharType* LHS, size_t LHSSize, const CharType* RHS, size_t RHSSize)
+	NODISCARD FORCEINLINE static strong_ordering Compare(const CharType* LHS, size_t LHSSize, const CharType* RHS, size_t RHSSize)
 	{
 		checkf(LHS && RHS, "Read access violation. LHS and RHS must not be nullptr.");
 
@@ -159,7 +159,7 @@ struct TCString
 
 	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
 	template <CPredicate<CharType> F>
-	FORCEINLINE static const CharType* Find(const CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* Find(const CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -199,7 +199,7 @@ struct TCString
 
 	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
 	template <CPredicate<CharType> F>
-	FORCEINLINE static       CharType* Find(      CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* Find(      CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -211,7 +211,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -233,7 +233,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -245,7 +245,7 @@ struct TCString
 	}
 	
 	/** Finds the first or last occurrence of a character in a charset. The size is used only for buffer safety. */
-	FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, "Read access violation. InString and Charset must not be nullptr.");
 
@@ -276,7 +276,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character in a charset. The size is used only for buffer safety. */
-	FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, "Read access violation. InString and Charset must not be nullptr.");
 
@@ -288,7 +288,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -317,7 +317,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, "Read access violation. InString must not be nullptr.");
 
@@ -329,7 +329,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character that is not in the given charset. The size is used only for buffer safety. */
-	FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, "Read access violation. InString and Charset must not be nullptr.");
 
@@ -353,7 +353,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a character that is not in the given charset. The size is used only for buffer safety. */
-	FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, "Read access violation. InString and Charset must not be nullptr.");
 
@@ -365,7 +365,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a substring. The size is used only for buffer safety. */
-	FORCEINLINE static const CharType* FindString(const CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* FindString(const CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Substring, "Read access violation. InString and Substring must not be nullptr.");
 
@@ -421,7 +421,7 @@ struct TCString
 	}
 
 	/** Finds the first or last occurrence of a substring. The size is used only for buffer safety. */
-	FORCEINLINE static       CharType* FindString(      CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* FindString(      CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Substring, "Read access violation. InString and Substring must not be nullptr.");
 

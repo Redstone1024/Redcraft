@@ -22,36 +22,36 @@ struct TLiteral;
 template <>
 struct TLiteral<char>
 {
-	FORCEINLINE static constexpr const char  Select(const char  X, const wchar_t , const char8_t , const char16_t , const char32_t ) { return X; }
-	FORCEINLINE static constexpr const char* Select(const char* X, const wchar_t*, const char8_t*, const char16_t*, const char32_t*) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char  Select(const char  X, const wchar_t , const char8_t , const char16_t , const char32_t ) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char* Select(const char* X, const wchar_t*, const char8_t*, const char16_t*, const char32_t*) { return X; }
 };
 
 template <>
 struct TLiteral<wchar_t>
 {
-	FORCEINLINE static constexpr const wchar_t  Select(const char , const wchar_t  X, const char8_t , const char16_t , const char32_t ) { return X; }
-	FORCEINLINE static constexpr const wchar_t* Select(const char*, const wchar_t* X, const char8_t*, const char16_t*, const char32_t*) { return X; }
+	NODISCARD FORCEINLINE static constexpr const wchar_t  Select(const char , const wchar_t  X, const char8_t , const char16_t , const char32_t ) { return X; }
+	NODISCARD FORCEINLINE static constexpr const wchar_t* Select(const char*, const wchar_t* X, const char8_t*, const char16_t*, const char32_t*) { return X; }
 };
 
 template <>
 struct TLiteral<char8_t>
 {
-	FORCEINLINE static constexpr const char8_t  Select(const char , const wchar_t , const char8_t  X, const char16_t , const char32_t ) { return X; }
-	FORCEINLINE static constexpr const char8_t* Select(const char*, const wchar_t*, const char8_t* X, const char16_t*, const char32_t*) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char8_t  Select(const char , const wchar_t , const char8_t  X, const char16_t , const char32_t ) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char8_t* Select(const char*, const wchar_t*, const char8_t* X, const char16_t*, const char32_t*) { return X; }
 };
 
 template <>
 struct TLiteral<char16_t>
 {
-	FORCEINLINE static constexpr const char16_t  Select(const char , const wchar_t , const char8_t , const char16_t  X, const char32_t ) { return X; }
-	FORCEINLINE static constexpr const char16_t* Select(const char*, const wchar_t*, const char8_t*, const char16_t* X, const char32_t*) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char16_t  Select(const char , const wchar_t , const char8_t , const char16_t  X, const char32_t ) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char16_t* Select(const char*, const wchar_t*, const char8_t*, const char16_t* X, const char32_t*) { return X; }
 };
 
 template <>
 struct TLiteral<char32_t>
 {
-	FORCEINLINE static constexpr const char32_t  Select(const char , const wchar_t , const char8_t , const char16_t , const char32_t  X) { return X; }
-	FORCEINLINE static constexpr const char32_t* Select(const char*, const wchar_t*, const char8_t*, const char16_t*, const char32_t* X) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char32_t  Select(const char , const wchar_t , const char8_t , const char16_t , const char32_t  X) { return X; }
+	NODISCARD FORCEINLINE static constexpr const char32_t* Select(const char*, const wchar_t*, const char8_t*, const char16_t*, const char32_t* X) { return X; }
 };
 
 NAMESPACE_PRIVATE_END
@@ -67,7 +67,7 @@ struct TChar
 
 	inline static constexpr CharType NONE = CharType(-1);
 
-	FORCEINLINE static constexpr bool IsAlnum(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsAlnum(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -83,7 +83,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsAlpha(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsAlpha(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -111,7 +111,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsLower(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsLower(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -137,7 +137,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsUpper(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsUpper(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -163,13 +163,13 @@ struct TChar
 		}
 	}
 	
-	FORCEINLINE static constexpr bool IsDigit(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar)
 	{
 		/* <U0030>..<U0039>; */
 		return (InChar >= LITERAL(CharType, '0') && InChar <= LITERAL(CharType, '9'));
 	}
 
-	FORCEINLINE static constexpr bool IsDigit(CharType InChar, int Base)
+	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar, int Base)
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Base must be in the range [2, 36]."));
 
@@ -180,7 +180,7 @@ struct TChar
 			(InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + Base - 10);
 	}
 
-	FORCEINLINE static constexpr bool IsCntrl(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsCntrl(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -217,7 +217,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsGraph(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsGraph(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -243,7 +243,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsSpace(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsSpace(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -363,7 +363,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsBlank(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsBlank(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -404,7 +404,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsPrint(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsPrint(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -430,7 +430,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr bool IsPunct(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsPunct(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -460,7 +460,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr CharType ToLower(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr CharType ToLower(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -492,7 +492,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr CharType ToUpper(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr CharType ToUpper(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -524,7 +524,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr int ToDigit(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr int ToDigit(CharType InChar)
 	{
 		switch (InChar)
 		{
@@ -594,7 +594,7 @@ struct TChar
 		}
 	}
 
-	FORCEINLINE static constexpr CharType FromDigit(int InDigit)
+	NODISCARD FORCEINLINE static constexpr CharType FromDigit(int InDigit)
 	{
 		if (InDigit < 0 || InDigit >= 36) return NONE;
 
