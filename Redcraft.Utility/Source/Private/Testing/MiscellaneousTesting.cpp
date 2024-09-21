@@ -2,6 +2,7 @@
 
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/Compare.h"
+#include "Miscellaneous/VarArgs.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -13,6 +14,7 @@ void TestMiscellaneous()
 {
 	TestAssertionMacros();
 	TestCompare();
+	TestVarArgs();
 }
 
 NAMESPACE_UNNAMED_BEGIN
@@ -218,6 +220,69 @@ void TestCompare()
 	always_check(SynthThreeWayCompare(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+enum class ETestVarArgs
+{
+	A = 0xA,
+	B = 0xB,
+};
+
+struct FTestVarArgs
+{
+	int16 A;
+	float32 B;
+
+	friend bool operator==(const FTestVarArgs& LHS, const FTestVarArgs& RHS) { return LHS.A == RHS.A && LHS.B == RHS.B; }
+};
+
+void VARARGS TestVarArgs(int32 Count, ...)
+{
+	VARARGS_ACCESS_BEGIN(Context, Count);
+
+//	always_check(VARARGS_ACCESS(Context,      bool) == true);
+//	always_check(VARARGS_ACCESS(Context,      char) == 2);
+//	always_check(VARARGS_ACCESS(Context,     short) == 3);
+	always_check(VARARGS_ACCESS(Context,       int) == 4);
+	always_check(VARARGS_ACCESS(Context, long long) == 5);
+
+//	always_check(VARARGS_ACCESS(Context,       float) == 6.0f);
+	always_check(VARARGS_ACCESS(Context,      double) == 7.0 );
+	always_check(VARARGS_ACCESS(Context, long double) == 8.0l);
+
+//	always_check(VARARGS_ACCESS(Context,             nullptr_t) == nullptr);
+	always_check(VARARGS_ACCESS(Context,                 void*) == nullptr);
+	always_check(VARARGS_ACCESS(Context, int32 FTestVarArgs::*) == nullptr);
+
+	always_check(VARARGS_ACCESS(Context, ETestVarArgs) == ETestVarArgs::B);
+	always_check(VARARGS_ACCESS(Context, FTestVarArgs) == FTestVarArgs({ 404, 5.0f }));
+
+	VARARGS_ACCESS_END(Context);
+};
+
+NAMESPACE_UNNAMED_END
+
+void TestVarArgs()
+{
+	TestVarArgs
+	(
+		7 - 5,
+//		true,
+//		static_cast<     char>(2),
+//		static_cast<    short>(3),
+		static_cast<      int>(4),
+		static_cast<long long>(5),
+//		6.0f,
+		7.0,
+		8.0l,
+//		nullptr,
+		static_cast<void*>(nullptr),
+		static_cast<int32 FTestVarArgs::*>(nullptr),
+		ETestVarArgs::B,
+		FTestVarArgs({ 404, 5.0f })
+	);
 }
 
 NAMESPACE_END(Testing)
