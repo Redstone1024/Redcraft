@@ -18,9 +18,6 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #pragma warning(push)
 #pragma warning(disable : 4996)
 
-/** Explicit instructions to ignore buffer size, but may lead to buffer overflow attacks. */
-constexpr size_t IGNORE_SIZE = -1;
-
 /** Determines search direction for string operations. */
 enum class ESearchDirection
 {
@@ -37,14 +34,12 @@ struct TCString
 {
 	using CharType = T;
 
-	/** Copies one string to another. The size is used only for buffer safety and will not append null characters to the destination. */
-	FORCEINLINE static CharType* Copy(CharType* Destination, size_t DestinationSize, const CharType* Source, size_t SourceSize)
+	/** Copies one string to another. The end sentinel is used only for buffer safety and will not append null characters to the destination. */
+	FORCEINLINE static CharType* Copy(CharType* Destination, const CharType* DestinationEnd, const CharType* Source, const CharType* SourceEnd)
 	{
 		checkf(Destination && Source, TEXT("Read access violation. Destination and source must not be nullptr."));
 
-		checkf(DestinationSize != 0 && SourceSize != 0, TEXT("Illegal buffer size. DestinationSize and SourceSize must not be zero."));
-
-		if (DestinationSize == IGNORE_SIZE && SourceSize == IGNORE_SIZE)
+		if (DestinationEnd == nullptr && SourceEnd == nullptr)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -56,9 +51,9 @@ struct TCString
 			}
 		}
 
-		size_t SourceLength = TCString::Length(Source, SourceSize);
+		size_t SourceLength = TCString::Length(Source, SourceEnd);
 
-		if (DestinationSize != IGNORE_SIZE && DestinationSize < SourceLength + 1)
+		if (DestinationEnd != nullptr && Destination + SourceLength + 1 > DestinationEnd)
 		{
 			return nullptr;
 		}
@@ -70,14 +65,12 @@ struct TCString
 		return Destination;
 	}
 
-	/** Concatenates two strings. The size is used only for buffer safety and will not append null characters to the destination. */
-	FORCEINLINE static CharType* Cat(CharType* Destination, size_t DestinationSize, const CharType* Source, size_t SourceSize)
+	/** Concatenates two strings. The end sentinel is used only for buffer safety and will not append null characters to the destination. */
+	FORCEINLINE static CharType* Cat(CharType* Destination, const CharType* DestinationEnd, const CharType* Source, const CharType* SourceEnd)
 	{
 		checkf(Destination && Source, TEXT("Read access violation. Destination and source must not be nullptr."));
 
-		checkf(DestinationSize != 0 && SourceSize != 0, TEXT("Illegal buffer size. DestinationSize and SourceSize must not be zero."));
-
-		if (DestinationSize == IGNORE_SIZE && SourceSize == IGNORE_SIZE)
+		if (DestinationEnd == nullptr && SourceEnd == nullptr)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -89,21 +82,19 @@ struct TCString
 			}
 		}
 
-		size_t DestinationLength = TCString::Length(Destination, DestinationSize);
+		size_t DestinationLength = TCString::Length(Destination, DestinationEnd);
 
-		CharType* Result = Copy(Destination + DestinationLength, DestinationSize - DestinationLength, Source, SourceSize);
+		CharType* Result = Copy(Destination + DestinationLength, DestinationEnd, Source, SourceEnd);
 
 		return Result ? Destination : nullptr;
 	}
 
 	/** @return The length of a given string. The maximum length is the buffer size. */
-	NODISCARD FORCEINLINE static size_t Length(const CharType* InString, size_t SourceSize)
+	NODISCARD FORCEINLINE static size_t Length(const CharType* InString, const CharType* End)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(SourceSize != 0, TEXT("Illegal buffer size. SourceSize must not be zero."));
-
-		if (SourceSize == IGNORE_SIZE)
+		if (End == nullptr)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -117,24 +108,21 @@ struct TCString
 
 		size_t Result = 0;
 
-		while (*InString != LITERAL(CharType, '\0') && SourceSize != 0)
+		while (*InString != LITERAL(CharType, '\0') && InString != End)
 		{
 			++Result;
 			++InString;
-			--SourceSize;
 		}
 
 		return Result;
 	}
 
-	/** Compares two strings. The size is used only for buffer safety not for comparison. */
-	NODISCARD FORCEINLINE static strong_ordering Compare(const CharType* LHS, size_t LHSSize, const CharType* RHS, size_t RHSSize)
+	/** Compares two strings. The end sentinel is used only for buffer safety not for comparison. */
+	NODISCARD FORCEINLINE static strong_ordering Compare(const CharType* LHS, const CharType* LHSEnd, const CharType* RHS, const CharType* RHSEnd)
 	{
 		checkf(LHS && RHS, TEXT("Read access violation. LHS and RHS must not be nullptr."));
 
-		checkf(LHSSize != 0 && RHSSize != 0, TEXT("Illegal buffer size. LHSSize and RHSSize must not be zero."));
-
-		if (LHSSize == IGNORE_SIZE && RHSSize == IGNORE_SIZE)
+		if (LHSEnd == nullptr && RHSEnd == nullptr)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -146,7 +134,7 @@ struct TCString
 			}
 		}
 
-		while (LHSSize != 0 && RHSSize != 0)
+		while (LHS != LHSEnd && RHS != RHSEnd)
 		{
 			if (*LHS != *RHS)
 			{
@@ -160,24 +148,29 @@ struct TCString
 
 			++LHS;
 			++RHS;
-			--LHSSize;
-			--RHSSize;
 		}
 
-		return LHSSize <=> RHSSize;
+		if (LHS != LHSEnd && RHS == RHSEnd)
+		{
+			return *LHS <=> LITERAL(CharType, '\0');
+		}
+		else if (LHS == LHSEnd && RHS != RHSEnd)
+		{
+			return LITERAL(CharType, '\0') <=> *RHS;
+		}
+
+		return strong_ordering::equal;
 	}
 
-	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
+	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
 	template <CPredicate<CharType> F>
-	NODISCARD FORCEINLINE static const CharType* Find(const CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static const CharType* Find(const CharType* InString, const CharType* End, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
-
 		if (SearchDirection == ESearchDirection::FromStart)
 		{
-			while (BufferSize != 0)
+			while (InString != End)
 			{
 				if (InvokeResult<bool>(Forward<F>(InPredicate), *InString))
 				{
@@ -187,52 +180,47 @@ struct TCString
 				if (*InString == LITERAL(CharType, '\0')) break;
 
 				++InString;
-				--BufferSize;
 			}
 		}
 		else
 		{
-			size_t Index = TCString::Length(InString, BufferSize);
+			size_t Index = TCString::Length(InString, End);
 
-			if (Index == BufferSize) --Index;
+			const CharType* Iter = InString + Index;
 
-			while (true)
+			if (Iter == End) --Iter;
+
+			while (Iter != InString - 1)
 			{
-				if (InvokeResult<bool>(Forward<F>(InPredicate), InString[Index]))
+				if (InvokeResult<bool>(Forward<F>(InPredicate), *Iter))
 				{
-					return InString + Index;
+					return Iter;
 				}
 
-				if (Index == 0) break;
-
-				--Index;
+				--Iter;
 			}
 		}
 
 		return nullptr;
 	}
 
-	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
+	/** Finds the first or last occurrence of a character that satisfies the predicate. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
 	template <CPredicate<CharType> F>
-	NODISCARD FORCEINLINE static       CharType* Find(      CharType* InString, size_t BufferSize, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	NODISCARD FORCEINLINE static       CharType* Find(      CharType* InString, const CharType* End, F&& InPredicate, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
-
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
 
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::Find(const_cast<const CharType*>(InString), BufferSize, Forward<F>(InPredicate), SearchDirection));
+		return const_cast<CharType*>(TCString::Find(const_cast<const CharType*>(InString), End, Forward<F>(InPredicate), SearchDirection));
 	}
 
-	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, const CharType* End, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
-
-		if (BufferSize == IGNORE_SIZE)
+		if (End == nullptr)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -244,29 +232,25 @@ struct TCString
 			}
 		}
 
-		return TCString::Find(InString, BufferSize, [Character](CharType C) { return C == Character; }, SearchDirection);
+		return TCString::Find(InString, End, [Character](CharType C) { return C == Character; }, SearchDirection);
 	}
 
-	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, const CharType* End, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
-
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::FindChar(const_cast<const CharType*>(InString), BufferSize, Character, SearchDirection));
+		return const_cast<CharType*>(TCString::FindChar(const_cast<const CharType*>(InString), End, Character, SearchDirection));
 	}
 	
-	/** Finds the first or last occurrence of a character in a charset. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character in a charset. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static const CharType* FindChar(const CharType* InString, const CharType* End, const CharType* Charset, const CharType* CharsetEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, TEXT("Read access violation. InString and Charset must not be nullptr."));
 
-		checkf(BufferSize != 0 && CharsetSize != 0, TEXT("Illegal buffer size. BufferSize and CharsetSize must not be zero."));
-
-		if (BufferSize == IGNORE_SIZE && CharsetSize == IGNORE_SIZE && SearchDirection == ESearchDirection::FromStart)
+		if (End == nullptr && CharsetEnd == nullptr && SearchDirection == ESearchDirection::FromStart)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -280,41 +264,39 @@ struct TCString
 
 		return TCString::Find
 		(
-			InString, BufferSize,
-			[Charset, CharsetSize](CharType C)
+			InString, End,
+			[Charset, CharsetEnd](CharType C)
 			{
-				const CharType* Result = TCString::FindChar(Charset, CharsetSize, C);
+				const CharType* Result = TCString::FindChar(Charset, CharsetEnd, C);
 				return Result != nullptr && *Result != LITERAL(CharType, '\0');
 			},
 			SearchDirection
 		);
 	}
 
-	/** Finds the first or last occurrence of a character in a charset. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character in a charset. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static       CharType* FindChar(      CharType* InString, const CharType* End, const CharType* Charset, const CharType* CharsetEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, TEXT("Read access violation. InString and Charset must not be nullptr."));
 
-		checkf(BufferSize != 0 && CharsetSize != 0, TEXT("Illegal buffer size. BufferSize and CharsetSize must not be zero."));
-
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::FindChar(const_cast<const CharType*>(InString), BufferSize, Charset, CharsetSize, SearchDirection));
+		return const_cast<CharType*>(TCString::FindChar(const_cast<const CharType*>(InString), End, Charset, CharsetEnd, SearchDirection));
 	}
 
-	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, const CharType* End, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
+		if (InString == End) return nullptr;
 
 		if (Character == LITERAL(CharType, '\0') && SearchDirection == ESearchDirection::FromStart)
 		{
 			return *InString != LITERAL(CharType, '\0') ? InString : nullptr;
 		}
 
-		if (BufferSize == IGNORE_SIZE && SearchDirection == ESearchDirection::FromStart)
+		if (End == nullptr && SearchDirection == ESearchDirection::FromStart)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -328,29 +310,25 @@ struct TCString
 			}
 		}
 
-		return TCString::Find(InString, BufferSize, [Character](CharType C) { return C != Character; }, SearchDirection);
+		return TCString::Find(InString, End, [Character](CharType C) { return C != Character; }, SearchDirection);
 	}
 
-	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character that is not the given character. The terminating null character is considered to be a part of the string. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, const CharType* End, CharType Character, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString, TEXT("Read access violation. InString must not be nullptr."));
 
-		checkf(BufferSize != 0, TEXT("Illegal buffer size. BufferSize must not be zero."));
-
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::FindNotChar(const_cast<const CharType*>(InString), BufferSize, Character, SearchDirection));
+		return const_cast<CharType*>(TCString::FindNotChar(const_cast<const CharType*>(InString), End, Character, SearchDirection));
 	}
 
-	/** Finds the first or last occurrence of a character that is not in the given charset. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character that is not in the given charset. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static const CharType* FindNotChar(const CharType* InString, const CharType* End, const CharType* Charset, const CharType* CharsetEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, TEXT("Read access violation. InString and Charset must not be nullptr."));
 
-		checkf(BufferSize != 0 && CharsetSize != 0, TEXT("Illegal buffer size. BufferSize and CharsetSize must not be zero."));
-
-		if (BufferSize == IGNORE_SIZE && CharsetSize == IGNORE_SIZE && SearchDirection == ESearchDirection::FromStart)
+		if (End == nullptr && CharsetEnd == nullptr && SearchDirection == ESearchDirection::FromStart)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -364,34 +342,38 @@ struct TCString
 			}
 		}
 		
-		return TCString::Find(InString, BufferSize, [Charset, CharsetSize](CharType C) { return TCString::FindChar(Charset, CharsetSize, C) == nullptr; }, SearchDirection);
+		return TCString::Find(InString, End, [Charset, CharsetEnd](CharType C) { return TCString::FindChar(Charset, CharsetEnd, C) == nullptr; }, SearchDirection);
 	}
 
-	/** Finds the first or last occurrence of a character that is not in the given charset. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, size_t BufferSize, const CharType* Charset, size_t CharsetSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a character that is not in the given charset. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static       CharType* FindNotChar(      CharType* InString, const CharType* End, const CharType* Charset, const CharType* CharsetEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Charset, TEXT("Read access violation. InString and Charset must not be nullptr."));
 
-		checkf(BufferSize != 0 && CharsetSize != 0, TEXT("Illegal buffer size. BufferSize and CharsetSize must not be zero."));
-
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::FindNotChar(const_cast<const CharType*>(InString), BufferSize, Charset, CharsetSize, SearchDirection));
+		return const_cast<CharType*>(TCString::FindNotChar(const_cast<const CharType*>(InString), End, Charset, CharsetEnd, SearchDirection));
 	}
 
-	/** Finds the first or last occurrence of a substring. The size is used only for buffer safety. */
-	NODISCARD             static const CharType* FindString(const CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a substring. The end sentinel is used only for buffer safety. */
+	NODISCARD             static const CharType* FindString(const CharType* InString, const CharType* End, const CharType* Substring, const CharType* SubstringEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Substring, TEXT("Read access violation. InString and Substring must not be nullptr."));
 
-		checkf(BufferSize != 0 && SubstringSize != 0, TEXT("Illegal buffer size. BufferSize and SubstringSize must not be zero."));
+		if (InString == End) return nullptr;
 
-		if (*Substring == LITERAL(CharType, '\0'))
+		if (Substring == SubstringEnd || *Substring == LITERAL(CharType, '\0'))
 		{
-			return SearchDirection == ESearchDirection::FromStart ? InString : InString + TCString::Length(InString, BufferSize);
+			if (SearchDirection == ESearchDirection::FromStart) return InString;
+			else
+			{
+				const CharType* Iter = InString + TCString::Length(InString, End);
+				if (Iter == End) --Iter;
+				return Iter;
+			}
 		}
 
-		if (BufferSize == IGNORE_SIZE && SubstringSize == IGNORE_SIZE && SearchDirection == ESearchDirection::FromStart)
+		if (End == nullptr && SubstringEnd == nullptr && SearchDirection == ESearchDirection::FromStart)
 		{
 			if constexpr (CSameAs<CharType, char>)
 			{
@@ -403,8 +385,8 @@ struct TCString
 			}
 		}
 
-		size_t StringLength    = TCString::Length(InString,  BufferSize);
-		size_t SubstringLength = TCString::Length(Substring, SubstringSize);
+		size_t StringLength    = TCString::Length(InString,  End);
+		size_t SubstringLength = TCString::Length(Substring, SubstringEnd);
 
 		if (StringLength < SubstringLength)
 		{
@@ -415,7 +397,7 @@ struct TCString
 		{
 			for (size_t Index = 0; Index < StringLength - SubstringLength; ++Index)
 			{
-				if (TCString::Compare(InString + Index, SubstringLength, Substring, SubstringLength) == 0)
+				if (TCString::Compare(InString + Index, InString + Index + SubstringLength, Substring, Substring + SubstringLength) == 0)
 				{
 					return InString + Index;
 				}
@@ -425,7 +407,7 @@ struct TCString
 		{
 			for (size_t Index = StringLength - SubstringLength; Index > 0; --Index)
 			{
-				if (TCString::Compare(InString + Index, SubstringLength, Substring, SubstringLength) == 0)
+				if (TCString::Compare(InString + Index, InString + Index + SubstringLength, Substring, Substring + SubstringLength) == 0)
 				{
 					return InString + Index;
 				}
@@ -435,16 +417,14 @@ struct TCString
 		return nullptr;
 	}
 
-	/** Finds the first or last occurrence of a substring. The size is used only for buffer safety. */
-	NODISCARD FORCEINLINE static       CharType* FindString(      CharType* InString, size_t BufferSize, const CharType* Substring, size_t SubstringSize, ESearchDirection SearchDirection = ESearchDirection::FromStart)
+	/** Finds the first or last occurrence of a substring. The end sentinel is used only for buffer safety. */
+	NODISCARD FORCEINLINE static       CharType* FindString(      CharType* InString, const CharType* End, const CharType* Substring, const CharType* SubstringEnd, ESearchDirection SearchDirection = ESearchDirection::FromStart)
 	{
 		checkf(InString && Substring, TEXT("Read access violation. InString and Substring must not be nullptr."));
 
-		checkf(BufferSize != 0 && SubstringSize != 0, TEXT("Illegal buffer size. BufferSize and SubstringSize must not be zero."));
-
 		check_no_recursion();
 
-		return const_cast<CharType*>(TCString::FindString(const_cast<const CharType*>(InString), BufferSize, Substring, SubstringSize, SearchDirection));
+		return const_cast<CharType*>(TCString::FindString(const_cast<const CharType*>(InString), End, Substring, SubstringEnd, SearchDirection));
 	}
 
 };
