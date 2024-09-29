@@ -611,28 +611,28 @@ TOutputIterator(F) -> TOutputIterator<F>;
 
 /** Creates a TReverseIterator of type inferred from the argument. */
 template <typename I> requires (CBidirectionalIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
-NODISCARD FORCEINLINE constexpr TReverseIterator<I> MakeReverseIterator(I&& Iter)
+NODISCARD FORCEINLINE constexpr auto MakeReverseIterator(I&& Iter)
 {
 	return TReverseIterator<TDecay<I>>(Forward<I>(Iter));
 }
 
 /** Creates a TMoveIterator of type inferred from the argument. */
 template <typename I> requires (CInputIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
-NODISCARD FORCEINLINE constexpr TMoveIterator<I> MakeMoveIterator(I&& Iter)
+NODISCARD FORCEINLINE constexpr auto MakeMoveIterator(I&& Iter)
 {
 	return TMoveIterator<TDecay<I>>(Forward<I>(Iter));
 }
 
 /** Creates a TMoveSentinel of type inferred from the argument. */
 template <typename I> requires (CSemiregular<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
-NODISCARD FORCEINLINE constexpr TMoveSentinel<I> MakeMoveSentinel(I&& Iter)
+NODISCARD FORCEINLINE constexpr auto MakeMoveSentinel(I&& Iter)
 {
 	return TMoveSentinel<TDecay<I>>(Forward<I>(Iter));
 }
 
 /** Creates a TCountedIterator of type inferred from the argument. */
 template <typename I> requires (CInputOrOutputIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
-NODISCARD FORCEINLINE constexpr TCountedIterator<I> MakeCountedIterator(I&& Iter, ptrdiff N)
+NODISCARD FORCEINLINE constexpr auto MakeCountedIterator(I&& Iter, ptrdiff N)
 {
 	return TCountedIterator<TDecay<I>>(Forward<I>(Iter), N);
 }
