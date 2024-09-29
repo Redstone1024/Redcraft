@@ -45,7 +45,15 @@ public:
 	static constexpr size_t Extent = InExtent;
 
 	/** Constructs an empty array view. */
-	FORCEINLINE constexpr TArrayView() requires (Extent == 0 || Extent == DynamicExtent) = default;
+	FORCEINLINE constexpr TArrayView() requires (Extent == 0 || Extent == DynamicExtent)
+	{
+		Impl.Pointer = nullptr;
+
+		if constexpr (Extent == DynamicExtent)
+		{
+			Impl.ArrayNum = 0;
+		}
+	}
 
 	/** Constructs an array view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
 	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], ElementType(*)[]>)
