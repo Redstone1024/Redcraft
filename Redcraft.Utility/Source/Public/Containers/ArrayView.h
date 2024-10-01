@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Allocator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Container.h"
@@ -100,7 +101,7 @@ public:
 	FORCEINLINE constexpr TArrayView(TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
-	template <typename U, size_t N> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
+	template <typename U, size_t N> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
 	FORCEINLINE constexpr TArrayView(const TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	template <typename U, size_t N>
@@ -111,7 +112,7 @@ public:
 	FORCEINLINE constexpr TArrayView(TArray<U>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
+	template <typename U> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
 	FORCEINLINE constexpr TArrayView(const TArray<U>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	template <typename U>
@@ -277,11 +278,11 @@ public:
 	NODISCARD FORCEINLINE constexpr bool IsValidIterator(Iterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE constexpr ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
+	NODISCARD FORCEINLINE constexpr Reference operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
 
 	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE constexpr ElementType& Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr ElementType& Back()  const { return *(End() - 1); }
+	NODISCARD FORCEINLINE constexpr Reference Front() const { return *Begin();     }
+	NODISCARD FORCEINLINE constexpr Reference Back()  const { return *(End() - 1); }
 
 	/** Overloads the GetTypeHash algorithm for TArrayView. */
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TArrayView A) requires (CHashable<ElementType>)
