@@ -6,6 +6,10 @@
 #include <cstdlib>
 #include <cstddef>
 
+#if __cplusplus >= 202300L
+#	include <stdfloat>
+#endif
+
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
@@ -156,8 +160,40 @@ using int64 = NAMESPACE_STD::int64_t;
 
 // Floating point types
 
+#if defined(__STDCPP_FLOAT16_T__)
+using float16 = NAMESPACE_STD::float16_t;
+#endif
+
+#if defined(__STDCPP_FLOAT32_T__)
+using float32 = NAMESPACE_STD::float32_t;
+#else
 using float32 = float;
+#endif
+
+#if defined(__STDCPP_FLOAT64_T__)
+using float64 = NAMESPACE_STD::float64_t;
+#else
 using float64 = double;
+#endif
+
+#if defined(__STDCPP_FLOAT128_T__)
+using float128 = NAMESPACE_STD::float128_t;
+#endif
+
+#if defined(__STDCPP_BFLOAT16_T__)
+using bfloat16 = NAMESPACE_STD::bfloat16_t;
+#endif
+
+static_assert(sizeof(float32) == 4);
+static_assert(sizeof(float64) == 8);
+
+// Character types
+
+using wchar       = wchar_t;
+using u8char      = char8_t;
+using u16char     = char16_t;
+using u32char     = char32_t;
+using unicodechar = char32_t;
 
 // Pointer types
 
