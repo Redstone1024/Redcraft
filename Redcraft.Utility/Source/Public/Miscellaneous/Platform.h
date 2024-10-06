@@ -189,11 +189,23 @@ static_assert(sizeof(float64) == 8);
 
 // Character types
 
+// The 'char'        typically represents the user-preferred locale narrow encoded character set.
+// The 'wchar'       typically represents the user-preferred locale wide encoded character set.
+// The 'u8char'      typically represents the UTF-8 encoded unicode character set.
+// The 'u16char'     typically represents the UTF-16 encoded unicode character set.
+// The 'u32char'     typically represents the UTF-32 encoded unicode character set.
+// The 'unicodechar' typically represents the fixed-length encoded unicode character set.
+
+// The literals should preferentially use unicode character set instead of user-preferred locale character set.
+
 using wchar       = wchar_t;
 using u8char      = char8_t;
 using u16char     = char16_t;
 using u32char     = char32_t;
 using unicodechar = char32_t;
+
+static_assert(!PLATFORM_WINDOWS || sizeof(wchar) == sizeof(u16char), "wchar represents UTF-16 on Windows");
+static_assert(!PLATFORM_LINUX   || sizeof(wchar) == sizeof(u32char), "wchar represents UTF-32 on Linux");
 
 // Pointer types
 
@@ -220,11 +232,13 @@ NAMESPACE_PRIVATE_BEGIN
 
 NAMESPACE_PRIVATE_END
 
-#define TEXT(X)    TEXT_PASTE(X)
-#define WTEXT(X)   WTEXT_PASTE(X)
-#define U8TEXT(X)  U8TEXT_PASTE(X)
-#define U16TEXT(X) U16TEXT_PASTE(X)
-#define U32TEXT(X) U32TEXT_PASTE(X)
+#define TEXT(X)  TEXT_PASTE(X)
+#define WTEXT(X) WTEXT_PASTE(X)
+
+#define U8TEXT(X)      U8TEXT_PASTE(X)
+#define U16TEXT(X)     U16TEXT_PASTE(X)
+#define U32TEXT(X)     U32TEXT_PASTE(X)
+#define UNICODETEXT(X) U32TEXT_PASTE(X)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
