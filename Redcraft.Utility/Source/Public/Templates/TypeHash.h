@@ -22,10 +22,10 @@ FORCEINLINE constexpr size_t HashCombine(size_t A)
 	return A;
 }
 
-/** Combines two hash values to get a third. this function is not commutative. */
-FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C)
+/** Combines more hash values to get a new value. this function is not commutative. */
+template <typename... Ts> requires (true && ... && CConvertibleTo<Ts, size_t>)
+FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
 {
-	
 	size_t B = static_cast<size_t>(0x9E3779B97F4A7C16);
 
 	A += B;
@@ -40,15 +40,7 @@ FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C)
 	B -= C; B -= A; B ^= (A << 10);
 	C -= A; C -= B; C ^= (B >> 15);
 
-	return C;
-}
-
-/** Combines more hash values to get a new value. this function is not commutative. */
-template <typename... Ts> requires (true && ... && CConvertibleTo<Ts, size_t>)
-FORCEINLINE constexpr size_t HashCombine(size_t A, size_t C, Ts... InOther)
-{
-	size_t B = HashCombine(A, C);
-	return HashCombine(B, InOther...);
+	return HashCombine(C, InOther...);
 }
 
 /** Overloads the GetTypeHash algorithm for CIntegral. */
