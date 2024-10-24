@@ -54,7 +54,7 @@ public:
 
 		Memory::DefaultConstruct<ElementType>(Impl.Pointer, Num());
 	}
-	
+
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TArray(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
 	{
@@ -158,7 +158,7 @@ public:
 		{
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
-			
+
 			Impl.ArrayNum = InValue.Num();
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
@@ -213,13 +213,13 @@ public:
 		{
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
-			
+
 			Impl.ArrayNum = InValue.Num();
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
 			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
-			
+
 			InValue.Reset();
 
 			return *this;
@@ -256,7 +256,7 @@ public:
 		{
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
-			
+
 			Impl.ArrayNum = GetNum(IL);
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
@@ -308,7 +308,7 @@ public:
 
 		return LHS.Num() <=> RHS.Num();
 	}
-	
+
 	/** Inserts 'InValue' before 'Iter' in the container. */
 	Iterator Insert(ConstIterator Iter, const ElementType& InValue) requires (CCopyable<ElementType>)
 	{
@@ -399,7 +399,7 @@ public:
 			Impl.Pointer[InsertIndex] = MoveTemp(InValue);
 		}
 		else new (Impl.Pointer + Num()) ElementType(MoveTemp(InValue));
-		
+
 		Impl.ArrayNum = Num() + 1;
 
 		return Iterator(this, Impl.Pointer + InsertIndex);
@@ -443,12 +443,12 @@ public:
 		}
 
 		/*
-		 * NO(XA) - No Operation 
+		 * NO(XA) - No Operation
 		 * IA(AB) - Insert Assignment
 		 * IC(BC) - Insert Construction
 		 * MA(CD) - Move Assignment
 		 * MC(DO) - Move Construction
-		 * 
+		 *
 		 * IR(AC) - Insert Range
 		 * UI(UO) - Uninitialized
 		 *
@@ -503,7 +503,7 @@ public:
 
 		return Iterator(this, Impl.Pointer + InsertIndex);
 	}
-	
+
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>
 		&& CAssignableFrom<ElementType&, TIteratorReferenceType<I>> && CMovable<ElementType>)
@@ -585,7 +585,7 @@ public:
 		else
 		{
 			TArray Temp(MoveTemp(First), MoveTemp(Last));
-			return Insert(Iter, TMoveIterator(Temp.Begin()), TMoveSentinel(Temp.End()));
+			return Insert(Iter, MakeMoveIterator(Temp.Begin()), MakeMoveSentinel(Temp.End()));
 		}
 	}
 
@@ -706,7 +706,7 @@ public:
 	Iterator Erase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true) requires (CMovable<ElementType>)
 	{
 		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
-		
+
 		const size_t EraseIndex = First - Begin();
 		const size_t EraseCount = Last - First;
 
@@ -770,7 +770,7 @@ public:
 		{
 			ElementType* OldAllocation = Impl.Pointer;
 			const size_t NumToDestruct = Num();
-			
+
 			Impl.ArrayNum = Num() + 1;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
@@ -801,7 +801,7 @@ public:
 	void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<ElementType> && CMovable<ElementType>)
 	{
 		size_t NumToAllocate = Count;
-		
+
 		NumToAllocate = NumToAllocate > Max()                    ? Impl->CalculateSlackGrow(Count, Max())            : NumToAllocate;
 		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Impl->CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
 
@@ -829,7 +829,7 @@ public:
 
 			return;
 		}
-		
+
 		if (Count <= Num())
 		{
 			Memory::Destruct(Impl.Pointer + Count, Num() - Count);
@@ -847,7 +847,7 @@ public:
 	void SetNum(size_t Count, const ElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<ElementType> && CMovable<ElementType>)
 	{
 		size_t NumToAllocate = Count;
-		
+
 		NumToAllocate = NumToAllocate > Max()                    ? Impl->CalculateSlackGrow(Count, Max())            : NumToAllocate;
 		NumToAllocate = NumToAllocate < Max() ? (bAllowShrinking ? Impl->CalculateSlackShrink(Count, Max()) : Max()) : NumToAllocate;
 
@@ -879,7 +879,7 @@ public:
 
 			return;
 		}
-		
+
 		if (Count <= Num())
 		{
 			Memory::Destruct(Impl.Pointer + Count, Num() - Count);
@@ -925,7 +925,7 @@ public:
 		if (NumToAllocate == Max()) return;
 
 		ElementType* OldAllocation = Impl.Pointer;
-		
+
 		Impl.ArrayMax = NumToAllocate;
 		Impl.Pointer  = Impl->Allocate(Max());
 

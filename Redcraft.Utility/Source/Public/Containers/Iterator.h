@@ -3,7 +3,6 @@
 #include "CoreTypes.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
-#include "Templates/Optional.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
@@ -204,13 +203,10 @@ private:
 
 static_assert(CRandomAccessIterator<TReverseIterator<int32*>>);
 
-template <typename I>
-TReverseIterator(I) -> TReverseIterator<I>;
-
 template <typename I, typename J> requires (!CSizedSentinelFor<I, J>)
 inline constexpr bool bDisableSizedSentinelFor<TReverseIterator<I>, TReverseIterator<J>> = true;
 
-/** An iterator adaptor which dereferences to an rvalue reference. */
+/** An iterator adaptor which dereferences to a rvalue reference. */
 template <CInputIterator I>
 class TMoveIterator final
 {
@@ -281,9 +277,6 @@ private:
 
 static_assert(CRandomAccessIterator<TMoveIterator<int32*>>);
 
-template <typename I>
-TMoveIterator(I) -> TMoveIterator<I>;
-
 /** A sentinel adaptor for use with TMoveIterator. */
 template <CSemiregular S>
 class TMoveSentinel
@@ -304,7 +297,7 @@ public:
 
 	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConstructibleFrom<SentinelType, const T&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, SentinelType>) TMoveSentinel(const TMoveSentinel<T>& InValue) : Last(InValue.GetBase()) { }
-	
+
 	template <CSemiregular T> requires (!CSameAs<SentinelType, T> && CConstructibleFrom<SentinelType, T>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<T&&, SentinelType>) TMoveSentinel(TMoveSentinel<T>&& InValue) : Last(MoveTemp(InValue).GetBase()) { }
 
@@ -316,7 +309,7 @@ public:
 
 	template <CInputIterator I> requires (CSentinelFor<SentinelType, I>)
 	NODISCARD FORCEINLINE constexpr bool operator==(const TMoveIterator<I>& InValue) const& { return GetBase() == InValue.GetBase(); }
-	
+
 	template <CInputIterator I> requires (CSizedSentinelFor<SentinelType, I>)
 	NODISCARD FORCEINLINE constexpr TCompareThreeWayResult<SentinelType, I> operator<=>(const TMoveIterator<I>& InValue) const& { return GetBase() <=> InValue.GetBase(); }
 
@@ -336,9 +329,6 @@ private:
 };
 
 static_assert(CSizedSentinelFor<TMoveSentinel<int32*>, TMoveIterator<int32*>>);
-
-template <typename I>
-TMoveSentinel(I) -> TMoveSentinel<I>;
 
 struct FDefaultSentinel { explicit FDefaultSentinel() = default; };
 
@@ -456,47 +446,7 @@ private:
 static_assert(CContiguousIterator<TCountedIterator<int32*>>);
 static_assert(CSizedSentinelFor<FDefaultSentinel, TCountedIterator<int32*>>);
 
-template <typename I>
-TCountedIterator(I, ptrdiff) -> TCountedIterator<I>;
-
-/** An input iterator adapter that wraps a callable object. */
-template <CRegularInvocable F> requires (CTOptional<TRemoveCVRef<TInvokeResult<F>>> && CMoveConstructible<F>
-	&& CConstructibleFrom<TRemoveCVRef<TInvokeResult<F>>, TInvokeResult<F>> && CAssignableFrom<TRemoveCVRef<TInvokeResult<F>>&, TInvokeResult<F>>)
-class TInputIterator final : private FNoncopyable
-{
-public:
-
-	using Inputer = F;
-
-	using ElementType = typename TRemoveCVRef<TInvokeResult<Inputer>>::ValueType;
-
-	FORCEINLINE constexpr TInputIterator() requires (CDefaultConstructible<Inputer>) : LookAhead(Invoke(Storage)) { };
-
-	template <typename T> requires (!CSameAs<TInputIterator, TRemoveCVRef<T>> && CConstructibleFrom<Inputer, T>)
-	FORCEINLINE constexpr explicit TInputIterator(T&& InInputer) : Storage(Forward<T>(InInputer)), LookAhead(Invoke(Storage)) { }
-
-	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return !LookAhead.IsValid(); }
-
-	NODISCARD FORCEINLINE constexpr const ElementType& operator*() const { return LookAhead.GetValue(); }
-
-	FORCEINLINE constexpr TInputIterator& operator++() { LookAhead = Invoke(Storage); return *this; }
-
-	FORCEINLINE constexpr void operator++(int) { LookAhead = Invoke(Storage); }
-
-	NODISCARD FORCEINLINE constexpr const Inputer& GetInputer() const& { return Storage; }
-	NODISCARD FORCEINLINE constexpr       Inputer  GetInputer() &&     { return Storage; }
-
-private:
-
-	Inputer Storage;
-	TOptional<ElementType> LookAhead;
-
-};
-
-static_assert(CInputIterator<TInputIterator<TOptional<int32>(*)()>>);
-
-template <typename F>
-TInputIterator(F) -> TInputIterator<F>;
+NAMESPACE_PRIVATE_BEGIN
 
 /** An output iterator adapter that wraps a callable object. */
 template <CMoveConstructible F>
@@ -572,7 +522,7 @@ private:
 public:
 
 	FORCEINLINE constexpr TOutputIterator() requires (CDefaultConstructible<Outputer>) { check_code({ bIsProduced = false; }); }
-	
+
 	template <typename T> requires (!CSameAs<TOutputIterator, TRemoveCVRef<T>> && CConstructibleFrom<Outputer, T>)
 	FORCEINLINE constexpr explicit TOutputIterator(T&& InOutputer) : Storage(Forward<T>(InOutputer)) { check_code({ bIsProduced = false; }); }
 
@@ -609,6 +559,8 @@ static_assert(COutputIterator<TOutputIterator<void(*)(int32)>, int32>);
 template <typename F>
 TOutputIterator(F) -> TOutputIterator<F>;
 
+NAMESPACE_PRIVATE_END
+
 /** Creates a TReverseIterator of type inferred from the argument. */
 template <typename I> requires (CBidirectionalIterator<TDecay<I>> && CConstructibleFrom<TDecay<I>, I>)
 NODISCARD FORCEINLINE constexpr auto MakeReverseIterator(I&& Iter)
@@ -641,21 +593,21 @@ NODISCARD FORCEINLINE constexpr auto MakeCountedIterator(I&& Iter, ptrdiff N)
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeFrontInserter(C& Container)
 {
-	return TOutputIterator([&Container]<typename T>(T&& A) { Container.PushFront(Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TOutputIterator([&Container]<typename T>(T&& A) { Container.PushFront(Forward<T>(A)); });
 }
 
 /** Creates an iterator adapter inserted in the back of the container. */
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeBackInserter(C& Container)
 {
-	return TOutputIterator([&Container]<typename T>(T&& A) { Container.PushBack(Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TOutputIterator([&Container]<typename T>(T&& A) { Container.PushBack(Forward<T>(A)); });
 }
 
 /** Creates an iterator adapter inserted in the container. */
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::ConstIterator& InIter)
 {
-	return TOutputIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TOutputIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); });
 }
 
 NAMESPACE_BEGIN(Iteration)
@@ -671,7 +623,7 @@ FORCEINLINE constexpr void Advance(I& Iter, ptrdiff N)
 	else if constexpr (CBidirectionalIterator<I>)
 	{
 		for (; N > 0; --N) ++Iter;
-		for (; N < 0; ++N) --Iter; 
+		for (; N < 0; ++N) --Iter;
 	}
 	else
 	{
