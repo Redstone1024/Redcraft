@@ -2,10 +2,12 @@
 
 #include "CoreTypes.h"
 #include "Memory/Allocator.h"
+#include "Containers/Array.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Container.h"
 #include "Containers/Iterator.h"
+#include "Containers/StaticArray.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/ObserverPointer.h"
@@ -14,12 +16,6 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
-
-template <CObject T, size_t N>
-struct TStaticArray;
-
-template <CAllocatableObject T, CAllocator<T> A>
-class TArray;
 
 inline constexpr size_t DynamicExtent = INDEX_NONE;
 
