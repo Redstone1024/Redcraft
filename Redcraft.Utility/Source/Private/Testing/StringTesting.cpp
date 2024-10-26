@@ -22,10 +22,11 @@ void TestChar()
 	{
 		always_check(!CCharType<int>);
 		always_check(CCharType<char>);
-		always_check(CCharType<wchar_t>);
-		always_check(CCharType<char8_t>);
-		always_check(CCharType<char16_t>);
-		always_check(CCharType<char32_t>);
+		always_check(CCharType<wchar>);
+		always_check(CCharType<u8char>);
+		always_check(CCharType<u16char>);
+		always_check(CCharType<u32char>);
+		always_check(CCharType<unicodechar>);
 	}
 
 	{
@@ -71,31 +72,31 @@ void TestChar()
 	}
 
 	{
-//		always_check(FU16Char::IsAlnum(U16TEXT('0')));
-//		always_check(FU16Char::IsAlpha(U16TEXT('A')));
-//		always_check(FU16Char::IsLower(U16TEXT('a')));
-//		always_check(FU16Char::IsUpper(U16TEXT('A')));
+		always_check(FU16Char::IsAlnum(U16TEXT('0')));
+		always_check(FU16Char::IsAlpha(U16TEXT('A')));
+		always_check(FU16Char::IsLower(U16TEXT('a')));
+		always_check(FU16Char::IsUpper(U16TEXT('A')));
 		always_check(FU16Char::IsDigit(U16TEXT('0')));
 		always_check(FU16Char::IsCntrl(U16TEXT('\n')));
-//		always_check(FU16Char::IsGraph(U16TEXT('!')));
+		always_check(FU16Char::IsGraph(U16TEXT('!')));
 		always_check(FU16Char::IsSpace(U16TEXT('\t')));
 		always_check(FU16Char::IsBlank(U16TEXT(' ')));
-//		always_check(FU16Char::IsPrint(U16TEXT('#')));
-//		always_check(FU16Char::IsPunct(U16TEXT('[')));
+		always_check(FU16Char::IsPrint(U16TEXT('#')));
+		always_check(FU16Char::IsPunct(U16TEXT('[')));
 	}
 
 	{
-//		always_check(FU32Char::IsAlnum(U32TEXT('0')));
-//		always_check(FU32Char::IsAlpha(U32TEXT('A')));
-//		always_check(FU32Char::IsLower(U32TEXT('a')));
-//		always_check(FU32Char::IsUpper(U32TEXT('A')));
+		always_check(FU32Char::IsAlnum(U32TEXT('0')));
+		always_check(FU32Char::IsAlpha(U32TEXT('A')));
+		always_check(FU32Char::IsLower(U32TEXT('a')));
+		always_check(FU32Char::IsUpper(U32TEXT('A')));
 		always_check(FU32Char::IsDigit(U32TEXT('0')));
 		always_check(FU32Char::IsCntrl(U32TEXT('\n')));
-//		always_check(FU32Char::IsGraph(U32TEXT('!')));
+		always_check(FU32Char::IsGraph(U32TEXT('!')));
 		always_check(FU32Char::IsSpace(U32TEXT('\t')));
 		always_check(FU32Char::IsBlank(U32TEXT(' ')));
-//		always_check(FU32Char::IsPrint(U32TEXT('#')));
-//		always_check(FU32Char::IsPunct(U32TEXT('[')));
+		always_check(FU32Char::IsPrint(U32TEXT('#')));
+		always_check(FU32Char::IsPunct(U32TEXT('[')));
 	}
 
 	{
@@ -107,7 +108,7 @@ void TestChar()
 		always_check(!FChar::IsCntrl(TEXT('_')));
 		always_check(!FChar::IsGraph(TEXT(' ')));
 		always_check(!FChar::IsSpace(TEXT('=')));
-		always_check(!FChar::IsBlank(TEXT('\r')));
+		always_check(!FChar::IsBlank(TEXT('+')));
 		always_check(!FChar::IsPrint(TEXT('\n')));
 		always_check(!FChar::IsPunct(TEXT('H')));
 	}
@@ -121,7 +122,7 @@ void TestChar()
 		always_check(!FWChar::IsCntrl(WTEXT('_')));
 		always_check(!FWChar::IsGraph(WTEXT(' ')));
 		always_check(!FWChar::IsSpace(WTEXT('=')));
-		always_check(!FWChar::IsBlank(WTEXT('\r')));
+		always_check(!FWChar::IsBlank(WTEXT('+')));
 		always_check(!FWChar::IsPrint(WTEXT('\n')));
 		always_check(!FWChar::IsPunct(WTEXT('H')));
 	}
@@ -135,37 +136,37 @@ void TestChar()
 		always_check(!FU8Char::IsCntrl(U8TEXT('_')));
 		always_check(!FU8Char::IsGraph(U8TEXT(' ')));
 		always_check(!FU8Char::IsSpace(U8TEXT('=')));
-		always_check(!FU8Char::IsBlank(U8TEXT('\r')));
+		always_check(!FU8Char::IsBlank(U8TEXT('+')));
 		always_check(!FU8Char::IsPrint(U8TEXT('\n')));
 		always_check(!FU8Char::IsPunct(U8TEXT('H')));
 	}
 
 	{
-//		always_check(!FU16Char::IsAlnum(U16TEXT('$')));
-//		always_check(!FU16Char::IsAlpha(U16TEXT('0')));
-//		always_check(!FU16Char::IsLower(U16TEXT('A')));
-//		always_check(!FU16Char::IsUpper(U16TEXT('a')));
+		always_check(!FU16Char::IsAlnum(U16TEXT('$')));
+		always_check(!FU16Char::IsAlpha(U16TEXT('0')));
+		always_check(!FU16Char::IsLower(U16TEXT('A')));
+		always_check(!FU16Char::IsUpper(U16TEXT('a')));
 		always_check(!FU16Char::IsDigit(U16TEXT('I')));
 		always_check(!FU16Char::IsCntrl(U16TEXT('_')));
-//		always_check(!FU16Char::IsGraph(U16TEXT(' ')));
+		always_check(!FU16Char::IsGraph(U16TEXT(' ')));
 		always_check(!FU16Char::IsSpace(U16TEXT('=')));
-		always_check(!FU16Char::IsBlank(U16TEXT('\r')));
-//		always_check(!FU16Char::IsPrint(U16TEXT('\n')));
-//		always_check(!FU16Char::IsPunct(U16TEXT('H')));
+		always_check(!FU16Char::IsBlank(U16TEXT('+')));
+		always_check(!FU16Char::IsPrint(U16TEXT('\n')));
+		always_check(!FU16Char::IsPunct(U16TEXT('H')));
 	}
 
 	{
-//		always_check(!FU32Char::IsAlnum(U32TEXT('$')));
-//		always_check(!FU32Char::IsAlpha(U32TEXT('0')));
-//		always_check(!FU32Char::IsLower(U32TEXT('A')));
-//		always_check(!FU32Char::IsUpper(U32TEXT('a')));
+		always_check(!FU32Char::IsAlnum(U32TEXT('$')));
+		always_check(!FU32Char::IsAlpha(U32TEXT('0')));
+		always_check(!FU32Char::IsLower(U32TEXT('A')));
+		always_check(!FU32Char::IsUpper(U32TEXT('a')));
 		always_check(!FU32Char::IsDigit(U32TEXT('I')));
 		always_check(!FU32Char::IsCntrl(U32TEXT('_')));
-//		always_check(!FU32Char::IsGraph(U32TEXT(' ')));
+		always_check(!FU32Char::IsGraph(U32TEXT(' ')));
 		always_check(!FU32Char::IsSpace(U32TEXT('=')));
-		always_check(!FU32Char::IsBlank(U32TEXT('\r')));
-//		always_check(!FU32Char::IsPrint(U32TEXT('\n')));
-//		always_check(!FU32Char::IsPunct(U32TEXT('H')));
+		always_check(!FU32Char::IsBlank(U32TEXT('+')));
+		always_check(!FU32Char::IsPrint(U32TEXT('\n')));
+		always_check(!FU32Char::IsPunct(U32TEXT('H')));
 	}
 
 	{
@@ -188,10 +189,10 @@ void TestChar()
 		always_check(FWChar::ToLower(WTEXT('i')) == WTEXT('i'));
 		always_check(FU8Char::ToLower(U8TEXT('i')) == U8TEXT('i'));
 		always_check(FU8Char::ToUpper(U8TEXT('l')) == U8TEXT('L'));
-//		always_check(FU16Char::ToLower(U16TEXT('i')) == U16TEXT('i'));
-//		always_check(FU16Char::ToUpper(U16TEXT('l')) == U16TEXT('L'));
-//		always_check(FU32Char::ToLower(U32TEXT('i')) == U32TEXT('i'));
-//		always_check(FU32Char::ToUpper(U32TEXT('l')) == U32TEXT('L'));
+		always_check(FU16Char::ToLower(U16TEXT('i')) == U16TEXT('i'));
+		always_check(FU16Char::ToUpper(U16TEXT('l')) == U16TEXT('L'));
+		always_check(FU32Char::ToLower(U32TEXT('i')) == U32TEXT('i'));
+		always_check(FU32Char::ToUpper(U32TEXT('l')) == U32TEXT('L'));
 	}
 
 	{
@@ -279,14 +280,14 @@ void TestCString()
 		Memory::Memzero(StrD);
 
 		always_check(TCString<T>::Copy(StrD, &StrD[4], StrA, nullptr) == nullptr);
-		
+
 		always_check(TCString<T>::Compare(StrC, EndC   , StrD, EndD   ) == 0);
 		always_check(TCString<T>::Compare(StrC, nullptr, StrD, nullptr) == 0);
 
 		always_check(TCString<T>::Copy(StrD, nullptr, StrA, &StrA[4]) != nullptr);
 
 		always_check(TCString<T>::Length(StrD, nullptr) == 4);
-		
+
 		always_check(TCString<T>::Compare(StrA, &StrA[4], StrD, &StrD[4]) == 0);
 		always_check(TCString<T>::Compare(StrA, nullptr , StrD, nullptr ) > 0);
 
@@ -304,7 +305,7 @@ void TestCString()
 		always_check(TCString<T>::Compare(StrD, nullptr, LITERAL(T, "Hello "), nullptr) == 0);
 
 		Memory::Memzero(StrD);
-		
+
 		always_check(TCString<T>::Cat(StrD, nullptr, StrA,            nullptr) != nullptr);
 		always_check(TCString<T>::Cat(StrD, nullptr, LITERAL(T, " "), nullptr) != nullptr);
 		always_check(TCString<T>::Cat(StrD, nullptr, StrB,            nullptr) != nullptr);
@@ -323,13 +324,13 @@ void TestCString()
 
 		always_check(TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'l'); })
 			      != TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
-				  
+
 		always_check(TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'o'); })
 			      == TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
 
 		always_check(TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'l'); })
 			      != TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
-				  
+
 		always_check(TCString<T>::Find(StrA, &StrA[4], [](T A) { return A == LITERAL(T, 'o'); })
 			      == TCString<T>::Find(StrA, &StrA[4], [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
 
@@ -346,13 +347,13 @@ void TestCString()
 
 		always_check(TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'l'))
 			      != TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'l'), ESearchDirection::FromEnd));
-				  
+
 		always_check(TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'o'))
 			      == TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'o'), ESearchDirection::FromEnd));
 
 		always_check(TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'l'))
 			      != TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'l'), ESearchDirection::FromEnd));
-				  
+
 		always_check(TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T, 'o'))
 			      == TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T, 'o'), ESearchDirection::FromEnd));
 
@@ -370,7 +371,7 @@ void TestCString()
 		always_check(TCString<T>::FindNotChar(StrA, EndA    , LITERAL(T, '\0')) == StrA);
 		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T,  'I')) == StrA);
 		always_check(TCString<T>::FindNotChar(StrA, &StrA[2], LITERAL(T,  'I')) == StrA);
-		
+
 		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
 		always_check(TCString<T>::FindNotChar(StrA, EndA    , LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
 		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T,  'I'), ESearchDirection::FromEnd) == StrA + 3);
@@ -400,10 +401,11 @@ void TestCString()
 	};
 
 	TestTCString(InPlaceType<char>);
-	TestTCString(InPlaceType<wchar_t>);
-	TestTCString(InPlaceType<char8_t>);
-	TestTCString(InPlaceType<char16_t>);
-	TestTCString(InPlaceType<char32_t>);
+	TestTCString(InPlaceType<wchar>);
+	TestTCString(InPlaceType<u8char>);
+	TestTCString(InPlaceType<u16char>);
+	TestTCString(InPlaceType<u32char>);
+	TestTCString(InPlaceType<unicodechar>);
 }
 
 NAMESPACE_END(Testing)
