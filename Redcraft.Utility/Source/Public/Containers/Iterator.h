@@ -361,7 +361,7 @@ public:
 	using ElementType = TIteratorElementType<I>;
 
 #	if DO_CHECK
-	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) : Length(1), MaxLength(0) { };
+	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) : Length(1), MaxLength(0) { }
 #	else
 	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) = default;
 #	endif
@@ -388,20 +388,21 @@ public:
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<J&&, IteratorType> && CAssignableFrom<IteratorType&, J&&>)
 	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator<J>&& InValue) { Current = MoveTemp(InValue).GetBase(); Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
 
-	template <CInputOrOutputIterator J> requires (CSentinelFor<J, IteratorType>)
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
+	template <CCommonType<IteratorType> J>
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length == RHS.Length; }
 
-	template <CInputOrOutputIterator J> requires (CSizedSentinelFor<J, IteratorType>)
-	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<IteratorType, J> operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
+	template <CCommonType<IteratorType> J>
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length <=> RHS.Length; }
 
 	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Length == static_cast<ptrdiff>(0); }
 
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
 
-	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()        { CheckThis(true); return *Current;               }
-	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()  const { CheckThis(true); return *Current;               }
-	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->()       { CheckThis(true); return AddressOf(operator*()); }
-	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->() const { CheckThis(true); return AddressOf(operator*()); }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*() { CheckThis(true); return *Current; }
+
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*() const requires (CDereferenceable<const IteratorType>) { CheckThis(true); return *Current; }
+
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType> operator->() const requires (CContiguousIterator<IteratorType>) { CheckThis(true); return AddressOf(operator*()); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
 
@@ -420,7 +421,8 @@ public:
 
 	NODISCARD FORCEINLINE constexpr TCountedIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this; Temp -= Offset; return Temp; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.GetBase() - RHS.GetBase(); }
+	template <CCommonType<IteratorType> J>
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Length - RHS.Length; }
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { CheckThis(); return  RHS.Num(); }
