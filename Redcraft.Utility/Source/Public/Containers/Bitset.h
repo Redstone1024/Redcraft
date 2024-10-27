@@ -17,14 +17,10 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_PRIVATE_BEGIN
-
 template <CUnsignedIntegral InBlockType> requires (!CSameAs<InBlockType, bool>)
 using TDefaultBitsetAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(InBlockType)>;
 
-NAMESPACE_PRIVATE_END
-
-template <CUnsignedIntegral InBlockType, CAllocator<InBlockType> Allocator = NAMESPACE_PRIVATE::TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
+template <CUnsignedIntegral InBlockType, CAllocator<InBlockType> Allocator = TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
 class TBitset final
 {
 private:
@@ -216,7 +212,7 @@ public:
 			Impl->Deallocate(Impl.Pointer);
 
 			Impl.Pointer = InValue.Impl.Pointer;
-			
+
 			InValue.Impl.BitsetNum = 0;
 			InValue.Impl.BlocksMax = InValue.Impl->CalculateSlackReserve(InValue.NumBlocks());
 			InValue.Impl.Pointer   = InValue.Impl->Allocate(InValue.MaxBlocks());
@@ -306,7 +302,7 @@ public:
 			}
 
 			const BlockType LastBlockBitmask = InValue.Num() % BlockWidth != 0 ? (1ull << InValue.Num() % BlockWidth) - 1 : -1;
-			
+
 			Impl.Pointer[LastBlock] &= InValue.Impl.Pointer[LastBlock] & LastBlockBitmask;
 
 			for (size_t Index = LastBlock + 1; Index != NumBlocks(); ++Index)
@@ -604,7 +600,7 @@ public:
 		uint64 Result = 0;
 
 		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TBitset is unexpected");
-		
+
 		if constexpr (sizeof(BlockType) == sizeof(uint8))
 		{
 			Result |= static_cast<uint64>(Impl.Pointer[0]) <<  0;
@@ -697,7 +693,7 @@ public:
 		const size_t BlocksCount = (InCount + BlockWidth - 1) / BlockWidth;
 
 		size_t NumToAllocate = BlocksCount;
-		
+
 		NumToAllocate = NumToAllocate > MaxBlocks()                    ? Impl->CalculateSlackGrow(BlocksCount, MaxBlocks())                  : NumToAllocate;
 		NumToAllocate = NumToAllocate < MaxBlocks() ? (bAllowShrinking ? Impl->CalculateSlackShrink(BlocksCount, MaxBlocks()) : MaxBlocks()) : NumToAllocate;
 
