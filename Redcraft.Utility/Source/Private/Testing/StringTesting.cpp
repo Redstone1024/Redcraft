@@ -2,7 +2,7 @@
 
 #include "String/Char.h"
 #include "Memory/Memory.h"
-#include "String/CString.h"
+#include "String/StringView.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -236,168 +236,82 @@ void TestCString()
 {
 	auto TestTCString = []<typename T>(TInPlaceType<T>)
 	{
-		constexpr size_t BUFFER_SIZE = 64;
+		{
+			TStringView<T> Empty;
 
-		T StrA[BUFFER_SIZE];
-		T StrB[BUFFER_SIZE];
-		T StrC[BUFFER_SIZE];
-		T StrD[BUFFER_SIZE];
+			always_check(Empty == LITERAL(T, ""));
 
-		const T* EndA = &StrA[BUFFER_SIZE];
-		const T* EndB = &StrB[BUFFER_SIZE];
-		const T* EndC = &StrC[BUFFER_SIZE];
-		const T* EndD = &StrD[BUFFER_SIZE];
+			TStringView ViewI = LITERAL(T, "#Hello, World! Goodbye, World!#");
 
-		always_check(TCString<T>::Copy(StrA, nullptr, LITERAL(T, "Hello"), nullptr) != nullptr);
-		always_check(TCString<T>::Copy(StrB, nullptr, LITERAL(T, "Hello"), nullptr) != nullptr);
-		always_check(TCString<T>::Copy(StrC, nullptr, LITERAL(T, "World"), nullptr) != nullptr);
-		always_check(TCString<T>::Copy(StrD, nullptr, LITERAL(T, "     "), nullptr) != nullptr);
+			ViewI.RemovePrefix(1);
+			ViewI.RemoveSuffix(1);
 
-		always_check(TCString<T>::Length(StrA, &StrA[4]) == 4);
-		always_check(TCString<T>::Length(StrA,  EndA   ) == 5);
-		always_check(TCString<T>::Length(StrA, nullptr ) == 5);
+			T Buffer[64];
 
-		const T* PtrA = LITERAL(T, "Hel");
-		const T* PtrB = LITERAL(T, "Hello");
+			Memory::Memzero(Buffer);
 
-		always_check(TCString<T>::Compare(PtrA, nullptr, PtrB, &PtrB[3]) == 0);
+			ViewI.Copy(Buffer);
 
-		always_check(TCString<T>::Compare(StrA, nullptr, StrB, nullptr) == TCString<T>::Compare(StrA, EndA, StrB, EndB));
-		always_check(TCString<T>::Compare(StrA, nullptr, StrC, nullptr) == TCString<T>::Compare(StrA, EndA, StrC, EndC));
-		always_check(TCString<T>::Compare(StrA, nullptr, StrC, nullptr) < 0);
+			TStringView ViewII = Buffer;
 
-		Memory::Memzero(StrD);
+			always_check(ViewI  == LITERAL(T, "Hello, World! Goodbye, World!"));
+			always_check(ViewII == LITERAL(T, "Hello, World! Goodbye, World!"));
 
-		always_check(TCString<T>::Compare(StrA, EndA   , StrD, EndD   ) > 0);
-		always_check(TCString<T>::Compare(StrA, nullptr, StrD, nullptr) > 0);
+			TStringView<T> ViewA(ViewI.Begin(), 13);
+			TStringView<T> ViewB(ViewI.Begin(), ViewI.End());
+			TStringView<T> ViewC(&Buffer[0], 13);
+			TStringView<T> ViewD(&Buffer[0]);
 
-		always_check(TCString<T>::Copy(StrD, nullptr, StrA, nullptr) != nullptr);
+			always_check(ViewA == LITERAL(T, "Hello, World!"));
+			always_check(ViewB == LITERAL(T, "Hello, World! Goodbye, World!"));
+			always_check(ViewC == LITERAL(T, "Hello, World!"));
+			always_check(ViewD == LITERAL(T, "Hello, World! Goodbye, World!"));
+		}
 
-		always_check(TCString<T>::Compare(StrA, EndA   , StrD, EndD   ) == 0);
-		always_check(TCString<T>::Compare(StrA, nullptr, StrD, nullptr) == 0);
+		{
+			TStringView View = LITERAL(T, "Hello, World! Goodbye, World!");
 
-		Memory::Memzero(StrC);
-		Memory::Memzero(StrD);
+			always_check( View.StartsWith(LITERAL(T, "Hello, World!")));
+			always_check(!View.StartsWith(LITERAL(T, "Goodbye, World!")));
+			always_check( View.StartsWith(LITERAL(T, 'H')));
+			always_check(!View.StartsWith(LITERAL(T, 'G')));
+			always_check(!View.EndsWith(LITERAL(T, "Hello, World!")));
+			always_check( View.EndsWith(LITERAL(T, "Goodbye, World!")));
+			always_check( View.EndsWith(LITERAL(T, '!')));
+			always_check(!View.EndsWith(LITERAL(T, '?')));
+			always_check( View.Contains(LITERAL(T, "Hello, World!")));
+			always_check( View.Contains(LITERAL(T, "Goodbye, World!")));
+			always_check( View.Contains(LITERAL(T, '!')));
+			always_check(!View.Contains(LITERAL(T, '?')));
+		}
 
-		always_check(TCString<T>::Copy(StrD, &StrD[4], StrA, nullptr) == nullptr);
+		{
+			TStringView View = LITERAL(T, "Hello, World! Goodbye, World!");
 
-		always_check(TCString<T>::Compare(StrC, EndC   , StrD, EndD   ) == 0);
-		always_check(TCString<T>::Compare(StrC, nullptr, StrD, nullptr) == 0);
+			always_check(View.Find(LITERAL(T, ""))       ==  0);
+			always_check(View.Find(LITERAL(T, "World"))  ==  7);
+			always_check(View.Find(LITERAL(T, 'l'))      ==  2);
+			always_check(View.RFind(LITERAL(T, ""))      == 29);
+			always_check(View.RFind(LITERAL(T, "World")) == 23);
+			always_check(View.RFind(LITERAL(T, 'l'))     == 26);
 
-		always_check(TCString<T>::Copy(StrD, nullptr, StrA, &StrA[4]) != nullptr);
+			always_check(View.Find(LITERAL(T, ""), 13)       == 13);
+			always_check(View.Find(LITERAL(T, "World"), 13)  == 23);
+			always_check(View.Find(LITERAL(T, 'l'), 13)      == 26);
+			always_check(View.RFind(LITERAL(T, ""), 13)      == 13);
+			always_check(View.RFind(LITERAL(T, "World"), 13) ==  7);
+			always_check(View.RFind(LITERAL(T, 'l'), 13)     == 10);
 
-		always_check(TCString<T>::Length(StrD, nullptr) == 4);
+			always_check(View.FindFirstOf(LITERAL(T, "eor")) ==  1);
+			always_check(View.FindFirstOf(LITERAL(T, 'l'))   ==  2);
+			always_check(View.FindLastOf(LITERAL(T, "eor"))  == 25);
+			always_check(View.FindLastOf(LITERAL(T, 'l'))    == 26);
 
-		always_check(TCString<T>::Compare(StrA, &StrA[4], StrD, &StrD[4]) == 0);
-		always_check(TCString<T>::Compare(StrA, nullptr , StrD, nullptr ) > 0);
-
-		const T* PtrC = LITERAL(T, "World!");
-
-		always_check(TCString<T>::Copy(   StrB, nullptr, PtrC,                &PtrC[5]) != nullptr);
-		always_check(TCString<T>::Compare(StrB, nullptr, LITERAL(T, "World"), nullptr ) == 0);
-
-		Memory::Memzero(StrD);
-
-		always_check(TCString<T>::Cat(StrD, &StrD[8], StrA,            nullptr) != nullptr);
-		always_check(TCString<T>::Cat(StrD, &StrD[8], LITERAL(T, " "), nullptr) != nullptr);
-		always_check(TCString<T>::Cat(StrD, &StrD[8], StrB,            nullptr) == nullptr);
-
-		always_check(TCString<T>::Compare(StrD, nullptr, LITERAL(T, "Hello "), nullptr) == 0);
-
-		Memory::Memzero(StrD);
-
-		always_check(TCString<T>::Cat(StrD, nullptr, StrA,            nullptr) != nullptr);
-		always_check(TCString<T>::Cat(StrD, nullptr, LITERAL(T, " "), nullptr) != nullptr);
-		always_check(TCString<T>::Cat(StrD, nullptr, StrB,            nullptr) != nullptr);
-
-		always_check(TCString<T>::Compare(StrD, nullptr, LITERAL(T, "Hello World"), nullptr) == 0);
-
-		always_check(TCString<T>::Copy(StrA, nullptr, LITERAL(T, "Hello"), nullptr) != nullptr);
-
-		always_check(TCString<T>::Find(StrA, nullptr , [](T A) { return A == LITERAL(T, '\0'); }) == StrA + 5);
-		always_check(TCString<T>::Find(StrA, EndA    , [](T A) { return A == LITERAL(T, '\0'); }) == StrA + 5);
-		always_check(TCString<T>::Find(StrA, nullptr , [](T A) { return A == LITERAL(T,  'o'); }) == StrA + 4);
-		always_check(TCString<T>::Find(StrA, &StrA[4], [](T A) { return A == LITERAL(T,  'o'); }) == nullptr);
-
-		always_check(TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'o'); })
-			      == TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'l'); })
-			      != TCString<T>::Find(StrA, nullptr, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'o'); })
-			      == TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'l'); })
-			      != TCString<T>::Find(StrA, EndA, [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::Find(StrA, &StrA[4], [](T A) { return A == LITERAL(T, 'o'); })
-			      == TCString<T>::Find(StrA, &StrA[4], [](T A) { return A == LITERAL(T, 'o'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::Find(StrA, &StrA[3], [](T A) { return A == LITERAL(T, 'l'); })
-			      == TCString<T>::Find(StrA, &StrA[3], [](T A) { return A == LITERAL(T, 'l'); }, ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, nullptr , LITERAL(T, '\0')) == StrA + 5);
-		always_check(TCString<T>::FindChar(StrA, EndA    , LITERAL(T, '\0')) == StrA + 5);
-		always_check(TCString<T>::FindChar(StrA, nullptr , LITERAL(T,  'o')) == StrA + 4);
-		always_check(TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T,  'o')) == nullptr);
-
-		always_check(TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'o'))
-			      == TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'o'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'l'))
-			      != TCString<T>::FindChar(StrA, nullptr, LITERAL(T, 'l'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'o'))
-			      == TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'o'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'l'))
-			      != TCString<T>::FindChar(StrA, EndA, LITERAL(T, 'l'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T, 'o'))
-			      == TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T, 'o'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, &StrA[3], LITERAL(T, 'l'))
-			      == TCString<T>::FindChar(StrA, &StrA[3], LITERAL(T, 'l'), ESearchDirection::FromEnd));
-
-		always_check(TCString<T>::FindChar(StrA, nullptr , LITERAL(T,  ""), nullptr) == nullptr);
-		always_check(TCString<T>::FindChar(StrA, EndA    , LITERAL(T,  ""), nullptr) == nullptr);
-		always_check(TCString<T>::FindChar(StrA, nullptr , LITERAL(T, "o"), nullptr) == StrA + 4);
-		always_check(TCString<T>::FindChar(StrA, &StrA[4], LITERAL(T, "o"), nullptr) == nullptr);
-
-		always_check(TCString<T>::Copy(StrA, nullptr, LITERAL(T, "HIH"), nullptr) != nullptr);
-
-		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T, '\0')) == StrA);
-		always_check(TCString<T>::FindNotChar(StrA, EndA    , LITERAL(T, '\0')) == StrA);
-		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T,  'I')) == StrA);
-		always_check(TCString<T>::FindNotChar(StrA, &StrA[2], LITERAL(T,  'I')) == StrA);
-
-		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
-		always_check(TCString<T>::FindNotChar(StrA, EndA    , LITERAL(T, '\0'), ESearchDirection::FromEnd) == StrA + 2);
-		always_check(TCString<T>::FindNotChar(StrA, nullptr , LITERAL(T,  'I'), ESearchDirection::FromEnd) == StrA + 3);
-		always_check(TCString<T>::FindNotChar(StrA, &StrA[2], LITERAL(T,  'I'), ESearchDirection::FromEnd) == StrA + 0);
-
-		always_check(TCString<T>::Copy(StrA, nullptr, LITERAL(T, "HIJIH"), nullptr) != nullptr);
-
-		always_check(TCString<T>::FindNotChar(StrA, nullptr, LITERAL(T, "HIJ"), nullptr) == nullptr);
-		always_check(TCString<T>::FindNotChar(StrA, EndA   , LITERAL(T, "HIJ"), nullptr) == nullptr);
-
-		always_check(TCString<T>::FindNotChar(StrA, nullptr, LITERAL(T, "H J"), nullptr) == StrA + 1);
-		always_check(TCString<T>::FindNotChar(StrA, EndA   , LITERAL(T, "H J"), nullptr) == StrA + 1);
-
-		always_check(TCString<T>::FindNotChar(StrA, nullptr, LITERAL(T, "H J"), nullptr, ESearchDirection::FromEnd) == StrA + 3);
-		always_check(TCString<T>::FindNotChar(StrA, EndA   , LITERAL(T, "H J"), nullptr, ESearchDirection::FromEnd) == StrA + 3);
-
-		always_check(TCString<T>::Copy(StrA, nullptr, LITERAL(T, "01234567890123456789"), nullptr) != nullptr);
-
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                               ""), nullptr)                            == StrA);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                               ""), nullptr, ESearchDirection::FromEnd) == StrA + 20);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                            "345"), nullptr)                            == StrA + 3);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                            "345"), nullptr, ESearchDirection::FromEnd) == StrA + 13);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T, "012345678901234567890123456789"), nullptr)                            == nullptr);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T, "012345678901234567890123456789"), nullptr, ESearchDirection::FromEnd) == nullptr);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                            "ABC"), nullptr)                            == nullptr);
-		always_check(TCString<T>::FindString(StrA, nullptr, LITERAL(T,                            "ABC"), nullptr, ESearchDirection::FromEnd) == nullptr);
+			always_check(View.FindFirstNotOf(LITERAL(T, "Hello! Goodbye!")) ==  5);
+			always_check(View.FindFirstNotOf(LITERAL(T, '!'))               ==  0);
+			always_check(View.FindLastNotOf(LITERAL(T, "Hello! Goodbye!"))  == 25);
+			always_check(View.FindLastNotOf(LITERAL(T, '!'))                == 27);
+		}
 	};
 
 	TestTCString(InPlaceType<char>);
