@@ -132,6 +132,8 @@ public:
 
 			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 		}
+
+		InValue.Reset();
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
