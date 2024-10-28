@@ -2,6 +2,7 @@
 
 #include "String/Char.h"
 #include "Memory/Memory.h"
+#include "String/String.h"
 #include "String/StringView.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -14,7 +15,8 @@ NAMESPACE_BEGIN(Testing)
 void TestString()
 {
 	TestChar();
-	TestCString();
+	TestStringView();
+	TestTemplateString();
 }
 
 void TestChar()
@@ -232,9 +234,9 @@ void TestChar()
 	}
 }
 
-void TestCString()
+void TestStringView()
 {
-	auto TestTCString = []<typename T>(TInPlaceType<T>)
+	auto Test = []<typename T>(TInPlaceType<T>)
 	{
 		{
 			TStringView<T> Empty;
@@ -314,12 +316,231 @@ void TestCString()
 		}
 	};
 
-	TestTCString(InPlaceType<char>);
-	TestTCString(InPlaceType<wchar>);
-	TestTCString(InPlaceType<u8char>);
-	TestTCString(InPlaceType<u16char>);
-	TestTCString(InPlaceType<u32char>);
-	TestTCString(InPlaceType<unicodechar>);
+	Test(InPlaceType<char>);
+	Test(InPlaceType<wchar>);
+	Test(InPlaceType<u8char>);
+	Test(InPlaceType<u16char>);
+	Test(InPlaceType<u32char>);
+	Test(InPlaceType<unicodechar>);
+}
+
+void TestTemplateString()
+{
+	auto Test = []<typename T>(TInPlaceType<T>)
+	{
+		{
+			TString<T> Empty;
+
+			always_check(Empty.IsEmpty());
+			always_check(TStringView(Empty.ToCString()) == LITERAL(T, ""));
+
+			TString<T> StrA(32, LITERAL(T, 'A'));
+			TString<T> StrB(LITERAL(T, "ABCDEFG"), 3);
+			TString<T> StrC(LITERAL(T, "ABCDEFG"));
+			TString<T> StrD(TStringView(LITERAL(T, "ABCDEFG")));
+			TString<T> StrE({ LITERAL(T, 'A'), LITERAL(T, 'B'), LITERAL(T, 'C') });
+
+			always_check(TStringView(StrA.ToCString()) == LITERAL(T, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+			always_check(TStringView(StrB.ToCString()) == LITERAL(T, "ABC"));
+			always_check(TStringView(StrC.ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrD.ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrE.ToCString()) == LITERAL(T, "ABC"));
+
+			TString<T> StrI(StrC);
+			TString<T> StrII(MoveTemp(StrC));
+
+			TString<T> StrIII = Empty;
+			TString<T> StrIV  = Empty;
+
+			StrIII = StrD;
+			StrIV  = MoveTemp(StrD);
+
+			always_check(TStringView(StrI  .ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrII .ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrIII.ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrIV .ToCString()) == LITERAL(T, "ABCDEFG"));
+
+			always_check(TStringView(StrC.ToCString()) == LITERAL(T, ""));
+			always_check(TStringView(StrD.ToCString()) == LITERAL(T, ""));
+
+			StrA.Reset();
+
+			always_check(StrA.IsEmpty());
+			always_check(TStringView(StrA.ToCString()) == LITERAL(T, ""));
+		}
+
+		{
+			TString<T> Str = LITERAL(T, "A");
+
+			always_check(!Str.IsEmpty());
+			always_check(Str.Num() == 1);
+
+			always_check(Str == TString<T>(LITERAL(T, "A")));
+			always_check(Str ==            LITERAL(T, 'A') );
+			always_check(Str ==            LITERAL(T, 'A') );
+			always_check(TString<T>(LITERAL(T, "A")) == Str);
+			always_check(           LITERAL(T, 'A')  == Str);
+			always_check(           LITERAL(T, "A")  == Str);
+
+			always_check(Str != TString<T>(LITERAL(T, "B")));
+			always_check(Str !=            LITERAL(T, 'B') );
+			always_check(Str !=            LITERAL(T, "B") );
+			always_check(TString<T>(LITERAL(T, "B")) != Str);
+			always_check(           LITERAL(T, 'B')  != Str);
+			always_check(           LITERAL(T, "B")  != Str);
+
+			always_check(Str < TString<T>(LITERAL(T, "B")));
+			always_check(Str <            LITERAL(T, 'B') );
+			always_check(Str <            LITERAL(T, "B") );
+			always_check(TString<T>(LITERAL(T, "B")) > Str);
+			always_check(           LITERAL(T, 'B')  > Str);
+			always_check(           LITERAL(T, "B")  > Str);
+		}
+
+		{
+			TString<T> Str = LITERAL(T, "##");
+
+			Str.Insert(1, LITERAL(T, 'A'));
+
+			always_check(Str == LITERAL(T, "#A#"));
+
+			Str.Insert(2, LITERAL(T, "BCD"));
+
+			always_check(Str == LITERAL(T, "#ABCD#"));
+
+			Str.Insert(3, 3, LITERAL(T, '*'));
+
+			always_check(Str == LITERAL(T, "#AB***CD#"));
+
+			Str.Erase(4);
+
+			always_check(Str == LITERAL(T, "#AB**CD#"));
+		}
+
+		{
+			TString<T> Str = LITERAL(T, "A");
+
+			Str.PushBack(LITERAL(T, 'B'));
+
+			always_check(Str == LITERAL(T, "AB"));
+
+			Str.PopBack();
+
+			always_check(Str == LITERAL(T, "A"));
+
+			Str.Append(2, LITERAL(T, 'B'));
+
+			always_check(Str == LITERAL(T, "ABB"));
+
+			Str.Append(LITERAL(T, "CD"));
+
+			always_check(Str == LITERAL(T, "ABBCD"));
+
+			Str.Append({ LITERAL(T, 'E'), LITERAL(T, 'F') });
+
+			always_check(Str == LITERAL(T, "ABBCDEF"));
+
+			Str = LITERAL(T, "A");
+
+			Str += LITERAL(T, 'B');
+
+			always_check(Str == LITERAL(T, "AB"));
+
+			Str += LITERAL(T, "CD");
+
+			always_check(Str == LITERAL(T, "ABCD"));
+
+			Str += { LITERAL(T, 'E'), LITERAL(T, 'F') };
+
+			always_check(Str == LITERAL(T, "ABCDEF"));
+		}
+
+		{
+			TString StrA = LITERAL(T, "A");
+			TString StrB = LITERAL(T, "B");
+
+			always_check(StrA + StrB              == LITERAL(T, "AB"));
+			always_check(StrA + LITERAL(T, 'B')   == LITERAL(T, "AB"));
+			always_check(StrA + LITERAL(T, "BCD") == LITERAL(T, "ABCD"));
+			always_check(LITERAL(T, 'B')   + StrB == LITERAL(T, "BB"));
+			always_check(LITERAL(T, "BCD") + StrB == LITERAL(T, "BCDB"));
+
+			StrA = LITERAL(T, "A"); StrB = LITERAL(T, "B");
+			always_check(MoveTemp(StrA) + MoveTemp(StrB)    == LITERAL(T, "AB"));
+			StrA = LITERAL(T, "A"); StrB = LITERAL(T, "B");
+			always_check(MoveTemp(StrA) + LITERAL(T, 'B')   == LITERAL(T, "AB"));
+			StrA = LITERAL(T, "A"); StrB = LITERAL(T, "B");
+			always_check(MoveTemp(StrA) + LITERAL(T, "BCD") == LITERAL(T, "ABCD"));
+			StrA = LITERAL(T, "A"); StrB = LITERAL(T, "B");
+			always_check(LITERAL(T, 'B')   + MoveTemp(StrB) == LITERAL(T, "BB"));
+			StrA = LITERAL(T, "A"); StrB = LITERAL(T, "B");
+			always_check(LITERAL(T, "BCD") + MoveTemp(StrB) == LITERAL(T, "BCDB"));
+		}
+
+		{
+			TString Str = LITERAL(T, "Hello, World! Goodbye, World!");
+
+			always_check( Str.StartsWith(LITERAL(T, "Hello, World!")));
+			always_check(!Str.StartsWith(LITERAL(T, "Goodbye, World!")));
+			always_check( Str.StartsWith(LITERAL(T, 'H')));
+			always_check(!Str.StartsWith(LITERAL(T, 'G')));
+			always_check(!Str.EndsWith(LITERAL(T, "Hello, World!")));
+			always_check( Str.EndsWith(LITERAL(T, "Goodbye, World!")));
+			always_check( Str.EndsWith(LITERAL(T, '!')));
+			always_check(!Str.EndsWith(LITERAL(T, '?')));
+			always_check( Str.Contains(LITERAL(T, "Hello, World!")));
+			always_check( Str.Contains(LITERAL(T, "Goodbye, World!")));
+			always_check( Str.Contains(LITERAL(T, '!')));
+			always_check(!Str.Contains(LITERAL(T, '?')));
+		}
+
+		{
+			TString Str = LITERAL(T, "#AB**CD#");
+
+			always_check(Str.Replace(3, 2, 3, LITERAL(T, '^')) == LITERAL(T, "#AB^^^CD#"));
+
+			always_check(Str.Replace(3, 3, LITERAL(T, "123")) == LITERAL(T, "#AB123CD#"));
+
+			always_check(Str.Substr(3, 3) == LITERAL(T, "123"));
+
+			always_check(Str.Substr(3) == LITERAL(T, "123CD#"));
+		}
+
+		{
+			TString Str = LITERAL(T, "Hello, World! Goodbye, World!");
+
+			always_check(Str.Find(LITERAL(T, ""))       ==  0);
+			always_check(Str.Find(LITERAL(T, "World"))  ==  7);
+			always_check(Str.Find(LITERAL(T, 'l'))      ==  2);
+			always_check(Str.RFind(LITERAL(T, ""))      == 29);
+			always_check(Str.RFind(LITERAL(T, "World")) == 23);
+			always_check(Str.RFind(LITERAL(T, 'l'))     == 26);
+
+			always_check(Str.Find(LITERAL(T, ""), 13)       == 13);
+			always_check(Str.Find(LITERAL(T, "World"), 13)  == 23);
+			always_check(Str.Find(LITERAL(T, 'l'), 13)      == 26);
+			always_check(Str.RFind(LITERAL(T, ""), 13)      == 13);
+			always_check(Str.RFind(LITERAL(T, "World"), 13) ==  7);
+			always_check(Str.RFind(LITERAL(T, 'l'), 13)     == 10);
+
+			always_check(Str.FindFirstOf(LITERAL(T, "eor")) ==  1);
+			always_check(Str.FindFirstOf(LITERAL(T, 'l'))   ==  2);
+			always_check(Str.FindLastOf(LITERAL(T, "eor"))  == 25);
+			always_check(Str.FindLastOf(LITERAL(T, 'l'))    == 26);
+
+			always_check(Str.FindFirstNotOf(LITERAL(T, "Hello! Goodbye!")) ==  5);
+			always_check(Str.FindFirstNotOf(LITERAL(T, '!'))               ==  0);
+			always_check(Str.FindLastNotOf(LITERAL(T, "Hello! Goodbye!"))  == 25);
+			always_check(Str.FindLastNotOf(LITERAL(T, '!'))                == 27);
+		}
+	};
+
+	Test(InPlaceType<char>);
+	Test(InPlaceType<wchar>);
+	Test(InPlaceType<u8char>);
+	Test(InPlaceType<u16char>);
+	Test(InPlaceType<u32char>);
+	Test(InPlaceType<unicodechar>);
 }
 
 NAMESPACE_END(Testing)

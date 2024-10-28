@@ -10,8 +10,10 @@
 #include "Containers/ArrayView.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
+#include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
+#include "Miscellaneous/ConstantIterator.h"
 
 #include <cstring>
 #include <cwchar>
@@ -19,6 +21,9 @@
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
+
+template <CCharType T, CAllocator<T> Allocator>
+class TString;
 
 /**
  * The class template TStringView describes an object that can refer to a constant contiguous sequence of char-like objects
@@ -48,6 +53,10 @@ public:
 	/** Constructs a string view that is a view over the range ['InFirst', 'InLast'). */
 	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const ElementType(*)[]>)
 	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : NativeData(InFirst, InLast) { }
+
+	/** Constructs a string view that is a view over the string 'InString'. */
+	template <typename Allocator>
+	FORCEINLINE constexpr TStringView(const TString<ElementType, Allocator>& InString);
 
 	/** Constructs a string view that is a view over the range ['InPtr', 'InPtr' + 'Count'). */
 	FORCEINLINE constexpr TStringView(const ElementType* InPtr, size_t Count) : NativeData(InPtr, Count)
@@ -91,8 +100,16 @@ public:
 	/** Compares the contents of two string views. */
 	NODISCARD friend constexpr bool operator==(TStringView LHS, TStringView RHS) { return LHS.NativeData == RHS.NativeData; }
 
+	/** Compares the contents of a string view and a character. */
+	NODISCARD friend constexpr bool operator==(TStringView LHS, ElementType RHS) { return LHS == TStringView(&RHS, 1); }
+	NODISCARD friend constexpr bool operator==(ElementType LHS, TStringView RHS) { return TStringView(&LHS, 1) == RHS; }
+
 	/** Compares the contents of two string views. */
 	NODISCARD friend constexpr auto operator<=>(TStringView LHS, TStringView RHS) { return LHS.NativeData <=> RHS.NativeData; }
+
+	/** Compares the contents of a string view and a character. */
+	NODISCARD friend constexpr auto operator<=>(TStringView LHS, ElementType RHS) { return LHS <=> TStringView(&RHS, 1); }
+	NODISCARD friend constexpr auto operator<=>(ElementType LHS, TStringView RHS) { return TStringView(&LHS, 1) <=> RHS; }
 
 	/** Shrinks the view by moving its start forward. */
 	FORCEINLINE constexpr void RemovePrefix(size_t Count)
@@ -129,6 +146,8 @@ public:
 	/** Copies the elements of this string view to the destination buffer without null-termination. */
 	FORCEINLINE constexpr size_t Copy(ElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
 	{
+		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
+
 		checkf(Offset <= Num() && (Count == DynamicExtent || Offset + Count <= Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
 		if (Count == DynamicExtent)
@@ -136,10 +155,12 @@ public:
 			Count = Num() - Offset;
 		}
 
-		Memory::Memcpy(Dest, GetData().Get() + Offset, Count * sizeof(ElementType));
+		Memory::CopyAssign(Dest, GetData().Get() + Offset, Count);
 
 		return Count;
 	}
+
+	FORCEINLINE constexpr size_t Copy(nullptr_t, size_t Count = DynamicExtent, size_t Offset = 0) const = delete;
 
 	/** Obtains a string view that is a view over the 'Count' elements of this string view starting at 'Offset'.  */
 	NODISCARD FORCEINLINE constexpr TStringView Substr(size_t Offset, size_t Count = DynamicExtent) const
@@ -208,7 +229,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t Find(TStringView View, size_t Index = 0) const
+	NODISCARD constexpr size_t Find(TStringView View, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -228,7 +249,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t Find(ElementType Char, size_t Index = 0) const
+	NODISCARD constexpr size_t Find(ElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -245,7 +266,7 @@ public:
 
 	/** @return The index of the first occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
 	template <CPredicate<ElementType> F>
-	NODISCARD FORCEINLINE constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
+	NODISCARD constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -261,7 +282,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t RFind(TStringView View, size_t Index = INDEX_NONE) const
+	NODISCARD constexpr size_t RFind(TStringView View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -283,7 +304,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -302,7 +323,7 @@ public:
 
 	/** @return The index of the last occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
 	template <CPredicate<ElementType> F>
-	NODISCARD FORCEINLINE constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
+	NODISCARD constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -423,6 +444,9 @@ private:
 
 template <typename I, typename S>
 TStringView(I, S) -> TStringView<TIteratorElementType<I>>;
+
+template<typename T, typename Allocator>
+TStringView(TString<T, Allocator>) -> TStringView<T>;
 
 using FStringView        = TStringView<char>;
 using FWStringView       = TStringView<wchar>;

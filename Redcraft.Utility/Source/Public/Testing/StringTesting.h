@@ -10,7 +10,8 @@ NAMESPACE_BEGIN(Testing)
 
 REDCRAFTUTILITY_API void TestString();
 REDCRAFTUTILITY_API void TestChar();
-REDCRAFTUTILITY_API void TestCString();
+REDCRAFTUTILITY_API void TestStringView();
+REDCRAFTUTILITY_API void TestTemplateString();
 
 NAMESPACE_END(Testing)
 
