@@ -11,6 +11,7 @@
 #include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
+#include "Miscellaneous/ConstantIterator.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -57,16 +58,8 @@ public:
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TArray(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
-	{
-		Impl.ArrayNum = Count;
-		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
-		Impl.Pointer  = Impl->Allocate(Max());
-
-		for (size_t Index = 0; Index < Num(); ++Index)
-		{
-			new (Impl.Pointer + Index) ElementType(InValue);
-		}
-	}
+		: TArray(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
+	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>> && CMovable<ElementType>)
@@ -412,98 +405,7 @@ public:
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		const size_t InsertIndex = Iter - Begin();
-
-		if (Count == 0) return Iterator(this, Impl.Pointer + InsertIndex);
-
-		const size_t NumToAllocate = Num() + Count > Max() ? Impl->CalculateSlackGrow(Num() + Count, Max()) : Max();
-
-		check(NumToAllocate >= Num() + Count);
-
-		if (NumToAllocate != Max())
-		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
-
-			Impl.ArrayNum = Num() + Count;
-			Impl.ArrayMax = NumToAllocate;
-			Impl.Pointer  = Impl->Allocate(Max());
-
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
-
-			for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
-			{
-				new (Impl.Pointer + Index) ElementType(InValue);
-			}
-
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
-
-			Memory::Destruct(OldAllocation, NumToDestruct);
-			Impl->Deallocate(OldAllocation);
-
-			return Iterator(this, Impl.Pointer + InsertIndex);
-		}
-
-		/*
-		 * NO(XA) - No Operation
-		 * IA(AB) - Insert Assignment
-		 * IC(BC) - Insert Construction
-		 * MA(CD) - Move Assignment
-		 * MC(DO) - Move Construction
-		 *
-		 * IR(AC) - Insert Range
-		 * UI(UO) - Uninitialized
-		 *
-		 * |X|-------------------| |-UI-|O|
-		 * |X|----|A|-IR-| C|-----------|O|
-		 * |X|-NO-|A|-IA-|BC|-MA-|D|-MC-|O|
-		 *
-		 * |X|-----------------|   |-UI-|O|
-		 * |X|----------|A|-IR-| CD|----|O|
-		 * |X|----NO----|A|-IA-|BCD|-MC-|O|
-		 *
-		 * |X|-----------| |-----UI-----|O|
-		 * |X|----|A|----IR-----|C |----|O|
-		 * |X|-NO-|A|-IA-|B|-IC-|CD|-MC-|O|
-		 *
-		 * |X|----------------|  |-UI-|  O|
-		 * |X|----------------|A |-IR-|C O|
-		 * |X|-------NO-------|AB|-IC-|CDO|
-		 *
-		 * |X|-----------| |----UI----|  O|
-		 * |X|----------------|A |-IR-|C O|
-		 * |X|-------NO-------|AB|-IC-|CDO|
-		 */
-
-		const size_t IndexA = InsertIndex;
-		const size_t IndexC = InsertIndex + Count;
-		const size_t IndexB = Num() > IndexA ? (Num() < IndexC ? Num() : IndexC) : IndexA;
-		const size_t IndexD = Num() > IndexC ? Num() : IndexC;
-		const size_t IndexO = Num() + Count;
-
-		for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
-		{
-			new (Impl.Pointer + TargetIndex) ElementType(MoveTemp(Impl.Pointer[TargetIndex - Count]));
-		}
-
-		for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
-		{
-			Impl.Pointer[TargetIndex] = MoveTemp(Impl.Pointer[TargetIndex - Count]);
-		}
-
-		for (size_t TargetIndex = IndexA; TargetIndex != IndexB; ++TargetIndex)
-		{
-			Impl.Pointer[TargetIndex] = InValue;
-		}
-
-		for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
-		{
-			new (Impl.Pointer + TargetIndex) ElementType(InValue);
-		}
-
-		Impl.ArrayNum = Num() + Count;
-
-		return Iterator(this, Impl.Pointer + InsertIndex);
+		return Insert(Iter, MakeCountedConstantIterator(InValue, Count), DefaultSentinel);
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
@@ -550,13 +452,42 @@ public:
 				return Iterator(this, Impl.Pointer + InsertIndex);
 			}
 
+			/*
+			 * NO(XA) - No Operation
+			 * IA(AB) - Insert Assignment
+			 * IC(BC) - Insert Construction
+			 * MA(CD) - Move Assignment
+			 * MC(DO) - Move Construction
+			 *
+			 * IR(AC) - Insert Range
+			 * UI(UO) - Uninitialized
+			 *
+			 * |X|-------------------| |-UI-|O|
+			 * |X|----|A|-IR-| C|-----------|O|
+			 * |X|-NO-|A|-IA-|BC|-MA-|D|-MC-|O|
+			 *
+			 * |X|-----------------|   |-UI-|O|
+			 * |X|----------|A|-IR-| CD|----|O|
+			 * |X|----NO----|A|-IA-|BCD|-MC-|O|
+			 *
+			 * |X|-----------| |-----UI-----|O|
+			 * |X|----|A|----IR-----|C |----|O|
+			 * |X|-NO-|A|-IA-|B|-IC-|CD|-MC-|O|
+			 *
+			 * |X|----------------|  |-UI-|  O|
+			 * |X|----------------|A |-IR-|C O|
+			 * |X|-------NO-------|AB|-IC-|CDO|
+			 *
+			 * |X|-----------| |----UI----|  O|
+			 * |X|----------------|A |-IR-|C O|
+			 * |X|-------NO-------|AB|-IC-|CDO|
+			 */
+
 			const size_t IndexA = InsertIndex;
 			const size_t IndexC = InsertIndex + Count;
 			const size_t IndexB = Num() > IndexA ? (Num() < IndexC ? Num() : IndexC) : IndexA;
 			const size_t IndexD = Num() > IndexC ? Num() : IndexC;
 			const size_t IndexO = Num() + Count;
-
-			size_t TargetIndex = Num() + Count - 1;
 
 			for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
 			{

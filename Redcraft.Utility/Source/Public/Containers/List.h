@@ -11,6 +11,7 @@
 #include "Memory/MemoryOperator.h"
 #include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
+#include "Miscellaneous/ConstantIterator.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -75,25 +76,9 @@ public:
 	}
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
-	TList(size_t Count, const ElementType& InValue) requires (CCopyable<ElementType>) : TList()
-	{
-		FNode* EndNode = Impl.HeadNode->PrevNode;
-
-		while (Count > Impl.ListNum)
-		{
-			FNode* Node = new (Impl->Allocate(1)) FNode(InPlace, InValue);
-
-			EndNode->NextNode = Node;
-			Node->PrevNode = EndNode;
-
-			++Impl.ListNum;
-
-			EndNode = Node;
-		}
-
-		EndNode->NextNode = Impl.HeadNode;
-		Impl.HeadNode->PrevNode = EndNode;
-	}
+	TList(size_t Count, const ElementType& InValue) requires (CCopyable<ElementType>)
+		: TList(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
+	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
@@ -260,35 +245,7 @@ public:
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
 	Iterator Insert(ConstIterator Iter, size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
 	{
-		if (Count == 0) return Iterator(Iter.Pointer);
-
-		FNode* InsertNode = Iter.Pointer->PrevNode;
-
-		const auto InsertOnce = [&]() -> FNode*
-		{
-			FNode* Node = new (Impl->Allocate(1)) FNode(InPlace, InValue);
-
-			InsertNode->NextNode = Node;
-			Node->PrevNode = InsertNode;
-
-			++Impl.ListNum;
-
-			InsertNode = Node;
-
-			return Node;
-		};
-
-		FNode* FirstNode = InsertOnce();
-
-		for (size_t Index = 0; Index != Count - 1; ++Index)
-		{
-			InsertOnce();
-		}
-
-		InsertNode->NextNode = Iter.Pointer;
-		Iter.Pointer->PrevNode = InsertNode;
-
-		return Iterator(FirstNode);
+		return Insert(Iter, MakeCountedConstantIterator(InValue, Count), DefaultSentinel);
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
@@ -334,7 +291,7 @@ public:
 	Iterator Emplace(ConstIterator Iter, Ts&&... Args)
 	{
 		FNode* Node = new (Impl->Allocate(1)) FNode(InPlace, Forward<Ts>(Args)...);
-		
+
 		++Impl.ListNum;
 
 		Node->PrevNode = Iter.Pointer->PrevNode;
@@ -430,7 +387,7 @@ public:
 			Erase(First, End());
 
 			Impl.ListNum = Count;
-			
+
 			return;
 		}
 

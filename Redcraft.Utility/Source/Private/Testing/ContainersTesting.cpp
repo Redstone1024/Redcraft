@@ -280,7 +280,7 @@ void TestBitset()
 
 		FBitset BitsetXORA = BitsetA; BitsetXORA &= BitsetB;
 		FBitset BitsetXORB = BitsetB; BitsetXORB &= BitsetA;
-		
+
 		uint64 IntANDA = IntA; IntANDA &= IntB;
 		uint32 IntANDB = IntB; IntANDB &= IntA;
 
@@ -297,7 +297,7 @@ void TestBitset()
 		always_check((BitsetXORA.ToIntegral() == IntXORA));
 		always_check((BitsetXORB.ToIntegral() == IntXORB));
 	}
-	
+
 	{
 		FBitset BitsetA(64, 0x0139'0239'0339'0439ull);
 		uint64  IntA =      0x0139'0239'0339'0439ull;
@@ -420,7 +420,7 @@ void TestStaticBitset()
 
 		TStaticBitset<32> BitsetXORA = BitsetA; BitsetXORA &= BitsetB;
 		TStaticBitset<32> BitsetXORB = BitsetB; BitsetXORB &= BitsetA;
-		
+
 		uint32 IntANDA = IntA; IntANDA &= IntB;
 		uint32 IntANDB = IntB; IntANDB &= IntA;
 
@@ -437,7 +437,7 @@ void TestStaticBitset()
 		always_check((BitsetXORA.ToIntegral() == IntXORA));
 		always_check((BitsetXORB.ToIntegral() == IntXORB));
 	}
-	
+
 	{
 		TStaticBitset<32> BitsetA(0x0139'0239ull);
 		uint32            IntA =  0x0139'0239ull;
@@ -589,7 +589,7 @@ void TestList()
 
 		List.PopBack();
 		always_check((List == TList<int32>({ 1, 2, 3, 4, 5 })));
-		
+
 		List.EmplaceFront(1) = 0;
 		always_check((List == TList<int32>({ 0, 1, 2, 3, 4, 5 })));
 
