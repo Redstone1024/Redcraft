@@ -424,8 +424,8 @@ public:
 	template <CCommonType<IteratorType> J>
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Length - RHS.Length; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { CheckThis(); return -LHS.Num(); }
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { CheckThis(); return  RHS.Num(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
 
 	NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const requires (CContiguousIterator<IteratorType>) { CheckThis(); return TObserverPtr<ElementType[]>(Current); }
 
