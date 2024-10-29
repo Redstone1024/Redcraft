@@ -646,7 +646,7 @@ FORCEINLINE constexpr void Advance(I& Iter, ptrdiff N)
 template <CInputIterator I, CSentinelFor<I> S>
 FORCEINLINE constexpr ptrdiff Distance(I First, S Last)
 {
-	if constexpr (CSizedSentinelFor<I, S>)
+	if constexpr (CSizedSentinelFor<S, I>)
 	{
 		return Last - First;
 	}
