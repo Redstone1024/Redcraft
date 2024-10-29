@@ -6,6 +6,7 @@
 #include "String/StringView.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
+#include "Templates/Optional.h"
 #include "Templates/Container.h"
 #include "Containers/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
@@ -328,44 +329,44 @@ public:
 	NODISCARD friend FORCEINLINE TString operator+(const TString<ElementType>& LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool StartsWith(TStringView<ElementType> Prefix) const
+	NODISCARD FORCEINLINE bool StartsWith(TStringView<ElementType> Prefix) const
 	{
 		return TStringView<ElementType>(*this).StartsWith(Prefix);
 	}
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool StartsWith(ElementType Prefix) const
+	NODISCARD FORCEINLINE bool StartsWith(ElementType Prefix) const
 	{
 		return TStringView<ElementType>(*this).StartsWith(Prefix);
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool EndsWith(TStringView<ElementType> Suffix) const
+	NODISCARD FORCEINLINE bool EndsWith(TStringView<ElementType> Suffix) const
 	{
 		return TStringView<ElementType>(*this).EndsWith(Suffix);
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool EndsWith(ElementType Suffix) const
+	NODISCARD FORCEINLINE bool EndsWith(ElementType Suffix) const
 	{
 		return TStringView<ElementType>(*this).EndsWith(Suffix);
 	}
 
 	/** @return true if the string view contains the given substring, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool Contains(TStringView<ElementType> View) const
+	NODISCARD FORCEINLINE bool Contains(TStringView<ElementType> View) const
 	{
 		return TStringView<ElementType>(*this).Contains(View);
 	}
 
 	/** @return true if the string view contains the given character, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool Contains(ElementType Char) const
+	NODISCARD FORCEINLINE bool Contains(ElementType Char) const
 	{
 		return TStringView<ElementType>(*this).Contains(Char);
 	}
 
 	/** @return true if the string view contains character that satisfy the given predicate, false otherwise. */
 	template <CPredicate<ElementType> F>
-	NODISCARD FORCEINLINE constexpr bool Contains(F&& InPredicate) const
+	NODISCARD FORCEINLINE bool Contains(F&& InPredicate) const
 	{
 		return TStringView<ElementType>(*this).Contains(Forward<F>(InPredicate));
 	}
@@ -493,7 +494,7 @@ public:
 	}
 
 	/** Copies the characters of this string to the destination buffer without null-termination. */
-	FORCEINLINE constexpr size_t Copy(ElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
+	FORCEINLINE size_t Copy(ElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
 	{
 		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
 
@@ -502,10 +503,10 @@ public:
 		return TStringView<ElementType>(*this).Copy(Dest, Count, Offset);
 	}
 
-	FORCEINLINE constexpr size_t Copy(nullptr_t, size_t Count = DynamicExtent, size_t Offset = 0) const = delete;
+	FORCEINLINE size_t Copy(nullptr_t, size_t = DynamicExtent, size_t = 0) const = delete;
 
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t Find(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD size_t Find(TStringView<ElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -513,7 +514,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t Find(ElementType Char, size_t Index = 0) const
+	NODISCARD size_t Find(ElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -522,7 +523,7 @@ public:
 
 	/** @return The index of the first occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
 	template <CPredicate<ElementType> F>
-	NODISCARD constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
+	NODISCARD size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -530,7 +531,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t RFind(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD size_t RFind(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -538,7 +539,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -547,7 +548,7 @@ public:
 
 	/** @return The index of the last occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
 	template <CPredicate<ElementType> F>
-	NODISCARD constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
+	NODISCARD size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -555,7 +556,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstOf(TStringView<ElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -563,7 +564,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstOf(ElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -571,7 +572,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -579,7 +580,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -587,7 +588,7 @@ public:
 	}
 
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstNotOf(TStringView<ElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -595,7 +596,7 @@ public:
 	}
 
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -603,7 +604,7 @@ public:
 	}
 
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastNotOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
@@ -611,12 +612,370 @@ public:
 	}
 
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindLastNotOf(Char, Index);
 	}
+
+	/** Try to decode the given character using the U-encoded to a string using the T-encoded. */
+	template <CCharType U>
+	bool DecodeFrom(U Char, bool bAllowShrinking = true)
+	{
+		return DecodeFrom(TStringView(&Char, 1), bAllowShrinking);
+	}
+
+	/** Try to decode the given string using the U-encoded to a string using the T-encoded. */
+	template <CCharType U, CAllocator<U> A>
+	bool DecodeFrom(const TString<U, A>& String, bool bAllowShrinking = true)
+	{
+		return DecodeFrom(TStringView(String), bAllowShrinking);
+	}
+
+	/** Try to decode the given string view using the U-encoded to a string using the T-encoded. */
+	template <CCharType U>
+	bool DecodeFrom(TStringView<U> View, bool bAllowShrinking = true)
+	{
+		NativeData.Reset(false);
+
+		auto AppendToResult = [this]<typename W>(auto& Self, TStringView<W> View) -> bool
+		{
+			//  char ->  char
+			// wchar -> wchar
+			if constexpr (CSameAs<W, char> && CSameAs<T, char> || CSameAs<W, wchar> && CSameAs<T, wchar>)
+			{
+				// Unable to determine whether the user-preferred locale encoded character is valid or not, it is assumed to be valid.
+				NativeData.Insert(NativeData.End(), View.Begin(), View.End());
+
+				return true;
+			}
+
+			// char -> wchar
+			// char -> wchar -> ...
+			else if constexpr (CSameAs<W, char>)
+			{
+				NAMESPACE_STD::locale Loc = NAMESPACE_STD::locale("");
+
+				check((NAMESPACE_STD::has_facet<NAMESPACE_STD::codecvt<wchar_t, char, NAMESPACE_STD::mbstate_t>>(Loc)));
+
+				const auto& Facet = NAMESPACE_STD::use_facet<NAMESPACE_STD::codecvt<wchar, char, NAMESPACE_STD::mbstate_t>>(Loc);
+
+				NAMESPACE_STD::mbstate_t State = NAMESPACE_STD::mbstate_t();
+
+				const char* BeginFrom = View.GetData().Get();
+				const char* EndFrom = BeginFrom + View.Num();
+
+				wchar Buffer[FWChar::MaxCodeUnitLength];
+
+				const char* NextFrom;
+				wchar* NextTo;
+
+				do
+				{
+					const auto Result = Facet.in(State, BeginFrom, EndFrom, NextFrom, Iteration::Begin(Buffer), Iteration::End(Buffer), NextTo);
+
+					if (BeginFrom == NextFrom) return false;
+
+					if (Result == NAMESPACE_STD::codecvt_base::error)  return false;
+					if (Result == NAMESPACE_STD::codecvt_base::noconv) return false;
+
+					// char -> wchar
+					if constexpr (CSameAs<T, wchar>)
+					{
+						for (wchar* Iter = Buffer; Iter != NextTo; ++Iter)
+						{
+							NativeData.PushBack(*Iter);
+						}
+					}
+					else
+					{
+						if (!Self(Self, TStringView(Buffer, NextTo))) return false;
+					}
+
+					BeginFrom = NextFrom;
+				}
+				while (BeginFrom != EndFrom);
+
+				return true;
+			}
+
+			// wchar -> char
+			else if constexpr (CSameAs<W, wchar> && CSameAs<T, char>)
+			{
+				NAMESPACE_STD::locale Loc = NAMESPACE_STD::locale("");
+
+				check((NAMESPACE_STD::has_facet<NAMESPACE_STD::codecvt<wchar_t, char, NAMESPACE_STD::mbstate_t>>(Loc)));
+
+				const auto& Facet = NAMESPACE_STD::use_facet<NAMESPACE_STD::codecvt<wchar, char, NAMESPACE_STD::mbstate_t>>(Loc);
+
+				NAMESPACE_STD::mbstate_t State = NAMESPACE_STD::mbstate_t();
+
+				const wchar* BeginFrom = View.GetData().Get();
+				const wchar* EndFrom = BeginFrom + View.Num();
+
+				char Buffer[FChar::MaxCodeUnitLength];
+
+				const wchar* NextFrom;
+				char* NextTo;
+
+				do
+				{
+					const auto Result = Facet.out(State, BeginFrom, EndFrom, NextFrom, Iteration::Begin(Buffer), Iteration::End(Buffer), NextTo);
+
+					if (BeginFrom == NextFrom) return false;
+
+					if (Result == NAMESPACE_STD::codecvt_base::error)  return false;
+					if (Result == NAMESPACE_STD::codecvt_base::noconv) return false;
+
+					for (char* Iter = Buffer; Iter != NextTo; ++Iter)
+					{
+						NativeData.PushBack(*Iter);
+					}
+
+					BeginFrom = NextFrom;
+				}
+				while (BeginFrom != EndFrom);
+
+				return true;
+			}
+
+			// u8char -> unicodechar -> ...
+			else if constexpr (CSameAs<W, u8char>)
+			{
+				auto Iter = View.Begin();
+
+				while (Iter != View.End())
+				{
+					unicodechar Temp = static_cast<unicodechar>(*Iter++);
+
+					unicodechar Unicode;
+
+					if      ((Temp & 0b10000000) == 0b00000000) // 0XXXXXXX
+					{
+						Unicode = Temp;
+					}
+
+					else if ((Temp & 0b11100000) == 0b11000000) // 110XXXXX 10XXXXXX
+					{
+						if (Iter + 1 > View.End()) return false;
+
+						Unicode = (Temp & 0b00011111) << 6;
+
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |= Temp & 0b00111111;
+					}
+
+					else if ((Temp & 0b11110000) == 0b11100000) // 1110XXXX 10XXXXXX 10XXXXXX
+					{
+						if (Iter + 2 > View.End()) return false;
+
+						Unicode = (Temp & 0b00001111) << 12;
+
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |= (Temp & 0b00111111) << 6;
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |=  Temp & 0b00111111;
+					}
+
+					else if ((Temp & 0b11111000) == 0b11110000) // 11110XXX 10XXXXXX 10XXXXXX 10XXXXXX
+					{
+						if (Iter + 3 > View.End()) return false;
+
+						Unicode = (Temp & 0b00000111) << 18;
+
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |= (Temp & 0b00111111) << 12;
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |= (Temp & 0b00111111) <<  6;
+						Temp = static_cast<unicodechar>(*Iter++); if ((Temp & 0b11000000) != 0b10000000) return false; else Unicode |=  Temp & 0b00111111;
+					}
+
+					else return false;
+
+					if (!Self(Self, TStringView(&Unicode, 1))) return false;
+				}
+
+				return true;
+			}
+
+			// u16char -> unicodechar -> ...
+			//   wchar -> unicodechar -> ... for Windows
+			else if constexpr (CSameAs<W, u16char> || PLATFORM_WINDOWS && CSameAs<W, wchar>)
+			{
+				auto Iter = View.Begin();
+
+				while (Iter != View.End())
+				{
+					unicodechar Temp = static_cast<unicodechar>(*Iter++);
+
+					unicodechar Unicode;
+
+					// High Surrogate <UD800>..<UDBFF>;
+					// Low Surrogate  <UDC00>..<UDFFF>;
+
+					if (Temp >= 0xD800 && Temp <= 0xDBFF)
+					{
+						if (Iter == View.End()) return false;
+
+						Unicode = (Temp & 0b00000011'11111111) << 10;
+
+						Temp = static_cast<unicodechar>(*Iter++);
+
+						if (Temp >= 0xDC00 && Temp <= 0xDFFF)
+						{
+							Unicode |= Temp & 0b00000011'11111111;
+
+							Unicode += 0x10000;
+						}
+						else return false;
+					}
+					else Unicode = Temp;
+
+					if (!Self(Self, TStringView(&Unicode, 1))) return false;
+				}
+
+				return true;
+			}
+
+			//   wchar -> unicodechar -> ... for Linux
+			else if constexpr (PLATFORM_LINUX && CSameAs<W, wchar>)
+			{
+				return Self(Self, TStringView(reinterpret_cast<const u32char*>(View.GetData().Get()), View.Num()));
+			}
+
+			// unicodechar u32char -> u8char
+			else if constexpr (CSameAs<W, unicodechar> && CSameAs<T, u8char>)
+			{
+				for (unicodechar Char : View)
+				{
+					if (!FUnicodeChar::IsValid(Char)) return false;
+
+					if      (!(Char & ~0b0000000'00000000'00000000'01111111)) // 0XXXXXXX
+					{
+						NativeData.PushBack(static_cast<u8char>(Char));
+					}
+					else if (!(Char & ~0b0000000'00000000'00000111'11111111)) // 110XXXXX 10XXXXXX
+					{
+						NativeData.PushBack(static_cast<u8char>(0b11000000 | (Char >> 6 & 0b00011111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char & 0b00111111)));
+					}
+					else if (!(Char & ~0b0000000'00000000'11111111'11111111)) // 1110XXXX 10XXXXXX 10XXXXXX
+					{
+						NativeData.PushBack(static_cast<u8char>(0b11100000 | (Char >> 12 & 0b00001111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
+					}
+					else if (!(Char & ~0b0000000'11111111'11111111'11111111)) // 11110XXX 10XXXXXX 10XXXXXX 10XXXXXX
+					{
+						NativeData.PushBack(static_cast<u8char>(0b11110000 | (Char >> 18 & 0b00000111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >> 12 & 0b00111111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
+						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
+					}
+					else check_no_entry();
+				}
+
+				return true;
+			}
+
+			// unicodechar u32char -> u16char
+			// unicodechar u32char -> wchar         for Windows
+			// unicodechar u32char -> wchar -> char for Windows
+			else if constexpr (CSameAs<W, unicodechar> && (CSameAs<T, u16char> || PLATFORM_WINDOWS && (CSameAs<T, char> || CSameAs<T, wchar>)))
+			{
+				for (unicodechar Char : View)
+				{
+					if (!FUnicodeChar::IsValid(Char)) return false;
+
+					if      (!(Char & ~0b0000000'00000000'11111111'11111111)) // XXXXXXXX'XXXXXXXX
+					{
+						if constexpr (PLATFORM_WINDOWS && (CSameAs<T, char> || CSameAs<T, wchar>))
+						{
+							wchar WChar = static_cast<wchar>(Char);
+
+							if (!Self(Self, TStringView(&WChar, 1))) return false;
+						}
+						else NativeData.PushBack(static_cast<u16char>(Char));
+					}
+					else if (!(Char & ~0b0000000'00011111'11111111'11111111)) // 110110XX'XXXXXXXX 110111XX'XXXXXXXX
+					{
+						Char -= 0x10000;
+
+						u16char Buffer[] = {
+							static_cast<u16char>(0b11011000'00000000 | (Char >> 10 & 0b00000011'11111111)),
+							static_cast<u16char>(0b11011100'00000000 | (Char       & 0b00000011'11111111))
+						};
+
+						if constexpr (PLATFORM_WINDOWS && (CSameAs<T, char> || CSameAs<T, wchar>))
+						{
+							if (!Self(Self, TStringView(reinterpret_cast<const wchar*>(Buffer), 2))) return false;
+						}
+						else
+						{
+							NativeData.PushBack(Buffer[0]);
+							NativeData.PushBack(Buffer[1]);
+						}
+					}
+					else check_no_entry();
+				}
+
+				return true;
+			}
+
+			// unicodechar u32char -> unicodechar u32char
+			// unicodechar u32char -> wchar         for Linux
+			// unicodechar u32char -> wchar -> char for Linux
+			else if constexpr (CSameAs<W, unicodechar> && (CSameAs<T, unicodechar> || PLATFORM_LINUX && (CSameAs<T, char> || CSameAs<T, wchar>)))
+			{
+				for (unicodechar Char : View)
+				{
+					if (!FUnicodeChar::IsValid(Char)) return false;
+				}
+
+				if constexpr (PLATFORM_LINUX && (CSameAs<T, char> || CSameAs<T, wchar>))
+				{
+					return Self(Self, TStringView(reinterpret_cast<const wchar*>(View.GetData().Get()), View.Num()));
+				}
+				else NativeData.Insert(NativeData.End(), View.Begin(), View.End());
+
+				return true;
+			}
+
+			else static_assert(sizeof(W) == -1, "Unsupported character type");
+
+			return false;
+		};
+
+		bool bIsValid = AppendToResult(AppendToResult, View);
+
+		if (!bIsValid) NativeData.Reset(false);
+
+		NativeData.PushBack(LITERAL(T, '\0'));
+
+		if (bAllowShrinking) NativeData.Shrink();
+
+		return bIsValid;
+	}
+
+	/** Try to encode a T-encoded string to a U-encoded string. */
+	template <CCharType U, CAllocator<U> A = TDefaultStringAllocator<T>>
+	NODISCARD TOptional<TString<U, A>> EncodeTo() const
+	{
+		TString<U, A> Result;
+
+		bool bIsValid = Result.DecodeFrom(*this);
+
+		if (!bIsValid) return Invalid;
+
+		return Result;
+	}
+
+	/** @return The non-modifiable standard C character string version of the string. */
+	NODISCARD FORCEINLINE const ElementType* ToCString() const { return NativeData.GetData().Get(); }
+
+	/** @return The target-encoded string from the T-encoded string. */
+	NODISCARD FORCEINLINE auto ToString()        const { return EncodeTo<char>();        }
+	NODISCARD FORCEINLINE auto ToWString()       const { return EncodeTo<wchar>();       }
+	NODISCARD FORCEINLINE auto ToU8String()      const { return EncodeTo<u8char>();      }
+	NODISCARD FORCEINLINE auto ToU16String()     const { return EncodeTo<u16char>();     }
+	NODISCARD FORCEINLINE auto ToU32String()     const { return EncodeTo<u32char>();     }
+	NODISCARD FORCEINLINE auto ToUnicodeString() const { return EncodeTo<unicodechar>(); }
 
 	/** Resizes the string to contain 'Count' characters. Additional null characters are appended. */
 	FORCEINLINE void SetNum(size_t Count, bool bAllowShrinking = true) { SetNum(Count, LITERAL(ElementType, '\0'), bAllowShrinking); }
@@ -633,9 +992,6 @@ public:
 	/** @return The pointer to the underlying character storage. */
 	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return NativeData.GetData(); }
 	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return NativeData.GetData(); }
-
-	/** @return The non-modifiable standard C character string version of the string. */
-	NODISCARD FORCEINLINE const ElementType* ToCString() const { return NativeData.GetData().Get(); }
 
 	/** @return The iterator to the first or end character. */
 	NODISCARD FORCEINLINE      Iterator Begin()       { return NativeData.Begin(); }

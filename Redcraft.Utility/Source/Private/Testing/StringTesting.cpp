@@ -533,6 +533,15 @@ void TestTemplateString()
 			always_check(Str.FindLastNotOf(LITERAL(T, "Hello! Goodbye!"))  == 25);
 			always_check(Str.FindLastNotOf(LITERAL(T, '!'))                == 27);
 		}
+
+		{
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToString()        ==        TEXT("\u4E38\u8FA3"));
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToWString()       ==       WTEXT("\u4E38\u8FA3"));
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToU8String()      ==      U8TEXT("\u4E38\u8FA3"));
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToU16String()     ==     U16TEXT("\u4E38\u8FA3"));
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToU32String()     ==     U32TEXT("\u4E38\u8FA3"));
+			always_check(TString(LITERAL(T, "\u4E38\u8FA3")).ToUnicodeString() == UNICODETEXT("\u4E38\u8FA3"));
+		}
 	};
 
 	Test(InPlaceType<char>);
