@@ -19,7 +19,7 @@ template <typename T> using WithReference = T&;
 
 template <typename I> struct TIteratorElementType { using Type = typename I::ElementType; };
 
-template <typename T> struct TIteratorElementType<T*> { using Type = T; };
+template <typename T> struct TIteratorElementType<T*> { using Type = TRemoveCV<T>; };
 
 template <typename I> struct TIteratorPointerType { using Type = void; };
 
@@ -58,6 +58,7 @@ concept CIndirectlyReadable =
 		{          *Iter  } -> CSameAs<TIteratorReferenceType<I>>;
 		{ MoveTemp(*Iter) } -> CSameAs<TIteratorRValueReferenceType<I>>;
 	}
+	&& CSameAs<TIteratorElementType<I>, TRemoveCVRef<TIteratorElementType<I>>>
 	&& CCommonReference<TIteratorReferenceType<I>&&, TIteratorElementType<I>&>
 	&& CCommonReference<TIteratorReferenceType<I>&&, TIteratorRValueReferenceType<I>&&>
 	&& CCommonReference<TIteratorRValueReferenceType<I>&&, const TIteratorElementType<I>&>;
@@ -124,10 +125,9 @@ concept CRandomAccessIterator = CBidirectionalIterator<I> && CTotallyOrdered<I> 
 
 template <typename I>
 concept CContiguousIterator = CRandomAccessIterator<I> && CLValueReference<TIteratorReferenceType<I>>
-	&& CSameAs<TIteratorElementType<I>, TRemoveReference<TIteratorReferenceType<I>>>
+	&& CSameAs<TIteratorElementType<I>, TRemoveCVRef<TIteratorReferenceType<I>>>
 	&& requires(I& Iter)
 	{
-		static_cast<TObserverPtr<TIteratorElementType<I>[]>>(Iter);
 		{ AddressOf(*Iter) } -> CSameAs<TAddPointer<TIteratorReferenceType<I>>>;
 	};
 

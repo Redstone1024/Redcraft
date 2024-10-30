@@ -303,7 +303,7 @@ public:
 	{
 	public:
 
-		using ElementType = T;
+		using ElementType = TRemoveCV<T>;
 
 		FORCEINLINE constexpr Iterator()                           = default;
 		FORCEINLINE constexpr Iterator(const Iterator&)            = default;
@@ -315,10 +315,10 @@ public:
 
 		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const Iterator& LHS, const Iterator& RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
-		NODISCARD FORCEINLINE constexpr ElementType& operator*()  const { CheckThis(true); return *Pointer; }
-		NODISCARD FORCEINLINE constexpr ElementType* operator->() const { CheckThis(true); return  Pointer; }
+		NODISCARD FORCEINLINE constexpr T& operator*()  const { CheckThis(true); return *Pointer; }
+		NODISCARD FORCEINLINE constexpr T* operator->() const { CheckThis(true); return  Pointer; }
 
-		NODISCARD FORCEINLINE constexpr ElementType& operator[](ptrdiff Index) const { Iterator Temp = *this + Index; return *Temp; }
+		NODISCARD FORCEINLINE constexpr T& operator[](ptrdiff Index) const { Iterator Temp = *this + Index; return *Temp; }
 
 		FORCEINLINE constexpr Iterator& operator++() { ++Pointer; CheckThis(); return *this; }
 		FORCEINLINE constexpr Iterator& operator--() { --Pointer; CheckThis(); return *this; }
@@ -336,7 +336,7 @@ public:
 
 		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const Iterator& LHS, const Iterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
 
-		NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const { CheckThis(); return TObserverPtr<ElementType[]>(Pointer); }
+		NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<T[]>() const { CheckThis(); return TObserverPtr<T[]>(Pointer); }
 
 	private:
 
@@ -344,14 +344,14 @@ public:
 		const TArrayView* Owner = nullptr;
 #		endif
 
-		ElementType* Pointer = nullptr;
+		T* Pointer = nullptr;
 
 #		if DO_CHECK
-		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, ElementType* InPointer)
+		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, T* InPointer)
 			: Owner(InContainer), Pointer(InPointer)
 		{ }
 #		else
-		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, ElementType* InPointer)
+		FORCEINLINE constexpr Iterator(const TArrayView* InContainer, T* InPointer)
 			: Pointer(InPointer)
 		{ }
 #		endif

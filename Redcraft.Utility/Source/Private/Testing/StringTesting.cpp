@@ -259,10 +259,10 @@ void TestStringView()
 			always_check(ViewI  == LITERAL(T, "Hello, World! Goodbye, World!"));
 			always_check(ViewII == LITERAL(T, "Hello, World! Goodbye, World!"));
 
-			TStringView<T> ViewA(ViewI.Begin(), 13);
-			TStringView<T> ViewB(ViewI.Begin(), ViewI.End());
-			TStringView<T> ViewC(&Buffer[0], 13);
-			TStringView<T> ViewD(&Buffer[0]);
+			TStringView ViewA(ViewI.Begin(), 13);
+			TStringView ViewB(ViewI.Begin(), ViewI.End());
+			TStringView ViewC(&Buffer[0], 13);
+			TStringView ViewD(&Buffer[0]);
 
 			always_check(ViewA == LITERAL(T, "Hello, World!"));
 			always_check(ViewB == LITERAL(T, "Hello, World! Goodbye, World!"));
@@ -335,10 +335,11 @@ void TestTemplateString()
 			always_check(TStringView(Empty.ToCString()) == LITERAL(T, ""));
 
 			TString<T> StrA(32, LITERAL(T, 'A'));
-			TString<T> StrB(LITERAL(T, "ABCDEFG"), 3);
-			TString<T> StrC(LITERAL(T, "ABCDEFG"));
-			TString<T> StrD(TStringView(LITERAL(T, "ABCDEFG")));
-			TString<T> StrE({ LITERAL(T, 'A'), LITERAL(T, 'B'), LITERAL(T, 'C') });
+
+			TString StrB(LITERAL(T, "ABCDEFG"), 3);
+			TString StrC(LITERAL(T, "ABCDEFG"));
+			TString StrD(TStringView(LITERAL(T, "ABCDEFG")));
+			TString StrE({ LITERAL(T, 'A'), LITERAL(T, 'B'), LITERAL(T, 'C') });
 
 			always_check(TStringView(StrA.ToCString()) == LITERAL(T, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
 			always_check(TStringView(StrB.ToCString()) == LITERAL(T, "ABC"));
@@ -346,11 +347,11 @@ void TestTemplateString()
 			always_check(TStringView(StrD.ToCString()) == LITERAL(T, "ABCDEFG"));
 			always_check(TStringView(StrE.ToCString()) == LITERAL(T, "ABC"));
 
-			TString<T> StrI(StrC);
-			TString<T> StrII(MoveTemp(StrC));
+			TString StrI(StrC);
+			TString StrII(MoveTemp(StrC));
 
-			TString<T> StrIII = Empty;
-			TString<T> StrIV  = Empty;
+			TString StrIII = Empty;
+			TString StrIV  = Empty;
 
 			StrIII = StrD;
 			StrIV  = MoveTemp(StrD);
@@ -370,7 +371,7 @@ void TestTemplateString()
 		}
 
 		{
-			TString<T> Str = LITERAL(T, "A");
+			TString Str = LITERAL(T, "A");
 
 			always_check(!Str.IsEmpty());
 			always_check(Str.Num() == 1);
@@ -398,7 +399,7 @@ void TestTemplateString()
 		}
 
 		{
-			TString<T> Str = LITERAL(T, "##");
+			TString Str = LITERAL(T, "##");
 
 			Str.Insert(1, LITERAL(T, 'A'));
 
@@ -418,7 +419,7 @@ void TestTemplateString()
 		}
 
 		{
-			TString<T> Str = LITERAL(T, "A");
+			TString Str = LITERAL(T, "A");
 
 			Str.PushBack(LITERAL(T, 'B'));
 

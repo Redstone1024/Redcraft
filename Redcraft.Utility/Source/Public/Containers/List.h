@@ -24,8 +24,8 @@ private:
 
 	struct FNode;
 
-	template <bool bConst>
-	class IteratorImpl;
+	template <bool bConst, typename = TConditional<bConst, const T, T>>
+	class TIteratorImpl;
 
 public:
 
@@ -35,8 +35,8 @@ public:
 	using      Reference =       T&;
 	using ConstReference = const T&;
 
-	using      Iterator = IteratorImpl<false>;
-	using ConstIterator = IteratorImpl<true >;
+	using      Iterator = TIteratorImpl<false>;
+	using ConstIterator = TIteratorImpl<true >;
 
 	using      ReverseIterator = TReverseIterator<     Iterator>;
 	using ConstReverseIterator = TReverseIterator<ConstIterator>;
@@ -553,44 +553,44 @@ private:
 	}
 	ALLOCATOR_WRAPPER_END(AllocatorType, FNode, Impl)
 
-	template <bool bConst>
-	class IteratorImpl
+	template <bool bConst, typename U>
+	class TIteratorImpl
 	{
 	public:
 
-		using ElementType = TConditional<bConst, const T, T>;
+		using ElementType = TRemoveCV<T>;
 
-		FORCEINLINE IteratorImpl() = default;
+		FORCEINLINE TIteratorImpl() = default;
 
-		FORCEINLINE IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
+		FORCEINLINE TIteratorImpl(const TIteratorImpl<false>& InValue) requires (bConst)
 			: Pointer(InValue.Pointer)
 		{ }
 
-		FORCEINLINE IteratorImpl(const IteratorImpl&)            = default;
-		FORCEINLINE IteratorImpl(IteratorImpl&&)                 = default;
-		FORCEINLINE IteratorImpl& operator=(const IteratorImpl&) = default;
-		FORCEINLINE IteratorImpl& operator=(IteratorImpl&&)      = default;
+		FORCEINLINE TIteratorImpl(const TIteratorImpl&)            = default;
+		FORCEINLINE TIteratorImpl(TIteratorImpl&&)                 = default;
+		FORCEINLINE TIteratorImpl& operator=(const TIteratorImpl&) = default;
+		FORCEINLINE TIteratorImpl& operator=(TIteratorImpl&&)      = default;
 
-		NODISCARD friend FORCEINLINE bool operator==(const IteratorImpl& LHS, const IteratorImpl& RHS) { return LHS.Pointer == RHS.Pointer; }
+		NODISCARD friend FORCEINLINE bool operator==(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { return LHS.Pointer == RHS.Pointer; }
 
-		NODISCARD FORCEINLINE ElementType& operator*()  const { return  Pointer->Value; }
-		NODISCARD FORCEINLINE ElementType* operator->() const { return &Pointer->Value; }
+		NODISCARD FORCEINLINE U& operator*()  const { return  Pointer->Value; }
+		NODISCARD FORCEINLINE U* operator->() const { return &Pointer->Value; }
 
-		FORCEINLINE IteratorImpl& operator++() { Pointer = Pointer->NextNode; return *this; }
-		FORCEINLINE IteratorImpl& operator--() { Pointer = Pointer->PrevNode; return *this; }
+		FORCEINLINE TIteratorImpl& operator++() { Pointer = Pointer->NextNode; return *this; }
+		FORCEINLINE TIteratorImpl& operator--() { Pointer = Pointer->PrevNode; return *this; }
 
-		FORCEINLINE IteratorImpl operator++(int) { IteratorImpl Temp = *this; ++*this; return Temp; }
-		FORCEINLINE IteratorImpl operator--(int) { IteratorImpl Temp = *this; --*this; return Temp; }
+		FORCEINLINE TIteratorImpl operator++(int) { TIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE TIteratorImpl operator--(int) { TIteratorImpl Temp = *this; --*this; return Temp; }
 
 	private:
 
 		FNode* Pointer = nullptr;
 
-		FORCEINLINE IteratorImpl(FNode* InPointer)
+		FORCEINLINE TIteratorImpl(FNode* InPointer)
 			: Pointer(InPointer)
 		{ }
 
-		template <bool> friend class IteratorImpl;
+		template <bool, typename> friend class TIteratorImpl;
 
 		friend TList;
 

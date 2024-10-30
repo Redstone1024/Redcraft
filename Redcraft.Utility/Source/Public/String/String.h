@@ -1049,15 +1049,12 @@ private:
 };
 
 template<typename T>
-TString(size_t, T) -> TString<T>;
-
-template<typename T>
 TString(const T*) -> TString<T>;
 
 template<typename T>
 TString(TStringView<T>) -> TString<T>;
 
-template<typename I, typename S>
+template<CForwardIterator I, typename S>
 TString(I, S) -> TString<TIteratorElementType<I>>;
 
 template <typename T>

@@ -16,7 +16,7 @@ class TConstantIterator final
 {
 public:
 
-	using ElementType = T;
+	using ElementType = TRemoveCV<T>;
 
 	FORCEINLINE constexpr TConstantIterator() = default;
 
@@ -68,7 +68,7 @@ class TConstantIterator<T&> final
 {
 public:
 
-	using ElementType = T;
+	using ElementType = TRemoveCV<T>;
 
 	FORCEINLINE constexpr TConstantIterator() = default;
 

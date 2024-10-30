@@ -33,7 +33,7 @@ class TStaticBitset final
 private:
 
 	template <bool bConst>
-	class IteratorImpl;
+	class TIteratorImpl;
 
 public:
 
@@ -43,8 +43,8 @@ public:
 	class      Reference;
 	using ConstReference = bool;
 
-	using      Iterator = IteratorImpl<false>;
-	using ConstIterator = IteratorImpl<true >;
+	using      Iterator = TIteratorImpl<false>;
+	using ConstIterator = TIteratorImpl<true >;
 
 	using      ReverseIterator = TReverseIterator<     Iterator>;
 	using ConstReverseIterator = TReverseIterator<ConstIterator>;
@@ -115,7 +115,7 @@ public:
 
 	/** Move assignment operator. After the move, 'InValue' is guaranteed to be empty. */
 	FORCEINLINE constexpr TStaticBitset& operator=(TStaticBitset&&) = default;
-	
+
 	/** Compares the bits of two bitsets. */
 	NODISCARD friend constexpr bool operator==(const TStaticBitset& LHS, const TStaticBitset& RHS)
 	{
@@ -399,7 +399,7 @@ public:
 		uint64 Result = 0;
 
 		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
-		
+
 		if constexpr (sizeof(BlockType) == sizeof(uint8))
 		{
 			if constexpr (N >  0) Result |= static_cast<uint64>(Impl[0]) <<  0;
@@ -506,7 +506,7 @@ public:
 
 		FORCEINLINE constexpr Reference& operator=(bool InValue) { Data = (Data & ~Mask) | (InValue ? Mask : 0); return *this; }
 
-		FORCEINLINE constexpr Reference& operator=(const Reference& InValue) { return *this = static_cast<bool>(InValue); }
+		FORCEINLINE constexpr Reference& operator=(const Reference& InValue) { *this = static_cast<bool>(InValue); return *this; }
 
 		FORCEINLINE constexpr Reference& operator&=(bool InValue) { Data &= InValue ? -1 : ~Mask; return *this; }
 		FORCEINLINE constexpr Reference& operator|=(bool InValue) { Data |= InValue ? Mask :   0; return *this; }
@@ -532,55 +532,55 @@ public:
 private:
 
 	template <bool bConst>
-	class IteratorImpl
+	class TIteratorImpl
 	{
 	private:
 
 	public:
 
-		using ElementType = TConditional<bConst, const bool, bool>;
+		using ElementType = bool;
 
-		FORCEINLINE constexpr IteratorImpl() = default;
+		FORCEINLINE constexpr TIteratorImpl() = default;
 
 #		if DO_CHECK
-		FORCEINLINE constexpr IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
-			: Owner(InValue.Owner), Pointer(InValue.Pointer), Offset(InValue.Offset)
+		FORCEINLINE constexpr TIteratorImpl(const TIteratorImpl<false>& InValue) requires (bConst)
+			: Owner(InValue.Owner), Pointer(InValue.Pointer), BitOffset(InValue.BitOffset)
 		{ }
 #		else
-		FORCEINLINE constexpr IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
-			: Pointer(InValue.Pointer), Offset(InValue.Offset)
+		FORCEINLINE constexpr TIteratorImpl(const TIteratorImpl<false>& InValue) requires (bConst)
+			: Pointer(InValue.Pointer), BitOffset(InValue.BitOffset)
 		{ }
 #		endif
 
-		FORCEINLINE constexpr IteratorImpl(const IteratorImpl&)            = default;
-		FORCEINLINE constexpr IteratorImpl(IteratorImpl&&)                 = default;
-		FORCEINLINE constexpr IteratorImpl& operator=(const IteratorImpl&) = default;
-		FORCEINLINE constexpr IteratorImpl& operator=(IteratorImpl&&)      = default;
+		FORCEINLINE constexpr TIteratorImpl(const TIteratorImpl&)            = default;
+		FORCEINLINE constexpr TIteratorImpl(TIteratorImpl&&)                 = default;
+		FORCEINLINE constexpr TIteratorImpl& operator=(const TIteratorImpl&) = default;
+		FORCEINLINE constexpr TIteratorImpl& operator=(TIteratorImpl&&)      = default;
 
-		NODISCARD friend FORCEINLINE constexpr bool operator==(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset == RHS.Offset; }
+		NODISCARD friend FORCEINLINE constexpr bool operator==(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.BitOffset == RHS.BitOffset; }
 
-		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset <=> RHS.Offset; }
+		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.BitOffset <=> RHS.BitOffset; }
 
-		NODISCARD FORCEINLINE constexpr      Reference operator*() const requires (!bConst) { CheckThis(true); return Reference(*(Pointer + Offset / BlockWidth), 1ull << Offset % BlockWidth); }
-		NODISCARD FORCEINLINE constexpr ConstReference operator*() const requires ( bConst) { CheckThis(true); return       (*(Pointer + Offset / BlockWidth) & (1ull << Offset % BlockWidth)); }
+		NODISCARD FORCEINLINE constexpr      Reference operator*() const requires (!bConst) { CheckThis(true); return Reference(*(Pointer + BitOffset / BlockWidth), 1ull << BitOffset % BlockWidth); }
+		NODISCARD FORCEINLINE constexpr ConstReference operator*() const requires ( bConst) { CheckThis(true); return       (*(Pointer + BitOffset / BlockWidth) & (1ull << BitOffset % BlockWidth)); }
 
-		NODISCARD FORCEINLINE constexpr auto operator[](ptrdiff Index) const { IteratorImpl Temp = *this + Index; return *Temp; }
+		NODISCARD FORCEINLINE constexpr auto operator[](ptrdiff Index) const { TIteratorImpl Temp = *this + Index; return *Temp; }
 
-		FORCEINLINE constexpr IteratorImpl& operator++() { ++Offset; CheckThis(); return *this; }
-		FORCEINLINE constexpr IteratorImpl& operator--() { --Offset; CheckThis(); return *this; }
+		FORCEINLINE constexpr TIteratorImpl& operator++() { ++BitOffset; CheckThis(); return *this; }
+		FORCEINLINE constexpr TIteratorImpl& operator--() { --BitOffset; CheckThis(); return *this; }
 
-		FORCEINLINE constexpr IteratorImpl operator++(int) { IteratorImpl Temp = *this; ++*this; return Temp; }
-		FORCEINLINE constexpr IteratorImpl operator--(int) { IteratorImpl Temp = *this; --*this; return Temp; }
+		FORCEINLINE constexpr TIteratorImpl operator++(int) { TIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE constexpr TIteratorImpl operator--(int) { TIteratorImpl Temp = *this; --*this; return Temp; }
 
-		FORCEINLINE constexpr IteratorImpl& operator+=(ptrdiff Offset) { this->Offset += Offset; CheckThis(); return *this; }
-		FORCEINLINE constexpr IteratorImpl& operator-=(ptrdiff Offset) { this->Offset -= Offset; CheckThis(); return *this; }
+		FORCEINLINE constexpr TIteratorImpl& operator+=(ptrdiff Offset) { BitOffset += Offset; CheckThis(); return *this; }
+		FORCEINLINE constexpr TIteratorImpl& operator-=(ptrdiff Offset) { BitOffset -= Offset; CheckThis(); return *this; }
 
-		NODISCARD friend FORCEINLINE constexpr IteratorImpl operator+(IteratorImpl Iter, ptrdiff Offset) { IteratorImpl Temp = Iter; Temp += Offset; return Temp; }
-		NODISCARD friend FORCEINLINE constexpr IteratorImpl operator+(ptrdiff Offset, IteratorImpl Iter) { IteratorImpl Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr TIteratorImpl operator+(TIteratorImpl Iter, ptrdiff Offset) { TIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr TIteratorImpl operator+(ptrdiff Offset, TIteratorImpl Iter) { TIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
 
-		NODISCARD FORCEINLINE constexpr IteratorImpl operator-(ptrdiff Offset) const { IteratorImpl Temp = *this; Temp -= Offset; return Temp; }
+		NODISCARD FORCEINLINE constexpr TIteratorImpl operator-(ptrdiff Offset) const { TIteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
-		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const IteratorImpl& LHS, const IteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.Offset - RHS.Offset; }
+		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.BitOffset - RHS.BitOffset; }
 
 	private:
 
@@ -590,16 +590,16 @@ private:
 
 		using BlockPtr = TConditional<bConst, const BlockType*, BlockType*>;
 
-		BlockPtr Pointer = nullptr;
-		size_t   Offset = 0;
+		BlockPtr Pointer   = nullptr;
+		size_t   BitOffset = 0;
 
 #		if DO_CHECK
-		FORCEINLINE constexpr IteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t InOffset)
-			: Owner(InContainer), Pointer(InPointer), Offset(InOffset)
+		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t Offset)
+			: Owner(InContainer), Pointer(InPointer), BitOffset(Offset)
 		{ }
 #		else
-		FORCEINLINE constexpr IteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t InOffset)
-			: Pointer(InPointer), Offset(InOffset)
+		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t Offset)
+			: Pointer(InPointer), BitOffset(Offset)
 		{ }
 #		endif
 
@@ -609,7 +609,7 @@ private:
 			checkf(!(bExceptEnd && Owner->End() == *this), TEXT("Read access violation. Please check IsValidIterator()."));
 		}
 
-		template <bool> friend class IteratorImpl;
+		template <bool> friend class TIteratorImpl;
 
 		friend TStaticBitset;
 

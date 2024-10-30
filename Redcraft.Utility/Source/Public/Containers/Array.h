@@ -23,8 +23,8 @@ class TArray final
 {
 private:
 
-	template <bool bConst>
-	class IteratorImpl;
+	template <bool bConst, typename = TConditional<bConst, const T, T>>
+	class TIteratorImpl;
 
 public:
 
@@ -34,8 +34,8 @@ public:
 	using      Reference =       T&;
 	using ConstReference = const T&;
 
-	using      Iterator = IteratorImpl<false>;
-	using ConstIterator = IteratorImpl<true >;
+	using      Iterator = TIteratorImpl<false>;
+	using ConstIterator = TIteratorImpl<true >;
 
 	using      ReverseIterator = TReverseIterator<     Iterator>;
 	using ConstReverseIterator = TReverseIterator<ConstIterator>;
@@ -975,56 +975,56 @@ private:
 
 private:
 
-	template <bool bConst>
-	class IteratorImpl
+	template <bool bConst, typename U>
+	class TIteratorImpl
 	{
 	public:
 
-		using ElementType = TConditional<bConst, const T, T>;
+		using ElementType = TRemoveCV<T>;
 
-		FORCEINLINE IteratorImpl() = default;
+		FORCEINLINE TIteratorImpl() = default;
 
 #		if DO_CHECK
-		FORCEINLINE IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
+		FORCEINLINE TIteratorImpl(const TIteratorImpl<false>& InValue) requires (bConst)
 			: Owner(InValue.Owner), Pointer(InValue.Pointer)
 		{ }
 #		else
-		FORCEINLINE IteratorImpl(const IteratorImpl<false>& InValue) requires (bConst)
+		FORCEINLINE TIteratorImpl(const TIteratorImpl<false>& InValue) requires (bConst)
 			: Pointer(InValue.Pointer)
 		{ }
 #		endif
 
-		FORCEINLINE IteratorImpl(const IteratorImpl&)            = default;
-		FORCEINLINE IteratorImpl(IteratorImpl&&)                 = default;
-		FORCEINLINE IteratorImpl& operator=(const IteratorImpl&) = default;
-		FORCEINLINE IteratorImpl& operator=(IteratorImpl&&)      = default;
+		FORCEINLINE TIteratorImpl(const TIteratorImpl&)            = default;
+		FORCEINLINE TIteratorImpl(TIteratorImpl&&)                 = default;
+		FORCEINLINE TIteratorImpl& operator=(const TIteratorImpl&) = default;
+		FORCEINLINE TIteratorImpl& operator=(TIteratorImpl&&)      = default;
 
-		NODISCARD friend FORCEINLINE bool operator==(const IteratorImpl& LHS, const IteratorImpl& RHS) { return LHS.Pointer == RHS.Pointer; }
+		NODISCARD friend FORCEINLINE bool operator==(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { return LHS.Pointer == RHS.Pointer; }
 
-		NODISCARD friend FORCEINLINE strong_ordering operator<=>(const IteratorImpl& LHS, const IteratorImpl& RHS) { return LHS.Pointer <=> RHS.Pointer; }
+		NODISCARD friend FORCEINLINE strong_ordering operator<=>(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
-		NODISCARD FORCEINLINE ElementType& operator*()  const { CheckThis(true); return *Pointer; }
-		NODISCARD FORCEINLINE ElementType* operator->() const { CheckThis(true); return  Pointer; }
+		NODISCARD FORCEINLINE U& operator*()  const { CheckThis(true); return *Pointer; }
+		NODISCARD FORCEINLINE U* operator->() const { CheckThis(true); return  Pointer; }
 
-		NODISCARD FORCEINLINE ElementType& operator[](ptrdiff Index) const { IteratorImpl Temp = *this + Index; return *Temp; }
+		NODISCARD FORCEINLINE U& operator[](ptrdiff Index) const { TIteratorImpl Temp = *this + Index; return *Temp; }
 
-		FORCEINLINE IteratorImpl& operator++() { ++Pointer; CheckThis(); return *this; }
-		FORCEINLINE IteratorImpl& operator--() { --Pointer; CheckThis(); return *this; }
+		FORCEINLINE TIteratorImpl& operator++() { ++Pointer; CheckThis(); return *this; }
+		FORCEINLINE TIteratorImpl& operator--() { --Pointer; CheckThis(); return *this; }
 
-		FORCEINLINE IteratorImpl operator++(int) { IteratorImpl Temp = *this; ++*this; return Temp; }
-		FORCEINLINE IteratorImpl operator--(int) { IteratorImpl Temp = *this; --*this; return Temp; }
+		FORCEINLINE TIteratorImpl operator++(int) { TIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE TIteratorImpl operator--(int) { TIteratorImpl Temp = *this; --*this; return Temp; }
 
-		FORCEINLINE IteratorImpl& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
-		FORCEINLINE IteratorImpl& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
+		FORCEINLINE TIteratorImpl& operator+=(ptrdiff Offset) { Pointer += Offset; CheckThis(); return *this; }
+		FORCEINLINE TIteratorImpl& operator-=(ptrdiff Offset) { Pointer -= Offset; CheckThis(); return *this; }
 
-		NODISCARD friend FORCEINLINE IteratorImpl operator+(IteratorImpl Iter, ptrdiff Offset) { IteratorImpl Temp = Iter; Temp += Offset; return Temp; }
-		NODISCARD friend FORCEINLINE IteratorImpl operator+(ptrdiff Offset, IteratorImpl Iter) { IteratorImpl Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE TIteratorImpl operator+(TIteratorImpl Iter, ptrdiff Offset) { TIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE TIteratorImpl operator+(ptrdiff Offset, TIteratorImpl Iter) { TIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
 
-		NODISCARD FORCEINLINE IteratorImpl operator-(ptrdiff Offset) const { IteratorImpl Temp = *this; Temp -= Offset; return Temp; }
+		NODISCARD FORCEINLINE TIteratorImpl operator-(ptrdiff Offset) const { TIteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
-		NODISCARD friend FORCEINLINE ptrdiff operator-(const IteratorImpl& LHS, const IteratorImpl& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
+		NODISCARD friend FORCEINLINE ptrdiff operator-(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
 
-		NODISCARD FORCEINLINE explicit operator TObserverPtr<ElementType[]>() const { CheckThis(); return TObserverPtr<ElementType[]>(Pointer); }
+		NODISCARD FORCEINLINE explicit operator TObserverPtr<U[]>() const { CheckThis(); return TObserverPtr<U[]>(Pointer); }
 
 	private:
 
@@ -1032,14 +1032,14 @@ private:
 		const TArray* Owner = nullptr;
 #		endif
 
-		ElementType* Pointer = nullptr;
+		U* Pointer = nullptr;
 
 #		if DO_CHECK
-		FORCEINLINE IteratorImpl(const TArray* InContainer, ElementType* InPointer)
+		FORCEINLINE TIteratorImpl(const TArray* InContainer, U* InPointer)
 			: Owner(InContainer), Pointer(InPointer)
 		{ }
 #		else
-		FORCEINLINE IteratorImpl(const TArray* InContainer, ElementType* InPointer)
+		FORCEINLINE TIteratorImpl(const TArray* InContainer, U* InPointer)
 			: Pointer(InPointer)
 		{ }
 #		endif
@@ -1050,7 +1050,7 @@ private:
 			checkf(!(bExceptEnd && Owner->End() == *this), TEXT("Read access violation. Please check IsValidIterator()."));
 		}
 
-		template <bool> friend class IteratorImpl;
+		template <bool, typename> friend class TIteratorImpl;
 
 		friend TArray;
 
