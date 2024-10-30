@@ -100,19 +100,13 @@ public:
 	template <typename U, size_t N> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
 	FORCEINLINE constexpr TArrayView(const TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
-	template <typename U, size_t N>
-	FORCEINLINE constexpr TArrayView(const TStaticArray<U, N>&&) = delete;
+	/** Constructs an array view that is a view over the array 'InArray'. */
+	template <typename U, typename Allocator> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
+	FORCEINLINE constexpr TArrayView(TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
-	template <typename U> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(TArray<U>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
-
-	/** Constructs an array view that is a view over the array 'InArray'. */
-	template <typename U> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(const TArray<U>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
-
-	template <typename U>
-	FORCEINLINE constexpr TArrayView(const TArray<U>&&) = delete;
+	template <typename U, typename Allocator> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
+	FORCEINLINE constexpr TArrayView(const TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
 
 	/** Converting constructor from another array view 'InValue'. */
 	template <typename U, size_t N> requires ((Extent == DynamicExtent || N == DynamicExtent || N == Extent) && CConvertibleTo<U(*)[], ElementType(*)[]>)
