@@ -39,14 +39,16 @@ public:
 		: Pointer(InValue.Pointer)
 	{ }
 
-	/** Assigns by copying the content of other. */
+	/** Assigns by copying the content of others. */
 	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper&) = default;
 
-	/** Assigns by copying the content of other. */
+	/** Assigns by copying the content of others. */
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper& operator=(const TReferenceWrapper<T>& InValue)
 	{
 		Pointer = InValue.Pointer;
+
+		return *this;
 	}
 
 	/** @return The stored reference. */
