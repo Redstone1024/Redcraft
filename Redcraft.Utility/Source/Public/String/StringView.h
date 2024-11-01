@@ -11,7 +11,6 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/ConstantIterator.h"
 
@@ -155,7 +154,7 @@ public:
 			Count = Num() - Offset;
 		}
 
-		Memory::CopyAssign(Dest, GetData().Get() + Offset, Count);
+		Memory::CopyAssign(Dest, GetData() + Offset, Count);
 
 		return Count;
 	}
@@ -405,7 +404,7 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr TObserverPtr<const ElementType[]> GetData() const { return NativeData.GetData(); }
+	NODISCARD FORCEINLINE constexpr const ElementType* GetData() const { return NativeData.GetData(); }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return NativeData.Begin(); }

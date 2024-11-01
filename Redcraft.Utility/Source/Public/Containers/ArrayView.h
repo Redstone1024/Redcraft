@@ -11,7 +11,6 @@
 #include "Containers/StaticArray.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -85,7 +84,6 @@ public:
 	template <size_t N> requires (Extent == DynamicExtent || N == Extent)
 	FORCEINLINE constexpr TArrayView(ElementType(&InArray)[N])
 	{
-		// @TODO: Refactor this to use the GetData() function.
 		Impl.Pointer = InArray;
 
 		if constexpr (Extent == DynamicExtent)
@@ -96,19 +94,19 @@ public:
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
 	template <typename U, size_t N> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
+	FORCEINLINE constexpr TArrayView(TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
 	template <typename U, size_t N> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(const TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
+	FORCEINLINE constexpr TArrayView(const TStaticArray<U, N>& InArray) : TArrayView(InArray.GetData(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
 	template <typename U, typename Allocator> requires (CConvertibleTo<U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
+	FORCEINLINE constexpr TArrayView(TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData(), InArray.Num()) { }
 
 	/** Constructs an array view that is a view over the array 'InArray'. */
 	template <typename U, typename Allocator> requires (CConvertibleTo<const U(*)[], ElementType(*)[]>)
-	FORCEINLINE constexpr TArrayView(const TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData().Get(), InArray.Num()) { }
+	FORCEINLINE constexpr TArrayView(const TArray<U, Allocator>& InArray) : TArrayView(InArray.GetData(), InArray.Num()) { }
 
 	/** Converting constructor from another array view 'InValue'. */
 	template <typename U, size_t N> requires ((Extent == DynamicExtent || N == DynamicExtent || N == Extent) && CConvertibleTo<U(*)[], ElementType(*)[]>)
@@ -116,8 +114,7 @@ public:
 	{
 		checkf(Extent == DynamicExtent || Extent == InValue.Num(), TEXT("Illegal view extent. Please check InValue.Num()."));
 
-		// @TODO: Refactor this to use the GetData() function.
-		Impl.Pointer = InValue.GetData().Get();
+		Impl.Pointer = InValue.GetData();
 
 		if constexpr (Extent == DynamicExtent)
 		{
@@ -231,11 +228,11 @@ public:
 
 		if constexpr (!CConst<ElementType>)
 		{
-			return TArrayView<uint8, BytesExtent>(reinterpret_cast<uint8*>(GetData().Get()), NumBytes());
+			return TArrayView<uint8, BytesExtent>(reinterpret_cast<uint8*>(GetData()), NumBytes());
 		}
 		else
 		{
-			return TArrayView<const uint8, BytesExtent>(reinterpret_cast<const uint8*>(GetData().Get()), NumBytes());
+			return TArrayView<const uint8, BytesExtent>(reinterpret_cast<const uint8*>(GetData()), NumBytes());
 		}
 	}
 
@@ -244,11 +241,11 @@ public:
 	{
 		constexpr size_t BytesExtent = Extent != DynamicExtent ? sizeof(ElementType) * Extent : DynamicExtent;
 
-		return TArrayView<const uint8, BytesExtent>(reinterpret_cast<const uint8*>(GetData().Get()), NumBytes());
+		return TArrayView<const uint8, BytesExtent>(reinterpret_cast<const uint8*>(GetData()), NumBytes());
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr TObserverPtr<ElementType[]> GetData() const { return TObserverPtr<ElementType[]>(Impl.Pointer); }
+	NODISCARD FORCEINLINE constexpr ElementType* GetData() const { return Impl.Pointer; }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(this, Impl.Pointer);         }
@@ -318,8 +315,8 @@ public:
 
 		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const Iterator& LHS, const Iterator& RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
-		NODISCARD FORCEINLINE constexpr T& operator*()  const { CheckThis(true); return *Pointer; }
-		NODISCARD FORCEINLINE constexpr T* operator->() const { CheckThis(true); return  Pointer; }
+		NODISCARD FORCEINLINE constexpr T& operator*()  const { CheckThis(true ); return *Pointer; }
+		NODISCARD FORCEINLINE constexpr T* operator->() const { CheckThis(false); return  Pointer; }
 
 		NODISCARD FORCEINLINE constexpr T& operator[](ptrdiff Index) const { Iterator Temp = *this + Index; return *Temp; }
 
@@ -338,8 +335,6 @@ public:
 		NODISCARD FORCEINLINE constexpr Iterator operator-(ptrdiff Offset) const { Iterator Temp = *this; Temp -= Offset; return Temp; }
 
 		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const Iterator& LHS, const Iterator& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
-
-		NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<T[]>() const { CheckThis(); return TObserverPtr<T[]>(Pointer); }
 
 	private:
 

@@ -157,8 +157,8 @@ public:
 
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
 
-	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator*()  const { CheckThis(true); return          *Current;  }
-	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>* operator->() const { CheckThis(true); return ToAddress(Current); }
+	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator*()  const { CheckThis(true ); return          *Current;  }
+	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>* operator->() const { CheckThis(false); return ToAddress(Current); }
 
 	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator[](ptrdiff) const { return *this; }
 

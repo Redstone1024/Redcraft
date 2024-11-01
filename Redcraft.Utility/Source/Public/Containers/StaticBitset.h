@@ -435,8 +435,8 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr TObserverPtr<      BlockType[]> GetData()       { return TObserverPtr<      BlockType[]>(Impl); }
-	NODISCARD FORCEINLINE constexpr TObserverPtr<const BlockType[]> GetData() const { return TObserverPtr<const BlockType[]>(Impl); }
+	NODISCARD FORCEINLINE constexpr       BlockType* GetData()       { return Impl; }
+	NODISCARD FORCEINLINE constexpr const BlockType* GetData() const { return Impl; }
 
 	/** @return The iterator to the first or end bit. */
 	NODISCARD FORCEINLINE constexpr      Iterator Begin()       { return      Iterator(this, Impl, 0);     }

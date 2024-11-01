@@ -9,7 +9,6 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/ConstantIterator.h"
 

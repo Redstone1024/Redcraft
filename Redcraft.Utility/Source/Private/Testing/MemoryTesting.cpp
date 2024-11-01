@@ -6,7 +6,6 @@
 #include "Memory/UniquePointer.h"
 #include "Memory/SharedPointer.h"
 #include "Memory/MemoryOperator.h"
-#include "Memory/ObserverPointer.h"
 #include "Memory/InOutPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -26,7 +25,6 @@ void TestMemory()
 	TestPointerTraits();
 	TestUniquePointer();
 	TestSharedPointer();
-	TestObserverPointer();
 	TestInOutPointer();
 }
 
@@ -1045,71 +1043,6 @@ void TestSharedPointer()
 		TempC = TempA;
 	}
 
-}
-
-void TestObserverPointer()
-{
-	{
-		int32 IntA;
-		int32 IntB;
-
-		TObserverPtr<int32> TempA;
-		TObserverPtr<int32> TempB = nullptr;
-		TObserverPtr<int32> TempC(&IntA);
-		TObserverPtr<int32> TempD(TempC);
-
-		TempA = TempC;
-		TempB = MakeObserver<int32>(&IntB);
-
-		always_check(TempA == TempC);
-		always_check(TempB == &IntB);
-		always_check(TempB.IsValid());
-
-		always_check(TempA.Release() == &IntA);
-		always_check(!TempA.IsValid());
-
-		TempA.Reset(&IntA);
-
-		always_check(TempA == &IntA);
-
-		always_check(GetTypeHash(TempA) == GetTypeHash(&IntA));
-
-		Swap(TempA, TempB);
-
-		always_check(TempA == &IntB);
-		always_check(TempB == &IntA);
-	}
-
-	{
-		int32 IntA[4];
-		int32 IntB[4];
-
-		TObserverPtr<int32[]> TempA;
-		TObserverPtr<int32[]> TempB = nullptr;
-		TObserverPtr<int32[]> TempC(IntA);
-		TObserverPtr<int32[]> TempD(TempC);
-
-		TempA = TempC;
-		TempB = MakeObserver<int32[]>(IntB);
-
-		always_check(TempA == TempC);
-		always_check(TempB == IntB);
-		always_check(TempB.IsValid());
-
-		always_check(TempA.Release() == IntA);
-		always_check(!TempA.IsValid());
-
-		TempA.Reset(IntA);
-
-		always_check(TempA == IntA);
-
-		always_check(GetTypeHash(TempA) == GetTypeHash(&IntA));
-
-		Swap(TempA, TempB);
-
-		always_check(TempA == IntB);
-		always_check(TempB == IntA);
-	}
 }
 
 void TestInOutPointer()

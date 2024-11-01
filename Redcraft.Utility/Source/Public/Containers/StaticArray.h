@@ -8,7 +8,6 @@
 #include "Containers/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -67,8 +66,8 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(_); }
-	NODISCARD FORCEINLINE constexpr TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(_); }
+	NODISCARD FORCEINLINE constexpr       ElementType* GetData()       { return _; }
+	NODISCARD FORCEINLINE constexpr const ElementType* GetData() const { return _; }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE constexpr      Iterator Begin()       { return      Iterator(this, _);         }
@@ -151,8 +150,8 @@ private:
 
 		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
-		NODISCARD FORCEINLINE constexpr U& operator*()  const { CheckThis(true); return *Pointer; }
-		NODISCARD FORCEINLINE constexpr U* operator->() const { CheckThis(true); return  Pointer; }
+		NODISCARD FORCEINLINE constexpr U& operator*()  const { CheckThis(true ); return *Pointer; }
+		NODISCARD FORCEINLINE constexpr U* operator->() const { CheckThis(false); return  Pointer; }
 
 		NODISCARD FORCEINLINE constexpr U& operator[](ptrdiff Index) const { TIteratorImpl Temp = *this + Index; return *Temp; }
 
@@ -171,8 +170,6 @@ private:
 		NODISCARD FORCEINLINE constexpr TIteratorImpl operator-(ptrdiff Offset) const { TIteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
 		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
-
-		NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<U[]>() const { CheckThis(); return TObserverPtr<U[]>(Pointer); }
 
 	private:
 

@@ -9,7 +9,6 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/ConstantIterator.h"
 
@@ -256,20 +255,20 @@ public:
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
 
 			return *this;
 		}
 
 		if (GetNum(IL) <= Num())
 		{
-			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), GetNum(IL));
+			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), GetNum(IL));
 			Memory::Destruct(Impl.Pointer + GetNum(IL), Num() - GetNum(IL));
 		}
 		else if (GetNum(IL) <= Max())
 		{
-			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL).Get(), Num());
-			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL).Get() + Num(), GetNum(IL) - Num());
+			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
+			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL) + Num(), GetNum(IL) - Num());
 		}
 		else check_no_entry();
 
@@ -869,8 +868,8 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return TObserverPtr<      ElementType[]>(Impl.Pointer); }
-	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return TObserverPtr<const ElementType[]>(Impl.Pointer); }
+	NODISCARD FORCEINLINE       ElementType* GetData()       { return Impl.Pointer; }
+	NODISCARD FORCEINLINE const ElementType* GetData() const { return Impl.Pointer; }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(this, Impl.Pointer);         }
@@ -1003,8 +1002,8 @@ private:
 
 		NODISCARD friend FORCEINLINE strong_ordering operator<=>(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { return LHS.Pointer <=> RHS.Pointer; }
 
-		NODISCARD FORCEINLINE U& operator*()  const { CheckThis(true); return *Pointer; }
-		NODISCARD FORCEINLINE U* operator->() const { CheckThis(true); return  Pointer; }
+		NODISCARD FORCEINLINE U& operator*()  const { CheckThis(true ); return *Pointer; }
+		NODISCARD FORCEINLINE U* operator->() const { CheckThis(false); return  Pointer; }
 
 		NODISCARD FORCEINLINE U& operator[](ptrdiff Index) const { TIteratorImpl Temp = *this + Index; return *Temp; }
 
@@ -1023,8 +1022,6 @@ private:
 		NODISCARD FORCEINLINE TIteratorImpl operator-(ptrdiff Offset) const { TIteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
 		NODISCARD friend FORCEINLINE ptrdiff operator-(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Pointer - RHS.Pointer; }
-
-		NODISCARD FORCEINLINE explicit operator TObserverPtr<U[]>() const { CheckThis(); return TObserverPtr<U[]>(Pointer); }
 
 	private:
 

@@ -3,44 +3,43 @@
 #include "CoreTypes.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/Swappable.h"
-#include "Memory/ObserverPointer.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 /** @return The pointer to the container element storage. */
-template <typename T> requires (requires(T&& Container) { { Container.GetData() } -> CTObserverPtr; })
-FORCEINLINE constexpr decltype(auto) GetData(T&& Container)
+template <typename T> requires (requires(T&& Container) { { Container.GetData() } -> CPointer; })
+FORCEINLINE constexpr auto GetData(T&& Container)
 {
 	return Container.GetData();
 }
 
 /** Overloads the GetData algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr TObserverPtr<      T[]> GetData(      T(&  Container)[N]) { return TObserverPtr<      T[]>(Container); }
-template <typename T, size_t N> FORCEINLINE constexpr TObserverPtr<      T[]> GetData(      T(&& Container)[N]) { return TObserverPtr<      T[]>(Container); }
-template <typename T, size_t N> FORCEINLINE constexpr TObserverPtr<const T[]> GetData(const T(&  Container)[N]) { return TObserverPtr<const T[]>(Container); }
-template <typename T, size_t N> FORCEINLINE constexpr TObserverPtr<const T[]> GetData(const T(&& Container)[N]) { return TObserverPtr<const T[]>(Container); }
+template <typename T, size_t N> FORCEINLINE constexpr       T* GetData(      T(&  Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr       T* GetData(      T(&& Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr const T* GetData(const T(&  Container)[N]) { return Container; }
+template <typename T, size_t N> FORCEINLINE constexpr const T* GetData(const T(&& Container)[N]) { return Container; }
 
 /** Overloads the GetData algorithm for initializer_list. */
 template <typename T>
-FORCEINLINE constexpr TObserverPtr<const T[]> GetData(initializer_list<T> Container)
+FORCEINLINE constexpr const T* GetData(initializer_list<T> Container)
 {
-	return TObserverPtr<const T[]>(Container.begin());
+	return Container.begin();
 }
 
 /** @return The number of elements in the container. */
 template <typename T> requires (requires(T&& Container) { { Container.Num() } -> CConvertibleTo<size_t>; })
-FORCEINLINE constexpr decltype(auto) GetNum(T&& Container)
+FORCEINLINE constexpr auto GetNum(T&& Container)
 {
 	return Container.Num();
 }
 
 /** Overloads the GetNum algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(&  Container)[N]) { return N; }
-template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(&& Container)[N]) { return N; }
-template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(&  Container)[N]) { return N; }
-template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(&& Container)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(& )[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(      T(&&)[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(& )[N]) { return N; }
+template <typename T, size_t N> FORCEINLINE constexpr size_t GetNum(const T(&&)[N]) { return N; }
 
 /** Overloads the GetNum algorithm for initializer_list. */
 template <typename T>
@@ -69,7 +68,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T(&A)[N])
 	{
 		Result = HashCombine(Result, GetTypeHash(A[Index]));
 	}
-	
+
 	return Result;
 }
 

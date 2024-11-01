@@ -12,7 +12,6 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -129,9 +128,9 @@ public:
 	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) <=> TStringView<ElementType>(RHS); }
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, ElementType  RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
 	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
-	NODISCARD friend FORCEINLINE auto operator<=>(ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(      ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
 	NODISCARD friend FORCEINLINE auto operator<=>(const ElementType* LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
 
 	/** Inserts 'InValue' before 'Index' in the string. */
@@ -663,8 +662,8 @@ public:
 
 				NAMESPACE_STD::mbstate_t State = NAMESPACE_STD::mbstate_t();
 
-				const char* BeginFrom = View.GetData().Get();
-				const char* EndFrom = BeginFrom + View.Num();
+				const char* BeginFrom = ToAddress(View.Begin());
+				const char* EndFrom   = ToAddress(View.End());
 
 				wchar Buffer[FWChar::MaxCodeUnitLength];
 
@@ -711,8 +710,8 @@ public:
 
 				NAMESPACE_STD::mbstate_t State = NAMESPACE_STD::mbstate_t();
 
-				const wchar* BeginFrom = View.GetData().Get();
-				const wchar* EndFrom = BeginFrom + View.Num();
+				const wchar* BeginFrom = ToAddress(View.Begin());
+				const wchar* EndFrom   = ToAddress(View.End());
 
 				char Buffer[FChar::MaxCodeUnitLength];
 
@@ -836,7 +835,7 @@ public:
 			//   wchar -> unicodechar -> ... for Linux
 			else if constexpr (PLATFORM_LINUX && CSameAs<W, wchar>)
 			{
-				return Self(Self, TStringView(reinterpret_cast<const u32char*>(View.GetData().Get()), View.Num()));
+				return Self(Self, TStringView(reinterpret_cast<const u32char*>(View.GetData()), View.Num()));
 			}
 
 			// unicodechar u32char -> u8char
@@ -930,7 +929,7 @@ public:
 
 				if constexpr (PLATFORM_LINUX && (CSameAs<T, char> || CSameAs<T, wchar>))
 				{
-					return Self(Self, TStringView(reinterpret_cast<const wchar*>(View.GetData().Get()), View.Num()));
+					return Self(Self, TStringView(reinterpret_cast<const wchar*>(View.GetData()), View.Num()));
 				}
 				else NativeData.Insert(NativeData.End(), View.Begin(), View.End());
 
@@ -967,7 +966,7 @@ public:
 	}
 
 	/** @return The non-modifiable standard C character string version of the string. */
-	NODISCARD FORCEINLINE const ElementType* ToCString() const { return NativeData.GetData().Get(); }
+	NODISCARD FORCEINLINE const ElementType* ToCString() const { return GetData(); }
 
 	/** @return The target-encoded string from the T-encoded string. */
 	NODISCARD FORCEINLINE auto ToString()        const { return EncodeTo<char>();        }
@@ -990,8 +989,8 @@ public:
 	FORCEINLINE void Shrink() { NativeData.Shrink(); }
 
 	/** @return The pointer to the underlying character storage. */
-	NODISCARD FORCEINLINE TObserverPtr<      ElementType[]> GetData()       { return NativeData.GetData(); }
-	NODISCARD FORCEINLINE TObserverPtr<const ElementType[]> GetData() const { return NativeData.GetData(); }
+	NODISCARD FORCEINLINE       ElementType* GetData()       { return NativeData.GetData(); }
+	NODISCARD FORCEINLINE const ElementType* GetData() const { return NativeData.GetData(); }
 
 	/** @return The iterator to the first or end character. */
 	NODISCARD FORCEINLINE      Iterator Begin()       { return NativeData.Begin(); }
@@ -1068,7 +1067,7 @@ using FU32String     = TString<u32char>;
 using FUnicodeString = TString<unicodechar>;
 
 template <CCharType T> template <typename Allocator> constexpr TStringView<T>::TStringView(const TString<ElementType, Allocator>& InString)
-	: TStringView(InString.GetData().Get(), InString.Num()) { }
+	: TStringView(InString.GetData(), InString.Num()) { }
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

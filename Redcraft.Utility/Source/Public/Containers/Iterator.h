@@ -7,7 +7,6 @@
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
-#include "Memory/ObserverPointer.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -403,7 +402,7 @@ public:
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*() const requires (CDereferenceable<const IteratorType>) { CheckThis(true); return *Current; }
 
-	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType> operator->() const requires (CContiguousIterator<IteratorType>) { CheckThis(true); return ToAddress(Current); }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType> operator->() const requires (CContiguousIterator<IteratorType>) { CheckThis(false); return ToAddress(Current); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
 
@@ -427,8 +426,6 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
-
-	NODISCARD FORCEINLINE constexpr explicit operator TObserverPtr<ElementType[]>() const requires (CContiguousIterator<IteratorType>) { CheckThis(); return TObserverPtr<ElementType[]>(Current); }
 
 	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return Current; }
 	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return Current; }
