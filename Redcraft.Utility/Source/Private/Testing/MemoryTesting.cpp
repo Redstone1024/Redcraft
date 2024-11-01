@@ -18,6 +18,7 @@ NAMESPACE_BEGIN(Testing)
 
 void TestMemory()
 {
+	TestAddress();
 	TestAlignment();
 	TestMemoryBuffer();
 	TestMemoryMalloc();
@@ -27,6 +28,41 @@ void TestMemory()
 	TestSharedPointer();
 	TestObserverPointer();
 	TestInOutPointer();
+}
+
+NAMESPACE_UNNAMED_BEGIN
+
+template <typename T>
+struct TTestStructA
+{
+	T* Pad;
+	T* Data;
+
+	TTestStructA(T* InData) : Pad(nullptr), Data(InData) { }
+	~TTestStructA() { delete Data; }
+	T** operator&() { return &Data; }
+};
+
+template <typename T>
+int32 TestFunctionB(TTestStructA<T>*)
+{
+	return 0;
+}
+
+template <typename T>
+int32 TestFunctionB(T**)
+{
+	return 1;
+}
+
+NAMESPACE_UNNAMED_END
+
+void TestAddress()
+{
+	TTestStructA<int32> ObjectA(new int32(3));
+	always_check(TestFunctionB(&ObjectA) == 1);
+	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
+	always_check(AddressOf(TestAddress) == &TestAddress);
 }
 
 void TestAlignment()
@@ -47,7 +83,7 @@ void TestAlignment()
 	int32 AlignedArbitrary16 = Memory::AlignArbitrary(Unaligned, 16);
 	int32 AlignedArbitrary32 = Memory::AlignArbitrary(Unaligned, 32);
 	int32 AlignedArbitrary64 = Memory::AlignArbitrary(Unaligned, 64);
-	
+
 	always_check((Memory::IsAligned(Aligned8,   8) && Aligned8  > Unaligned));
 	always_check((Memory::IsAligned(Aligned16, 16) && Aligned16 > Unaligned));
 	always_check((Memory::IsAligned(Aligned32, 32) && Aligned32 > Unaligned));
@@ -75,7 +111,7 @@ void TestMemoryBuffer()
 	uint8* PtrB = reinterpret_cast<uint8*>(&TempB);
 	uint8* PtrC = reinterpret_cast<uint8*>(&TempC);
 	uint8* PtrD = reinterpret_cast<uint8*>(&TempD);
-	
+
 	TempA = 0x0123456789ABCDEF;
 	TempB = 0x0123456789AB0000;
 	Memory::Memmove(PtrA, PtrA + 2, 6);
@@ -295,7 +331,7 @@ void TestUniquePointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -310,7 +346,7 @@ void TestUniquePointer()
 		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
 		always_check(FCounter::Num == TempNum + 1);
 		delete PtrX;
-		
+
 		TempNum = FCounter::Num;
 		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
 		always_check(FCounter::Num == TempNum + 1);
@@ -331,7 +367,7 @@ void TestUniquePointer()
 		Temp[0] = 15;
 		always_check(Temp.Get()[0] = 15);
 	}
-	
+
 	     FCounter::Num = 0;
 	FArrayDeleter::Num = 0;
 
@@ -348,7 +384,7 @@ void TestUniquePointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -363,7 +399,7 @@ void TestUniquePointer()
 		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
 		always_check(FCounter::Num == TempNum + 4);
 		delete [] PtrX;
-		
+
 		TempNum = FCounter::Num;
 		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
 		always_check(FCounter::Num == TempNum + 4);
@@ -378,7 +414,7 @@ void TestUniquePointer()
 
 	always_check(     FCounter::Num == 0);
 	always_check(FArrayDeleter::Num == 4);
-	
+
 	{
 		TUniquePtr<int32> Temp = MakeUnique<int32>();
 		*Temp = 15;
@@ -401,7 +437,7 @@ void TestUniquePointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -416,7 +452,7 @@ void TestUniquePointer()
 		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter);
 		always_check(FCounter::Num == TempNum + 1);
 		delete PtrX;
-		
+
 		TempNum = FCounter::Num;
 		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter, FDeleter());
 		always_check(FCounter::Num == TempNum + 1);
@@ -466,7 +502,7 @@ void TestUniquePointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -481,7 +517,7 @@ void TestUniquePointer()
 		FCounter* PtrX = TempB.ReleaseAndReset(new FCounter[4]);
 		always_check(FCounter::Num == TempNum + 4);
 		delete [] PtrX;
-		
+
 		TempNum = FCounter::Num;
 		FCounter* PtrY = TempB.ReleaseAndReset(new FCounter[4], FArrayDeleter());
 		always_check(FCounter::Num == TempNum + 4);
@@ -544,13 +580,13 @@ void TestSharedPointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
 		TempB.Reset(new FCounter, FDeleter());
 		always_check(FCounter::Num == TempNum);
-		
+
 		TempNum = FCounter::Num;
 		TempC.Reset(new FCounter, FDeleter());
 		always_check(FCounter::Num == TempNum);
@@ -562,7 +598,7 @@ void TestSharedPointer()
 		always_check(TempA.GetDeleter<FDeleter>() == nullptr);
 		always_check(TempC.GetDeleter<FDeleter>() != nullptr);
 		always_check(TempC.GetDeleter<FDeleter>()->Num == 2);
-		
+
 		TSharedRef<FCounter> TempD(MoveTemp(TempB));
 	}
 
@@ -591,7 +627,7 @@ void TestSharedPointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -632,7 +668,7 @@ void TestSharedPointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -688,7 +724,7 @@ void TestSharedPointer()
 		always_check(TempC != TempB);
 		always_check((TempA <=> nullptr) == strong_ordering::greater);
 		always_check((TempC <=> TempB) != strong_ordering::equal);
-		
+
 		int32 TempNum;
 
 		TempNum = FCounter::Num;
@@ -1080,12 +1116,12 @@ void TestInOutPointer()
 {
 	{
 		TUniquePtr<int64> Temp;
-		
+
 		[](int64** InPtr) { *InPtr = new int64; } (OutPtr(Temp));
 		always_check(Temp.IsValid());
 
 		Temp.Reset();
-		
+
 		[](int64** InPtr) { *InPtr = new int64; } (OutPtr(Temp, TDefaultDelete<int64>()));
 		always_check(Temp.IsValid());
 	}

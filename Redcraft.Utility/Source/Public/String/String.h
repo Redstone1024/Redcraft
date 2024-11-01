@@ -117,22 +117,22 @@ public:
 	FORCEINLINE TString& operator=(TString&& InValue) { NativeData = MoveTemp(InValue.NativeData); InValue.NativeData.PushBack(LITERAL(ElementType, '\0')); return *this; }
 
 	/** Compares the contents of two strings. */
-	FORCEINLINE NODISCARD friend bool operator==(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) == TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) == TStringView<ElementType>(RHS); }
 
 	/** Compares the contents of a string and a character. */
-	FORCEINLINE NODISCARD friend bool operator==(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) == RHS; }
-	FORCEINLINE NODISCARD friend bool operator==(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) == RHS; }
-	FORCEINLINE NODISCARD friend bool operator==(      ElementType  LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
-	FORCEINLINE NODISCARD friend bool operator==(const ElementType* LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) == RHS; }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) == RHS; }
+	NODISCARD friend FORCEINLINE bool operator==(      ElementType  LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const ElementType* LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	FORCEINLINE NODISCARD friend auto operator<=>(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) <=> TStringView<ElementType>(RHS); }
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	FORCEINLINE NODISCARD friend auto operator<=>(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
-	FORCEINLINE NODISCARD friend auto operator<=>(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
-	FORCEINLINE NODISCARD friend auto operator<=>(      ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
-	FORCEINLINE NODISCARD friend auto operator<=>(const ElementType* LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, ElementType  RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
+	NODISCARD friend FORCEINLINE auto operator<=>(ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const ElementType* LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
 
 	/** Inserts 'InValue' before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, ElementType InValue)

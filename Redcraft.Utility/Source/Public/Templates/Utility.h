@@ -89,24 +89,6 @@ FORCEINLINE constexpr T Exchange(T& A, U&& B)
 template <typename T>
 TAddRValueReference<T> DeclVal();
 
-/** Obtains the actual address of the object or function arg, even in presence of overloaded operator&. */
-template <typename T> requires (CObject<T>)
-FORCEINLINE constexpr T* AddressOf(T& Object)
-{
-	return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(Object)));
-}
-
-/** Obtains the actual address of the object or function arg, even in presence of overloaded operator&. */
-template <typename T> requires (!CObject<T>)
-FORCEINLINE constexpr T* AddressOf(T& Object)
-{
-	return &Object;
-}
-
-/** Rvalue overload is deleted to prevent taking the address of const rvalues. */
-template <typename T>
-const T* AddressOf(const T&&) = delete;
-
 struct FIgnore final
 {
 	template <typename T>
@@ -116,7 +98,7 @@ struct FIgnore final
 /**
  * An object of unspecified type such that any value can be assigned to it with no effect.
  * Intended for use with Tie when unpacking a TTuple, as placeholders for unused arguments
- * or using Ignore to avoid warnings about unused return values ​​from NODISCARD functions.
+ * or using Ignore to avoid warnings about unused return values from NODISCARD functions.
  */
 inline constexpr FIgnore Ignore;
 
@@ -137,7 +119,7 @@ inline constexpr FIgnore Ignore;
 
 /**
  * This class is used to create a set of overloaded functions.
- * 
+ *
  *	Visit(TOverloaded {
  *		[](auto A)           { ... },
  *		[](double A)         { ... },

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Address.h"
 #include "Memory/Allocator.h"
 #include "Containers/Array.h"
 #include "Templates/Utility.h"
@@ -58,7 +59,7 @@ public:
 	{
 		checkf(Extent == DynamicExtent || Extent == InCount, TEXT("Illegal range count. Please check InCount."));
 
-		Impl.Pointer = AddressOf(*InFirst);
+		Impl.Pointer = ToAddress(InFirst);
 
 		if constexpr (Extent == DynamicExtent)
 		{
@@ -72,7 +73,7 @@ public:
 	{
 		checkf(Extent == DynamicExtent || Extent == InLast - InFirst, TEXT("Illegal range iterator. Please check InLast - InFirst."));
 
-		Impl.Pointer = AddressOf(*InFirst);
+		Impl.Pointer = ToAddress(InFirst);
 
 		if constexpr (Extent == DynamicExtent)
 		{
@@ -84,7 +85,8 @@ public:
 	template <size_t N> requires (Extent == DynamicExtent || N == Extent)
 	FORCEINLINE constexpr TArrayView(ElementType(&InArray)[N])
 	{
-		Impl.Pointer = AddressOf(InArray[0]);
+		// @TODO: Refactor this to use the GetData() function.
+		Impl.Pointer = InArray;
 
 		if constexpr (Extent == DynamicExtent)
 		{
@@ -114,7 +116,8 @@ public:
 	{
 		checkf(Extent == DynamicExtent || Extent == InValue.Num(), TEXT("Illegal view extent. Please check InValue.Num()."));
 
-		Impl.Pointer = AddressOf(InValue[0]);
+		// @TODO: Refactor this to use the GetData() function.
+		Impl.Pointer = InValue.GetData().Get();
 
 		if constexpr (Extent == DynamicExtent)
 		{

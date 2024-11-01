@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Address.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/Optional.h"
@@ -31,7 +32,7 @@ public:
 
 	/** Copies content of other into a new instance. */
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper&) = default;
-	
+
 	/** Converting copy constructor. */
 	template <typename T = ReferencedType> requires (CConvertibleTo<T&, ReferencedType&>)
 	FORCEINLINE constexpr TReferenceWrapper(const TReferenceWrapper<T>& InValue)

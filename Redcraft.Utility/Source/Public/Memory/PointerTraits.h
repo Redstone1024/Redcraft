@@ -7,7 +7,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 /** The class template provides the standardized way to access certain properties of pointer-like types. */
-template <typename T>
+template <typename>
 struct TPointerTraits
 {
 	static constexpr bool bIsPointer = false;
@@ -21,7 +21,7 @@ struct TPointerTraits<T*>
 
 	using PointerType = T*;
 	using ElementType = T;
-	
+
 	static FORCEINLINE constexpr ElementType* ToAddress(PointerType InPtr)
 	{
 		return InPtr;

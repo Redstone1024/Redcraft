@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Address.h"
 #include "Templates/Utility.h"
 #include "Containers/Iterator.h"
 #include "Miscellaneous/Compare.h"
@@ -45,7 +46,8 @@ public:
 
 	FORCEINLINE constexpr TConstantIterator& operator=(TConstantIterator&&) requires (CMoveAssignable<T>) = default;
 
-	NODISCARD FORCEINLINE constexpr const T& operator*() const { return Value; }
+	NODISCARD FORCEINLINE constexpr const T& operator*()  const { return           Value;  }
+	NODISCARD FORCEINLINE constexpr const T* operator->() const { return AddressOf(Value); }
 
 	FORCEINLINE constexpr TConstantIterator& operator++() { return *this; }
 
@@ -89,7 +91,8 @@ public:
 	template <typename U> requires (CConvertibleTo<U*, T*>)
 	FORCEINLINE constexpr TConstantIterator& operator=(const TConstantIterator<U>& InValue) { Ptr = InValue.Ptr; return *this; }
 
-	NODISCARD FORCEINLINE constexpr const T& operator*() const { return *Ptr; }
+	NODISCARD FORCEINLINE constexpr const T& operator*()  const { return *Ptr; }
+	NODISCARD FORCEINLINE constexpr const T* operator->() const { return  Ptr; }
 
 	FORCEINLINE constexpr TConstantIterator& operator++() { return *this; }
 
@@ -154,8 +157,8 @@ public:
 
 	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
 
-	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator*()  const { CheckThis(true); return *Current;               }
-	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>* operator->() const { CheckThis(true); return AddressOf(operator*()); }
+	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator*()  const { CheckThis(true); return          *Current;  }
+	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>* operator->() const { CheckThis(true); return ToAddress(Current); }
 
 	NODISCARD FORCEINLINE constexpr const TRemoveReference<T>& operator[](ptrdiff) const { return *this; }
 

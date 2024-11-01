@@ -9,6 +9,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_BEGIN(Testing)
 
 REDCRAFTUTILITY_API void TestMemory();
+REDCRAFTUTILITY_API void TestAddress();
 REDCRAFTUTILITY_API void TestAlignment();
 REDCRAFTUTILITY_API void TestMemoryBuffer();
 REDCRAFTUTILITY_API void TestMemoryMalloc();

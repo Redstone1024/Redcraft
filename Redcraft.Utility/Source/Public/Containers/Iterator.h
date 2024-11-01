@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Memory/Address.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "Templates/Noncopyable.h"
@@ -128,7 +129,7 @@ concept CContiguousIterator = CRandomAccessIterator<I> && CLValueReference<TIter
 	&& CSameAs<TIteratorElementType<I>, TRemoveCVRef<TIteratorReferenceType<I>>>
 	&& requires(I& Iter)
 	{
-		{ AddressOf(*Iter) } -> CSameAs<TAddPointer<TIteratorReferenceType<I>>>;
+		{ ToAddress(Iter) } -> CSameAs<TAddPointer<TIteratorReferenceType<I>>>;
 	};
 
 static_assert(CContiguousIterator<int32*>);
@@ -173,8 +174,8 @@ public:
 	template <CBidirectionalIterator J> requires (CSizedSentinelFor<J, IteratorType>)
 	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<J, IteratorType> operator<=>(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()  const { IteratorType Temp = GetBase(); return *--Temp; }
-	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->() const { return AddressOf(operator*());                 }
+	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*()  const { IteratorType Temp = GetBase(); return          *--Temp;  }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType>   operator->() const { IteratorType Temp = GetBase(); return ToAddress(--Temp); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { return GetBase()[-Index - 1]; }
 
@@ -402,7 +403,7 @@ public:
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator*() const requires (CDereferenceable<const IteratorType>) { CheckThis(true); return *Current; }
 
-	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType> operator->() const requires (CContiguousIterator<IteratorType>) { CheckThis(true); return AddressOf(operator*()); }
+	NODISCARD FORCEINLINE constexpr TIteratorPointerType<IteratorType> operator->() const requires (CContiguousIterator<IteratorType>) { CheckThis(true); return ToAddress(Current); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReferenceType<IteratorType> operator[](ptrdiff Index) const requires (CRandomAccessIterator<IteratorType>) { TCountedIterator Temp = *this + Index; return *Temp; }
 

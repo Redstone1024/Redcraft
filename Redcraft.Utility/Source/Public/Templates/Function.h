@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Memory/Memory.h"
+#include "Memory/Address.h"
 #include "Templates/Meta.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
@@ -96,7 +97,7 @@ class alignas(16) TFunctionStorage<false, bIsUnique>
 public:
 
 	FORCEINLINE constexpr TFunctionStorage() = default;
-	
+
 	TFunctionStorage(const TFunctionStorage& InValue) requires (!bIsUnique)
 		: RTTI(InValue.RTTI)
 	{
@@ -151,7 +152,7 @@ public:
 	{
 		Destroy();
 	}
-	
+
 	TFunctionStorage& operator=(const TFunctionStorage& InValue) requires (!bIsUnique)
 	{
 		if (&InValue == this) UNLIKELY return *this;
@@ -322,7 +323,7 @@ private:
 
 		using FMoveConstruct = void(*)(void*, void*);
 		using FDestruct      = void(*)(void*       );
-		
+
 		const FMoveConstruct MoveConstruct;
 		const FDestruct      Destruct;
 
@@ -343,7 +344,7 @@ private:
 			)
 		{ }
 	};
-	
+
 	struct FCopyableRTTI : public FMovableRTTI
 	{
 		using FCopyConstruct = void(*)(void*, const void*);
@@ -363,7 +364,7 @@ private:
 	};
 
 	using FRTTI = TConditional<bIsUnique, FMovableRTTI, FCopyableRTTI>;
-	
+
 	static_assert(alignof(FRTTI) >= 4);
 
 	static constexpr uintptr_t RepresentationMask = 3;
@@ -375,7 +376,7 @@ private:
 		Small   = 2, // InternalStorage
 		Big     = 3, // ExternalStorage
 	};
-	
+
 	union
 	{
 		uint8 InternalStorage[64 - sizeof(uintptr) - sizeof(uintptr)];
@@ -387,7 +388,7 @@ private:
 
 	FORCEINLINE constexpr ERepresentation GetRepresentation() const { return    static_cast<ERepresentation>(RTTI &  RepresentationMask); }
 	FORCEINLINE constexpr    const FRTTI& GetRTTI()           const { return *reinterpret_cast<const FRTTI*>(RTTI & ~RepresentationMask); }
-	
+
 	FORCEINLINE constexpr void* GetStorage()
 	{
 		switch (GetRepresentation())
@@ -399,7 +400,7 @@ private:
 		default: check_no_entry();     return nullptr;
 		}
 	}
-	
+
 	FORCEINLINE constexpr const void* GetStorage() const
 	{
 		switch (GetRepresentation())
@@ -461,7 +462,7 @@ public:
 
 	using ResultType = Ret;
 	using ArgumentType = TTypeSequence<Ts...>;
-	
+
 	FORCEINLINE constexpr TFunctionImpl()                                = default;
 	FORCEINLINE constexpr TFunctionImpl(const TFunctionImpl&)            = default;
 	FORCEINLINE constexpr TFunctionImpl(TFunctionImpl&&)                 = default;
@@ -648,7 +649,7 @@ public:
 	{
 		Impl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
-	
+
 	/**
 	 * Constructs an TFunction with initial content an function object of type TDecay<T>,
 	 * direct-non-list-initialized from IL, Forward<Ts>(Args)....
@@ -694,7 +695,7 @@ public:
 		Impl::Destroy();
 		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
-	
+
 	/**
 	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
 	 * First destroys the current function object (if any) by Reset(), then constructs an object of type
@@ -790,7 +791,7 @@ public:
 		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
 		else Impl::template Emplace<T>(Forward<T>(InValue));
 	}
-	
+
 	/**
 	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
 	 * direct-non-list-initialized from Forward<Ts>(Args)....
@@ -801,7 +802,7 @@ public:
 	{
 		Impl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
-	
+
 	/**
 	 * Constructs an TUniqueFunction with initial content an function object of type TDecay<T>,
 	 * direct-non-list-initialized from IL, Forward<Ts>(Args)....
@@ -844,7 +845,7 @@ public:
 		using DecayedType = TDecay<T>;
 		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
-	
+
 	/**
 	 * Changes the function object to one of type TDecay<T> constructed from the arguments.
 	 * First destroys the current function object (if any) by Reset(), then constructs an object of type

@@ -70,7 +70,7 @@ void TestReferenceWrapper()
 	always_check(TempB(1, 1, 1) == 1);
 	TempB.Get() = &TestFunctionA;
 	always_check(TempA(1, 1, 1) == 3);
-	
+
 	int32 ArrayA[3] = { 1, 2, 3 };
 	TReferenceWrapper<int32> ArrayB[3] = { ArrayA[1], ArrayA[0], ArrayA[2] };
 	always_check(ArrayB[0] == 2);
@@ -164,7 +164,7 @@ void TestOptional()
 		always_check(GetTypeHash(MakeOptional<int32>(114)) == GetTypeHash(MakeOptional<int32>(114)));
 		always_check(GetTypeHash(MakeOptional<int32>(114)) != GetTypeHash(MakeOptional<int32>(514)));
 	}
-	
+
 	{
 		TOptional<uint8> TempA = Invalid;
 		TOptional<int16> TempB = 16;
@@ -257,7 +257,7 @@ void TestVariant()
 	{
 		using VariantType = TVariant<int32, int64, float64>;
 		VariantType TempArray[] = { 10, 15ll, 1.5 };
-		
+
 		for(auto&& TempA : TempArray)
 		{
 			Visit(
@@ -273,7 +273,7 @@ void TestVariant()
 			);
 
 			VariantType TempB = Visit([](auto&& A) -> VariantType { return A + A; }, TempA);
- 
+
 			Visit(
 				[](auto&& A, auto&& B)
 				{
@@ -287,7 +287,7 @@ void TestVariant()
 			);
 
 			Visit([](auto&& A) { A *= 2; }, TempA);
-			
+
 			Visit(
 				[](auto&& A)
 				{
@@ -300,7 +300,7 @@ void TestVariant()
 				TempA
 			);
 		}
- 
+
 		for (auto&& TempA : TempArray) {
 			Visit(
 				TOverloaded
@@ -414,7 +414,7 @@ void TestVariant()
 		auto ReturnRD = Visit<int32>(TestQualifiers, MoveTemp(TempRD));
 		always_check((CSameAs<int32, decltype(ReturnRD)>));
 	}
-	
+
 	{
 		always_check(GetTypeHash(TVariant<int32, float>(114)) == GetTypeHash(TVariant<int32, float>(114)));
 		always_check(GetTypeHash(TVariant<int32, float>(114)) != GetTypeHash(TVariant<int32, float>(514)));
@@ -569,16 +569,16 @@ void TestAny()
 		FAny TempD(InPlaceType<FFloating>, 0.0);
 		FAny TempG(TempA);
 		FAny TempH(TempC);
-		
+
 		FAny TempK, TempL, TempM, TempN;
 		TempK = TempA;
 		TempL = TempD;
 		TempM = FAny(FFloating(0.0));
 		TempN = FAny(Invalid);
-		
+
 		TempL = FFloating(303.0);
 		TempM = FFloating(404.0);
-		
+
 		FAny TempO;
 		TempO.Emplace<FFloating>(202.0);
 		TempO.Emplace<FFloating>(404.0);
@@ -692,7 +692,7 @@ void TestTuple()
 	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const          int32, char>&&>().GetValue<0>()), const volatile int32&&>));
 	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<      volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
 	always_check((CSameAs<decltype(DeclVal<const volatile TTuple<const volatile int32, char>&&>().GetValue<0>()), const volatile int32&&>));
-	
+
 	always_check((CSameAs<decltype(DeclVal<               TTuple<               int32&, char>&>().GetValue<0>()),                int32&>));
 	always_check((CSameAs<decltype(DeclVal<               TTuple<const          int32&, char>&>().GetValue<0>()), const          int32&>));
 	always_check((CSameAs<decltype(DeclVal<               TTuple<      volatile int32&, char>&>().GetValue<0>()),       volatile int32&>));
@@ -773,7 +773,7 @@ void TestTuple()
 	always_check((CSameAs<TTupleElement<0, const volatile TTuple<double, float&, char&&>>, const volatile double>));
 	always_check((CSameAs<TTupleElement<1, const volatile TTuple<double, float&, char&&>>,                float&>));
 	always_check((CSameAs<TTupleElement<2, const volatile TTuple<double, float&, char&&>>,                char&&>));
-	
+
 	always_check((TTupleIndex<double,                TTuple<double, float&, char&&>> == 0));
 	always_check((TTupleIndex<float&,                TTuple<double, float&, char&&>> == 1));
 	always_check((TTupleIndex<char&&,                TTuple<double, float&, char&&>> == 2));
@@ -816,7 +816,7 @@ void TestTuple()
 		Temp.Fourteenth = 0;
 		Temp.Fifteenth = 0;
 		Temp.Sixteenth = 0;
-		
+
 		always_check(CDefaultConstructible<Type>);
 		always_check(CTriviallyDefaultConstructible<Type>);
 		always_check(CConstructibleFrom<Type>);
@@ -906,7 +906,7 @@ void TestTuple()
 	{
 		int32 TempO = 15;
 		TTuple<int32&&, const int64> TempA = { MoveTemp(TempO), 514 };
-		
+
 		TempA.Apply(
 			[](auto&& A, auto&& B)
 			{
@@ -916,7 +916,7 @@ void TestTuple()
 				always_check((CSameAs<decltype(B), const int64&>));
 			}
 		);
-		
+
 		MoveTemp(TempA).Apply(
 			[](auto&& A, auto&& B)
 			{
@@ -943,7 +943,7 @@ void TestTuple()
 		);
 
 		VisitTuple([](auto&& A) { A++; }, TempB);
-		
+
 		VisitTuple(
 			[]<typename T> (T&& A)
 			{
@@ -1146,7 +1146,7 @@ void TestFunction()
 //		TFunction<void()>       ObjectG = MoveTemp(UniqueA);
 		TUniqueFunction<void()> UniqueG = MoveTemp(UniqueA);
 	}
-	
+
 	{
 		TFunctionRef<void()>       RefA = [] { };
 		TFunction<void()>       ObjectA = [] { };
@@ -1163,7 +1163,7 @@ void TestFunction()
 //		TFunctionRef<void()>       RefD;    RefD = UniqueA;
 //		TFunction<void()>       ObjectD; ObjectD = UniqueA;
 //		TUniqueFunction<void()> UniqueD; UniqueD = UniqueA;
-		
+
 //		TFunctionRef<void()>       RefE;    RefE = MoveTemp(RefA);
 //		TFunction<void()>       ObjectE; ObjectE = MoveTemp(RefA);
 //		TUniqueFunction<void()> UniqueE; UniqueE = MoveTemp(RefA);
@@ -1279,7 +1279,7 @@ void TestAtomic()
 {
 	{
 		TAtomic<int32> TempA;
-	
+
 		always_check(TempA.bIsAlwaysLockFree);
 		always_check((TempA = 11) == 11);
 		TempA.Store(12);
@@ -1510,42 +1510,10 @@ void TestPropagateConst()
 	}
 }
 
-NAMESPACE_UNNAMED_BEGIN
-
-template <typename T>
-struct TTestStructA
-{
-	T* Pad;
-	T* Data;
-
-	TTestStructA(T* InData) : Pad(nullptr), Data(InData) { }
-	~TTestStructA() { delete Data; }
-	T** operator&() { return &Data; }
-};
-
-template <typename T>
-int32 TestFunctionB(TTestStructA<T>* Ptr)
-{
-	return 0;
-}
-
-template <typename T>
-int32 TestFunctionB(T** Ptr)
-{
-	return 1;
-}
-
-NAMESPACE_UNNAMED_END
-
 void TestMiscTemplates()
 {
-	TTestStructA<int32> ObjectA(new int32(3));
-	always_check(TestFunctionB(&ObjectA) == 1);
-	always_check(TestFunctionB(AddressOf(ObjectA)) == 0);
-	always_check(AddressOf(TestMiscTemplates) == &TestMiscTemplates);
-
 	struct FTestRetainedRef { explicit FTestRetainedRef(TRetainedRef<const int64> InRef) { } };
-	
+
 	int64 IntA;
 	FTestRetainedRef TempA(IntA);
 //	FTestRetainedRef TempB(114514);
