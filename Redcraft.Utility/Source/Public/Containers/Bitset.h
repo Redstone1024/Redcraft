@@ -931,7 +931,7 @@ public:
 private:
 
 	template <bool bConst>
-	class TIteratorImpl
+	class TIteratorImpl final
 	{
 	public:
 

@@ -553,7 +553,7 @@ private:
 	ALLOCATOR_WRAPPER_END(AllocatorType, FNode, Impl)
 
 	template <bool bConst, typename U>
-	class TIteratorImpl
+	class TIteratorImpl final
 	{
 	public:
 

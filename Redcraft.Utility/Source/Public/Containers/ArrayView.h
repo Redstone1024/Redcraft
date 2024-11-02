@@ -299,7 +299,7 @@ private:
 
 public:
 
-	class Iterator
+	class Iterator final
 	{
 	public:
 

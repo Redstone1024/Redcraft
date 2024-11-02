@@ -975,7 +975,7 @@ private:
 private:
 
 	template <bool bConst, typename U>
-	class TIteratorImpl
+	class TIteratorImpl final
 	{
 	public:
 
