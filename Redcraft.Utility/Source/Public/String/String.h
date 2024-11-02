@@ -22,7 +22,7 @@ template <CCharType T>
 using TDefaultStringAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(T)>;
 
 template <CCharType T, CAllocator<T> Allocator = TDefaultStringAllocator<T>>
-class TString final
+class TString
 {
 public:
 

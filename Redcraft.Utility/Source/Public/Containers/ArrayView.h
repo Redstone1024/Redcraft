@@ -25,7 +25,7 @@ inline constexpr size_t DynamicExtent = INDEX_NONE;
  * is known at compile-time and encoded in the type, or a dynamic extent.
  */
 template <CObject T, size_t InExtent = DynamicExtent>
-class TArrayView final
+class TArrayView
 {
 public:
 

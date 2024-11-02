@@ -721,7 +721,7 @@ public:
 private:
 
 	NAMESPACE_PRIVATE::TUniqueStorage<T, E> Storage;
-	
+
 	template <typename OtherT, CInvocable<TRemoveExtent<OtherT>*>  OtherE> requires (CObject<OtherT> && !CBoundedArray<OtherT> && (CDestructible<OtherE> || CLValueReference<OtherE>))
 	friend class TUniquePtr;
 

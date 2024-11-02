@@ -17,7 +17,7 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <CAllocatableObject T, CMultipleAllocator<T> Allocator = FHeapAllocator>
-class TList final
+class TList
 {
 private:
 

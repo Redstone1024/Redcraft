@@ -28,7 +28,7 @@ NAMESPACE_PRIVATE_END
 #if 1
 
 template <size_t N, CUnsignedIntegral InBlockType = NAMESPACE_PRIVATE::TDefaultBitsetBlockType<N>> requires (!CSameAs<InBlockType, bool>)
-class TStaticBitset final
+class TStaticBitset
 {
 private:
 

@@ -18,7 +18,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 /** Dynamic array. The elements are stored contiguously, which means that elements can be accessed not only through iterators, but also using offsets to regular pointers to elements. */
 template <CAllocatableObject T, CAllocator<T> Allocator = FHeapAllocator>
-class TArray final
+class TArray
 {
 private:
 

@@ -16,7 +16,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 /** TStaticArray is a container that encapsulates fixed size arrays. */
 template <CObject T, size_t N>
-struct TStaticArray final
+struct TStaticArray
 {
 private:
 
