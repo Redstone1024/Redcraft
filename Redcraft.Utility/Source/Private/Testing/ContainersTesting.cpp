@@ -29,7 +29,7 @@ void TestArrayTemplate()
 		TArray<int32, Allocator> ArrayB(4);
 		TArray<int32, Allocator> ArrayC(4, 4);
 		TArray<int32, Allocator> ArrayD(ArrayC);
-		TArray<int32, Allocator> ArrayE(MoveTemp(ArrayB));
+		TArray<int32, Allocator> ArrayE(MoveTemp(ArrayC));
 		TArray<int32, Allocator> ArrayF({ 0, 1, 2, 3 });
 
 		TArray<int32, Allocator> ArrayG;
@@ -40,9 +40,9 @@ void TestArrayTemplate()
 		ArrayH = MoveTemp(ArrayE);
 		ArrayI = { 0, 1, 2, 3 };
 
-		always_check((ArrayC == TArray<int32, Allocator>({ 4, 4, 4, 4 })));
 		always_check((ArrayD == TArray<int32, Allocator>({ 4, 4, 4, 4 })));
 		always_check((ArrayG == TArray<int32, Allocator>({ 4, 4, 4, 4 })));
+		always_check((ArrayH == TArray<int32, Allocator>({ 4, 4, 4, 4 })));
 		always_check((ArrayF == TArray<int32, Allocator>({ 0, 1, 2, 3 })));
 		always_check((ArrayI == TArray<int32, Allocator>({ 0, 1, 2, 3 })));
 	}

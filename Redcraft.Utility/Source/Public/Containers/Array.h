@@ -189,7 +189,9 @@ public:
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
 
-			Impl.Pointer = InValue.Impl.Pointer;
+			Impl.ArrayNum = InValue.Num();
+			Impl.ArrayMax = InValue.Max();
+			Impl.Pointer  = InValue.Impl.Pointer;
 
 			InValue.Impl.ArrayNum = 0;
 			InValue.Impl.ArrayMax = InValue.Impl->CalculateSlackReserve(InValue.Num());
