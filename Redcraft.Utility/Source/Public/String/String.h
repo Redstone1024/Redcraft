@@ -5,47 +5,93 @@
 #include "Containers/Array.h"
 #include "String/StringView.h"
 #include "Templates/Utility.h"
-#include "Templates/TypeHash.h"
 #include "Templates/Optional.h"
 #include "Templates/Container.h"
 #include "Containers/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Miscellaneous/Compare.h"
-#include "Memory/MemoryOperator.h"
+#include "Templates/Noncopyable.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-template <CCharType T>
-using TDefaultStringAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(T)>;
+NAMESPACE_PRIVATE_BEGIN
 
-template <CCharType T, CAllocator<T> Allocator = TDefaultStringAllocator<T>>
-class TString
+template <typename T>
+class TCStringFromTString final : FNoncopyable
 {
 public:
 
-	using ElementType   = typename TArray<T, Allocator>::ElementType;
-	using AllocatorType = typename TArray<T, Allocator>::AllocatorType;
+	FORCEINLINE TCStringFromTString(const T* InPtr, bool bInDelete)
+		: Ptr(InPtr), bDelete(bInDelete)
+	{ }
 
-	using      Reference = typename TArray<T, Allocator>::     Reference;
-	using ConstReference = typename TArray<T, Allocator>::ConstReference;
+	FORCEINLINE TCStringFromTString(TCStringFromTString&& InValue)
+		: Ptr(InValue.Ptr), bDelete(Exchange(InValue.bDelete, false))
+	{ }
 
-	using      Iterator = typename TArray<T, Allocator>::     Iterator;
-	using ConstIterator = typename TArray<T, Allocator>::ConstIterator;
+	FORCEINLINE ~TCStringFromTString()
+	{
+		if (bDelete) delete[] Ptr;
+	}
 
-	using      ReverseIterator = typename TArray<T, Allocator>::     ReverseIterator;
-	using ConstReverseIterator = typename TArray<T, Allocator>::ConstReverseIterator;
+	FORCEINLINE TCStringFromTString& operator=(TCStringFromTString&& InValue)
+	{
+		if (bDelete) delete[] Ptr;
+
+		Ptr = InValue.Ptr;
+
+		bDelete = Exchange(InValue.bDelete, false);
+
+		return *this;
+	}
+
+	NODISCARD FORCEINLINE operator const T*() const { return Ptr; }
+
+private:
+
+	const T* Ptr;
+	bool bDelete;
+
+};
+
+NAMESPACE_PRIVATE_END
+
+/** The default string allocator that uses SSO and can be placed right into FAny without dynamically allocating memory. */
+template <CCharType T>
+using TDefaultStringAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(T)>;
+
+/** A string class that stores and manipulates sequences of characters. Unlike std::basic_string, it is not null-terminated. */
+template <CCharType T, CAllocator<T> Allocator = TDefaultStringAllocator<T>>
+class TString : public TArray<T, Allocator>
+{
+private:
+
+	using Super = TArray<T, Allocator>;
+
+public:
+
+	using ElementType   = typename Super::ElementType;
+	using AllocatorType = typename Super::AllocatorType;
+
+	using      Reference = typename Super::     Reference;
+	using ConstReference = typename Super::ConstReference;
+
+	using      Iterator = typename Super::     Iterator;
+	using ConstIterator = typename Super::ConstIterator;
+
+	using      ReverseIterator = typename Super::     ReverseIterator;
+	using ConstReverseIterator = typename Super::ConstReverseIterator;
 
 	static_assert(CContiguousIterator<     Iterator>);
 	static_assert(CContiguousIterator<ConstIterator>);
 
 	/** Default constructor. Constructs an empty string. */
-	FORCEINLINE TString() : NativeData({ LITERAL(ElementType, '\0') }) { }
+	FORCEINLINE TString() = default;
 
 	/** Constructs the string with 'Count' copies of characters with 'InValue'. */
-	FORCEINLINE TString(size_t Count, ElementType InChar) : TString(MakeCountedConstantIterator(InChar, Count), DefaultSentinel) { }
+	FORCEINLINE TString(size_t Count, ElementType InChar) : Super(Count, InChar) { }
 
 	/** Constructs a string with the contents of the range ['InPtr', 'InPtr' + 'Count'). */
 	FORCEINLINE TString(const ElementType* InPtr, size_t Count) : TString(TStringView<ElementType>(InPtr, Count))
@@ -68,52 +114,22 @@ public:
 
 	/** Constructs the string with the contents of the range ['First', 'Last'). */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	TString(I First, S Last)
-	{
-		if constexpr (CForwardIterator<I>)
-		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last.")); }
-
-			const size_t Count = Iteration::Distance(First, Last);
-
-			NativeData.SetNum(Count + 1);
-
-			for (size_t Index = 0; Index != Count; ++Index)
-			{
-				NativeData[Index] = ElementType(*First++);
-			}
-
-			NativeData.Back() = LITERAL(ElementType, '\0');
-		}
-		else
-		{
-			while (First != Last)
-			{
-				NativeData.PushBack(ElementType(*First));
-				++First;
-			}
-
-			NativeData.PushBack(LITERAL(ElementType, '\0'));
-		}
-	}
+	FORCEINLINE TString(I First, S Last) : Super(MoveTemp(First), MoveTemp(Last)) { }
 
 	/** Copy constructor. Constructs the string with the copy of the contents of 'InValue'. */
 	FORCEINLINE TString(const TString&) = default;
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
-	FORCEINLINE TString(TString&& InValue) : NativeData(MoveTemp(InValue.NativeData)) { InValue.NativeData.PushBack(LITERAL(ElementType, '\0')); }
+	FORCEINLINE TString(TString&&) = default;
 
 	/** Constructs the string with the contents of the initializer list. */
 	FORCEINLINE TString(initializer_list<ElementType> IL) : TString(Iteration::Begin(IL), Iteration::End(IL)) { }
-
-	/** Destructs the string. The destructors of the characters are called and the used storage is deallocated. */
-	FORCEINLINE ~TString() = default;
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
 	FORCEINLINE TString& operator=(const TString&) = default;
 
 	/** Move assignment operator. After the move, 'InValue' is guaranteed to be empty. */
-	FORCEINLINE TString& operator=(TString&& InValue) { NativeData = MoveTemp(InValue.NativeData); InValue.NativeData.PushBack(LITERAL(ElementType, '\0')); return *this; }
+	FORCEINLINE TString& operator=(TString&&) = default;
 
 	/** Compares the contents of two strings. */
 	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) == TStringView<ElementType>(RHS); }
@@ -136,47 +152,47 @@ public:
 	/** Inserts 'InValue' before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, ElementType InValue)
 	{
-		checkf(Index <= Num(), TEXT("Illegal index. Please check Index <= Num()."));
+		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
-		return Insert(Begin() + Index, InValue);
+		return Insert(this->Begin() + Index, InValue);
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the string. */
 	FORCEINLINE Iterator Insert(ConstIterator Iter, ElementType InValue)
 	{
-		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.Insert(Iter, InValue);
+		return Super::Insert(Iter, InValue);
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, size_t Count, ElementType InValue)
 	{
-		checkf(Index <= Num(), TEXT("Illegal index. Please check Index <= Num()."));
+		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
-		return Insert(Begin() + Index, Count, InValue);
+		return Insert(this->Begin() + Index, Count, InValue);
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the string. */
 	FORCEINLINE Iterator Insert(ConstIterator Iter, size_t Count, ElementType InValue)
 	{
-		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.Insert(Iter, Count, InValue);
+		return Super::Insert(Iter, Count, InValue);
 	}
 
 	/** Inserts characters from the 'View' before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, TStringView<ElementType> View)
 	{
-		checkf(Index <= Num(), TEXT("Illegal index. Please check Index <= Num()."));
+		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
-		return Insert(Begin() + Index, View);
+		return Insert(this->Begin() + Index, View);
 	}
 
 	/** Inserts characters from the 'View' before 'Iter' in the string. */
 	FORCEINLINE Iterator Insert(ConstIterator Iter, TStringView<ElementType> View)
 	{
-		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return Insert(Iter, View.Begin(), View.End());
 	}
@@ -185,74 +201,71 @@ public:
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
 	FORCEINLINE Iterator Insert(size_t Index, I First, S Last)
 	{
-		checkf(Index <= Num(), TEXT("Illegal index. Please check Index <= Num()."));
+		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
-		return Insert(Begin() + Index, MoveTemp(First), MoveTemp(Last));
+		return Insert(this->Begin() + Index, MoveTemp(First), MoveTemp(Last));
 	}
 
 	/** Inserts characters from the range ['First', 'Last') before 'Iter'. */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
 	FORCEINLINE Iterator Insert(ConstIterator Iter, I First, S Last)
 	{
-		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.Insert(Iter, MoveTemp(First), MoveTemp(Last));
+		return Super::Insert(Iter, MoveTemp(First), MoveTemp(Last));
 	}
 
 	/** Inserts characters from the initializer list before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, initializer_list<ElementType> IL)
 	{
-		checkf(Index <= Num(), TEXT("Illegal index. Please check Index <= Num()."));
+		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
-		return Insert(Begin() + Index, IL);
+		return Insert(this->Begin() + Index, IL);
 	}
 
 	/** Inserts characters from the initializer list before 'Iter' in the string. */
 	FORCEINLINE Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL)
 	{
-		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.Insert(Iter, IL);
+		return Super::Insert(Iter, IL);
 	}
 
 	/** Erases the character at 'Index' in the string. But it may change the order of characters. */
 	FORCEINLINE Iterator Erase(size_t Index, bool bAllowShrinking = true)
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index < Num()."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index < Num()."));
 
-		return Erase(Begin() + Index, bAllowShrinking);
+		return Erase(this->Begin() + Index, bAllowShrinking);
 	}
 
 	/** Erases the character at 'Iter' in the string. But it may change the order of characters. */
 	FORCEINLINE Iterator Erase(ConstIterator Iter, bool bAllowShrinking = true)
 	{
-		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(Iter) && Iter != this->End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.StableErase(Iter, bAllowShrinking);
+		return Super::StableErase(Iter, bAllowShrinking);
 	}
 
 	/** Erases 'CountToErase' characters starting from 'Index' in the string. But it may change the order of characters. */
 	FORCEINLINE Iterator Erase(size_t Index, size_t CountToErase, bool bAllowShrinking = true)
 	{
-		checkf(Index <= Num() && Index + CountToErase <= Num(), TEXT("Illegal substring range. Please check Index and CountToErase."));
+		checkf(Index <= this->Num() && Index + CountToErase <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToErase."));
 
-		return Erase(Begin() + Index, Begin() + Index + CountToErase, bAllowShrinking);
+		return Erase(this->Begin() + Index, this->Begin() + Index + CountToErase, bAllowShrinking);
 
 	}
 
 	/** Erases the characters in the range ['First', 'Last') in the string. But it may change the order of characters. */
 	FORCEINLINE Iterator Erase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true)
 	{
-		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return NativeData.StableErase(First, Last, bAllowShrinking);
+		return Super::StableErase(First, Last, bAllowShrinking);
 	}
 
-	/** Appends the given character value to the end of the string. */
-	FORCEINLINE void PushBack(ElementType InValue) { NativeData.Back() = InValue; NativeData.PushBack(LITERAL(ElementType, '\0')); }
-
-	/** Removes the last character of the string. The string cannot be empty. */
-	FORCEINLINE void PopBack(bool bAllowShrinking = true) { NativeData.PopBack(bAllowShrinking); NativeData.Back() = LITERAL(ElementType, '\0'); }
+	/** Here, the 'Erase' is already stable and there is no need to provide 'StableErase'. */
+	void StableErase(...) = delete;
 
 	/** Appends 'Count' copies of the 'InValue' to the end of the string. */
 	TString& Append(size_t Count, ElementType InChar) { return Append(MakeCountedConstantIterator(InChar, Count), DefaultSentinel); }
@@ -270,22 +283,18 @@ public:
 
 			const size_t Count = Iteration::Distance(First, Last);
 
-			const size_t CurrentNum = Num();
+			const size_t CurrentNum = this->Num();
 
-			NativeData.SetNum(CurrentNum + Count + 1);
+			this->SetNum(CurrentNum + Count);
 
 			for (size_t Index = CurrentNum; Index != CurrentNum + Count; ++Index)
 			{
-				NativeData[Index] = ElementType(*First++);
+				(*this)[Index] = ElementType(*First++);
 			}
-
-			NativeData.Back() = LITERAL(ElementType, '\0');
 		}
 		else
 		{
-			NativeData.Insert(NativeData.End() - 1, MoveTemp(First), MoveTemp(Last));
-
-			NativeData.PushBack(LITERAL(ElementType, '\0'));
+			Insert(this->End(), MoveTemp(First), MoveTemp(Last));
 		}
 
 		return *this;
@@ -373,15 +382,15 @@ public:
 	/** Replace the substring [Index, Index + CountToReplace) with 'Count' copies of the 'InChar'. */
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, size_t Count, ElementType InChar)
 	{
-		checkf(Index <= Num() && Index + CountToReplace <= Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
-		return Replace(Begin() + Index, Begin() + Index + CountToReplace, Count, InChar);
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, Count, InChar);
 	}
 
 	/** Replace the substring ['First', 'Last') with 'Count' copies of the 'InChar'. */
 	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, size_t Count, ElementType InChar)
 	{
-		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return Replace(First, Last, MakeCountedConstantIterator(InChar, Count), DefaultSentinel);
 	}
@@ -389,15 +398,15 @@ public:
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the 'View'. */
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, TStringView<ElementType> View)
 	{
-		checkf(Index <= Num() && Index + CountToReplace <= Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
-		return Replace(Begin() + Index, Begin() + Index + CountToReplace, View);
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, View);
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the 'View'. */
 	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, TStringView<ElementType> View)
 	{
-		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return Replace(First, Last, View.Begin(), View.End());
 	}
@@ -406,62 +415,61 @@ public:
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, I InString, S Sentinel)
 	{
-		checkf(Index <= Num() && Index + CountToReplace <= Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
-		return Replace(Begin() + Index, Begin() + Index + CountToReplace, MoveTemp(InString), MoveTemp(Sentinel));
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, MoveTemp(InString), MoveTemp(Sentinel));
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the range ['InString', 'Sentinel'). */
 	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
 	TString& Replace(ConstIterator First, ConstIterator Last, I InString, S Sentinel)
 	{
-		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		if constexpr (CForwardIterator<I>)
 		{
 			if (CSizedSentinelFor<S, I>) { checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last.")); }
 
-			const size_t InsertIndex = First - Begin();
+			const size_t InsertIndex = First - this->Begin();
 
 			const size_t RemoveCount = Iteration::Distance(First, Last);
 			const size_t InsertCount = Iteration::Distance(InString, Sentinel);
 
-			const size_t NumToReset = Num() - RemoveCount + InsertCount;
+			const size_t NumToReset = this->Num() - RemoveCount + InsertCount;
 
 			if (InsertCount < RemoveCount)
 			{
 				for (size_t Index = InsertIndex; Index != InsertIndex + InsertCount; ++Index)
 				{
-					NativeData[Index] = ElementType(*InString++);
+					(*this)[Index] = ElementType(*InString++);
 				}
 
 				for (size_t Index = InsertIndex + InsertCount; Index != NumToReset; ++Index)
 				{
-					NativeData[Index] = NativeData[Index + (RemoveCount - InsertCount)];
+					(*this)[Index] = (*this)[Index + (RemoveCount - InsertCount)];
 				}
 
-				NativeData.SetNum(NumToReset + 1);
+				this->SetNum(NumToReset);
 			}
 			else
 			{
-				NativeData.SetNum(NumToReset + 1);
+				this->SetNum(NumToReset);
 
-				for (size_t Index = Num(); Index != InsertIndex + InsertCount - 1; --Index)
+				for (size_t Index = this->Num(); Index != InsertIndex + InsertCount - 1; --Index)
 				{
-					NativeData[Index - 1] = NativeData[Index + (RemoveCount - InsertCount) - 1];
+					(*this)[Index - 1] = (*this)[Index + (RemoveCount - InsertCount) - 1];
 				}
 
 				for (size_t Index = InsertIndex; Index != InsertIndex + InsertCount; ++Index)
 				{
-					NativeData[Index] = ElementType(*InString++);
+					(*this)[Index] = ElementType(*InString++);
 				}
 			}
-
-			NativeData.Back() = LITERAL(ElementType, '\0');
 		}
 		else
 		{
 			TString Temp(MoveTemp(First), MoveTemp(Last));
+
 			return Replace(First, Last, Temp.Begin(), Temp.End());
 		}
 
@@ -471,15 +479,15 @@ public:
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the initializer list. */
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, initializer_list<ElementType> IL)
 	{
-		checkf(Index <= Num() && Index + CountToReplace <= Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
-		return Replace(Begin() + Index, Begin() + Index + CountToReplace, IL);
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, IL);
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the initializer list. */
 	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, initializer_list<ElementType> IL)
 	{
-		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		return Replace(First, Last, Iteration::Begin(IL), Iteration::End(IL));
 	}
@@ -487,7 +495,7 @@ public:
 	/** Obtains a string that is a view over the 'Count' characters of this string view starting at 'Offset'.  */
 	FORCEINLINE TString Substr(size_t Offset = 0, size_t Count = DynamicExtent) const
 	{
-		checkf(Offset <= Num() && Offset + Count <= Num(), TEXT("Illegal substring range. Please check Offset and Count."));
+		checkf(Offset <= this->Num() && Offset + Count <= this->Num(), TEXT("Illegal substring range. Please check Offset and Count."));
 
 		return TStringView<ElementType>(*this).Substr(Offset, Count);
 	}
@@ -497,7 +505,7 @@ public:
 	{
 		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
 
-		checkf(Offset <= Num() && (Count == DynamicExtent || Offset + Count <= Num()), TEXT("Illegal subview range. Please check Offset and Count."));
+		checkf(Offset <= this->Num() && (Count == DynamicExtent || Offset + Count <= this->Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
 		return TStringView<ElementType>(*this).Copy(Dest, Count, Offset);
 	}
@@ -507,7 +515,7 @@ public:
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD size_t Find(TStringView<ElementType> View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).Find(View, Index);
 	}
@@ -515,7 +523,7 @@ public:
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD size_t Find(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).Find(Char, Index);
 	}
@@ -524,7 +532,7 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).Find(Forward<F>(InPredicate), Index);
 	}
@@ -532,7 +540,7 @@ public:
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD size_t RFind(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).RFind(View, Index);
 	}
@@ -540,7 +548,7 @@ public:
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).RFind(Char, Index);
 	}
@@ -549,7 +557,7 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).RFind(Forward<F>(InPredicate), Index);
 	}
@@ -557,7 +565,7 @@ public:
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindFirstOf(TStringView<ElementType> View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindFirstOf(View, Index);
 	}
@@ -565,7 +573,7 @@ public:
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindFirstOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindFirstOf(Char, Index);
 	}
@@ -573,7 +581,7 @@ public:
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindLastOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindLastOf(View, Index);
 	}
@@ -581,7 +589,7 @@ public:
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindLastOf(Char, Index);
 	}
@@ -589,7 +597,7 @@ public:
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindFirstNotOf(TStringView<ElementType> View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindFirstNotOf(View, Index);
 	}
@@ -597,7 +605,7 @@ public:
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindFirstNotOf(Char, Index);
 	}
@@ -605,7 +613,7 @@ public:
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindLastNotOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindLastNotOf(View, Index);
 	}
@@ -613,7 +621,7 @@ public:
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return TStringView<ElementType>(*this).FindLastNotOf(Char, Index);
 	}
@@ -636,7 +644,7 @@ public:
 	template <CCharType U>
 	bool DecodeFrom(TStringView<U> View, bool bAllowShrinking = true)
 	{
-		NativeData.Reset(false);
+		this->Reset(false);
 
 		auto AppendToResult = [this]<typename W>(auto& Self, TStringView<W> View) -> bool
 		{
@@ -645,7 +653,7 @@ public:
 			if constexpr (CSameAs<W, char> && CSameAs<T, char> || CSameAs<W, wchar> && CSameAs<T, wchar>)
 			{
 				// Unable to determine whether the user-preferred locale encoded character is valid or not, it is assumed to be valid.
-				NativeData.Insert(NativeData.End(), View.Begin(), View.End());
+				Insert(this->End(), View.Begin(), View.End());
 
 				return true;
 			}
@@ -684,7 +692,7 @@ public:
 					{
 						for (wchar* Iter = Buffer; Iter != NextTo; ++Iter)
 						{
-							NativeData.PushBack(*Iter);
+							this->PushBack(*Iter);
 						}
 					}
 					else
@@ -729,7 +737,7 @@ public:
 
 					for (char* Iter = Buffer; Iter != NextTo; ++Iter)
 					{
-						NativeData.PushBack(*Iter);
+						this->PushBack(*Iter);
 					}
 
 					BeginFrom = NextFrom;
@@ -847,25 +855,25 @@ public:
 
 					if      (!(Char & ~0b0000000'00000000'00000000'01111111)) // 0XXXXXXX
 					{
-						NativeData.PushBack(static_cast<u8char>(Char));
+						this->PushBack(static_cast<u8char>(Char));
 					}
 					else if (!(Char & ~0b0000000'00000000'00000111'11111111)) // 110XXXXX 10XXXXXX
 					{
-						NativeData.PushBack(static_cast<u8char>(0b11000000 | (Char >> 6 & 0b00011111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b11000000 | (Char >> 6 & 0b00011111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char & 0b00111111)));
 					}
 					else if (!(Char & ~0b0000000'00000000'11111111'11111111)) // 1110XXXX 10XXXXXX 10XXXXXX
 					{
-						NativeData.PushBack(static_cast<u8char>(0b11100000 | (Char >> 12 & 0b00001111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b11100000 | (Char >> 12 & 0b00001111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
 					}
 					else if (!(Char & ~0b0000000'11111111'11111111'11111111)) // 11110XXX 10XXXXXX 10XXXXXX 10XXXXXX
 					{
-						NativeData.PushBack(static_cast<u8char>(0b11110000 | (Char >> 18 & 0b00000111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >> 12 & 0b00111111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
-						NativeData.PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b11110000 | (Char >> 18 & 0b00000111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char >> 12 & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char >>  6 & 0b00111111)));
+						this->PushBack(static_cast<u8char>(0b10000000 | (Char       & 0b00111111)));
 					}
 					else check_no_entry();
 				}
@@ -890,7 +898,7 @@ public:
 
 							if (!Self(Self, TStringView(&WChar, 1))) return false;
 						}
-						else NativeData.PushBack(static_cast<u16char>(Char));
+						else this->PushBack(static_cast<u16char>(Char));
 					}
 					else if (!(Char & ~0b0000000'00011111'11111111'11111111)) // 110110XX'XXXXXXXX 110111XX'XXXXXXXX
 					{
@@ -907,8 +915,8 @@ public:
 						}
 						else
 						{
-							NativeData.PushBack(Buffer[0]);
-							NativeData.PushBack(Buffer[1]);
+							this->PushBack(Buffer[0]);
+							this->PushBack(Buffer[1]);
 						}
 					}
 					else check_no_entry();
@@ -931,7 +939,7 @@ public:
 				{
 					return Self(Self, TStringView(reinterpret_cast<const wchar*>(View.GetData()), View.Num()));
 				}
-				else NativeData.Insert(NativeData.End(), View.Begin(), View.End());
+				else Insert(this->End(), View.Begin(), View.End());
 
 				return true;
 			}
@@ -943,11 +951,8 @@ public:
 
 		bool bIsValid = AppendToResult(AppendToResult, View);
 
-		if (!bIsValid) NativeData.Reset(false);
-
-		NativeData.PushBack(LITERAL(T, '\0'));
-
-		if (bAllowShrinking) NativeData.Shrink();
+		if (!bIsValid) this->Reset(bAllowShrinking);
+		else if (bAllowShrinking) this->Shrink();
 
 		return bIsValid;
 	}
@@ -965,9 +970,6 @@ public:
 		return Result;
 	}
 
-	/** @return The non-modifiable standard C character string version of the string. */
-	NODISCARD FORCEINLINE const ElementType* ToCString() const { return GetData(); }
-
 	/** @return The target-encoded string from the T-encoded string. */
 	NODISCARD FORCEINLINE auto ToString()        const { return EncodeTo<char>();        }
 	NODISCARD FORCEINLINE auto ToWString()       const { return EncodeTo<wchar>();       }
@@ -976,74 +978,46 @@ public:
 	NODISCARD FORCEINLINE auto ToU32String()     const { return EncodeTo<u32char>();     }
 	NODISCARD FORCEINLINE auto ToUnicodeString() const { return EncodeTo<unicodechar>(); }
 
-	/** Resizes the string to contain 'Count' characters. Additional null characters are appended. */
-	FORCEINLINE void SetNum(size_t Count, bool bAllowShrinking = true) { SetNum(Count, LITERAL(ElementType, '\0'), bAllowShrinking); }
-
-	/** Resizes the string to contain 'Count' characters. Additional copies of 'InValue' are appended. */
-	FORCEINLINE void SetNum(size_t Count, ElementType InValue, bool bAllowShrinking = true) { NativeData.SetNum(Count + 1, InValue, bAllowShrinking); NativeData.Back() = LITERAL(ElementType, '\0'); }
-
-	/** Increase the max capacity of the string to a value that's greater or equal to 'Count'. */
-	FORCEINLINE void Reserve(size_t Count) { NativeData.Reserve(Count + 1); }
-
-	/** Requests the removal of unused capacity. */
-	FORCEINLINE void Shrink() { NativeData.Shrink(); }
-
-	/** @return The pointer to the underlying character storage. */
-	NODISCARD FORCEINLINE       ElementType* GetData()       { return NativeData.GetData(); }
-	NODISCARD FORCEINLINE const ElementType* GetData() const { return NativeData.GetData(); }
-
-	/** @return The iterator to the first or end character. */
-	NODISCARD FORCEINLINE      Iterator Begin()       { return NativeData.Begin(); }
-	NODISCARD FORCEINLINE ConstIterator Begin() const { return NativeData.Begin(); }
-	NODISCARD FORCEINLINE      Iterator End()         { return --NativeData.End(); }
-	NODISCARD FORCEINLINE ConstIterator End()   const { return --NativeData.End(); }
-
-	/** @return The reverse iterator to the first or end character. */
-	NODISCARD FORCEINLINE      ReverseIterator RBegin()       { return ++NativeData.RBegin(); }
-	NODISCARD FORCEINLINE ConstReverseIterator RBegin() const { return ++NativeData.RBegin(); }
-	NODISCARD FORCEINLINE      ReverseIterator REnd()         { return NativeData.REnd();     }
-	NODISCARD FORCEINLINE ConstReverseIterator REnd()   const { return NativeData.REnd();     }
-
-	/** @return The number of characters in the string. */
-	NODISCARD FORCEINLINE size_t Num() const { return NativeData.Num() - 1; }
-
-	/** @return The number of characters that can be held in currently allocated storage. */
-	NODISCARD FORCEINLINE size_t Max() const { return NativeData.Max() - 1; }
-
-	/** @return true if the string is empty, false otherwise. */
-	NODISCARD FORCEINLINE bool IsEmpty() const { return Num() == 0; }
-
-	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE bool IsValidIterator(ConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
-
-	/** @return The reference to the requested character. */
-	NODISCARD FORCEINLINE       ElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return NativeData[Index]; }
-	NODISCARD FORCEINLINE const ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return NativeData[Index]; }
-
-	/** @return The reference to the first or last character. */
-	NODISCARD FORCEINLINE       ElementType& Front()       { return *Begin();     }
-	NODISCARD FORCEINLINE const ElementType& Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE       ElementType& Back()        { return *(End() - 1); }
-	NODISCARD FORCEINLINE const ElementType& Back()  const { return *(End() - 1); }
-
-	/** Erases all characters from the string. After this call, Num() returns zero. */
-	FORCEINLINE void Reset(bool bAllowShrinking = true)
+	/** @return The non-modifiable standard C character string version of the string. */
+	NODISCARD FORCEINLINE auto operator*() const&
 	{
-		NativeData.Reset(bAllowShrinking);
-		NativeData.PushBack(LITERAL(ElementType, '\0'));
+		if (this->Max() >= this->Num() + 1)
+		{
+			const_cast<ElementType*>(this->GetData())[this->Num()] = LITERAL(ElementType, '\0');
+
+			return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(this->GetData(), false);
+		}
+
+		if (this->Back() == LITERAL(ElementType, '\0'))
+		{
+			return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(this->GetData(), false);
+		}
+
+		ElementType* Buffer = new ElementType[this->Num() + 1];
+
+		Copy(Buffer);
+
+		Buffer[this->Num()] = LITERAL(ElementType, '\0');
+
+		return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(Buffer, true);
+	}
+
+	/** @return The non-modifiable standard C character string version of the string. */
+	NODISCARD FORCEINLINE auto operator*() &&
+	{
+		if (this->Back() != LITERAL(T, '\0'))
+		{
+			this->PushBack(LITERAL(T, '\0'));
+		}
+
+		return AsConst(*this).GetData();
 	}
 
 	/** Overloads the GetTypeHash algorithm for TString. */
-	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TString& A) { return GetTypeHash(A.NativeData); }
+	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TString& A) { return GetTypeHash(TStringView<ElementType>(A)); }
 
 	/** Overloads the Swap algorithm for TString. */
-	friend FORCEINLINE void Swap(TString& A, TString& B) { Swap(A.NativeData, B.NativeData); }
-
-	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
-
-private:
-
-	TArray<T, Allocator> NativeData;
+	friend FORCEINLINE void Swap(TString& A, TString& B) { Swap(static_cast<Super&>(A), static_cast<Super&>(B)); }
 
 };
 

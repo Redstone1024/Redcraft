@@ -332,7 +332,7 @@ void TestTemplateString()
 			TString<T> Empty;
 
 			always_check(Empty.IsEmpty());
-			always_check(TStringView(Empty.ToCString()) == LITERAL(T, ""));
+			always_check(TStringView<T>(*Empty) == LITERAL(T, ""));
 
 			TString<T> StrA(32, LITERAL(T, 'A'));
 
@@ -341,11 +341,11 @@ void TestTemplateString()
 			TString StrD(TStringView(LITERAL(T, "ABCDEFG")));
 			TString StrE({ LITERAL(T, 'A'), LITERAL(T, 'B'), LITERAL(T, 'C') });
 
-			always_check(TStringView(StrA.ToCString()) == LITERAL(T, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
-			always_check(TStringView(StrB.ToCString()) == LITERAL(T, "ABC"));
-			always_check(TStringView(StrC.ToCString()) == LITERAL(T, "ABCDEFG"));
-			always_check(TStringView(StrD.ToCString()) == LITERAL(T, "ABCDEFG"));
-			always_check(TStringView(StrE.ToCString()) == LITERAL(T, "ABC"));
+			always_check(TStringView<T>(*StrA) == LITERAL(T, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+			always_check(TStringView<T>(*StrB) == LITERAL(T, "ABC"));
+			always_check(TStringView<T>(*StrC) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView<T>(*StrD) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView<T>(*StrE) == LITERAL(T, "ABC"));
 
 			TString StrI(StrC);
 			TString StrII(MoveTemp(StrC));
@@ -356,18 +356,18 @@ void TestTemplateString()
 			StrIII = StrD;
 			StrIV  = MoveTemp(StrD);
 
-			always_check(TStringView(StrI  .ToCString()) == LITERAL(T, "ABCDEFG"));
-			always_check(TStringView(StrII .ToCString()) == LITERAL(T, "ABCDEFG"));
-			always_check(TStringView(StrIII.ToCString()) == LITERAL(T, "ABCDEFG"));
-			always_check(TStringView(StrIV .ToCString()) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrI  ) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrII ) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrIII) == LITERAL(T, "ABCDEFG"));
+			always_check(TStringView(StrIV ) == LITERAL(T, "ABCDEFG"));
 
-			always_check(TStringView(StrC.ToCString()) == LITERAL(T, ""));
-			always_check(TStringView(StrD.ToCString()) == LITERAL(T, ""));
+			always_check(StrC == LITERAL(T, ""));
+			always_check(StrD == LITERAL(T, ""));
 
 			StrA.Reset();
 
 			always_check(StrA.IsEmpty());
-			always_check(TStringView(StrA.ToCString()) == LITERAL(T, ""));
+			always_check(StrA == LITERAL(T, ""));
 		}
 
 		{
