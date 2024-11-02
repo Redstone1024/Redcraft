@@ -96,14 +96,14 @@ void TestOptional()
 		TOptional<int32> TempF(0.0);
 		TOptional<int32> TempG(TempA);
 		TOptional<int32> TempH(TempD);
-		TOptional<int32> TempI(MakeOptional<int32>(0));
-		TOptional<int32> TempJ(MakeOptional<int32>(Invalid));
+		TOptional<int32> TempI(MakeOptional(0));
+		TOptional<int32> TempJ(Invalid);
 
 		TOptional<int32> TempK, TempL, TempM, TempN;
 		TempK = TempA;
 		TempL = TempD;
-		TempM = MakeOptional<int32>(0);
-		TempN = MakeOptional<int32>(Invalid);
+		TempM = MakeOptional(0);
+		TempN = Invalid;
 
 		*TempL = 303;
 		*TempM = 404;
@@ -161,8 +161,8 @@ void TestOptional()
 		TempZ = MakeOptional<FTracker>();
 		TempZ = FTracker();
 
-		always_check(GetTypeHash(MakeOptional<int32>(114)) == GetTypeHash(MakeOptional<int32>(114)));
-		always_check(GetTypeHash(MakeOptional<int32>(114)) != GetTypeHash(MakeOptional<int32>(514)));
+		always_check(GetTypeHash(MakeOptional(114)) == GetTypeHash(MakeOptional(114)));
+		always_check(GetTypeHash(MakeOptional(114)) != GetTypeHash(MakeOptional(514)));
 	}
 
 	{
@@ -181,6 +181,81 @@ void TestOptional()
 
 		TOptional<FTest> Temp(InPlace, { 0, 1, 2 }, 3);
 		Temp.Emplace({ 0, 1, 2 }, 3);
+	}
+
+	{
+		int32 IntegerA = 0;
+		int32 IntegerB = 0;
+
+		TOptional<int32&> TempA;
+		TOptional<int32&> TempB(Invalid);
+		TOptional<int32&> TempC(IntegerA);
+		TOptional<int32&> TempD(TempA);
+		TOptional<int32&> TempE(TempC);
+
+		TOptional<const int32&> TempF;
+		TOptional<const int32&> TempG(Invalid);
+		TOptional<const int32&> TempH(IntegerA);
+		TOptional<const int32&> TempI(TempA);
+		TOptional<const int32&> TempJ(TempC);
+
+		TOptional<int32&> TempK, TempL, TempM, TempN;
+		TempK = TempA;
+		TempL = TempE;
+		TempM = IntegerB;
+		TempN = Invalid;
+
+		*TempL = 303;
+		*TempM = 404;
+
+		always_check(!TempA);
+		always_check(!TempF.IsValid());
+
+		always_check(IntegerA == 303);
+		always_check(IntegerB == 404);
+
+		always_check(TempH == 303);
+		always_check(TempM == 404);
+
+		always_check(IntegerA < IntegerB);
+
+		always_check(TempH < TempM);
+
+		*TempC = 404;
+
+		always_check(IntegerA == IntegerB);
+
+		always_check(TempH == TempM);
+
+		always_check(TempA.Get(IntegerA) == TempM);
+
+		always_check(TempC.IsValid());
+
+		TempC.Reset();
+
+		always_check(!TempC.IsValid());
+	}
+
+	{
+		TOptional<int32> TempA = 303;
+		TOptional<int32> TempB = 404;
+
+		TOptional<int32&> TempC = TempA;
+		TOptional<int32&> TempD = TempB;
+
+		TOptional<const int32&> TempE = TempA;
+		TOptional<const int32&> TempF = TempB;
+
+		TOptional<int32> TempG = TempC;
+		TOptional<int32> TempH = TempF;
+
+		always_check(TempG == 303);
+		always_check(TempH == 404);
+
+		always_check(TempG == TempC);
+		always_check(TempH == TempF);
+		always_check(TempE == TempG);
+		always_check(TempD == TempH);
 	}
 }
 
