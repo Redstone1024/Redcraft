@@ -9,7 +9,6 @@
 #include "Containers/Iterator.h"
 #include "Containers/ArrayView.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/ConstantIterator.h"
@@ -29,16 +28,20 @@ class TString;
  * with the first element of the sequence at position zero. Provides a set of convenient string processing functions.
  */
 template <CCharType T>
-class TStringView final
+class TStringView : public TArrayView<const T>
 {
+private:
+
+	using Super = TArrayView<const T>;
+
 public:
 
 	using ElementType = T;
 
-	using Reference = typename TArrayView<const ElementType>::Reference;
+	using Reference = typename Super::Reference;
 
-	using Iterator        = typename TArrayView<const ElementType>::Iterator;
-	using ReverseIterator = typename TArrayView<const ElementType>::ReverseIterator;
+	using Iterator        = typename Super::Iterator;
+	using ReverseIterator = typename Super::ReverseIterator;
 
 	static_assert(CContiguousIterator<Iterator>);
 
@@ -47,18 +50,18 @@ public:
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
 	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const ElementType(*)[]>)
-	FORCEINLINE constexpr TStringView(I InFirst, size_t InCount) : NativeData(InFirst, InCount) { }
+	FORCEINLINE constexpr TStringView(I InFirst, size_t InCount) : Super(InFirst, InCount) { }
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InLast'). */
 	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const ElementType(*)[]>)
-	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : NativeData(InFirst, InLast) { }
+	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : Super(InFirst, InLast) { }
 
 	/** Constructs a string view that is a view over the string 'InString'. */
 	template <typename Allocator>
 	FORCEINLINE constexpr TStringView(const TString<ElementType, Allocator>& InString);
 
 	/** Constructs a string view that is a view over the range ['InPtr', 'InPtr' + 'Count'). */
-	FORCEINLINE constexpr TStringView(const ElementType* InPtr, size_t Count) : NativeData(InPtr, Count)
+	FORCEINLINE constexpr TStringView(const ElementType* InPtr, size_t Count) : Super(InPtr, Count)
 	{
 		checkf(InPtr != nullptr, TEXT("TStringView cannot be initialized by nullptr. Please check the pointer."));
 	}
@@ -85,7 +88,7 @@ public:
 			while (InPtr[Length] != LITERAL(ElementType, '\0')) ++Length;
 		}
 
-		NativeData = TArrayView<const ElementType>(InPtr, Length);
+		*this = TStringView(InPtr, Length);
 	}
 
 	FORCEINLINE constexpr TStringView(nullptr_t) = delete;
@@ -97,14 +100,14 @@ public:
 	FORCEINLINE constexpr TStringView& operator=(const TStringView&) noexcept = default;
 
 	/** Compares the contents of two string views. */
-	NODISCARD friend constexpr bool operator==(TStringView LHS, TStringView RHS) { return LHS.NativeData == RHS.NativeData; }
+	NODISCARD friend constexpr bool operator==(TStringView LHS, TStringView RHS) { return static_cast<Super>(LHS) == static_cast<Super>(RHS); }
 
 	/** Compares the contents of a string view and a character. */
 	NODISCARD friend constexpr bool operator==(TStringView LHS, ElementType RHS) { return LHS == TStringView(&RHS, 1); }
 	NODISCARD friend constexpr bool operator==(ElementType LHS, TStringView RHS) { return TStringView(&LHS, 1) == RHS; }
 
 	/** Compares the contents of two string views. */
-	NODISCARD friend constexpr auto operator<=>(TStringView LHS, TStringView RHS) { return LHS.NativeData <=> RHS.NativeData; }
+	NODISCARD friend constexpr auto operator<=>(TStringView LHS, TStringView RHS) { return static_cast<Super>(LHS) <=> static_cast<Super>(RHS); }
 
 	/** Compares the contents of a string view and a character. */
 	NODISCARD friend constexpr auto operator<=>(TStringView LHS, ElementType RHS) { return LHS <=> TStringView(&RHS, 1); }
@@ -113,33 +116,17 @@ public:
 	/** Shrinks the view by moving its start forward. */
 	FORCEINLINE constexpr void RemovePrefix(size_t Count)
 	{
-		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
 
-		NativeData = NativeData.Subview(Count);
+		*this = Substr(Count);
 	}
 
 	/** Shrinks the view by moving its end backward. */
 	FORCEINLINE constexpr void RemoveSuffix(size_t Count)
 	{
-		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
 
-		NativeData = NativeData.Subview(0, Num() - Count);
-	}
-
-	/** Obtains a string view that is a view over the first 'Count' elements of this string view. */
-	NODISCARD FORCEINLINE constexpr TStringView First(size_t Count) const
-	{
-		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
-
-		return TStringView(Begin(), Count);
-	}
-
-	/** Obtains a string view that is a view over the last 'Count' elements of this string view. */
-	NODISCARD FORCEINLINE constexpr TStringView Last(size_t Count) const
-	{
-		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
-
-		return TStringView(End() - Count, Count);
+		*this = Substr(0, this->Num() - Count);
 	}
 
 	/** Copies the elements of this string view to the destination buffer without null-termination. */
@@ -147,14 +134,14 @@ public:
 	{
 		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
 
-		checkf(Offset <= Num() && (Count == DynamicExtent || Offset + Count <= Num()), TEXT("Illegal subview range. Please check Offset and Count."));
+		checkf(Offset <= this->Num() && (Count == DynamicExtent || Offset + Count <= this->Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
 		if (Count == DynamicExtent)
 		{
-			Count = Num() - Offset;
+			Count = this->Num() - Offset;
 		}
 
-		Memory::CopyAssign(Dest, GetData() + Offset, Count);
+		Memory::CopyAssign(Dest, this->GetData() + Offset, Count);
 
 		return Count;
 	}
@@ -164,48 +151,35 @@ public:
 	/** Obtains a string view that is a view over the 'Count' elements of this string view starting at 'Offset'.  */
 	NODISCARD FORCEINLINE constexpr TStringView Substr(size_t Offset, size_t Count = DynamicExtent) const
 	{
-		checkf(Offset <= Num() && (Count == DynamicExtent || Offset + Count <= Num()), TEXT("Illegal subview range. Please check Offset and Count."));
+		checkf(Offset <= this->Num() && (Count == DynamicExtent || Offset + Count <= this->Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
-		return Subview(Offset, Count);
-	}
+		Super Temp = this->Subview(Offset, Count);
 
-	/** Obtains a string view that is a view over the 'Count' elements of this string view starting at 'Offset'.  */
-	NODISCARD FORCEINLINE constexpr TStringView Subview(size_t Offset, size_t Count = DynamicExtent) const
-	{
-		checkf(Offset <= Num() && (Count == DynamicExtent || Offset + Count <= Num()), TEXT("Illegal subview range. Please check Offset and Count."));
-
-		if (Count != DynamicExtent)
-		{
-			return TStringView(Begin() + Offset, Count);
-		}
-		else
-		{
-			return TStringView(Begin() + Offset, Num() - Offset);
-		}
+		return TStringView(Temp.GetData(), Temp.Num());
 	}
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool StartsWith(TStringView Prefix) const
 	{
-		return Num() >= Prefix.Num() && Substr(0, Prefix.Num()) == Prefix;
+		return this->Num() >= Prefix.Num() && Substr(0, Prefix.Num()) == Prefix;
 	}
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool StartsWith(ElementType Prefix) const
 	{
-		return Num() >= 1 && Front() == Prefix;
+		return this->Num() >= 1 && this->Front() == Prefix;
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool EndsWith(TStringView Suffix) const
 	{
-		return Num() >= Suffix.Num() && Substr(Num() - Suffix.Num(), Suffix.Num()) == Suffix;
+		return this->Num() >= Suffix.Num() && Substr(this->Num() - Suffix.Num(), Suffix.Num()) == Suffix;
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool EndsWith(ElementType Suffix) const
 	{
-		return Num() >= 1 && Back() == Suffix;
+		return this->Num() >= 1 && this->Back() == Suffix;
 	}
 
 	/** @return true if the string view contains the given substring, false otherwise. */
@@ -230,13 +204,13 @@ public:
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t Find(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		if (View.Num() > Num()) return INDEX_NONE;
+		if (View.Num() > this->Num()) return INDEX_NONE;
 
 		if (View.Num() == 0) return Index;
 
-		for (; Index != Num() - View.Num() + 1; ++Index)
+		for (; Index != this->Num() - View.Num() + 1; ++Index)
 		{
 			if (Substr(Index).StartsWith(View))
 			{
@@ -250,11 +224,11 @@ public:
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t Find(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		for (; Index != Num(); ++Index)
+		for (; Index != this->Num(); ++Index)
 		{
-			if (NativeData[Index] == Char)
+			if ((*this)[Index] == Char)
 			{
 				return Index;
 			}
@@ -267,11 +241,11 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		for (; Index != Num(); ++Index)
+		for (; Index != this->Num(); ++Index)
 		{
-			if (InvokeResult<bool>(Forward<F>(InPredicate), NativeData[Index]))
+			if (InvokeResult<bool>(Forward<F>(InPredicate), (*this)[Index]))
 			{
 				return Index;
 			}
@@ -283,11 +257,11 @@ public:
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t RFind(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		if (View.Num() > Num()) return INDEX_NONE;
+		if (View.Num() > this->Num()) return INDEX_NONE;
 
-		if (Index == INDEX_NONE) Index = Num();
+		if (Index == INDEX_NONE) Index = this->Num();
 
 		if (View.Num() == 0) return Index;
 
@@ -305,13 +279,13 @@ public:
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		if (Index == INDEX_NONE) Index = Num();
+		if (Index == INDEX_NONE) Index = this->Num();
 
 		for (; Index != 0; --Index)
 		{
-			if (NativeData[Index - 1] == Char)
+			if ((*this)[Index - 1] == Char)
 			{
 				return Index - 1;
 			}
@@ -324,13 +298,13 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		if (Index == INDEX_NONE) Index = Num();
+		if (Index == INDEX_NONE) Index = this->Num();
 
 		for (; Index != 0; --Index)
 		{
-			if (InvokeResult<bool>(Forward<F>(InPredicate), NativeData[Index - 1]))
+			if (InvokeResult<bool>(Forward<F>(InPredicate), (*this)[Index - 1]))
 			{
 				return Index - 1;
 			}
@@ -342,7 +316,7 @@ public:
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return Find([View](ElementType Char) { return View.Contains(Char); }, Index);
 	}
@@ -350,7 +324,7 @@ public:
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return Find(Char, Index);
 	}
@@ -358,7 +332,7 @@ public:
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return RFind([View](ElementType Char) { return View.Contains(Char); }, Index);
 	}
@@ -366,7 +340,7 @@ public:
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return RFind(Char, Index);
 	}
@@ -374,7 +348,7 @@ public:
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return Find([View](ElementType Char) { return !View.Contains(Char); }, Index);
 	}
@@ -382,7 +356,7 @@ public:
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return Find([Char](ElementType C) { return C != Char; }, Index);
 	}
@@ -390,7 +364,7 @@ public:
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return RFind([View](ElementType Char) { return !View.Contains(Char); }, Index);
 	}
@@ -398,46 +372,13 @@ public:
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < Num(), TEXT("Illegal index. Please check Index."));
+		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
 		return RFind([Char](ElementType C) { return C != Char; }, Index);
 	}
 
-	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr const ElementType* GetData() const { return NativeData.GetData(); }
-
-	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return NativeData.Begin(); }
-	NODISCARD FORCEINLINE constexpr Iterator End()   const { return NativeData.End();   }
-
-	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr ReverseIterator RBegin() const { return NativeData.RBegin(); }
-	NODISCARD FORCEINLINE constexpr ReverseIterator REnd()   const { return NativeData.REnd();   }
-
-	/** @return The number of elements in the container. */
-	NODISCARD FORCEINLINE constexpr size_t Num() const { return NativeData.Num(); }
-
-	/** @return true if the container is empty, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsEmpty() const { return Num() == 0; }
-
-	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsValidIterator(Iterator Iter) const { return Begin() <= Iter && Iter <= End(); }
-
-	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE constexpr Reference operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return NativeData[Index]; }
-
-	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE constexpr Reference Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr Reference Back()  const { return *(End() - 1); }
-
 	/** Overloads the GetTypeHash algorithm for TStringView. */
-	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TStringView A) { return GetTypeHash(A.NativeData); }
-
-	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
-
-private:
-
-	TArrayView<const ElementType> NativeData;
+	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TStringView A) { return GetTypeHash(static_cast<Super>(A)); }
 
 };
 
