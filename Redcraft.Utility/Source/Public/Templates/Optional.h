@@ -314,15 +314,15 @@ public:
 	NODISCARD FORCEINLINE constexpr const T&  GetValue() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);   }
 	NODISCARD FORCEINLINE constexpr const T&& GetValue() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value));  }
 
+	/** @return The contained object. */
+	NODISCARD FORCEINLINE constexpr       T&  operator*() &       { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<      T*>(&Value);   }
+	NODISCARD FORCEINLINE constexpr       T&& operator*() &&      { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<      T*>(&Value));  }
+	NODISCARD FORCEINLINE constexpr const T&  operator*() const&  { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return          *reinterpret_cast<const T*>(&Value);   }
+	NODISCARD FORCEINLINE constexpr const T&& operator*() const&& { checkf(IsValid(), TEXT("It is an error to call GetValue() on an unset TOptional. Please either check IsValid() or use Get(DefaultValue) instead.")); return MoveTemp(*reinterpret_cast<const T*>(&Value));  }
+
 	/** @return The pointer to the contained object. */
 	NODISCARD FORCEINLINE constexpr const T* operator->() const { return &GetValue(); }
 	NODISCARD FORCEINLINE constexpr       T* operator->()       { return &GetValue(); }
-
-	/** @return The contained object. */
-	NODISCARD FORCEINLINE constexpr       T&  operator*() &       { return GetValue(); }
-	NODISCARD FORCEINLINE constexpr       T&& operator*() &&      { return GetValue(); }
-	NODISCARD FORCEINLINE constexpr const T&  operator*() const&  { return GetValue(); }
-	NODISCARD FORCEINLINE constexpr const T&& operator*() const&& { return GetValue(); }
 
 	/** @return The contained object when IsValid() returns true, 'DefaultValue' otherwise. */
 	NODISCARD FORCEINLINE constexpr       T& Get(      T& DefaultValue) &      { return IsValid() ? GetValue() : DefaultValue;  }
