@@ -395,6 +395,15 @@ using FU16StringView     = TStringView<u16char>;
 using FU32StringView     = TStringView<u32char>;
 using FUnicodeStringView = TStringView<unicodechar>;
 
+#define TEXT_VIEW(X)        TStringView(TEXT(X))
+#define WTEXT_VIEW(X)       TStringView(WTEXT(X))
+#define U8TEXT_VIEW(X)      TStringView(U8TEXT(X))
+#define U16TEXT_VIEW(X)     TStringView(U16TEXT(X))
+#define U32TEXT_VIEW(X)     TStringView(U32TEXT(X))
+#define UNICODETEXT_VIEW(X) TStringView(UNICODETEXT(X))
+
+#define LITERAL_VIEW(T, X)  TStringView(LITERAL(T, X))
+
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
