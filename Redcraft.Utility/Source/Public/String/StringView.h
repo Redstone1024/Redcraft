@@ -148,6 +148,22 @@ public:
 
 	FORCEINLINE constexpr size_t Copy(nullptr_t, size_t Count = DynamicExtent, size_t Offset = 0) const = delete;
 
+	/** Obtains an array view that is a view over the first 'Count' elements of this array view. */
+	NODISCARD FORCEINLINE constexpr TStringView First(size_t Count) const
+	{
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
+
+		return Substr(0, Count);
+	}
+
+	/** Obtains an array view that is a view over the last 'Count' elements of this array view. */
+	NODISCARD FORCEINLINE constexpr TStringView Last(size_t Count) const
+	{
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
+
+		return Substr(this->Num() - Count);
+	}
+
 	/** Obtains a string view that is a view over the 'Count' elements of this string view starting at 'Offset'.  */
 	NODISCARD FORCEINLINE constexpr TStringView Substr(size_t Offset, size_t Count = DynamicExtent) const
 	{
