@@ -57,7 +57,7 @@ template <typename T, typename U> concept CConditionalType = requires { typename
 template <typename T, typename U> requires (CDecayed<T, U> && !CBasicCommonType<T, U> && CConditionalType<T, U>)
 struct TCommonTypeImpl<T, U> { using Type = TDecay<decltype(false ? DeclVal<T>() : DeclVal<U>())>; };
 
-// Otherwise, if TDecay<decltype(false ? DeclVal<CRT>() : DeclVal<CRU>())> is a valid Type, 
+// Otherwise, if TDecay<decltype(false ? DeclVal<CRT>() : DeclVal<CRU>())> is a valid Type,
 // where CRT and CRU are const TRemoveReference<T>& and const TRemoveReference<U>& respectively, the member Type denotes that Type
 template <typename T, typename U> concept CConditionalCRefType = requires { typename TDecay<decltype(false ? DeclVal<const TRemoveReference<T>&>() : DeclVal<const TRemoveReference<U>&>())>; };
 template <typename T, typename U> requires (CDecayed<T, U> && !CBasicCommonType<T, U> && !CConditionalType<T, U> && CConditionalCRefType<T, U>)
@@ -182,9 +182,8 @@ concept CCommonReference =
 
 template <typename... Ts>
 concept CCommonType =
-	requires { typename TCommonType<Ts...>; }
-	&& (true && ... && CConstructibleFrom<TCommonReference<Ts...>, Ts&&>)
-	&& CCommonReference<const Ts&...> && CCommonReference<TCommonType<Ts...>&, TCommonReference<const Ts&...>>;
+	requires { typename TCommonType<Ts...>; (static_cast<TCommonType<Ts...>>(DeclVal<Ts>()), ...); }
+	&& CCommonReference<const TAddLValueReference<Ts>...> && CCommonReference<TCommonReference<TCommonType<Ts...>>, TCommonReference<const TAddLValueReference<Ts>...>>;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
