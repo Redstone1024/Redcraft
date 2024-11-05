@@ -1005,6 +1005,24 @@ void TestTuple()
 
 	{
 		TTuple<int32, char> TempA = { 1, 'A' };
+
+		TempA.Visit([](auto&& A) { A++; });
+
+		TempA.Visit(
+			[]<typename T> (T&& A)
+			{
+				if constexpr (CSameAs<T&&, int32&>) always_check(A == 2);
+				else if constexpr (CSameAs<T&&, char&>) always_check(A == 'B');
+				else always_check_no_entry();
+			}
+		);
+
+		always_check(TempA.Visit([](auto A) { return A; }, 0) ==  2 );
+		always_check(TempA.Visit([](auto A) { return A; }, 1) == 'B');
+	}
+
+	{
+		TTuple<int32, char> TempA = { 1, 'A' };
 		TTuple<int32, char> TempB = TempA.Transform([](auto&& InValue) { return InValue + 1; });
 
 		VisitTuple(
