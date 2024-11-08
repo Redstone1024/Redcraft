@@ -44,6 +44,78 @@ struct TStringHelper
 			return false;
 		}
 
+		else if (Fmt.IsEmpty())
+		{
+			if constexpr (CArithmetic<U>)
+			{
+				constexpr const T* DigitToChar = LITERAL(T, "9876543210123456789");
+				constexpr size_t   ZeroIndex = 9;
+
+				if constexpr (CSameAs<U, bool>)
+				{
+					Result += Object ? LITERAL(T, "True") : LITERAL(T, "False");
+
+					return true;
+				}
+
+				else if constexpr (CIntegral<U>)
+				{
+					U Value = Object;
+
+					const bool bNegative = Object < 0;
+
+					constexpr size_t BufferSize = 32;
+
+					T Buffer[BufferSize];
+
+					size_t Index = BufferSize;
+
+					do Buffer[--Index] = DigitToChar[ZeroIndex + Value % 10]; while (Value /= 10);
+
+					if (bNegative) Buffer[--Index] = LITERAL(T, '-');
+
+					const T* Begin = Buffer + Index;
+					const T* End   = Buffer + BufferSize;
+
+					Result.Append(Begin, End);
+
+					return true;
+				}
+
+				else if constexpr (CFloatingPoint<U>)
+				{
+					if (NAMESPACE_STD::isinf(Object) && !NAMESPACE_STD::signbit(Object)) { Result += LITERAL(T,  "Infinity"); return true; }
+					if (NAMESPACE_STD::isinf(Object) &&  NAMESPACE_STD::signbit(Object)) { Result += LITERAL(T, "-Infinity"); return true; }
+
+					if (NAMESPACE_STD::isnan(Object) && !NAMESPACE_STD::signbit(Object)) { Result += LITERAL(T,  "NaN"); return true; }
+					if (NAMESPACE_STD::isnan(Object) &&  NAMESPACE_STD::signbit(Object)) { Result += LITERAL(T, "-NaN"); return true; }
+
+					U Value = NAMESPACE_STD::round(Object * static_cast<U>(1e6));
+
+					const bool bNegative = NAMESPACE_STD::signbit(Object);
+
+					TString<T, TInlineAllocator<32>> Buffer;
+
+					for (size_t Index = 0; Index <= 6 || static_cast<signed>(Value) != 0; ++Index)
+					{
+						Buffer += DigitToChar[ZeroIndex + static_cast<signed>(NAMESPACE_STD::fmod(Value, 10))];
+
+						if (Index == 5) Buffer += LITERAL(T, '.');
+
+						Value /= 10;
+					}
+
+					if (bNegative) Buffer += LITERAL(T, '-');
+
+					Result.Append(Buffer.RBegin(), Buffer.REnd());
+
+					return true;
+				}
+
+				else static_assert(sizeof(U) == -1, "Unsupported arithmetic type");
+			}
+		}
+
 		return false;
 	}
 
