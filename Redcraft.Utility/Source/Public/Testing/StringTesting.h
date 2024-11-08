@@ -12,6 +12,7 @@ REDCRAFTUTILITY_API void TestString();
 REDCRAFTUTILITY_API void TestChar();
 REDCRAFTUTILITY_API void TestStringView();
 REDCRAFTUTILITY_API void TestTemplateString();
+REDCRAFTUTILITY_API void TestStringConversion();
 
 NAMESPACE_END(Testing)
 

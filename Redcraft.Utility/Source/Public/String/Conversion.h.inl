@@ -58,6 +58,197 @@ struct TStringHelper
 			return false;
 		}
 
+		else if constexpr (CArithmetic<U>)
+		{
+			checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
+
+			// Skip leading white spaces.
+			while (!View.IsEmpty() && TChar<T>::IsSpace(View.Front())) View.RemovePrefix(1);
+
+			if (View.IsEmpty()) return false;
+
+			bool bNegative = false;
+
+			// Handle optional sign.
+			if (View.Front() == LITERAL(T, '+'))
+			{
+				View.RemovePrefix(1);
+			}
+			else if (View.Front() == LITERAL(T, '-'))
+			{
+				bNegative = true;
+				View.RemovePrefix(1);
+			}
+
+			// Handle boolean conversion.
+			else if constexpr (CSameAs<U, bool>)
+			{
+				bool bIsTrue  = false;
+				bool bIsFalse = false;
+
+				bIsTrue  |= View.StartsWith(LITERAL(T, "true"))  || View.StartsWith(LITERAL(T, "True"))  || View.StartsWith(LITERAL(T, "TRUE"));
+				bIsFalse |= View.StartsWith(LITERAL(T, "false")) || View.StartsWith(LITERAL(T, "False")) || View.StartsWith(LITERAL(T, "FALSE"));
+
+				if (bIsTrue)  { View.RemovePrefix(4); Object = true;  return true; }
+				if (bIsFalse) { View.RemovePrefix(5); Object = false; return true; }
+			}
+
+			// Handle floating-point conversion.
+			if constexpr (CFloatingPoint<U>)
+			{
+				bool bIsInfinity = false;
+				bool bIsNaN      = false;
+
+				bIsInfinity |= View.StartsWith(LITERAL(T, "infinity")) || View.StartsWith(LITERAL(T, "Infinity")) || View.StartsWith(LITERAL(T, "INFINITY"));
+				bIsNaN      |= View.StartsWith(LITERAL(T, "nan"))      || View.StartsWith(LITERAL(T, "NaN"))      || View.StartsWith(LITERAL(T, "NAN"));
+
+				if (bIsInfinity) { View.RemovePrefix(8); Object = bNegative ? -NAMESPACE_STD::numeric_limits<U>::infinity()  : NAMESPACE_STD::numeric_limits<U>::infinity();  return true; }
+				if (bIsNaN)      { View.RemovePrefix(3); Object = bNegative ? -NAMESPACE_STD::numeric_limits<U>::quiet_NaN() : NAMESPACE_STD::numeric_limits<U>::quiet_NaN(); return true; }
+			}
+
+			unsigned Base = 0;
+
+			// Auto detect base.
+			{
+				if (View.Num() >= 2 && View.Front() == LITERAL(T, '0'))
+				{
+					if (View[1] == LITERAL(T, 'x') || View[1] == LITERAL(T, 'X'))
+					{
+						Base = 16;
+						View.RemovePrefix(2);
+					}
+					else if (View[1] == LITERAL(T, 'b') || View[1] == LITERAL(T, 'B'))
+					{
+						Base = 2;
+						View.RemovePrefix(2);
+					}
+					else if (TChar<T>::IsDigit(View.Front(), 8))
+					{
+						Base = 8;
+						View.RemovePrefix(1);
+					}
+					else Base = 10;
+				}
+				else Base = 10;
+			}
+
+			// Parse the number.
+			auto ToNumber = [&View]<typename NumberType>(TInPlaceType<NumberType>, unsigned Base, NumberType Init = static_cast<NumberType>(0)) -> NumberType
+			{
+				NumberType Result = Init;
+
+				while (!View.IsEmpty() && (Base == 10 ? TChar<T>::IsDigit(View.Front()) : TChar<T>::IsDigit(View.Front(), Base)))
+				{
+					Result = static_cast<NumberType>(Result * Base + *TChar<T>::ToDigit(View.Front()));
+
+					View.RemovePrefix(1);
+				}
+
+				return Result;
+			};
+
+			// Handle integral conversion.
+			if constexpr (CIntegral<U>)
+			{
+				using UnsignedU = TMakeUnsigned<TConditional<!CSameAs<U, bool>, U, int>>;
+
+				if (View.IsEmpty()) return false;
+
+				// The integral number must start with a digit.
+				if (!TChar<T>::IsDigit(View.Front(), Base)) return false;
+
+				// Parse the integral number.
+				UnsignedU Number = ToNumber(InPlaceType<UnsignedU>, Base);
+
+				Object = static_cast<U>(bNegative ? -Number : Number);
+
+				return true;
+			}
+
+			// Handle floating-point conversion.
+			else if constexpr (CFloatingPoint<U>)
+			{
+				if (View.IsEmpty()) return false;
+
+				// The floating-point number must start with a digit or a dot.
+				if (!(TChar<T>::IsDigit(View.Front(), Base) || View.Front() == LITERAL(T, '.'))) return false;
+
+				size_t IntegralBeginNum = View.Num();
+
+				// Parse the integral number.
+				Object = ToNumber(InPlaceType<U>, Base);
+
+				size_t IntegralLength = IntegralBeginNum - View.Num();
+
+				// Parse the fractional number.
+				if (!View.IsEmpty() && View.Front() == LITERAL(T, '.'))
+				{
+					View.RemovePrefix(1);
+
+					U InvBase = 1 / static_cast<U>(Base);
+
+					size_t FractionBeginNum = View.Num();
+
+					Object = ToNumber(InPlaceType<U>, Base, Object);
+
+					size_t FractionLength = FractionBeginNum - View.Num();
+
+					Object *= NAMESPACE_STD::pow(InvBase, static_cast<U>(FractionLength));
+				}
+				else if (IntegralLength == 0) return false;
+
+				// For floating point numbers apply the symbols directly
+				Object = static_cast<U>(bNegative ? -Object : Object);
+
+				if (View.IsEmpty()) return true;
+
+				if (Base != 10 && Base != 16) return true;
+
+				bool bHasExponent = false;
+
+				bHasExponent |= Base == 10 && View.Front() == LITERAL(T, 'e');
+				bHasExponent |= Base == 10 && View.Front() == LITERAL(T, 'E');
+				bHasExponent |= Base == 16 && View.Front() == LITERAL(T, 'p');
+				bHasExponent |= Base == 16 && View.Front() == LITERAL(T, 'P');
+
+				if (!bHasExponent) return true;
+
+				View.RemovePrefix(1);
+
+				if (View.IsEmpty()) return false;
+
+				// Parse the exponent number.
+				{
+					bool bNegativeExponent = false;
+
+					if (View.Front() == LITERAL(T, '+'))
+					{
+						View.RemovePrefix(1);
+					}
+					else if (View.Front() == LITERAL(T, '-'))
+					{
+						bNegativeExponent = true;
+						View.RemovePrefix(1);
+					}
+
+					// The exponent number must start with a digit.
+					if (!TChar<T>::IsDigit(View.Front())) return false;
+
+					U Exponent = ToNumber(InPlaceType<U>, 10);
+
+					Exponent = bNegativeExponent ? -Exponent : Exponent;
+
+					Object *= static_cast<U>(NAMESPACE_STD::pow(static_cast<U>(Base == 16 ? 2 : 10), Exponent));
+				}
+
+				return true;
+			}
+
+			else static_assert(sizeof(U) == -1, "Unsupported arithmetic type");
+
+			return false;
+		}
+
 		return false;
 	}
 
