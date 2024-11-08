@@ -480,6 +480,12 @@ public:
 	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()       volatile&& { return Helper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
 	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const volatile&& { return Helper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
 
+	/** @return The number of elements in the tuple. */
+	NODISCARD static FORCEINLINE constexpr size_t Num() { return sizeof...(Ts); }
+
+	/** @return true if the tuple is empty, false otherwise. */
+	NODISCARD static FORCEINLINE constexpr bool IsEmpty() { return Num() == 0; }
+
 	/** Overloads the GetTypeHash algorithm for TTuple. */
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TTuple& A) requires (true && ... && CHashable<Ts>)
 	{
