@@ -220,7 +220,7 @@ public:
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t Find(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index >= this->Num()) return INDEX_NONE;
 
 		if (View.Num() > this->Num()) return INDEX_NONE;
 
@@ -240,7 +240,7 @@ public:
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t Find(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index >= this->Num()) return INDEX_NONE;
 
 		for (; Index != this->Num(); ++Index)
 		{
@@ -257,7 +257,7 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index >= this->Num()) return INDEX_NONE;
 
 		for (; Index != this->Num(); ++Index)
 		{
@@ -273,7 +273,7 @@ public:
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t RFind(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index != INDEX_NONE && Index >= this->Num()) return INDEX_NONE;
 
 		if (View.Num() > this->Num()) return INDEX_NONE;
 
@@ -295,7 +295,7 @@ public:
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index != INDEX_NONE && Index >= this->Num()) return INDEX_NONE;
 
 		if (Index == INDEX_NONE) Index = this->Num();
 
@@ -314,7 +314,7 @@ public:
 	template <CPredicate<ElementType> F>
 	NODISCARD constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
+		if (Index != INDEX_NONE && Index >= this->Num()) return INDEX_NONE;
 
 		if (Index == INDEX_NONE) Index = this->Num();
 
@@ -332,64 +332,48 @@ public:
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return Find([View](ElementType Char) { return View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return Find(Char, Index);
 	}
 
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return RFind([View](ElementType Char) { return View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return RFind(Char, Index);
 	}
 
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(TStringView View, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return Find([View](ElementType Char) { return !View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
 	{
-		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return Find([Char](ElementType C) { return C != Char; }, Index);
 	}
 
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return RFind([View](ElementType Char) { return !View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
-		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
-
 		return RFind([Char](ElementType C) { return C != Char; }, Index);
 	}
 
