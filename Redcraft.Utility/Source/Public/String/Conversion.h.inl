@@ -25,8 +25,8 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #define LEFT_BRACE  LITERAL(T, '{')
 #define RIGHT_BRACE LITERAL(T, '}')
 
-#define ESCAPE_LEFT_BRACE  TStringView(LITERAL(T, "#{"))
-#define ESCAPE_RIGHT_BRACE TStringView(LITERAL(T, "}#"))
+#define ESCAPE_LEFT_BRACE  TStringView(LITERAL(T, "<[{"))
+#define ESCAPE_RIGHT_BRACE TStringView(LITERAL(T, "}]>"))
 
 NAMESPACE_PRIVATE_BEGIN
 
