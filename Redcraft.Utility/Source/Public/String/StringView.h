@@ -377,6 +377,21 @@ public:
 		return RFind([Char](ElementType C) { return C != Char; }, Index);
 	}
 
+public:
+
+	/**
+	 * Parse a string using a format string to objects.
+	 *
+	 * @param Fmt  - The format string.
+	 * @param Args - The objects to parse.
+	 *
+	 * @return The number of objects successfully parsed.
+	 */
+	template <typename... Ts>
+	size_t Parse(TStringView Fmt, Ts&... Args) const;
+
+public:
+
 	/** Overloads the GetTypeHash algorithm for TStringView. */
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TStringView A) { return GetTypeHash(static_cast<Super>(A)); }
 

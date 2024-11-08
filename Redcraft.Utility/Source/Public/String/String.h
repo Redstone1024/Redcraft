@@ -149,6 +149,8 @@ public:
 	NODISCARD friend FORCEINLINE auto operator<=>(      ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
 	NODISCARD friend FORCEINLINE auto operator<=>(const ElementType* LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
 
+public:
+
 	/** Inserts 'InValue' before 'Index' in the string. */
 	FORCEINLINE Iterator Insert(size_t Index, ElementType InValue)
 	{
@@ -335,6 +337,8 @@ public:
 	NODISCARD friend FORCEINLINE TString operator+(        const ElementType*  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
 	NODISCARD friend FORCEINLINE TString operator+(  TStringView<ElementType>  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
 	NODISCARD friend FORCEINLINE TString operator+(const TString<ElementType>& LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
+
+public:
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
 	NODISCARD FORCEINLINE bool StartsWith(TStringView<ElementType> Prefix) const
@@ -625,6 +629,8 @@ public:
 
 		return TStringView<ElementType>(*this).FindLastNotOf(Char, Index);
 	}
+
+public:
 
 	/** Try to decode the given character using the U-encoded to a string using the T-encoded. */
 	template <CCharType U>
@@ -1013,6 +1019,35 @@ public:
 		return AsConst(*this).GetData();
 	}
 
+public:
+
+	/**
+	 * Format some objects using a format string and append to the string.
+	 *
+	 * @param Fmt  - The format string.
+	 * @param Args - The objects to format.
+	 *
+	 * @return The formatted string containing the objects.
+	 */
+	template <typename... Ts>
+	NODISCARD static TString Format(TStringView<ElementType> Fmt, const Ts&... Args);
+
+	/**
+	 * Parse a string using a format string to objects.
+	 *
+	 * @param Fmt  - The format string.
+	 * @param Args - The objects to parse.
+	 *
+	 * @return The number of objects successfully parsed.
+	 */
+	template <typename... Ts>
+	size_t Parse(TStringView<ElementType> Fmt, Ts&... Args) const
+	{
+		return TStringView(*this).Parse(Fmt, Args...);
+	}
+
+public:
+
 	/** Overloads the GetTypeHash algorithm for TString. */
 	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TString& A) { return GetTypeHash(TStringView<ElementType>(A)); }
 
@@ -1046,3 +1081,5 @@ template <CCharType T> template <typename Allocator> constexpr TStringView<T>::T
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
+
+#include "String/Conversion.h.inl"
