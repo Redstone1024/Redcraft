@@ -174,6 +174,15 @@ void TestStringView()
 			always_check(View.FindLastNotOf(LITERAL(T, "Hello! Goodbye!"))  == 25);
 			always_check(View.FindLastNotOf(LITERAL(T, '!'))                == 27);
 		}
+
+		{
+			always_check( LITERAL_VIEW(T, "012345678900").IsASCII());
+			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsASCII());
+			always_check( LITERAL_VIEW(T, "012345678900").IsNumeric());
+			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsNumeric());
+			always_check(!LITERAL_VIEW(T, "0123456789AB").IsNumeric());
+			always_check( LITERAL_VIEW(T, "0123456789AB").IsNumeric(16));
+		}
 	};
 
 	Test(InPlaceType<char>);

@@ -379,6 +379,52 @@ public:
 
 public:
 
+	/** @return true if the string only contains valid characters, false otherwise. */
+	NODISCARD constexpr bool IsValid() const
+	{
+		for (ElementType Char : *this)
+		{
+			if (!TChar<ElementType>::IsValid(Char)) return false;
+		}
+
+		return true;
+	}
+
+	/** @return true if the string only contains ASCII characters, false otherwise. */
+	NODISCARD constexpr bool IsASCII() const
+	{
+		for (ElementType Char : *this)
+		{
+			if (!TChar<ElementType>::IsASCII(Char)) return false;
+		}
+
+		return true;
+	}
+
+	/** @return true if the string only contains numeric characters, false otherwise. */
+	NODISCARD constexpr bool IsNumeric() const
+	{
+		for (ElementType Char : *this)
+		{
+			if (!TChar<ElementType>::IsDigit(Char)) return false;
+		}
+
+		return true;
+	}
+
+	/** @return true if the string only contains numeric characters, false otherwise. */
+	NODISCARD constexpr bool IsNumeric(unsigned Base) const
+	{
+		for (ElementType Char : *this)
+		{
+			if (!TChar<ElementType>::IsDigit(Char, Base)) return false;
+		}
+
+		return true;
+	}
+
+public:
+
 	/**
 	 * Parse a string using a format string to objects.
 	 *

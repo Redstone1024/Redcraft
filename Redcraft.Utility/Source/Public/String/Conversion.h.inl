@@ -49,7 +49,7 @@ struct TStringHelper
 			if constexpr (CArithmetic<U>)
 			{
 				constexpr const T* DigitToChar = LITERAL(T, "9876543210123456789");
-				constexpr size_t   ZeroIndex = 9;
+				constexpr size_t   ZeroIndex   = 9;
 
 				if constexpr (CSameAs<U, bool>)
 				{
@@ -452,7 +452,7 @@ struct TStringHelper
 
 						if (IndexLength != 0)
 						{
-							if (PlaceholderIndex.FindFirstNotOf(LITERAL(T, "0123456789")) != INDEX_NONE)
+							if (!PlaceholderIndex.IsNumeric())
 							{
 								checkf(false, TEXT("Invalid placeholder index."));
 

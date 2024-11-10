@@ -1021,6 +1021,32 @@ public:
 
 public:
 
+	/** @return true if the string only contains valid characters, false otherwise. */
+	NODISCARD FORCEINLINE constexpr bool IsValid() const
+	{
+		return TStringView<ElementType>(*this).IsValid();
+	}
+
+	/** @return true if the string only contains ASCII characters, false otherwise. */
+	NODISCARD FORCEINLINE constexpr bool IsASCII() const
+	{
+		return TStringView<ElementType>(*this).IsASCII();
+	}
+
+	/** @return true if the string only contains numeric characters, false otherwise. */
+	NODISCARD FORCEINLINE constexpr bool IsNumeric() const
+	{
+		return TStringView<ElementType>(*this).IsNumeric();
+	}
+
+	/** @return true if the string only contains numeric characters, false otherwise. */
+	NODISCARD FORCEINLINE constexpr bool IsNumeric(unsigned Base) const
+	{
+		return TStringView<ElementType>(*this).IsNumeric(Base);
+	}
+
+public:
+
 	/**
 	 * Format some objects using a format string and append to the string.
 	 *
