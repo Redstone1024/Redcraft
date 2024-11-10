@@ -60,6 +60,11 @@ NAMESPACE_PRIVATE_END
 /** Templated literal struct to allow selection of string literals based on the character type provided, and not on compiler switches. */
 #define LITERAL(CharType, StringLiteral) NAMESPACE_PRIVATE::TLiteral<CharType>::Select(TEXT(StringLiteral), WTEXT(StringLiteral), U8TEXT(StringLiteral), U16TEXT(StringLiteral), U32TEXT(StringLiteral))
 
+static_assert(CUnsigned<u8char>,      "TChar assumes u8char is an unsigned integer");
+static_assert(CUnsigned<u16char>,     "TChar assumes u16char is an unsigned integer");
+static_assert(CUnsigned<u32char>,     "TChar assumes u32char is an unsigned integer");
+static_assert(CUnsigned<unicodechar>, "TChar assumes unicodechar is an unsigned integer");
+
 /** Set of utility functions operating on a single character. Implemented based on user-preferred locale and ISO 30112 "i18n". */
 template <CCharType T>
 struct TChar
@@ -181,7 +186,7 @@ struct TChar
 			}
 			();
 
-			return ASCIICompatible && InChar <= 0x7F;
+			return ASCIICompatible && 0x00 <= InChar && InChar <= 0x7F;
 		}
 
 		else if constexpr (CSameAs<CharType, wchar>)
@@ -207,7 +212,7 @@ struct TChar
 			}
 			();
 
-			return ASCIICompatible && InChar <= 0x7F;
+			return ASCIICompatible && 0x00 <= InChar && InChar <= 0x7F;
 		}
 
 		else if constexpr (CSameAs<CharType, u8char> || CSameAs<CharType, u16char> || CSameAs<CharType, u32char> || CSameAs<CharType, unicodechar>)
@@ -358,15 +363,15 @@ struct TChar
 		return (InChar >= LITERAL(CharType, '0') && InChar <= LITERAL(CharType, '9'));
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar, int Base)
+	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar, unsigned Base)
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Base must be in the range [2, 36]."));
 
 		/* <U0030>..<U0039>;<U0041>..<U0046>;<U0061>..<U0066>; */
 		return
-			(InChar >= LITERAL(CharType, '0') && InChar < LITERAL(CharType, '0') + Base     ) ||
-			(InChar >= LITERAL(CharType, 'a') && InChar < LITERAL(CharType, 'a') + Base - 10) ||
-			(InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + Base - 10);
+			(InChar >= LITERAL(CharType, '0') && InChar < LITERAL(CharType, '0') + static_cast<signed>(Base)     ) ||
+			(InChar >= LITERAL(CharType, 'a') && InChar < LITERAL(CharType, 'a') + static_cast<signed>(Base) - 10) ||
+			(InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + static_cast<signed>(Base) - 10);
 	}
 
 	NODISCARD FORCEINLINE static constexpr bool IsCntrl(CharType InChar)
