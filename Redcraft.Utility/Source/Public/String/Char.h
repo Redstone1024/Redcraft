@@ -156,6 +156,70 @@ struct TChar
 		return false;
 	}
 
+	NODISCARD FORCEINLINE static constexpr bool IsASCII(CharType InChar)
+	{
+		if constexpr (CSameAs<CharType, char>)
+		{
+			constexpr bool ASCIICompatible = []() -> bool
+			{
+				constexpr char ASCIITable[] =
+					TEXT("\u0000\u0001\u0002\u0003\u0004\u0005\u0006")
+					TEXT("\a\b\t\n\v\f\r")
+					TEXT("\u000E\u000F")
+					TEXT("\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017")
+					TEXT("\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F")
+					TEXT(" !\"#$%&'()*+,-./0123456789:;<=>?")
+					TEXT("@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_")
+					TEXT("`abcdefghijklmnopqrstuvwxyz{|}~\u007F");
+
+				for (size_t Index = 0; Index <= 0x7F; ++Index)
+				{
+					if (ASCIITable[Index] != static_cast<char>(Index)) return false;
+				}
+
+				return true;
+			}
+			();
+
+			return ASCIICompatible && InChar <= 0x7F;
+		}
+
+		else if constexpr (CSameAs<CharType, wchar>)
+		{
+			constexpr bool ASCIICompatible = []() -> bool
+			{
+				constexpr wchar ASCIITable[] =
+					WTEXT("\u0000\u0001\u0002\u0003\u0004\u0005\u0006")
+					WTEXT("\a\b\t\n\v\f\r")
+					WTEXT("\u000E\u000F")
+					WTEXT("\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017")
+					WTEXT("\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F")
+					WTEXT(" !\"#$%&'()*+,-./0123456789:;<=>?")
+					WTEXT("@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_")
+					WTEXT("`abcdefghijklmnopqrstuvwxyz{|}~\u007F");
+
+				for (size_t Index = 0; Index <= 0x7F; ++Index)
+				{
+					if (ASCIITable[Index] != static_cast<wchar>(Index)) return false;
+				}
+
+				return true;
+			}
+			();
+
+			return ASCIICompatible && InChar <= 0x7F;
+		}
+
+		else if constexpr (CSameAs<CharType, u8char> || CSameAs<CharType, u16char> || CSameAs<CharType, u32char> || CSameAs<CharType, unicodechar>)
+		{
+			return InChar <= 0x7F;
+		}
+
+		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+
+		return false;
+	}
+
 	NODISCARD FORCEINLINE static constexpr bool IsAlnum(CharType InChar)
 	{
 		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
