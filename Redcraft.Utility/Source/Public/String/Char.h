@@ -161,7 +161,7 @@ struct TChar
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsASCII(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsASCII(CharType InChar = LITERAL(CharType, '\0'))
 	{
 		if constexpr (CSameAs<CharType, char>)
 		{
@@ -359,19 +359,30 @@ struct TChar
 
 	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar)
 	{
+		static_assert(TChar::IsASCII());
+
 		/* <U0030>..<U0039>; */
-		return (InChar >= LITERAL(CharType, '0') && InChar <= LITERAL(CharType, '9'));
+		return InChar >= LITERAL(CharType, '0') && InChar <= LITERAL(CharType, '9');
 	}
 
 	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar, unsigned Base)
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Base must be in the range [2, 36]."));
 
-		/* <U0030>..<U0039>;<U0041>..<U0046>;<U0061>..<U0066>; */
-		return
-			(InChar >= LITERAL(CharType, '0') && InChar < LITERAL(CharType, '0') + static_cast<signed>(Base)     ) ||
-			(InChar >= LITERAL(CharType, 'a') && InChar < LITERAL(CharType, 'a') + static_cast<signed>(Base) - 10) ||
-			(InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + static_cast<signed>(Base) - 10);
+		static_assert(TChar::IsASCII());
+
+		bool bResult = false;
+
+		/* <U0030>..<U0039>; */
+		bResult |= InChar >= LITERAL(CharType, '0') && InChar < LITERAL(CharType, '0') + static_cast<signed>(Base);
+
+		/* <U0041>..<U0046>; */
+		bResult |= InChar >= LITERAL(CharType, 'a') && InChar < LITERAL(CharType, 'a') + static_cast<signed>(Base) - 10;
+
+		/* <U0061>..<U0066>; */
+		bResult |= InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + static_cast<signed>(Base) - 10;
+
+		return bResult;
 	}
 
 	NODISCARD FORCEINLINE static constexpr bool IsCntrl(CharType InChar)
@@ -800,6 +811,8 @@ struct TChar
 
 	NODISCARD FORCEINLINE static constexpr TOptional<unsigned> ToDigit(CharType InChar, unsigned Base = 10)
 	{
+		static_assert(TChar::IsASCII());
+
 		constexpr uint8 DigitFromChar[] =
 		{
 			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -825,8 +838,6 @@ struct TChar
 		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return Invalid;
 
 		if (DigitFromChar[InChar] >= Base) return Invalid;
-
-		check(TChar::IsASCII(InChar));
 
 		return DigitFromChar[InChar];
 	}
