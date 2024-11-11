@@ -1022,27 +1022,189 @@ public:
 public:
 
 	/** @return true if the string only contains valid characters, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsValid() const
+	NODISCARD FORCEINLINE bool IsValid() const
 	{
 		return TStringView<ElementType>(*this).IsValid();
 	}
 
 	/** @return true if the string only contains ASCII characters, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsASCII() const
+	NODISCARD FORCEINLINE bool IsASCII() const
 	{
 		return TStringView<ElementType>(*this).IsASCII();
 	}
 
 	/** @return true if the string only contains numeric characters, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsNumeric() const
-	{
-		return TStringView<ElementType>(*this).IsNumeric();
-	}
-
-	/** @return true if the string only contains numeric characters, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsNumeric(unsigned Base) const
+	NODISCARD FORCEINLINE bool IsNumeric(unsigned Base = 10) const
 	{
 		return TStringView<ElementType>(*this).IsNumeric(Base);
+	}
+
+public:
+
+	/**
+	 * Converts a boolean value into a string.
+	 *
+	 * - true  becomes "True".
+	 * - false becomes "False".
+	 *
+	 * @return The string containing the boolean value.
+	 */
+	NODISCARD static FORCEINLINE TString FromBool(bool Value)
+	{
+		TString Result;
+
+		Result.AppendBool(Value);
+
+		return Result;
+	}
+
+	/**
+	 * Converts an integer value into a string.
+	 *
+	 * @param Base - The base of the number, between [2, 36].
+	 *
+	 * @return The string containing the integer value.
+	 */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD static FORCEINLINE TString FromInt(U Value, unsigned Base = 10)
+	{
+		checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
+
+		TString Result;
+
+		Result.AppendInt(Value, Base);
+
+		return Result;
+	}
+
+	/**
+	 * Converts a floating-point value into a string.
+	 * The string is formatted using the shortest representation in fixed-point or scientific notation.
+	 *
+	 * @return The string containing the floating-point value.
+	 */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD static FORCEINLINE TString FromFloat(U Value)
+	{
+		TString Result;
+
+		Result.AppendFloat(Value);
+
+		return Result;
+	}
+
+	/**
+	 * Converts a floating-point value into a string.
+	 * The string is formatted using the shortest representation in fixed-point or scientific notation.
+	 * The string is formatted using the hex representation if bFixed and bScientific are false.
+	 *
+	 * @param bFixed      - The fixed-point format.
+	 * @param bScientific - The scientific notation.
+	 *
+	 * @return The string containing the floating-point value.
+	 */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD static FORCEINLINE TString FromFloat(U Value, bool bFixed, bool bScientific)
+	{
+		TString Result;
+
+		Result.AppendFloat(Value, bFixed, bScientific);
+
+		return Result;
+	}
+
+	/**
+	 * Converts a floating-point value into a string.
+	 * The string is formatted using the shortest representation in fixed-point or scientific notation.
+	 * The string is formatted using the hex representation if bFixed and bScientific are false.
+	 *
+	 * @param bFixed      - The fixed-point format.
+	 * @param bScientific - The scientific notation.
+	 * @param Precision   - The number of digits after the decimal point.
+	 * @return
+	 */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD static FORCEINLINE TString FromFloat(U Value, bool bFixed, bool bScientific, unsigned Precision)
+	{
+		TString Result;
+
+		Result.AppendFloat(Value, bFixed, bScientific, Precision);
+
+		return Result;
+	}
+
+	/** Converts a boolean value into a string and appends it to the string. */
+	void AppendBool(bool Value);
+
+	/** Converts an integer value into a string and appends it to the string. */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	void AppendInt(U Value, unsigned Base = 10);
+
+	/** Converts a floating-point value into a string and appends it to the string. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	void AppendFloat(U Value);
+
+	/** Converts a floating-point value into a string and appends it to the string. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	void AppendFloat(U Value, bool bFixed, bool bScientific);
+
+	/** Converts a floating-point value into a string and appends it to the string. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	void AppendFloat(U Value, bool bFixed, bool bScientific, unsigned Precision);
+
+	/**
+	 * Converts a string into a boolean value.
+	 *
+	 * - 1, "true",  "True",  "TRUE"  and non-zero integers become true.
+	 * - 0, "false", "False", "FALSE" and unparsable values become false.
+	 *
+	 * @return The boolean value.
+	 */
+	NODISCARD FORCEINLINE bool ToBool() const
+	{
+		return TStringView<ElementType>(*this).ToBool();
+	}
+
+	/**
+	 * Converts a string into an integer value.
+	 *
+	 * - "0x" or "0X" prefixes are not recognized if base is 16.
+	 * - Only the minus sign is recognized (not the plus sign), and only for signed integer types of value.
+	 * - Leading whitespace is not ignored.
+	 *
+	 * Ensure that the entire string can be parsed if IsNumeric(Base, false, true, false) is true.
+	 *
+	 * @param Base - The base of the number, between [2, 36].
+	 *
+	 * @return The integer value.
+	 */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE U ToInt(unsigned Base = 10) const
+	{
+		checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
+
+		return TStringView<ElementType>(*this).template ToInt<U>(Base);
+	}
+
+	/**
+	 * Converts a string into a floating-point value.
+	 *
+	 * - "0x" or "0X" prefixes are not recognized if base is 16.
+	 * - The plus sign is not recognized outside the exponent (only the minus sign is permitted at the beginning).
+	 * - Leading whitespace is not ignored.
+	 *
+	 * Ensure that the entire string can be parsed if bFixed and IsNumeric(10, false) is true.
+	 * Parsers hex floating-point values if bFixed and bScientific are false.
+	 *
+	 * @param bFixed      - The fixed-point format.
+	 * @param bScientific - The scientific notation.
+	 *
+	 * @return The floating-point value.
+	 */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE U ToFloat(bool bFixed = true, bool bScientific = false) const
+	{
+		return TStringView<ElementType>(*this).template ToFloat<U>(bFixed, bScientific);
 	}
 
 public:
@@ -1067,7 +1229,7 @@ public:
 	 * @return The number of objects successfully parsed.
 	 */
 	template <typename... Ts>
-	size_t Parse(TStringView<ElementType> Fmt, Ts&... Args) const
+	FORCEINLINE size_t Parse(TStringView<ElementType> Fmt, Ts&... Args) const
 	{
 		return TStringView(*this).Parse(Fmt, Args...);
 	}

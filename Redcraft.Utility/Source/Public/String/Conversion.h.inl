@@ -8,9 +8,10 @@
 
 #include <cmath>
 #include <limits>
+#include <charconv>
 
 #pragma warning(push)
-#pragma warning(disable : 4146)
+#pragma warning(disable : 4146 4244)
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -33,7 +34,7 @@ NAMESPACE_PRIVATE_BEGIN
 template <CCharType T, bool bIsFormat>
 struct TStringHelper
 {
-	FORCEINLINE static bool FormatObject(auto& Result, TStringView<T> Fmt, auto& Object) requires (bIsFormat)
+	static FORCEINLINE bool FormatObject(auto& Result, TStringView<T> Fmt, auto& Object) requires (bIsFormat)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -119,7 +120,7 @@ struct TStringHelper
 		return false;
 	}
 
-	FORCEINLINE static bool ParseObject(TStringView<T>& View, TStringView<T> Fmt, auto& Object) requires (!bIsFormat)
+	static FORCEINLINE bool ParseObject(TStringView<T>& View, TStringView<T> Fmt, auto& Object) requires (!bIsFormat)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -328,7 +329,7 @@ struct TStringHelper
 		return false;
 	}
 
-	FORCEINLINE static size_t Do(auto& Result, TStringView<T> Fmt, auto ArgsTuple)
+	static FORCEINLINE size_t Do(auto& Result, TStringView<T> Fmt, auto ArgsTuple)
 	{
 		size_t FormattedObjectNum = 0;
 
@@ -577,6 +578,355 @@ size_t TStringView<T>::Parse(TStringView Fmt, Ts&... Args) const
 
 #undef ESCAPE_LEFT_BRACE
 #undef ESCAPE_RIGHT_BRACE
+
+template <CCharType T>
+constexpr bool TStringView<T>::ToBool() const
+{
+	if    (StartsWith(LITERAL(T, '1'))
+		|| StartsWith(LITERAL(T, "true"))
+		|| StartsWith(LITERAL(T, "True"))
+		|| StartsWith(LITERAL(T, "TRUE")))
+	{
+		return true;
+	}
+
+	if    (StartsWith(LITERAL(T, '0'))
+		|| StartsWith(LITERAL(T, "false"))
+		|| StartsWith(LITERAL(T, "False"))
+		|| StartsWith(LITERAL(T, "FALSE")))
+	{
+		return false;
+	}
+
+	return ToInt() != 0;
+}
+
+template <CCharType T>
+template <CIntegral U> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+constexpr U TStringView<T>::ToInt(unsigned Base) const
+{
+	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
+
+	bool bNegative = false;
+
+	TStringView View = *this;
+
+	if constexpr (CSigned<U>)
+	{
+		if (View.StartsWith(LITERAL(ElementType, '-')))
+		{
+			bNegative = true;
+			View.RemovePrefix(1);
+		}
+	}
+
+	using UnsignedU = TMakeUnsigned<U>;
+
+	constexpr UnsignedU UnsignedMaximum = static_cast<UnsignedU>(-1);
+
+	constexpr U SignedMaximum = static_cast<U>(UnsignedMaximum >> 1);
+	constexpr U SignedMinimum =  -static_cast<U>(SignedMaximum) - 1;
+
+	UnsignedU LastValue = 0;
+	UnsignedU     Value = 0;
+
+	for (ElementType Char : View)
+	{
+		auto Digit = TChar<ElementType>::ToDigit(Char, Base);
+
+		if (!Digit) break;
+
+		LastValue = Value;
+
+		Value = static_cast<UnsignedU>(LastValue * Base + *Digit);
+
+		if (Value < LastValue)
+		{
+			if constexpr (CSigned<U>)
+			{
+				return bNegative ? SignedMinimum : SignedMaximum;
+			}
+			else return UnsignedMaximum;
+		}
+	}
+
+	if constexpr (CSigned<U>)
+	{
+		if (!bNegative && Value >= static_cast<UnsignedU>(SignedMaximum)) return SignedMaximum;
+		if ( bNegative && Value >= static_cast<UnsignedU>(SignedMinimum)) return SignedMinimum;
+
+		if (bNegative) Value = static_cast<UnsignedU>(-Value);
+	}
+
+	return static_cast<U>(Value);
+}
+
+template <CCharType T>
+template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
+constexpr U TStringView<T>::ToFloat(bool bFixed, bool bScientific) const
+{
+	NAMESPACE_STD::chars_format Format;
+
+	if      ( bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::general;
+	else if ( bFixed && !bScientific) Format = NAMESPACE_STD::chars_format::fixed;
+	else if (!bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::scientific;
+	else                              Format = NAMESPACE_STD::chars_format::hex;
+
+	U Result;
+
+	auto Iter = this->Begin();
+
+	bool bNegativeMantissa = false;
+	bool bNegativeExponent = false;
+
+	do
+	{
+		if (Iter == this->End()) break;
+
+		if (*Iter == LITERAL(ElementType, '-'))
+		{
+			bNegativeMantissa = true;
+			++Iter;
+		}
+
+		auto DecimalPoint = this->End();
+		auto NonZeroBegin = this->End();
+
+		while (Iter != this->End())
+		{
+			if (DecimalPoint == this->End() && *Iter == LITERAL(ElementType, '.'))
+			{
+				DecimalPoint = Iter;
+			}
+			else if (TChar<ElementType>::IsDigit(*Iter, Format == NAMESPACE_STD::chars_format::hex ? 16 : 10))
+			{
+				if (NonZeroBegin == this->End() && *Iter != LITERAL(ElementType, '0'))
+				{
+					NonZeroBegin = Iter;
+				}
+			}
+			else break;
+
+			++Iter;
+		}
+
+		if (DecimalPoint == this->End()) DecimalPoint = Iter;
+
+		bNegativeExponent = DecimalPoint < NonZeroBegin;
+
+		if (Iter == this->End()) break;
+
+		bool bHasExponent = false;
+
+		if (Format == NAMESPACE_STD::chars_format::general || Format == NAMESPACE_STD::chars_format::scientific)
+		{
+			if (*Iter == LITERAL(ElementType, 'e') || *Iter == LITERAL(ElementType, 'E'))
+			{
+				bHasExponent = true;
+				++Iter;
+			}
+		}
+		else if (Format == NAMESPACE_STD::chars_format::hex)
+		{
+			if (*Iter == LITERAL(ElementType, 'p') || *Iter == LITERAL(ElementType, 'P'))
+			{
+				bHasExponent = true;
+				++Iter;
+			}
+		}
+
+		if (Iter == this->End() || !bHasExponent) break;
+
+		if (*Iter == LITERAL(ElementType, '+')) ++Iter;
+		if (*Iter == LITERAL(ElementType, '-')) { bNegativeExponent = true; ++Iter; }
+
+		auto ExponentBegin = Iter;
+
+		while (Iter != this->End() && TChar<ElementType>::IsDigit(*Iter, 10)) ++Iter;
+
+		auto ExponentEnd = Iter;
+
+		if (NonZeroBegin == this->End()) break;
+
+		auto Exponent = TStringView(ExponentBegin, ExponentEnd).ToInt();
+
+		if (bNegativeExponent) Exponent = -Exponent;
+
+		Exponent += static_cast<int>(DecimalPoint - NonZeroBegin);
+
+		bNegativeExponent = Exponent < 0;
+	}
+	while (false);
+
+	NAMESPACE_STD::from_chars_result ConvertResult;
+
+	if constexpr (!CSameAs<ElementType, char>)
+	{
+		TArray<char, TInlineAllocator<64>> Buffer(this->Begin(), Iter);
+
+		ConvertResult = NAMESPACE_STD::from_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Result, Format);
+	}
+	else ConvertResult = NAMESPACE_STD::from_chars(ToAddress(this->Begin()), ToAddress(this->End()), Result, Format);
+
+	if (ConvertResult.ec == NAMESPACE_STD::errc::result_out_of_range)
+	{
+		if (!bNegativeMantissa && !bNegativeExponent) return  NAMESPACE_STD::numeric_limits<U>::infinity();
+		if ( bNegativeMantissa && !bNegativeExponent) return -NAMESPACE_STD::numeric_limits<U>::infinity();
+		if (!bNegativeMantissa &&  bNegativeExponent) return static_cast<U>( 0.0);
+		                                              return static_cast<U>(-0.0);
+	}
+
+	if (ConvertResult.ec == NAMESPACE_STD::errc::invalid_argument) return NAMESPACE_STD::numeric_limits<U>::quiet_NaN();
+
+	return Result;
+}
+
+template <CCharType T, CAllocator<T> Allocator>
+void TString<T, Allocator>::AppendBool(bool Value)
+{
+	if (Value) Append(LITERAL(ElementType, "True"));
+	else       Append(LITERAL(ElementType, "False"));
+}
+
+template <CCharType T, CAllocator<T> Allocator>
+template <CIntegral U> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
+{
+	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
+
+	constexpr const ElementType* DigitToChar = LITERAL(ElementType, "0123456789ABCDEF");
+
+	using UnsignedU = TMakeUnsigned<U>;
+
+	UnsignedU Unsigned = static_cast<UnsignedU>(Value);
+
+	bool bNegative = false;
+
+	if constexpr (CSigned<U>)
+	{
+		if (Value < 0)
+		{
+			bNegative = true;
+
+			Unsigned = static_cast<UnsignedU>(-Unsigned);
+		}
+	}
+
+	constexpr size_t BufferSize = sizeof(UnsignedU) * 8 + (CSigned<U> ? 1 : 0);
+
+	ElementType Buffer[BufferSize];
+
+	ElementType* Iter = Buffer + BufferSize;
+
+	switch (Base)
+	{
+	case 0x02: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00001)); Unsigned >>= 1; } while (Unsigned != 0); break;
+	case 0x04: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00011)); Unsigned >>= 2; } while (Unsigned != 0); break;
+	case 0x08: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00111)); Unsigned >>= 3; } while (Unsigned != 0); break;
+	case 0x10: do { *--Iter =                     DigitToChar[Unsigned & 0b01111];  Unsigned >>= 4; } while (Unsigned != 0); break;
+	case 0X20: do { *--Iter =                     DigitToChar[Unsigned & 0b11111];  Unsigned >>= 5; } while (Unsigned != 0); break;
+
+	case 3:
+	case 5:
+	case 6:
+	case 7:
+	case 9:
+	case 10: do { *--Iter = static_cast<ElementType>('0' + Unsigned % Base); Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
+	default: do { *--Iter =                    DigitToChar[Unsigned % Base]; Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
+	}
+
+	if constexpr (CSigned<U>) if (bNegative) *--Iter = LITERAL(T, '-');
+
+	Append(Iter, Buffer + BufferSize);
+}
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <CCharType T, size_t Overload>
+struct TStringFloatSerializer
+{
+	static FORCEINLINE void Do(auto& Result, auto Value, bool bFixed, bool bScientific, unsigned Precision)
+	{
+		NAMESPACE_STD::chars_format Format;
+
+		if constexpr (Overload >= 1)
+		{
+			if      ( bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::general;
+			else if ( bFixed && !bScientific) Format = NAMESPACE_STD::chars_format::fixed;
+			else if (!bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::scientific;
+			else                              Format = NAMESPACE_STD::chars_format::hex;
+		}
+
+		constexpr size_t StartingBufferSize = 64;
+
+		TArray<char, TInlineAllocator<StartingBufferSize>> Buffer(StartingBufferSize / 2);
+
+		NAMESPACE_STD::to_chars_result ConvertResult;
+
+		do
+		{
+			Buffer.SetNum(Buffer.Num() * 2);
+
+			if      constexpr (Overload == 0) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value);
+			else if constexpr (Overload == 1) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Format);
+			else                              ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Format, Precision);
+		}
+		while (ConvertResult.ec == NAMESPACE_STD::errc::value_too_large);
+
+		Buffer.SetNum(ConvertResult.ptr - Buffer.GetData());
+
+		const bool bNegative = Buffer[0] == '-';
+
+		const char* Iter = Buffer.GetData() + (bNegative ? 1 : 0);
+
+		if (*Iter == 'i')
+		{
+			if (bNegative) Result.Append(LITERAL(T, "-Infinity"));
+			else           Result.Append(LITERAL(T,  "Infinity"));
+			return;
+		}
+
+		if (*Iter == 'n')
+		{
+			if (bNegative) Result.Append(LITERAL(T, "-NaN"));
+			else           Result.Append(LITERAL(T,  "NaN"));
+			return;
+		}
+
+		unsigned Base;
+
+		if constexpr (Overload == 0) Base = 10;
+		else Base = Format == NAMESPACE_STD::chars_format::hex ? 16 : 10;
+
+		for (char& Char : Buffer)
+		{
+			const auto Digit = FChar::ToDigit(Char, Base);
+			if (Digit) Char = *FChar::FromDigit(*Digit, Base);
+		}
+
+		Result.Append(Buffer.Begin(), Buffer.End());
+	}
+};
+
+NAMESPACE_PRIVATE_END
+
+template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
+void TString<T, Allocator>::AppendFloat(U Value)
+{
+	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 0>::Do(*this, Value, false, false, 0);
+}
+
+template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
+void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific)
+{
+	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 1>::Do(*this, Value, bFixed, bScientific, 0);
+}
+
+template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
+void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific, unsigned Precision)
+{
+	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 2>::Do(*this, Value, bFixed, bScientific, Precision);
+}
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

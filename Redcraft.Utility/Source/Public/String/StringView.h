@@ -402,18 +402,7 @@ public:
 	}
 
 	/** @return true if the string only contains numeric characters, false otherwise. */
-	NODISCARD constexpr bool IsNumeric() const
-	{
-		for (ElementType Char : *this)
-		{
-			if (!TChar<ElementType>::IsDigit(Char)) return false;
-		}
-
-		return true;
-	}
-
-	/** @return true if the string only contains numeric characters, false otherwise. */
-	NODISCARD constexpr bool IsNumeric(unsigned Base) const
+	NODISCARD constexpr bool IsNumeric(unsigned Base = 10) const
 	{
 		for (ElementType Char : *this)
 		{
@@ -422,6 +411,52 @@ public:
 
 		return true;
 	}
+
+public:
+
+	/**
+	 * Converts a string into a boolean value.
+	 *
+	 * - 1, "true",  "True",  "TRUE"  and non-zero integers become true.
+	 * - 0, "false", "False", "FALSE" and unparsable values become false.
+	 *
+	 * @return The boolean value.
+	 */
+	NODISCARD constexpr bool ToBool() const;
+
+	/**
+	 * Converts a string into an integer value.
+	 *
+	 * - "0x" or "0X" prefixes are not recognized if base is 16.
+	 * - Only the minus sign is recognized (not the plus sign), and only for signed integer types of value.
+	 * - Leading whitespace is not ignored.
+	 *
+	 * Ensure that the entire string can be parsed if IsNumeric(Base, false, true, false) is true.
+	 *
+	 * @param Base - The base of the number, between [2, 36].
+	 *
+	 * @return The integer value.
+	 */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD constexpr U ToInt(unsigned Base = 10) const;
+
+	/**
+	 * Converts a string into a floating-point value.
+	 *
+	 * - "0x" or "0X" prefixes are not recognized if base is 16.
+	 * - The plus sign is not recognized outside the exponent (only the minus sign is permitted at the beginning).
+	 * - Leading whitespace is not ignored.
+	 *
+	 * Ensure that the entire string can be parsed if bFixed and IsNumeric(10, false) is true.
+	 * Parsers hex floating-point values if bFixed and bScientific are false.
+	 *
+	 * @param bFixed      - The fixed-point format.
+	 * @param bScientific - The scientific notation.
+	 *
+	 * @return The floating-point value.
+	 */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD constexpr U ToFloat(bool bFixed = true, bool bScientific = true) const;
 
 public:
 

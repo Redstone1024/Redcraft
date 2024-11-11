@@ -536,6 +536,70 @@ void TestStringConversion()
 		CheckParseFloat(InPlaceType<float>);
 		CheckParseFloat(InPlaceType<double>);
 		CheckParseFloat(InPlaceType<long double>);
+
+		{
+			always_check(TString<T>::FromBool(true ) == LITERAL(T, "True" ));
+			always_check(TString<T>::FromBool(false) == LITERAL(T, "False"));
+		}
+
+		{
+			always_check(TString<T>::FromInt(42)         == LITERAL(T, "42"        ));
+			always_check(TString<T>::FromInt(255, 16)    == LITERAL(T, "FF"        ));
+			always_check(TString<T>::FromInt(-42)        == LITERAL(T, "-42"       ));
+			always_check(TString<T>::FromInt(0)          == LITERAL(T, "0"         ));
+			always_check(TString<T>::FromInt(1234567890) == LITERAL(T, "1234567890"));
+			always_check(TString<T>::FromInt(255, 2)     == LITERAL(T, "11111111"  ));
+			always_check(TString<T>::FromInt(255, 8)     == LITERAL(T, "377"       ));
+			always_check(TString<T>::FromInt(255, 36)    == LITERAL(T, "73"        ));
+		}
+
+		{
+			always_check(TString<T>::FromFloat(3.14f)                       == LITERAL(T, "3.14"    ));
+			always_check(TString<T>::FromFloat(0.0f)                        == LITERAL(T, "0"       ));
+			always_check(TString<T>::FromFloat(-3.14f)                      == LITERAL(T, "-3.14"   ));
+			always_check(TString<T>::FromFloat(3.14f, true, false)          == LITERAL(T, "3.14"    ));
+			always_check(TString<T>::FromFloat(3.14f, false, true)          == LITERAL(T, "3.14e+00"));
+			always_check(TString<T>::FromFloat(3.14f, false, false, 2)      == LITERAL(T, "1.92p+1" ));
+			always_check(TString<T>::FromFloat(1.0f / 3.0f, true, false, 5) == LITERAL(T, "0.33333" ));
+		}
+
+		{
+			always_check( LITERAL_VIEW(T, "True"  ).ToBool());
+			always_check(!LITERAL_VIEW(T, "False" ).ToBool());
+			always_check( LITERAL_VIEW(T, "1"     ).ToBool());
+			always_check(!LITERAL_VIEW(T, "0"     ).ToBool());
+			always_check(!LITERAL_VIEW(T, "random").ToBool());
+		}
+
+		{
+			always_check(LITERAL_VIEW(T, "42"     ).ToInt()   == 42 );
+			always_check(LITERAL_VIEW(T, "FF"     ).ToInt(16) == 255);
+			always_check(LITERAL_VIEW(T, "-42"    ).ToInt()   == -42);
+			always_check(LITERAL_VIEW(T, "0"      ).ToInt()   == 0  );
+			always_check(LITERAL_VIEW(T, "Invalid").ToInt()   == 0  );
+
+			always_check(LITERAL_VIEW(T,  "999999999999999999999999999999").ToInt() == NAMESPACE_STD::numeric_limits<int>::max());
+			always_check(LITERAL_VIEW(T, "-999999999999999999999999999999").ToInt() == NAMESPACE_STD::numeric_limits<int>::min());
+		}
+
+		{
+			always_check(LITERAL_VIEW(T, "3.14"    ).ToFloat() == 3.14f );
+			always_check(LITERAL_VIEW(T, "3.14e+00").ToFloat() == 3.14f );
+			always_check(LITERAL_VIEW(T, "-3.14"   ).ToFloat() == -3.14f);
+			always_check(LITERAL_VIEW(T, "0.0"     ).ToFloat() == 0.0f  );
+
+			always_check(LITERAL_VIEW(T,  "1e+308").ToFloat() ==  NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T, "-1e+308").ToFloat() == -NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T,  "1e-308").ToFloat() ==  0.0f);
+			always_check(LITERAL_VIEW(T, "-1e-308").ToFloat() == -0.0f);
+
+			always_check(LITERAL_VIEW(T,  "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.e-4").ToFloat() ==  NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T, "-100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.e-4").ToFloat() == -NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T,  "1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-4").ToFloat() ==  NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T, "-1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-4").ToFloat() == -NAMESPACE_STD::numeric_limits<float>::infinity());
+			always_check(LITERAL_VIEW(T,  "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e+4").ToFloat() ==  0.0f);
+			always_check(LITERAL_VIEW(T, "-0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e+4").ToFloat() == -0.0f);
+		}
 	};
 
 	Test(InPlaceType<char>);
