@@ -798,79 +798,42 @@ struct TChar
 		return InChar;
 	}
 
-	NODISCARD FORCEINLINE static constexpr TOptional<unsigned> ToDigit(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr TOptional<unsigned> ToDigit(CharType InChar, unsigned Base = 10)
 	{
-		switch (InChar)
+		constexpr uint8 DigitFromChar[] =
 		{
-		case LITERAL(CharType, '0'): return 0;
-		case LITERAL(CharType, '1'): return 1;
-		case LITERAL(CharType, '2'): return 2;
-		case LITERAL(CharType, '3'): return 3;
-		case LITERAL(CharType, '4'): return 4;
-		case LITERAL(CharType, '5'): return 5;
-		case LITERAL(CharType, '6'): return 6;
-		case LITERAL(CharType, '7'): return 7;
-		case LITERAL(CharType, '8'): return 8;
-		case LITERAL(CharType, '9'): return 9;
-		case LITERAL(CharType, 'a'): return 10;
-		case LITERAL(CharType, 'b'): return 11;
-		case LITERAL(CharType, 'c'): return 12;
-		case LITERAL(CharType, 'd'): return 13;
-		case LITERAL(CharType, 'e'): return 14;
-		case LITERAL(CharType, 'f'): return 15;
-		case LITERAL(CharType, 'g'): return 16;
-		case LITERAL(CharType, 'h'): return 17;
-		case LITERAL(CharType, 'i'): return 18;
-		case LITERAL(CharType, 'j'): return 19;
-		case LITERAL(CharType, 'k'): return 20;
-		case LITERAL(CharType, 'l'): return 21;
-		case LITERAL(CharType, 'm'): return 22;
-		case LITERAL(CharType, 'n'): return 23;
-		case LITERAL(CharType, 'o'): return 24;
-		case LITERAL(CharType, 'p'): return 25;
-		case LITERAL(CharType, 'q'): return 26;
-		case LITERAL(CharType, 'r'): return 27;
-		case LITERAL(CharType, 's'): return 28;
-		case LITERAL(CharType, 't'): return 29;
-		case LITERAL(CharType, 'u'): return 30;
-		case LITERAL(CharType, 'v'): return 31;
-		case LITERAL(CharType, 'w'): return 32;
-		case LITERAL(CharType, 'x'): return 33;
-		case LITERAL(CharType, 'y'): return 34;
-		case LITERAL(CharType, 'z'): return 35;
-		case LITERAL(CharType, 'A'): return 10;
-		case LITERAL(CharType, 'B'): return 11;
-		case LITERAL(CharType, 'C'): return 12;
-		case LITERAL(CharType, 'D'): return 13;
-		case LITERAL(CharType, 'E'): return 14;
-		case LITERAL(CharType, 'F'): return 15;
-		case LITERAL(CharType, 'G'): return 16;
-		case LITERAL(CharType, 'H'): return 17;
-		case LITERAL(CharType, 'I'): return 18;
-		case LITERAL(CharType, 'J'): return 19;
-		case LITERAL(CharType, 'K'): return 20;
-		case LITERAL(CharType, 'L'): return 21;
-		case LITERAL(CharType, 'M'): return 22;
-		case LITERAL(CharType, 'N'): return 23;
-		case LITERAL(CharType, 'O'): return 24;
-		case LITERAL(CharType, 'P'): return 25;
-		case LITERAL(CharType, 'Q'): return 26;
-		case LITERAL(CharType, 'R'): return 27;
-		case LITERAL(CharType, 'S'): return 28;
-		case LITERAL(CharType, 'T'): return 29;
-		case LITERAL(CharType, 'U'): return 30;
-		case LITERAL(CharType, 'V'): return 31;
-		case LITERAL(CharType, 'W'): return 32;
-		case LITERAL(CharType, 'X'): return 33;
-		case LITERAL(CharType, 'Y'): return 34;
-		case LITERAL(CharType, 'Z'): return 35;
-		default: return Invalid;
-		}
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+			0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+			0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+			0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		};
+
+		static_assert(sizeof(DigitFromChar) == 256);
+
+		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return Invalid;
+
+		if (DigitFromChar[InChar] >= Base) return Invalid;
+
+		check(TChar::IsASCII(InChar));
+
+		return DigitFromChar[InChar];
 	}
 
-	NODISCARD FORCEINLINE static constexpr TOptional<CharType> FromDigit(int InDigit)
+	NODISCARD FORCEINLINE static constexpr TOptional<CharType> FromDigit(unsigned InDigit, unsigned Base = 10)
 	{
-		if (InDigit < 0 || InDigit > 35) return Invalid;
+		if (InDigit > Base) return Invalid;
 
 		return LITERAL(CharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
 	}

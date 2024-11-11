@@ -209,9 +209,13 @@ struct TStringHelper
 			{
 				NumberType Result = Init;
 
-				while (!View.IsEmpty() && (Base == 10 ? TChar<T>::IsDigit(View.Front()) : TChar<T>::IsDigit(View.Front(), Base)))
+				while (!View.IsEmpty())
 				{
-					Result = static_cast<NumberType>(Result * Base + *TChar<T>::ToDigit(View.Front()));
+					auto Digit = TChar<T>::ToDigit(View.Front(), Base);
+
+					if (!Digit) break;
+
+					Result = Result * static_cast<NumberType>(Base) + static_cast<NumberType>(*Digit);
 
 					View.RemovePrefix(1);
 				}
