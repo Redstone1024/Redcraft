@@ -457,7 +457,7 @@ struct TStringHelper
 
 						if (IndexLength != 0)
 						{
-							if (!PlaceholderIndex.IsNumeric())
+							if (!PlaceholderIndex.IsInteger(10, false))
 							{
 								checkf(false, TEXT("Invalid placeholder index."));
 
@@ -550,27 +550,23 @@ NAMESPACE_PRIVATE_END
 
 template <CCharType T, CAllocator<T> Allocator>
 template <typename ... Ts>
-TString<T, Allocator> TString<T, Allocator>::Format(TStringView<ElementType> Fmt, const Ts&... Args)
+void TString<T, Allocator>::AppendFormat(TStringView<ElementType> Fmt, const Ts&... Args)
 {
 	// The Unreal Engine says that the starting buffer size catches 99.97% of printf calls.
 	constexpr size_t ReserveBufferSize = 512;
 
-	TString Result;
-
-	Result.Reserve(ReserveBufferSize);
+	TString<T, TInlineAllocator<ReserveBufferSize>> Result;
 
 	NAMESPACE_PRIVATE::TStringHelper<ElementType, true>::Do(Result, Fmt, ForwardAsTuple(Args...));
 
-	return Result;
+	Append(Result.Begin(), Result.End());
 }
 
 template <CCharType T>
 template <typename ... Ts>
-size_t TStringView<T>::Parse(TStringView Fmt, Ts&... Args) const
+size_t TStringView<T>::ParseAndTrim(TStringView Fmt, Ts&... Args)
 {
-	TStringView View = *this;
-
-	return NAMESPACE_PRIVATE::TStringHelper<ElementType, false>::Do(View, Fmt, ForwardAsTuple(Args...));
+	return NAMESPACE_PRIVATE::TStringHelper<ElementType, false>::Do(*this, Fmt, ForwardAsTuple(Args...));
 }
 
 #undef LEFT_BRACE
@@ -580,43 +576,55 @@ size_t TStringView<T>::Parse(TStringView Fmt, Ts&... Args) const
 #undef ESCAPE_RIGHT_BRACE
 
 template <CCharType T>
-constexpr bool TStringView<T>::ToBool() const
+constexpr bool TStringView<T>::ToBoolAndTrim()
 {
-	if    (StartsWith(LITERAL(T, '1'))
-		|| StartsWith(LITERAL(T, "true"))
-		|| StartsWith(LITERAL(T, "True"))
-		|| StartsWith(LITERAL(T, "TRUE")))
+	if (this->IsEmpty()) return false;
+
+	if (this->Front() == LITERAL(T, '1'))
 	{
+		RemovePrefix(1);
 		return true;
 	}
 
-	if    (StartsWith(LITERAL(T, '0'))
-		|| StartsWith(LITERAL(T, "false"))
-		|| StartsWith(LITERAL(T, "False"))
-		|| StartsWith(LITERAL(T, "FALSE")))
+	if (this->Front() == LITERAL(T, '0'))
 	{
+		RemovePrefix(1);
 		return false;
 	}
 
-	return ToInt() != 0;
+	if    (StartsWith(LITERAL(T, "true"))
+		|| StartsWith(LITERAL(T, "True"))
+		|| StartsWith(LITERAL(T, "TRUE")))
+	{
+		RemovePrefix(4);
+		return true;
+	}
+
+	if    (StartsWith(LITERAL(T, "false"))
+		|| StartsWith(LITERAL(T, "False"))
+		|| StartsWith(LITERAL(T, "FALSE")))
+	{
+		RemovePrefix(5);
+		return false;
+	}
+
+	return ToIntAndTrim() != 0;
 }
 
 template <CCharType T>
 template <CIntegral U> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-constexpr U TStringView<T>::ToInt(unsigned Base) const
+constexpr U TStringView<T>::ToIntAndTrim(unsigned Base)
 {
 	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
 
 	bool bNegative = false;
 
-	TStringView View = *this;
-
 	if constexpr (CSigned<U>)
 	{
-		if (View.StartsWith(LITERAL(ElementType, '-')))
+		if (StartsWith(LITERAL(ElementType, '-')))
 		{
 			bNegative = true;
-			View.RemovePrefix(1);
+			RemovePrefix(1);
 		}
 	}
 
@@ -630,9 +638,13 @@ constexpr U TStringView<T>::ToInt(unsigned Base) const
 	UnsignedU LastValue = 0;
 	UnsignedU     Value = 0;
 
-	for (ElementType Char : View)
+	bool bOverflow = false;
+
+	while (!this->IsEmpty())
 	{
-		auto Digit = TChar<ElementType>::ToDigit(Char);
+		auto Digit = TChar<ElementType>::ToDigit(this->Front());
+
+		RemovePrefix(1);
 
 		if (Digit >= Base) break;
 
@@ -640,14 +652,16 @@ constexpr U TStringView<T>::ToInt(unsigned Base) const
 
 		Value = static_cast<UnsignedU>(LastValue * Base + Digit);
 
-		if (Value < LastValue)
+		if (Value < LastValue) bOverflow = true;
+	}
+
+	if (bOverflow)
+	{
+		if constexpr (CSigned<U>)
 		{
-			if constexpr (CSigned<U>)
-			{
-				return bNegative ? SignedMinimum : SignedMaximum;
-			}
-			else return UnsignedMaximum;
+			return bNegative ? SignedMinimum : SignedMaximum;
 		}
+		else return UnsignedMaximum;
 	}
 
 	if constexpr (CSigned<U>)
@@ -663,7 +677,7 @@ constexpr U TStringView<T>::ToInt(unsigned Base) const
 
 template <CCharType T>
 template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
-constexpr U TStringView<T>::ToFloat(bool bFixed, bool bScientific) const
+constexpr U TStringView<T>::ToFloatAndTrim(bool bFixed, bool bScientific)
 {
 	NAMESPACE_STD::chars_format Format;
 
@@ -767,6 +781,8 @@ constexpr U TStringView<T>::ToFloat(bool bFixed, bool bScientific) const
 		ConvertResult = NAMESPACE_STD::from_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Result, Format);
 	}
 	else ConvertResult = NAMESPACE_STD::from_chars(ToAddress(this->Begin()), ToAddress(this->End()), Result, Format);
+
+	RemovePrefix(Iter - this->Begin());
 
 	if (ConvertResult.ec == NAMESPACE_STD::errc::result_out_of_range)
 	{

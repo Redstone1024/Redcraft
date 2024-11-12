@@ -340,6 +340,78 @@ public:
 
 public:
 
+	/** Shrinks the view by moving its start forward. */
+	FORCEINLINE constexpr TString& RemovePrefix(size_t Count, bool bAllowShrinking = true)
+	{
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
+
+		Erase(0, Count, bAllowShrinking);
+
+		return *this;
+	}
+
+	/** Shrinks the view by moving its end backward. */
+	FORCEINLINE constexpr TString& RemoveSuffix(size_t Count, bool bAllowShrinking = true)
+	{
+		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
+
+		this->SetNum(this->Num() - Count, bAllowShrinking);
+
+		return *this;
+	}
+
+	/** Removes whitespace characters from the start of this string. */
+	FORCEINLINE constexpr TString& TrimStart(bool bAllowShrinking = true)
+	{
+		auto Index = Find([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+
+		if (Index != INDEX_NONE)
+		{
+			RemovePrefix(Index, bAllowShrinking);
+		}
+		else this->Reset(bAllowShrinking);
+
+		return *this;
+	}
+
+	/** Removes whitespace characters from the end of this string. */
+	FORCEINLINE constexpr TString& TrimEnd(bool bAllowShrinking = true)
+	{
+		auto Index = RFind([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+
+		if (Index != INDEX_NONE)
+		{
+			this->SetNum(Index + 1, bAllowShrinking);
+		}
+		else this->Reset(bAllowShrinking);
+
+		return *this;
+	}
+
+	/** Removes whitespace characters from the start and end of this string. */
+	FORCEINLINE constexpr TString& TrimStartAndEnd(bool bAllowShrinking = true)
+	{
+		TrimStart(false);
+		TrimEnd(bAllowShrinking);
+
+		return *this;
+	}
+
+	/** Removes characters after the first null-terminator. */
+	FORCEINLINE constexpr TString& TrimToNullTerminator(bool bAllowShrinking = true)
+	{
+		auto Index = Find(LITERAL(ElementType, '\0'));
+
+		if (Index != INDEX_NONE)
+		{
+			this->SetNum(Index, bAllowShrinking);
+		}
+
+		return *this;
+	}
+
+public:
+
 	/** @return true if the string view starts with the given prefix, false otherwise. */
 	NODISCARD FORCEINLINE bool StartsWith(TStringView<ElementType> Prefix) const
 	{
@@ -1033,10 +1105,22 @@ public:
 		return TStringView<ElementType>(*this).IsASCII();
 	}
 
-	/** @return true if the string only contains numeric characters, false otherwise. */
-	NODISCARD FORCEINLINE bool IsNumeric(unsigned Base = 10) const
+	/** @return true if the string can be fully represented as a boolean value, false otherwise. */
+	NODISCARD FORCEINLINE bool IsBoolean() const
 	{
-		return TStringView<ElementType>(*this).IsNumeric(Base);
+		return TStringView<ElementType>(*this).IsBoolean();
+	}
+
+	/** @return true if the string can be fully represented as an integer value, false otherwise. */
+	NODISCARD FORCEINLINE bool IsInteger(unsigned Base = 10, bool bSigned = true) const
+	{
+		return TStringView<ElementType>(*this).IsInteger(Base, bSigned);
+	}
+
+	/** @return true if the string can be fully represented as a floating-point value, false otherwise. */
+	NODISCARD FORCEINLINE bool IsFloatingPoint(bool bFixed = true, bool bScientific = true, bool bSigned = true) const
+	{
+		return TStringView<ElementType>(*this).IsFloatingPoint(bFixed, bScientific, bSigned);
 	}
 
 public:
@@ -1207,10 +1291,54 @@ public:
 		return TStringView<ElementType>(*this).template ToFloat<U>(bFixed, bScientific);
 	}
 
+	/** Converts a string into a boolean value and remove the parsed substring. */
+	NODISCARD FORCEINLINE bool ToBoolAndTrim()
+	{
+		TStringView<ElementType> View = *this;
+
+		bool Result = View.ToBool();
+
+		size_t TrimNum = this->Num() - View.Num();
+
+		if (TrimNum > 0) Erase(0, TrimNum);
+
+		return Result;
+	}
+
+	/** Converts a string into an integer value and remove the parsed substring. */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE U ToIntAndTrim(unsigned Base = 10)
+	{
+		TStringView<ElementType> View = *this;
+
+		U Result = View.template ToInt<U>(Base);
+
+		size_t TrimNum = this->Num() - View.Num();
+
+		if (TrimNum > 0) Erase(0, TrimNum);
+
+		return Result;
+	}
+
+	/** Converts a string into a floating-point value and remove the parsed substring. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE U ToFloatAndTrim(bool bFixed = true, bool bScientific = true)
+	{
+		TStringView<ElementType> View = *this;
+
+		U Result = View.template ToFloat<U>(bFixed, bScientific);
+
+		size_t TrimNum = this->Num() - View.Num();
+
+		if (TrimNum > 0) Erase(0, TrimNum);
+
+		return Result;
+	}
+
 public:
 
 	/**
-	 * Format some objects using a format string and append to the string.
+	 * Format some objects using a format string.
 	 *
 	 * @param Fmt  - The format string.
 	 * @param Args - The objects to format.
@@ -1218,7 +1346,18 @@ public:
 	 * @return The formatted string containing the objects.
 	 */
 	template <typename... Ts>
-	NODISCARD static TString Format(TStringView<ElementType> Fmt, const Ts&... Args);
+	NODISCARD static FORCEINLINE TString Format(TStringView<ElementType> Fmt, const Ts&... Args)
+	{
+		TString Result;
+
+		Result.AppendFormat(Fmt, Args...);
+
+		return Result;
+	}
+
+	/** Format some objects using a format string and append to the string. */
+	template <typename... Ts>
+	void AppendFormat(TStringView<ElementType> Fmt, const Ts&... Args);
 
 	/**
 	 * Parse a string using a format string to objects.
@@ -1232,6 +1371,21 @@ public:
 	FORCEINLINE size_t Parse(TStringView<ElementType> Fmt, Ts&... Args) const
 	{
 		return TStringView(*this).Parse(Fmt, Args...);
+	}
+
+	/** Parse a string using a format string to objects and remove the parsed substring. */
+	template <typename... Ts>
+	FORCEINLINE size_t ParseAndTrim(TStringView<ElementType> Fmt, Ts&... Args)
+	{
+		TStringView<ElementType> View = *this;
+
+		size_t Result = View.ParseAndTrim(Fmt, Args...);
+
+		size_t TrimNum = this->Num() - View.Num();
+
+		if (TrimNum > 0) Erase(0, TrimNum);
+
+		return Result;
 	}
 
 public:

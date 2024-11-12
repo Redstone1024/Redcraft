@@ -176,12 +176,20 @@ void TestStringView()
 		}
 
 		{
+			always_check(LITERAL_VIEW(T, "   ABC   ").TrimStart()       == LITERAL(T,    "ABC   "));
+			always_check(LITERAL_VIEW(T, "   ABC   ").TrimEnd()         == LITERAL(T, "   ABC"   ));
+			always_check(LITERAL_VIEW(T, "   ABC   ").TrimStartAndEnd() == LITERAL(T,    "ABC"   ));
+
+			always_check(LITERAL_VIEW(T, "   A\0C   ").TrimToNullTerminator() == LITERAL(T, "   A"));
+		}
+
+		{
 			always_check( LITERAL_VIEW(T, "012345678900").IsASCII());
 			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsASCII());
-			always_check( LITERAL_VIEW(T, "012345678900").IsNumeric());
-			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsNumeric());
-			always_check(!LITERAL_VIEW(T, "0123456789AB").IsNumeric());
-			always_check( LITERAL_VIEW(T, "0123456789AB").IsNumeric(16));
+			always_check( LITERAL_VIEW(T, "012345678900").IsInteger());
+			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsInteger());
+			always_check(!LITERAL_VIEW(T, "0123456789AB").IsInteger());
+			always_check( LITERAL_VIEW(T, "0123456789AB").IsInteger(16));
 		}
 	};
 
@@ -402,6 +410,14 @@ void TestTemplateString()
 			always_check(Str.FindFirstNotOf(LITERAL(T, '!'))               ==  0);
 			always_check(Str.FindLastNotOf(LITERAL(T, "Hello! Goodbye!"))  == 25);
 			always_check(Str.FindLastNotOf(LITERAL(T, '!'))                == 27);
+		}
+
+		{
+			always_check(TString(LITERAL(T, "   ABC   ")).TrimStart()       == LITERAL(T,    "ABC   "));
+			always_check(TString(LITERAL(T, "   ABC   ")).TrimEnd()         == LITERAL(T, "   ABC"   ));
+			always_check(TString(LITERAL(T, "   ABC   ")).TrimStartAndEnd() == LITERAL(T,    "ABC"   ));
+
+			always_check(TString(LITERAL(T, "   A\0C   ")).TrimToNullTerminator() == LITERAL(T, "   A"));
 		}
 
 		{
