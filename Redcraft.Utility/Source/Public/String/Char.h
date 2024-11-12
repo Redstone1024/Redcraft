@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Templates/Optional.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -809,7 +808,7 @@ struct TChar
 		return InChar;
 	}
 
-	NODISCARD FORCEINLINE static constexpr TOptional<unsigned> ToDigit(CharType InChar, unsigned Base = 10)
+	NODISCARD FORCEINLINE static constexpr unsigned ToDigit(CharType InChar)
 	{
 		static_assert(TChar::IsASCII());
 
@@ -835,16 +834,23 @@ struct TChar
 
 		static_assert(sizeof(DigitFromChar) == 256);
 
-		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return Invalid;
-
-		if (DigitFromChar[InChar] >= Base) return Invalid;
+		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return DigitFromChar[0];
 
 		return DigitFromChar[InChar];
 	}
 
-	NODISCARD FORCEINLINE static constexpr TOptional<CharType> FromDigit(unsigned InDigit, unsigned Base = 10)
+	NODISCARD FORCEINLINE static constexpr CharType FromDigit(unsigned InDigit)
 	{
-		if (InDigit > Base) return Invalid;
+		checkf(InDigit < 36, TEXT("Digit must be in the range [0, 35]."));
+
+		return LITERAL(CharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
+	}
+
+	NODISCARD FORCEINLINE static constexpr CharType FromDigit(unsigned InDigit, bool bLowercase)
+	{
+		checkf(InDigit < 36, TEXT("Digit must be in the range [0, 35]."));
+
+		if (bLowercase) return LITERAL(CharType, "0123456789abcdefghijklmnopqrstuvwxyz")[InDigit];
 
 		return LITERAL(CharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
 	}

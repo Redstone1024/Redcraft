@@ -77,13 +77,13 @@ void TestChar()
 		always_check(TChar<T>::ToLower(LITERAL(T, 'i')) == LITERAL(T, 'i'));
 		always_check(TChar<T>::ToUpper(LITERAL(T, 'l')) == LITERAL(T, 'L'));
 
-		always_check(0x0 == TChar<T>::ToDigit(LITERAL(T, '0'), 16));
-		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'f'), 16));
-		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'F'), 16));
+		always_check(0x0 == TChar<T>::ToDigit(LITERAL(T, '0')));
+		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'f')));
+		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'F')));
 
-		always_check(LITERAL(T, '0') == TChar<T>::FromDigit(0x0, 16));
-		always_check(LITERAL(T, 'f') != TChar<T>::FromDigit(0xF, 16));
-		always_check(LITERAL(T, 'F') == TChar<T>::FromDigit(0xF, 16));
+		always_check(LITERAL(T, '0') == TChar<T>::FromDigit(0x0));
+		always_check(LITERAL(T, 'f') != TChar<T>::FromDigit(0xF));
+		always_check(LITERAL(T, 'F') == TChar<T>::FromDigit(0xF));
 	};
 
 	Test(InPlaceType<char>);

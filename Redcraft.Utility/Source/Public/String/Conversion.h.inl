@@ -212,11 +212,11 @@ struct TStringHelper
 
 				while (!View.IsEmpty())
 				{
-					auto Digit = TChar<T>::ToDigit(View.Front(), Base);
+					auto Digit = TChar<T>::ToDigit(View.Front());
 
-					if (!Digit) break;
+					if (Digit >= Base) break;
 
-					Result = Result * static_cast<NumberType>(Base) + static_cast<NumberType>(*Digit);
+					Result = Result * static_cast<NumberType>(Base) + static_cast<NumberType>(Digit);
 
 					View.RemovePrefix(1);
 				}
@@ -632,13 +632,13 @@ constexpr U TStringView<T>::ToInt(unsigned Base) const
 
 	for (ElementType Char : View)
 	{
-		auto Digit = TChar<ElementType>::ToDigit(Char, Base);
+		auto Digit = TChar<ElementType>::ToDigit(Char);
 
-		if (!Digit) break;
+		if (Digit >= Base) break;
 
 		LastValue = Value;
 
-		Value = static_cast<UnsignedU>(LastValue * Base + *Digit);
+		Value = static_cast<UnsignedU>(LastValue * Base + Digit);
 
 		if (Value < LastValue)
 		{
@@ -794,7 +794,7 @@ void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
 {
 	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
 
-	constexpr const ElementType* DigitToChar = LITERAL(ElementType, "0123456789ABCDEF");
+	static_assert(TChar<ElementType>::IsASCII());
 
 	using UnsignedU = TMakeUnsigned<U>;
 
@@ -823,8 +823,8 @@ void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
 	case 0x02: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00001)); Unsigned >>= 1; } while (Unsigned != 0); break;
 	case 0x04: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00011)); Unsigned >>= 2; } while (Unsigned != 0); break;
 	case 0x08: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00111)); Unsigned >>= 3; } while (Unsigned != 0); break;
-	case 0x10: do { *--Iter =                     DigitToChar[Unsigned & 0b01111];  Unsigned >>= 4; } while (Unsigned != 0); break;
-	case 0X20: do { *--Iter =                     DigitToChar[Unsigned & 0b11111];  Unsigned >>= 5; } while (Unsigned != 0); break;
+	case 0x10: do { *--Iter =   TChar<ElementType>::FromDigit(Unsigned & 0b01111);  Unsigned >>= 4; } while (Unsigned != 0); break;
+	case 0X20: do { *--Iter =   TChar<ElementType>::FromDigit(Unsigned & 0b11111);  Unsigned >>= 5; } while (Unsigned != 0); break;
 
 	case 3:
 	case 5:
@@ -832,7 +832,7 @@ void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
 	case 7:
 	case 9:
 	case 10: do { *--Iter = static_cast<ElementType>('0' + Unsigned % Base); Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
-	default: do { *--Iter =                    DigitToChar[Unsigned % Base]; Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
+	default: do { *--Iter =  TChar<ElementType>::FromDigit(Unsigned % Base); Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
 	}
 
 	if constexpr (CSigned<U>) if (bNegative) *--Iter = LITERAL(T, '-');
@@ -900,8 +900,8 @@ struct TStringFloatSerializer
 
 		for (char& Char : Buffer)
 		{
-			const auto Digit = FChar::ToDigit(Char, Base);
-			if (Digit) Char = *FChar::FromDigit(*Digit, Base);
+			const auto Digit = FChar::ToDigit(Char);
+			if (Digit < Base) Char = FChar::FromDigit(Digit);
 		}
 
 		Result.Append(Buffer.Begin(), Buffer.End());
