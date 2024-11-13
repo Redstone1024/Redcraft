@@ -1296,7 +1296,7 @@ public:
 	{
 		TStringView<ElementType> View = *this;
 
-		bool Result = View.ToBool();
+		bool Result = View.ToBoolAndTrim();
 
 		size_t TrimNum = this->Num() - View.Num();
 
@@ -1311,7 +1311,7 @@ public:
 	{
 		TStringView<ElementType> View = *this;
 
-		U Result = View.template ToInt<U>(Base);
+		U Result = View.template ToIntAndTrim<U>(Base);
 
 		size_t TrimNum = this->Num() - View.Num();
 
@@ -1326,7 +1326,7 @@ public:
 	{
 		TStringView<ElementType> View = *this;
 
-		U Result = View.template ToFloat<U>(bFixed, bScientific);
+		U Result = View.template ToFloatAndTrim<U>(bFixed, bScientific);
 
 		size_t TrimNum = this->Num() - View.Num();
 

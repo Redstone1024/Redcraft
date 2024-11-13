@@ -81,9 +81,25 @@ void TestChar()
 		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'f')));
 		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'F')));
 
+		always_check(0x0 == TChar<T>::ToDigit(LITERAL(T, '0'), false));
+		always_check(0xF != TChar<T>::ToDigit(LITERAL(T, 'f'), false));
+		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'F'), false));
+
+		always_check(0x0 == TChar<T>::ToDigit(LITERAL(T, '0'), true));
+		always_check(0xF == TChar<T>::ToDigit(LITERAL(T, 'f'), true));
+		always_check(0xF != TChar<T>::ToDigit(LITERAL(T, 'F'), true));
+
 		always_check(LITERAL(T, '0') == TChar<T>::FromDigit(0x0));
 		always_check(LITERAL(T, 'f') != TChar<T>::FromDigit(0xF));
 		always_check(LITERAL(T, 'F') == TChar<T>::FromDigit(0xF));
+
+		always_check(LITERAL(T, '0') == TChar<T>::FromDigit(0x0, false));
+		always_check(LITERAL(T, 'f') != TChar<T>::FromDigit(0xF, false));
+		always_check(LITERAL(T, 'F') == TChar<T>::FromDigit(0xF, false));
+
+		always_check(LITERAL(T, '0') == TChar<T>::FromDigit(0x0, true));
+		always_check(LITERAL(T, 'f') == TChar<T>::FromDigit(0xF, true));
+		always_check(LITERAL(T, 'F') != TChar<T>::FromDigit(0xF, true));
 	};
 
 	Test(InPlaceType<char>);

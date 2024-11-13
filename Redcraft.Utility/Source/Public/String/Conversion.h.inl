@@ -23,18 +23,718 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // NOTE: These functions are recommended for debug programs.
 
-#define LEFT_BRACE  LITERAL(T, '{')
-#define RIGHT_BRACE LITERAL(T, '}')
-
-#define ESCAPE_LEFT_BRACE  TStringView(LITERAL(T, "<[{"))
-#define ESCAPE_RIGHT_BRACE TStringView(LITERAL(T, "}]>"))
-
 NAMESPACE_PRIVATE_BEGIN
 
-template <CCharType T, bool bIsFormat>
-struct TStringHelper
+enum class EStringCase : uint8
 {
-	static FORCEINLINE bool FormatObject(auto& Result, TStringView<T> Fmt, auto& Object) requires (bIsFormat)
+	Unspecified, // Match any case.
+	Generic,     // Upper first letter, lower the rest. Upper digits, lower the rest.
+	Bizarre,     // Lower first letter, upper the rest. Lower digits, upper the rest.
+	Lowercase,   // Lowercase all letters.
+	Uppercase,   // Uppercase all letters.
+};
+
+// The overload parameter is used to indicate whether a parameter must be considered to optimize the function.
+
+struct FStringFormatParameter
+{
+	bool bSign = false;
+
+	EStringCase StringCase = EStringCase::Unspecified;
+
+	bool bPrefix = false;
+
+	unsigned Base = 10;
+
+	bool bFixed      = true;
+	bool bScientific = true;
+
+	unsigned Precision = 6;
+
+	FORCEINLINE bool IsDigitLowercase() const { return StringCase == EStringCase::Lowercase || StringCase == EStringCase::Bizarre; }
+
+	FORCEINLINE bool IsOtherLowercase() const { return StringCase == EStringCase::Lowercase || StringCase == EStringCase::Generic || StringCase == EStringCase::Unspecified; }
+
+	FORCEINLINE bool IsBin() const { return Base == 2; }
+
+	FORCEINLINE bool IsOct() const { return Base == 8; }
+
+	FORCEINLINE bool IsHex() const { return Base == 16 || (!bFixed && !bScientific); }
+
+	FORCEINLINE NAMESPACE_STD::chars_format ToSTDFormat() const
+	{
+		if ( bFixed && !bScientific) return NAMESPACE_STD::chars_format::fixed;
+		if (!bFixed &&  bScientific) return NAMESPACE_STD::chars_format::scientific;
+		if (!bFixed && !bScientific) return NAMESPACE_STD::chars_format::hex;
+
+		return NAMESPACE_STD::chars_format::general;
+	}
+};
+
+// Overload 0b1: With string case parameter and disable integer parsing.
+
+template <CCharType T, size_t Overload> struct TStringBooleanFormatter;
+template <CCharType T, size_t Overload> struct TStringBooleanParser;
+
+// Overload 0b0001: With show positive sign parameter.
+// Overload 0b0010: With string case parameter.
+// Overload 0b0100: With prefix parameter.
+// Overload 0b1000: With base parameter.
+
+template <CCharType T, size_t Overload> struct TStringIntegerFormatter;
+template <CCharType T, size_t Overload> struct TStringIntegerParser;
+
+// Overload 0b00001: With show positive sign parameter.
+// Overload 0b00010: With string case parameter.
+// Overload 0b00100: With prefix parameter.
+// Overload 0b01000: With fixed or scientific parameter.
+// Overload 0b10000: With precision parameter.
+
+template <CCharType T, size_t Overload> struct TStringFloatingPointFormatter;
+template <CCharType T, size_t Overload> struct TStringFloatingPointParser;
+
+template <CCharType T, size_t Overload>
+struct TStringBooleanFormatter
+{
+	static_assert(Overload <= 0b1, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& Result, bool Value, FStringFormatParameter Param = { })
+	{
+		if constexpr (Overload & 0b1)
+		{
+			switch (Param.StringCase)
+			{
+			case EStringCase::Generic:
+				if (Value) Result += LITERAL(T, "True");
+				else       Result += LITERAL(T, "False");
+				return true;
+			case EStringCase::Bizarre:
+				if (Value) Result += LITERAL(T, "tRUE");
+				else       Result += LITERAL(T, "fALSE");
+				return true;
+			case EStringCase::Lowercase:
+				if (Value) Result += LITERAL(T, "true");
+				else       Result += LITERAL(T, "false");
+				return true;
+			case EStringCase::Uppercase:
+				if (Value) Result += LITERAL(T, "TRUE");
+				else       Result += LITERAL(T, "FALSE");
+				return true;
+			default: break;
+			}
+		}
+
+		if (Value) Result += LITERAL(T, "True");
+		else       Result += LITERAL(T, "False");
+		return true;
+	}
+};
+
+template <CCharType T, size_t Overload>
+struct TStringBooleanParser
+{
+	static_assert(Overload <= 0b0, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& View, bool& Value, FStringFormatParameter Param = { })
+	{
+		if (View.IsEmpty()) return false;
+
+		if constexpr (Overload & 0b1)
+		{
+			TOptional<bool> Result;
+
+			switch (Param.StringCase)
+			{
+			case EStringCase::Generic:
+				if (View.StartsWith(LITERAL(T, "True")))  Result = true;
+				if (View.StartsWith(LITERAL(T, "False"))) Result = false;
+				break;
+			case EStringCase::Bizarre:
+				if (View.StartsWith(LITERAL(T, "tRUE")))  Result = true;
+				if (View.StartsWith(LITERAL(T, "fALSE"))) Result = false;
+				break;
+			case EStringCase::Lowercase:
+				if (View.StartsWith(LITERAL(T, "true")))  Result = true;
+				if (View.StartsWith(LITERAL(T, "false"))) Result = false;
+				break;
+			case EStringCase::Uppercase:
+				if (View.StartsWith(LITERAL(T, "TRUE")))  Result = true;
+				if (View.StartsWith(LITERAL(T, "FALSE"))) Result = false;
+				break;
+			default: break;
+			}
+
+			if (Result.IsValid())
+			{
+				View.RemovePrefix(*Result == true ? 4 : 5);
+				Value = *Result;
+				return true;
+			}
+		}
+
+		if (View.Front() == LITERAL(T, '1'))
+		{
+			View.RemovePrefix(1);
+			Value = true;
+			return true;
+		}
+
+		if (View.Front() == LITERAL(T, '0'))
+		{
+			View.RemovePrefix(1);
+			Value = false;
+			return true;
+		}
+
+		if    (View.StartsWith(LITERAL(T, "true"))
+			|| View.StartsWith(LITERAL(T, "True"))
+			|| View.StartsWith(LITERAL(T, "TRUE")))
+		{
+			View.RemovePrefix(4);
+			Value = true;
+			return true;
+		}
+
+		if    (View.StartsWith(LITERAL(T, "false"))
+			|| View.StartsWith(LITERAL(T, "False"))
+			|| View.StartsWith(LITERAL(T, "FALSE")))
+		{
+			View.RemovePrefix(5);
+			Value = false;
+			return true;
+		}
+
+		if (int IntValue; TStringIntegerParser<T, 0b0000>::Do(View, IntValue)) {
+			Value = IntValue != 0;
+			return true;
+		}
+
+		return false;
+	}
+};
+
+template <CCharType T, size_t Overload>
+struct TStringIntegerFormatter
+{
+	static_assert(Overload <= 0b1111, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& Result, auto Value, FStringFormatParameter Param = { })
+	{
+		static_assert(TChar<T>::IsASCII());
+
+		using U = TRemoveCVRef<decltype(Value)>;
+
+		// If the value should be formatted with prefix, the value must be binary, octal or hexadecimal.
+		if constexpr (Overload & 0b0100) if (Param.bPrefix && !(Param.IsBin() || Param.IsOct() || Param.IsHex()))
+		{
+			checkf(false, TEXT("Prefix is only supported for binary, octal and hexadecimal value."));
+
+			return false;
+		}
+
+		using UnsignedU = TMakeUnsigned<U>;
+
+		UnsignedU Unsigned = static_cast<UnsignedU>(Value);
+
+		bool bNegative = false;
+
+		if constexpr (CSigned<U>)
+		{
+			if (Value < 0)
+			{
+				bNegative = true;
+
+				Unsigned = static_cast<UnsignedU>(-Unsigned);
+			}
+		}
+
+		constexpr size_t BufferSize = sizeof(UnsignedU) * 8 + 4;
+
+		T Buffer[BufferSize];
+
+		T* Iter = Buffer + BufferSize;
+
+		// Reverse append the digits to the buffer.
+		if constexpr (Overload & 0b1000)
+		{
+			if constexpr (Overload & 0b0010)
+			{
+				const bool bLowercase = Param.IsDigitLowercase();
+
+				switch (Param.Base)
+				{
+				case 0x02: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00001));             Unsigned >>= 1; } while (Unsigned != 0); break;
+				case 0x04: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00011));             Unsigned >>= 2; } while (Unsigned != 0); break;
+				case 0x08: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00111));             Unsigned >>= 3; } while (Unsigned != 0); break;
+				case 0x10: do { *--Iter =   TChar<T>::FromDigit(Unsigned & 0b01111, bLowercase);  Unsigned >>= 4; } while (Unsigned != 0); break;
+				case 0X20: do { *--Iter =   TChar<T>::FromDigit(Unsigned & 0b11111, bLowercase);  Unsigned >>= 5; } while (Unsigned != 0); break;
+
+				case 3:
+				case 5:
+				case 6:
+				case 7:
+				case 9:
+				case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base);             Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+				default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base, bLowercase); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+				}
+			}
+			else
+			{
+				switch (Param.Base)
+				{
+				case 0x02: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00001)); Unsigned >>= 1; } while (Unsigned != 0); break;
+				case 0x04: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00011)); Unsigned >>= 2; } while (Unsigned != 0); break;
+				case 0x08: do { *--Iter = static_cast<T>('0' + (Unsigned & 0b00111)); Unsigned >>= 3; } while (Unsigned != 0); break;
+				case 0x10: do { *--Iter =   TChar<T>::FromDigit(Unsigned & 0b01111);  Unsigned >>= 4; } while (Unsigned != 0); break;
+				case 0X20: do { *--Iter =   TChar<T>::FromDigit(Unsigned & 0b11111);  Unsigned >>= 5; } while (Unsigned != 0); break;
+
+				case 3:
+				case 5:
+				case 6:
+				case 7:
+				case 9:
+				case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+				default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+				}
+			}
+		}
+		else do { *--Iter = static_cast<T>('0' + Unsigned % 10); Unsigned = static_cast<UnsignedU>(Unsigned / 10); } while (Unsigned != 0);
+
+		// Append the prefix to the buffer.
+		if constexpr (Overload & 0b1100) if (Param.bPrefix)
+		{
+			const T PrefixBin = Param.IsOtherLowercase() ? LITERAL(T, 'b') : LITERAL(T, 'B');
+			const T PrefixHex = Param.IsOtherLowercase() ? LITERAL(T, 'x') : LITERAL(T, 'X');
+
+			if (Param.IsBin()) { *--Iter = PrefixBin; *--Iter = LITERAL(T, '0'); }
+			if (Param.IsOct()) { if (Value != 0)      *--Iter = LITERAL(T, '0'); }
+			if (Param.IsHex()) { *--Iter = PrefixHex; *--Iter = LITERAL(T, '0'); }
+		}
+
+		// Append the negative sign to the buffer.
+		if constexpr (CSigned<U>) if (bNegative) *--Iter = LITERAL(T, '-');
+
+		// Append the positive sign to the buffer.
+		if constexpr (Overload & 0b0001) if (!bNegative && Param.bSign) *--Iter = LITERAL(T, '+');
+
+		Result.Append(Iter, Buffer + BufferSize);
+
+		return true;
+	}
+};
+
+template <CCharType T, size_t Overload>
+struct TStringIntegerParser
+{
+	static_assert(Overload <= 0b1111, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& View, auto& Value, FStringFormatParameter Param = { })
+	{
+		static_assert(TChar<T>::IsASCII());
+
+		static_assert(!CConst<decltype(Value)> && !CVolatile<decltype(Value)>);
+
+		using U = TRemoveCVRef<decltype(Value)>;
+
+		// Create a temporary view to avoid modifying the original view.
+		TStringView<T> Temp = View;
+
+		bool bNegative = false;
+
+		// Handle optional negative sign.
+		if constexpr (CSigned<U>)
+		{
+			if (Temp.StartsWith(LITERAL(T, '-')))
+			{
+				bNegative = true;
+				Temp.RemovePrefix(1);
+			}
+		}
+
+		// Handle optional positive sign.
+		if constexpr (Overload & 0b0001) if (!bNegative && Param.bSign) if (Temp.StartsWith(LITERAL(T, '+'))) Temp.RemovePrefix(1);
+
+		// Handle optional prefix.
+		if constexpr (Overload & 0b1100) if (Param.bPrefix)
+		{
+			// Auto detect base.
+			if (Param.Base == 0)
+			{
+				if (Temp.Num() >= 2 && Temp.Front() == LITERAL(T, '0'))
+				{
+					if (Temp[1] == LITERAL(T, 'x') || Temp[1] == LITERAL(T, 'X'))
+					{
+						Param.Base = 16;
+						Temp.RemovePrefix(2);
+					}
+					else if (Temp[1] == LITERAL(T, 'b') || Temp[1] == LITERAL(T, 'B'))
+					{
+						Param.Base = 2;
+						Temp.RemovePrefix(2);
+					}
+					else if (TChar<T>::IsDigit(Temp.Front(), 8))
+					{
+						Param.Base = 8;
+						Temp.RemovePrefix(1);
+					}
+				}
+
+				if (Param.Base == 0) Param.Base = 10;
+			}
+			else
+			{
+				checkf(Param.IsBin() || Param.IsOct() || Param.IsHex(), TEXT("Prefix is only supported for binary, octal and hexadecimal value."));
+
+				if constexpr (Overload & 0b0010) if (Param.StringCase != EStringCase::Unspecified)
+				{
+					if (Param.IsOtherLowercase())
+					{
+						if (Param.IsBin() && Temp.StartsWith(LITERAL(T, "0b"))) Temp.RemovePrefix(2);
+						if (Param.IsHex() && Temp.StartsWith(LITERAL(T, "0x"))) Temp.RemovePrefix(2);
+					}
+					else
+					{
+						if (Param.IsBin() && Temp.StartsWith(LITERAL(T, "0B"))) Temp.RemovePrefix(2);
+						if (Param.IsHex() && Temp.StartsWith(LITERAL(T, "0X"))) Temp.RemovePrefix(2);
+					}
+				}
+				else
+				{
+					if (Param.IsBin() && Temp.StartsWith(LITERAL(T, "0b") || Temp.StartsWith(LITERAL(T, "0B")))) Temp.RemovePrefix(2);
+					if (Param.IsHex() && Temp.StartsWith(LITERAL(T, "0x") || Temp.StartsWith(LITERAL(T, "0X")))) Temp.RemovePrefix(2);
+				}
+
+			}
+		}
+
+		check(Param.Base >= 2 && Param.Base <= 36);
+
+		using UnsignedU = TMakeUnsigned<U>;
+
+		// The limit value that can be stored in an unsigned integer.
+		constexpr UnsignedU UnsignedMaximum = static_cast<UnsignedU>(-1);
+
+		// The limit value that can be stored in a signed integer.
+		constexpr U SignedMaximum = static_cast<U>(UnsignedMaximum >> 1);
+		constexpr U SignedMinimum =  -static_cast<U>(SignedMaximum) - 1;
+
+		UnsignedU LastValue = 0;
+		UnsignedU Unsigned  = 0;
+
+		bool bOverflow = false;
+
+		if (Temp.IsEmpty()) return false;
+
+		unsigned Digit;
+
+		if constexpr (Overload & 0b0010)
+		{
+			Digit = TChar<T>::ToDigit(Temp.Front(), Param.IsDigitLowercase());
+		}
+		else Digit = TChar<T>::ToDigit(Temp.Front());
+
+		// The first character must be a digit.
+		if (Digit >= Param.Base) return false;
+
+		Temp.RemovePrefix(1);
+
+		Unsigned = static_cast<UnsignedU>(Digit);
+
+		while (!Temp.IsEmpty())
+		{
+			if constexpr (Overload & 0b0010)
+			{
+				Digit = TChar<T>::ToDigit(Temp.Front(), Param.IsDigitLowercase());
+			}
+			else Digit = TChar<T>::ToDigit(Temp.Front());
+
+			if (Digit >= Param.Base) break;
+
+			Temp.RemovePrefix(1);
+
+			LastValue = Unsigned;
+
+			Unsigned = static_cast<UnsignedU>(LastValue * Param.Base + Digit);
+
+			if (Unsigned < LastValue) bOverflow = true;
+		}
+
+		View = Temp;
+
+		// Handle overflow.
+		if (bOverflow)
+		{
+			if constexpr (CSigned<U>)
+			{
+				Value = bNegative ? SignedMinimum : SignedMaximum;
+			}
+			else Value = UnsignedMaximum;
+
+			return true;
+		}
+
+		if constexpr (CSigned<U>)
+		{
+			// Handle overflow.
+			if (!bNegative && Unsigned >= static_cast<UnsignedU>(SignedMaximum)) { Value = SignedMaximum; return true; }
+			if ( bNegative && Unsigned >= static_cast<UnsignedU>(SignedMinimum)) { Value = SignedMinimum; return true; }
+
+			// Handle negative sign.
+			if (bNegative) Unsigned = static_cast<UnsignedU>(-Unsigned);
+		}
+
+		Value = static_cast<U>(Unsigned);
+		return true;
+	}
+};
+
+template <CCharType T, size_t Overload>
+struct TStringFloatingPointFormatter
+{
+	static_assert(Overload <= 0b11111, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& Result, auto Value, FStringFormatParameter Param = { })
+	{
+		constexpr size_t StartingBufferSize = 64;
+
+		// Create a buffer with a starting size.
+		TArray<char, TInlineAllocator<StartingBufferSize>> Buffer(StartingBufferSize / 2);
+
+		// Formatting strings using the standard library until successful
+		NAMESPACE_STD::to_chars_result ConvertResult;
+
+		do
+		{
+			Buffer.SetNum(Buffer.Num() * 2);
+
+			if      constexpr (Overload & 0b10000) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Param.ToSTDFormat(), Param.Precision);
+			else if constexpr (Overload & 0b01000) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Param.ToSTDFormat());
+			else                                   ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value);
+		}
+		while (ConvertResult.ec == NAMESPACE_STD::errc::value_too_large);
+
+		// Set the buffer size to the number of characters written.
+		Buffer.SetNum(ConvertResult.ptr - Buffer.GetData());
+
+		const bool bNegative = Buffer[0] == '-';
+
+		const char* Iter = Buffer.GetData() + (bNegative ? 1 : 0);
+
+		// Append the positive sign to the buffer.
+		if constexpr (Overload & 0b00001) if (!bNegative && Param.bSign) Result.Append(LITERAL(T, "+"));
+
+		// Handle the infinity values.
+		if (*Iter == 'i')
+		{
+			if constexpr (Overload & 0b0010)
+			{
+				switch (Param.StringCase)
+				{
+				case EStringCase::Generic:
+					if (bNegative) Result += LITERAL(T, "-Infinity");
+					else           Result += LITERAL(T,  "Infinity");
+					return true;
+				case EStringCase::Bizarre:
+					if (bNegative) Result += LITERAL(T, "-iNFINITY");
+					else           Result += LITERAL(T,  "iNFINITY");
+					return true;
+				case EStringCase::Lowercase:
+					if (bNegative) Result += LITERAL(T, "-infinity");
+					else           Result += LITERAL(T,  "infinity");
+					return true;
+				case EStringCase::Uppercase:
+					if (bNegative) Result += LITERAL(T, "-INFINITY");
+					else           Result += LITERAL(T,  "INFINITY");
+					return true;
+				default: break;
+				}
+			}
+
+			if (bNegative) Result.Append(LITERAL(T, "-Infinity"));
+			else           Result.Append(LITERAL(T,  "Infinity"));
+			return true;
+		}
+
+		// Handle the NaN values.
+		if (*Iter == 'n')
+		{
+			if constexpr (Overload & 0b0010)
+			{
+				switch (Param.StringCase)
+				{
+				case EStringCase::Generic:
+					if (bNegative) Result += LITERAL(T, "-NaN");
+					else           Result += LITERAL(T,  "NaN");
+					return true;
+				case EStringCase::Bizarre:
+					if (bNegative) Result += LITERAL(T, "-nAn");
+					else           Result += LITERAL(T,  "nAn");
+					return true;
+				case EStringCase::Lowercase:
+					if (bNegative) Result += LITERAL(T, "-nan");
+					else           Result += LITERAL(T,  "nan");
+					return true;
+				case EStringCase::Uppercase:
+					if (bNegative) Result += LITERAL(T, "-NAN");
+					else           Result += LITERAL(T,  "NAN");
+					return true;
+				default: break;
+				}
+			}
+
+			if (bNegative) Result.Append(LITERAL(T, "-NaN"));
+			else           Result.Append(LITERAL(T,  "NaN"));
+			return true;
+		}
+
+		// Handle the lowercase or uppercase characters.
+		for (char& Char : Buffer)
+		{
+			if (FChar::ToDigit(Char) < (Param.IsHex() ? 16u : 10u))
+			{
+				Char = Param.IsDigitLowercase() ? FChar::ToLower(Char) : FChar::ToUpper(Char);
+			}
+			else Char = Param.IsOtherLowercase() ? FChar::ToLower(Char) : FChar::ToUpper(Char);
+		}
+
+		Result.Append(Buffer.Begin(), Buffer.End());
+
+		return true;
+	}
+};
+
+template <CCharType T, size_t Overload>
+struct TStringFloatingPointParser
+{
+	static_assert(Overload <= 0b11111, "Invalid overload.");
+
+	static FORCEINLINE bool Do(auto& View, auto& Value, FStringFormatParameter Param = { })
+	{
+		// @TODO: Implement the parsing function without the standard library.
+
+		static_assert(!CConst<decltype(Value)> && !CVolatile<decltype(Value)>);
+
+		using U = TRemoveCVRef<decltype(Value)>;
+
+		U Result;
+
+		auto Iter = View.Begin();
+
+		bool bNegativeMantissa = false;
+		bool bNegativeExponent = false;
+
+		do
+		{
+			if (Iter == View.End()) break;
+
+			if (*Iter == LITERAL(T, '-'))
+			{
+				bNegativeMantissa = true;
+				++Iter;
+			}
+
+			auto DecimalPoint = View.End();
+			auto NonZeroBegin = View.End();
+
+			while (Iter != View.End())
+			{
+				if (DecimalPoint == View.End() && *Iter == LITERAL(T, '.'))
+				{
+					DecimalPoint = Iter;
+				}
+				else if (TChar<T>::IsDigit(*Iter, Param.IsHex() ? 16 : 10))
+				{
+					if (NonZeroBegin == View.End() && *Iter != LITERAL(T, '0'))
+					{
+						NonZeroBegin = Iter;
+					}
+				}
+				else break;
+
+				++Iter;
+			}
+
+			if (DecimalPoint == View.End()) DecimalPoint = Iter;
+
+			bNegativeExponent = DecimalPoint < NonZeroBegin;
+
+			if (Iter == View.End()) break;
+
+			bool bHasExponent = false;
+
+			if (Param.bScientific)
+			{
+				if (*Iter == LITERAL(T, 'e') || *Iter == LITERAL(T, 'E'))
+				{
+					bHasExponent = true;
+					++Iter;
+				}
+			}
+			else if (Param.IsHex())
+			{
+				if (*Iter == LITERAL(T, 'p') || *Iter == LITERAL(T, 'P'))
+				{
+					bHasExponent = true;
+					++Iter;
+				}
+			}
+
+			if (Iter == View.End() || !bHasExponent) break;
+
+			if (*Iter == LITERAL(T, '+')) ++Iter;
+			if (*Iter == LITERAL(T, '-')) { bNegativeExponent = true; ++Iter; }
+
+			auto ExponentBegin = Iter;
+
+			while (Iter != View.End() && TChar<T>::IsDigit(*Iter, 10)) ++Iter;
+
+			auto ExponentEnd = Iter;
+
+			if (NonZeroBegin == View.End()) break;
+
+			auto Exponent = TStringView(ExponentBegin, ExponentEnd).ToInt();
+
+			if (bNegativeExponent) Exponent = -Exponent;
+
+			Exponent += static_cast<int>(DecimalPoint - NonZeroBegin);
+
+			bNegativeExponent = Exponent < 0;
+		}
+		while (false);
+
+		NAMESPACE_STD::from_chars_result ConvertResult;
+
+		if constexpr (!CSameAs<T, char>)
+		{
+			TArray<char, TInlineAllocator<64>> Buffer(View.Begin(), Iter);
+
+			ConvertResult = NAMESPACE_STD::from_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Result, Param.ToSTDFormat());
+		}
+		else ConvertResult = NAMESPACE_STD::from_chars(ToAddress(View.Begin()), ToAddress(View.End()), Result, Param.ToSTDFormat());
+
+		View.RemovePrefix(Iter - View.Begin());
+
+		if (ConvertResult.ec == NAMESPACE_STD::errc::result_out_of_range)
+		{
+			if      (!bNegativeMantissa && !bNegativeExponent) Value =  NAMESPACE_STD::numeric_limits<U>::infinity();
+			else if ( bNegativeMantissa && !bNegativeExponent) Value = -NAMESPACE_STD::numeric_limits<U>::infinity();
+			else if (!bNegativeMantissa &&  bNegativeExponent) Value = static_cast<U>( 0.0);
+			else                                               Value = static_cast<U>(-0.0);
+
+			return true;
+		}
+
+		if (ConvertResult.ec == NAMESPACE_STD::errc::invalid_argument) return false;
+
+		Value = Result;
+		return true;
+	}
+};
+
+template <CCharType T>
+struct TStringObjectFormatter
+{
+	static FORCEINLINE bool Do(auto& Result, TStringView<T> Fmt, auto& Object)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -119,8 +819,12 @@ struct TStringHelper
 
 		return false;
 	}
+};
 
-	static FORCEINLINE bool ParseObject(TStringView<T>& View, TStringView<T> Fmt, auto& Object) requires (!bIsFormat)
+template <CCharType T>
+struct TStringObjectParser
+{
+	static FORCEINLINE bool Do(TStringView<T>& View, TStringView<T> Fmt, auto& Object)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -328,6 +1032,16 @@ struct TStringHelper
 
 		return false;
 	}
+};
+
+template <CCharType T, bool bIsFormat>
+struct TStringFormatOrParseHelper
+{
+	static constexpr T LeftBrace  = LITERAL(T, '{');
+	static constexpr T RightBrace = LITERAL(T, '}');
+
+	static inline const TStringView EscapeLeftBrace  = LITERAL(T, "<[{");
+	static inline const TStringView EscapeRightBrace = LITERAL(T, "}]>");
 
 	static FORCEINLINE size_t Do(auto& Result, TStringView<T> Fmt, auto ArgsTuple)
 	{
@@ -341,37 +1055,37 @@ struct TStringHelper
 
 			while (!Fmt.IsEmpty())
 			{
-				if (Fmt.StartsWith(ESCAPE_LEFT_BRACE))
+				if (Fmt.StartsWith(EscapeLeftBrace))
 				{
-					Fmt.RemovePrefix(ESCAPE_LEFT_BRACE.Num());
+					Fmt.RemovePrefix(EscapeLeftBrace.Num());
 
 					if constexpr (!bIsFormat)
 					{
-						if (!String.StartsWith(LEFT_BRACE)) return false;
+						if (!String.StartsWith(LeftBrace)) return false;
 
 						String.RemovePrefix(1);
 					}
-					else String += LEFT_BRACE;
+					else String += LeftBrace;
 
 					continue;
 				}
 
-				if (Fmt.StartsWith(ESCAPE_RIGHT_BRACE))
+				if (Fmt.StartsWith(EscapeRightBrace))
 				{
-					Fmt.RemovePrefix(ESCAPE_RIGHT_BRACE.Num());
+					Fmt.RemovePrefix(EscapeRightBrace.Num());
 
 					if constexpr (!bIsFormat)
 					{
-						if (!String.StartsWith(RIGHT_BRACE)) return false;
+						if (!String.StartsWith(RightBrace)) return false;
 
 						String.RemovePrefix(1);
 					}
-					else String += RIGHT_BRACE;
+					else String += RightBrace;
 
 					continue;
 				}
 
-				if (Fmt.StartsWith(LEFT_BRACE))
+				if (Fmt.StartsWith(LeftBrace))
 				{
 					Fmt.RemovePrefix(1);
 
@@ -385,11 +1099,11 @@ struct TStringHelper
 					{
 						while (true)
 						{
-							PlaceholderBegin = Fmt.FindFirstOf(LEFT_BRACE, PlaceholderBegin + 1);
+							PlaceholderBegin = Fmt.FindFirstOf(LeftBrace, PlaceholderBegin + 1);
 
 							if (PlaceholderBegin == INDEX_NONE) break;
 
-							if (Fmt.First(PlaceholderBegin + 1).EndsWith(ESCAPE_LEFT_BRACE))
+							if (Fmt.First(PlaceholderBegin + 1).EndsWith(EscapeLeftBrace))
 							{
 								++PlaceholderBegin;
 							}
@@ -398,11 +1112,11 @@ struct TStringHelper
 
 						while (true)
 						{
-							PlaceholderEnd = Fmt.FindFirstOf(RIGHT_BRACE, PlaceholderEnd + 1);
+							PlaceholderEnd = Fmt.FindFirstOf(RightBrace, PlaceholderEnd + 1);
 
 							if (PlaceholderEnd == INDEX_NONE) break;
 
-							if (Fmt.Substr(PlaceholderEnd).StartsWith(ESCAPE_RIGHT_BRACE))
+							if (Fmt.Substr(PlaceholderEnd).StartsWith(EscapeRightBrace))
 							{
 								++PlaceholderEnd;
 							}
@@ -438,7 +1152,7 @@ struct TStringHelper
 					{
 						if constexpr (bIsFormat) bIsSuccessful = Self(Self, FormattedSubfmt, Subfmt);
 
-						else bIsSuccessful = TStringHelper<T, true>::Do(FormattedSubfmt, Subfmt, ArgsTuple);
+						else bIsSuccessful = TStringFormatOrParseHelper<T, true>::Do(FormattedSubfmt, Subfmt, ArgsTuple);
 
 						Subfmt = FormattedSubfmt;
 					}
@@ -463,9 +1177,9 @@ struct TStringHelper
 
 								if constexpr (bIsFormat)
 								{
-									String += LEFT_BRACE;
+									String += LeftBrace;
 									String += Subfmt;
-									String += RIGHT_BRACE;
+									String += RightBrace;
 
 									bIsFullyFormatted = false;
 								}
@@ -485,9 +1199,9 @@ struct TStringHelper
 							{
 								if (Subfmt.StartsWith(LITERAL(T, ':'))) Subfmt.RemovePrefix(1);
 
-								if constexpr (bIsFormat) return TStringHelper::FormatObject(String, Subfmt, Object);
+								if constexpr (bIsFormat) return TStringObjectFormatter<T>::Do(String, Subfmt, Object);
 
-								else return TStringHelper::ParseObject(String, Subfmt, Object);
+								else return TStringObjectParser<T>::Do(String, Subfmt, Object);
 							},
 							Index
 						);
@@ -497,9 +1211,9 @@ struct TStringHelper
 					{
 						if constexpr (bIsFormat)
 						{
-							String += LEFT_BRACE;
+							String += LeftBrace;
 							String += Subfmt;
-							String += RIGHT_BRACE;
+							String += RightBrace;
 
 							bIsFullyFormatted = false;
 						}
@@ -510,7 +1224,7 @@ struct TStringHelper
 					continue;
 				}
 
-				check_code({ if (Fmt.StartsWith(RIGHT_BRACE)) check_no_entry(); });
+				check_code({ if (Fmt.StartsWith(RightBrace)) check_no_entry(); });
 
 				if constexpr (!bIsFormat)
 				{
@@ -557,7 +1271,7 @@ void TString<T, Allocator>::AppendFormat(TStringView<ElementType> Fmt, const Ts&
 
 	TString<T, TInlineAllocator<ReserveBufferSize>> Result;
 
-	NAMESPACE_PRIVATE::TStringHelper<ElementType, true>::Do(Result, Fmt, ForwardAsTuple(Args...));
+	NAMESPACE_PRIVATE::TStringFormatOrParseHelper<ElementType, true>::Do(Result, Fmt, ForwardAsTuple(Args...));
 
 	Append(Result.Begin(), Result.End());
 }
@@ -566,242 +1280,13 @@ template <CCharType T>
 template <typename ... Ts>
 size_t TStringView<T>::ParseAndTrim(TStringView Fmt, Ts&... Args)
 {
-	return NAMESPACE_PRIVATE::TStringHelper<ElementType, false>::Do(*this, Fmt, ForwardAsTuple(Args...));
-}
-
-#undef LEFT_BRACE
-#undef RIGHT_BRACE
-
-#undef ESCAPE_LEFT_BRACE
-#undef ESCAPE_RIGHT_BRACE
-
-template <CCharType T>
-constexpr bool TStringView<T>::ToBoolAndTrim()
-{
-	if (this->IsEmpty()) return false;
-
-	if (this->Front() == LITERAL(T, '1'))
-	{
-		RemovePrefix(1);
-		return true;
-	}
-
-	if (this->Front() == LITERAL(T, '0'))
-	{
-		RemovePrefix(1);
-		return false;
-	}
-
-	if    (StartsWith(LITERAL(T, "true"))
-		|| StartsWith(LITERAL(T, "True"))
-		|| StartsWith(LITERAL(T, "TRUE")))
-	{
-		RemovePrefix(4);
-		return true;
-	}
-
-	if    (StartsWith(LITERAL(T, "false"))
-		|| StartsWith(LITERAL(T, "False"))
-		|| StartsWith(LITERAL(T, "FALSE")))
-	{
-		RemovePrefix(5);
-		return false;
-	}
-
-	return ToIntAndTrim() != 0;
-}
-
-template <CCharType T>
-template <CIntegral U> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-constexpr U TStringView<T>::ToIntAndTrim(unsigned Base)
-{
-	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
-
-	bool bNegative = false;
-
-	if constexpr (CSigned<U>)
-	{
-		if (StartsWith(LITERAL(ElementType, '-')))
-		{
-			bNegative = true;
-			RemovePrefix(1);
-		}
-	}
-
-	using UnsignedU = TMakeUnsigned<U>;
-
-	constexpr UnsignedU UnsignedMaximum = static_cast<UnsignedU>(-1);
-
-	constexpr U SignedMaximum = static_cast<U>(UnsignedMaximum >> 1);
-	constexpr U SignedMinimum =  -static_cast<U>(SignedMaximum) - 1;
-
-	UnsignedU LastValue = 0;
-	UnsignedU     Value = 0;
-
-	bool bOverflow = false;
-
-	while (!this->IsEmpty())
-	{
-		auto Digit = TChar<ElementType>::ToDigit(this->Front());
-
-		RemovePrefix(1);
-
-		if (Digit >= Base) break;
-
-		LastValue = Value;
-
-		Value = static_cast<UnsignedU>(LastValue * Base + Digit);
-
-		if (Value < LastValue) bOverflow = true;
-	}
-
-	if (bOverflow)
-	{
-		if constexpr (CSigned<U>)
-		{
-			return bNegative ? SignedMinimum : SignedMaximum;
-		}
-		else return UnsignedMaximum;
-	}
-
-	if constexpr (CSigned<U>)
-	{
-		if (!bNegative && Value >= static_cast<UnsignedU>(SignedMaximum)) return SignedMaximum;
-		if ( bNegative && Value >= static_cast<UnsignedU>(SignedMinimum)) return SignedMinimum;
-
-		if (bNegative) Value = static_cast<UnsignedU>(-Value);
-	}
-
-	return static_cast<U>(Value);
-}
-
-template <CCharType T>
-template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
-constexpr U TStringView<T>::ToFloatAndTrim(bool bFixed, bool bScientific)
-{
-	NAMESPACE_STD::chars_format Format;
-
-	if      ( bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::general;
-	else if ( bFixed && !bScientific) Format = NAMESPACE_STD::chars_format::fixed;
-	else if (!bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::scientific;
-	else                              Format = NAMESPACE_STD::chars_format::hex;
-
-	U Result;
-
-	auto Iter = this->Begin();
-
-	bool bNegativeMantissa = false;
-	bool bNegativeExponent = false;
-
-	do
-	{
-		if (Iter == this->End()) break;
-
-		if (*Iter == LITERAL(ElementType, '-'))
-		{
-			bNegativeMantissa = true;
-			++Iter;
-		}
-
-		auto DecimalPoint = this->End();
-		auto NonZeroBegin = this->End();
-
-		while (Iter != this->End())
-		{
-			if (DecimalPoint == this->End() && *Iter == LITERAL(ElementType, '.'))
-			{
-				DecimalPoint = Iter;
-			}
-			else if (TChar<ElementType>::IsDigit(*Iter, Format == NAMESPACE_STD::chars_format::hex ? 16 : 10))
-			{
-				if (NonZeroBegin == this->End() && *Iter != LITERAL(ElementType, '0'))
-				{
-					NonZeroBegin = Iter;
-				}
-			}
-			else break;
-
-			++Iter;
-		}
-
-		if (DecimalPoint == this->End()) DecimalPoint = Iter;
-
-		bNegativeExponent = DecimalPoint < NonZeroBegin;
-
-		if (Iter == this->End()) break;
-
-		bool bHasExponent = false;
-
-		if (Format == NAMESPACE_STD::chars_format::general || Format == NAMESPACE_STD::chars_format::scientific)
-		{
-			if (*Iter == LITERAL(ElementType, 'e') || *Iter == LITERAL(ElementType, 'E'))
-			{
-				bHasExponent = true;
-				++Iter;
-			}
-		}
-		else if (Format == NAMESPACE_STD::chars_format::hex)
-		{
-			if (*Iter == LITERAL(ElementType, 'p') || *Iter == LITERAL(ElementType, 'P'))
-			{
-				bHasExponent = true;
-				++Iter;
-			}
-		}
-
-		if (Iter == this->End() || !bHasExponent) break;
-
-		if (*Iter == LITERAL(ElementType, '+')) ++Iter;
-		if (*Iter == LITERAL(ElementType, '-')) { bNegativeExponent = true; ++Iter; }
-
-		auto ExponentBegin = Iter;
-
-		while (Iter != this->End() && TChar<ElementType>::IsDigit(*Iter, 10)) ++Iter;
-
-		auto ExponentEnd = Iter;
-
-		if (NonZeroBegin == this->End()) break;
-
-		auto Exponent = TStringView(ExponentBegin, ExponentEnd).ToInt();
-
-		if (bNegativeExponent) Exponent = -Exponent;
-
-		Exponent += static_cast<int>(DecimalPoint - NonZeroBegin);
-
-		bNegativeExponent = Exponent < 0;
-	}
-	while (false);
-
-	NAMESPACE_STD::from_chars_result ConvertResult;
-
-	if constexpr (!CSameAs<ElementType, char>)
-	{
-		TArray<char, TInlineAllocator<64>> Buffer(this->Begin(), Iter);
-
-		ConvertResult = NAMESPACE_STD::from_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Result, Format);
-	}
-	else ConvertResult = NAMESPACE_STD::from_chars(ToAddress(this->Begin()), ToAddress(this->End()), Result, Format);
-
-	RemovePrefix(Iter - this->Begin());
-
-	if (ConvertResult.ec == NAMESPACE_STD::errc::result_out_of_range)
-	{
-		if (!bNegativeMantissa && !bNegativeExponent) return  NAMESPACE_STD::numeric_limits<U>::infinity();
-		if ( bNegativeMantissa && !bNegativeExponent) return -NAMESPACE_STD::numeric_limits<U>::infinity();
-		if (!bNegativeMantissa &&  bNegativeExponent) return static_cast<U>( 0.0);
-		                                              return static_cast<U>(-0.0);
-	}
-
-	if (ConvertResult.ec == NAMESPACE_STD::errc::invalid_argument) return NAMESPACE_STD::numeric_limits<U>::quiet_NaN();
-
-	return Result;
+	return NAMESPACE_PRIVATE::TStringFormatOrParseHelper<ElementType, false>::Do(*this, Fmt, ForwardAsTuple(Args...));
 }
 
 template <CCharType T, CAllocator<T> Allocator>
 void TString<T, Allocator>::AppendBool(bool Value)
 {
-	if (Value) Append(LITERAL(ElementType, "True"));
-	else       Append(LITERAL(ElementType, "False"));
+	NAMESPACE_PRIVATE::TStringBooleanFormatter<ElementType, 0b0>::Do(*this, Value);
 }
 
 template <CCharType T, CAllocator<T> Allocator>
@@ -810,138 +1295,83 @@ void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
 {
 	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
 
-	static_assert(TChar<ElementType>::IsASCII());
+	NAMESPACE_PRIVATE::FStringFormatParameter Param;
 
-	using UnsignedU = TMakeUnsigned<U>;
+	Param.Base = Base;
 
-	UnsignedU Unsigned = static_cast<UnsignedU>(Value);
-
-	bool bNegative = false;
-
-	if constexpr (CSigned<U>)
-	{
-		if (Value < 0)
-		{
-			bNegative = true;
-
-			Unsigned = static_cast<UnsignedU>(-Unsigned);
-		}
-	}
-
-	constexpr size_t BufferSize = sizeof(UnsignedU) * 8 + (CSigned<U> ? 1 : 0);
-
-	ElementType Buffer[BufferSize];
-
-	ElementType* Iter = Buffer + BufferSize;
-
-	switch (Base)
-	{
-	case 0x02: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00001)); Unsigned >>= 1; } while (Unsigned != 0); break;
-	case 0x04: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00011)); Unsigned >>= 2; } while (Unsigned != 0); break;
-	case 0x08: do { *--Iter = static_cast<ElementType>('0' + (Unsigned & 0b00111)); Unsigned >>= 3; } while (Unsigned != 0); break;
-	case 0x10: do { *--Iter =   TChar<ElementType>::FromDigit(Unsigned & 0b01111);  Unsigned >>= 4; } while (Unsigned != 0); break;
-	case 0X20: do { *--Iter =   TChar<ElementType>::FromDigit(Unsigned & 0b11111);  Unsigned >>= 5; } while (Unsigned != 0); break;
-
-	case 3:
-	case 5:
-	case 6:
-	case 7:
-	case 9:
-	case 10: do { *--Iter = static_cast<ElementType>('0' + Unsigned % Base); Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
-	default: do { *--Iter =  TChar<ElementType>::FromDigit(Unsigned % Base); Unsigned = static_cast<UnsignedU>(Unsigned / Base); } while (Unsigned != 0); break;
-	}
-
-	if constexpr (CSigned<U>) if (bNegative) *--Iter = LITERAL(T, '-');
-
-	Append(Iter, Buffer + BufferSize);
+	NAMESPACE_PRIVATE::TStringIntegerFormatter<ElementType, 0b1000>::Do(*this, Value, Param);
 }
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <CCharType T, size_t Overload>
-struct TStringFloatSerializer
-{
-	static FORCEINLINE void Do(auto& Result, auto Value, bool bFixed, bool bScientific, unsigned Precision)
-	{
-		NAMESPACE_STD::chars_format Format;
-
-		if constexpr (Overload >= 1)
-		{
-			if      ( bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::general;
-			else if ( bFixed && !bScientific) Format = NAMESPACE_STD::chars_format::fixed;
-			else if (!bFixed &&  bScientific) Format = NAMESPACE_STD::chars_format::scientific;
-			else                              Format = NAMESPACE_STD::chars_format::hex;
-		}
-
-		constexpr size_t StartingBufferSize = 64;
-
-		TArray<char, TInlineAllocator<StartingBufferSize>> Buffer(StartingBufferSize / 2);
-
-		NAMESPACE_STD::to_chars_result ConvertResult;
-
-		do
-		{
-			Buffer.SetNum(Buffer.Num() * 2);
-
-			if      constexpr (Overload == 0) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value);
-			else if constexpr (Overload == 1) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Format);
-			else                              ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Value, Format, Precision);
-		}
-		while (ConvertResult.ec == NAMESPACE_STD::errc::value_too_large);
-
-		Buffer.SetNum(ConvertResult.ptr - Buffer.GetData());
-
-		const bool bNegative = Buffer[0] == '-';
-
-		const char* Iter = Buffer.GetData() + (bNegative ? 1 : 0);
-
-		if (*Iter == 'i')
-		{
-			if (bNegative) Result.Append(LITERAL(T, "-Infinity"));
-			else           Result.Append(LITERAL(T,  "Infinity"));
-			return;
-		}
-
-		if (*Iter == 'n')
-		{
-			if (bNegative) Result.Append(LITERAL(T, "-NaN"));
-			else           Result.Append(LITERAL(T,  "NaN"));
-			return;
-		}
-
-		unsigned Base;
-
-		if constexpr (Overload == 0) Base = 10;
-		else Base = Format == NAMESPACE_STD::chars_format::hex ? 16 : 10;
-
-		for (char& Char : Buffer)
-		{
-			const auto Digit = FChar::ToDigit(Char);
-			if (Digit < Base) Char = FChar::FromDigit(Digit);
-		}
-
-		Result.Append(Buffer.Begin(), Buffer.End());
-	}
-};
-
-NAMESPACE_PRIVATE_END
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
 void TString<T, Allocator>::AppendFloat(U Value)
 {
-	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 0>::Do(*this, Value, false, false, 0);
+	NAMESPACE_PRIVATE::TStringFloatingPointFormatter<ElementType, 0b0>::Do(*this, Value);
 }
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
 void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific)
 {
-	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 1>::Do(*this, Value, bFixed, bScientific, 0);
+	NAMESPACE_PRIVATE::FStringFormatParameter Param;
+
+	Param.bFixed      = bFixed;
+	Param.bScientific = bScientific;
+
+	NAMESPACE_PRIVATE::TStringFloatingPointFormatter<ElementType, 0b01000>::Do(*this, Value, Param);
 }
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
 void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific, unsigned Precision)
 {
-	NAMESPACE_PRIVATE::TStringFloatSerializer<ElementType, 2>::Do(*this, Value, bFixed, bScientific, Precision);
+	NAMESPACE_PRIVATE::FStringFormatParameter Param;
+
+	Param.bFixed      = bFixed;
+	Param.bScientific = bScientific;
+	Param.Precision   = Precision;
+
+	NAMESPACE_PRIVATE::TStringFloatingPointFormatter<ElementType, 0b11000>::Do(*this, Value, Param);
+}
+
+template <CCharType T>
+constexpr bool TStringView<T>::ToBoolAndTrim()
+{
+	bool Value = false;
+
+	NAMESPACE_PRIVATE::TStringBooleanParser<ElementType, 0b0>::Do(*this, Value);
+
+	return Value;
+}
+
+template <CCharType T>
+template <CIntegral U> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+constexpr U TStringView<T>::ToIntAndTrim(unsigned Base)
+{
+	checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
+
+	U Value = 0;
+
+	NAMESPACE_PRIVATE::FStringFormatParameter Param;
+
+	Param.Base = Base;
+
+	NAMESPACE_PRIVATE::TStringIntegerParser<ElementType, 0b100>::Do(*this, Value, Param);
+
+	return Value;
+}
+
+template <CCharType T>
+template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
+constexpr U TStringView<T>::ToFloatAndTrim(bool bFixed, bool bScientific)
+{
+	U Value = NAMESPACE_STD::numeric_limits<U>::quiet_NaN();
+
+	NAMESPACE_PRIVATE::FStringFormatParameter Param;
+
+	Param.bFixed      = bFixed;
+	Param.bScientific = bScientific;
+
+	NAMESPACE_PRIVATE::TStringFloatingPointParser<ElementType, 0b01000>::Do(*this, Value, Param);
+
+	return Value;
 }
 
 NAMESPACE_MODULE_END(Utility)
