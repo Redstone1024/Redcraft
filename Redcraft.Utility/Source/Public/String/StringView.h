@@ -116,7 +116,7 @@ public:
 public:
 
 	/** Shrinks the view by moving its start forward. */
-	FORCEINLINE constexpr TStringView RemovePrefix(size_t Count)
+	FORCEINLINE constexpr TStringView& RemovePrefix(size_t Count)
 	{
 		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
 
@@ -126,7 +126,7 @@ public:
 	}
 
 	/** Shrinks the view by moving its end backward. */
-	FORCEINLINE constexpr TStringView RemoveSuffix(size_t Count)
+	FORCEINLINE constexpr TStringView& RemoveSuffix(size_t Count)
 	{
 		checkf(Count <= this->Num(), TEXT("Illegal subview range. Please check Count."));
 
@@ -136,7 +136,7 @@ public:
 	}
 
 	/** Removes whitespace characters from the start of this string. */
-	FORCEINLINE constexpr TStringView TrimStart()
+	FORCEINLINE constexpr TStringView& TrimStart()
 	{
 		auto Index = Find([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
 
@@ -150,7 +150,7 @@ public:
 	}
 
 	/** Removes whitespace characters from the end of this string. */
-	FORCEINLINE constexpr TStringView TrimEnd()
+	FORCEINLINE constexpr TStringView& TrimEnd()
 	{
 		auto Index = RFind([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
 
@@ -164,7 +164,7 @@ public:
 	}
 
 	/** Removes whitespace characters from the start and end of this string. */
-	FORCEINLINE constexpr TStringView TrimStartAndEnd()
+	FORCEINLINE constexpr TStringView& TrimStartAndEnd()
 	{
 		TrimStart();
 		TrimEnd();
@@ -173,7 +173,7 @@ public:
 	}
 
 	/** Removes characters after the first null-terminator. */
-	FORCEINLINE constexpr TStringView TrimToNullTerminator()
+	FORCEINLINE constexpr TStringView& TrimToNullTerminator()
 	{
 		auto Index = Find(LITERAL(ElementType, '\0'));
 
