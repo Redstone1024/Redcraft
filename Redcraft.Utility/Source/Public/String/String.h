@@ -1239,8 +1239,8 @@ public:
 	/**
 	 * Converts a string into a boolean value.
 	 *
-	 * - 1, "true",  "True",  "TRUE"  and non-zero integers become true.
-	 * - 0, "false", "False", "FALSE" and unparsable values become false.
+	 * - "True"  and non-zero integers become true.
+	 * - "False" and unparsable values become false.
 	 *
 	 * @return The boolean value.
 	 */
