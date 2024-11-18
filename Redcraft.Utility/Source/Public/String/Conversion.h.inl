@@ -18,10 +18,204 @@ NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 // The conversion tool uses a string to describe the object format.
-
-// NOTE: These functions are used to format an object to a string and parse a string to an object.
-// If the user-defined overloads a function with the 'Fmt' parameter, fill-and-align needs to be handled.
-// The formatting function should produce a string that can be parsed by the parsing function, if the parsing function exists.
+//
+// The format string consists of the following parts:
+//
+// - A pair of braces:    The object placeholder.
+// - A escaped brace:     The brace is formatted or parsed as-is
+// - A general character: The character is formatted or parsed as-is.
+// - A space character:   The character is formatted as-is or all leading space characters are consumed when parsing.
+//
+// About the object placeholder:
+//
+// Use the ':' character to separate the different layers of object placeholders, for a normal object he has only two layers,
+// for a string or a character he may have three layers to represent the format of the escape character,
+// for a container he may have many layers to represent the format of the elements.
+//
+// The first level is the object index.
+// The other levels are the object format, which is used to format or parse the object.
+//
+// The object format contains a common optional fill-and-align consisting of the following parts:
+//
+// i.   A fill character:   The character is used to fill width of the object. It is optional.
+//	                        It should be representable as a single unicode otherwise it is undefined behavior.
+// ii.  A alignment option: The character is used to indicate the direction of alignment. It is optional if it does not create ambiguity.
+//	                        '<' for left, '>' for right, '^' for center. If cannot absolute centering, offset to the left.
+// iii. A width number:     The number is used to specify the width of the object.
+//	                        It should be a decimal number without any sign.
+//
+// The width is limits the minimum number of characters in formatting and the maximum number of characters in parsing.
+// The fill character is treated as a space character in parsing.
+//
+// After the fill-and-align, the object format contains type-specific options.
+//
+// Specially, only strings and characters that agree with the main character type are considered string values and character values.
+//
+// For string values:
+//
+// 1. The type indicators part:
+//
+//	- none: Indicates the as-is formatting.
+//	- 'S':  Indicates uppercase formatting if case indicators is '!', otherwise as-is formatting.
+//	- 's':  Indicates lowercase formatting if case indicators is '!', otherwise as-is formatting.
+//
+// 2. The case indicators part:
+//
+//	- none: Indicates the as-is formatting.
+//	- '!':  Indicates the case as the type indicators case.
+//
+// 3. The escape indicators part:
+//
+//	- none: Indicates the as-is formatting.
+//	- '?':  Indicates the escape formatting.
+//
+// For character values:
+//
+// 1. The type indicators part:
+//
+//	- none:               Indicates the as-is formatting.
+//	- 'C':                Indicates uppercase formatting if case indicators is '!', otherwise as-is formatting.
+//	- 'c':                Indicates lowercase formatting if case indicators is '!', otherwise as-is formatting.
+//	- 's' or 'S':         Indicates that characters should be treated as strings.
+//		                  See the string values section for additional formatting.
+//	- 'B', 'D', 'O', 'X': Indicates that characters should be treated as integer values.
+//		                  See the integer values section for additional formatting.
+//
+// 2. The case indicators part:
+//
+//	- none: Indicates the as-is formatting.
+//	- '!':  Indicates the case as the type indicators case.
+//
+// 3. The escape indicators part:
+//
+//	- none: Indicates the as-is formatting.
+//	- '?':  Indicates the escape formatting.
+//
+// For boolean values:
+//
+// 1. The type indicators part:
+//
+//	- none or 'S':        Indicates that boolean value should be treated as string 'True' or 'False'.
+//		                  See the string values section for additional formatting.
+//	- 'C':                Indicates that boolean value should be treated as character 'T' or 'F'.
+//		                  See the character values section for additional formatting.
+//	- 'B', 'D', 'O', 'X': Indicates that boolean value should be treated as integer 1 or 0.
+//		                  See the integer values section for additional formatting.
+//
+// For integer values:
+//
+// 1. The positive indicators part:
+//
+//	- none or '-': Indicates hide the sign of the positive number.
+//	- '+':         Indicates show the '+' of the positive number.
+//	- ' ':         Indicates show the ' ' of the positive number.
+//
+// 2. The prefix indicators part:
+//
+//	- none: Indicates hide the prefix of the number.
+//	- '#':  Indicates show the prefix of the number. Indicates auto-detect the base in parsing.
+//
+// 3. The '0' padded width indicators part:
+//
+//	- none: Indicates that the '0' padded width is 0.
+//	- '0N': Indicates that the '0' padded width is N.
+//
+// 4. The base indicators part:
+//
+//	- none or '_0': Indicates decimal in formatting. Indicates auto-detect the base in parsing.
+//	- '_N':         Indicates that the base is N, between [2, 36].
+//
+// 5. The type indicators part:
+//
+//	- none or 'D': Indicates decimal formatting.     Same as '_10I'.
+//	- 'B':         Indicates binary formatting.      Same as '_2I'.
+//	- 'O':         Indicates octal formatting.       Same as '_8I'.
+//	- 'X':         Indicates hexadecimal formatting. Same as '_16I'.
+//	- 'I':         Indicates specified formatting by base indicators.
+//
+// For floating-point values:
+//
+// 1. The positive indicators part:
+//
+//	- none or '-': Indicates hide the sign of the positive number.
+//	- '+':         Indicates show the '+' of the positive number.
+//	- ' ':         Indicates show the ' ' of the positive number.
+//
+// 2. The prefix indicators part:
+//
+//	- none: Indicates hide the prefix of the number.
+//	- '#':  Indicates show the prefix of the number. Indicates auto-detect the hex scientific in parsing.
+//
+// 3. The precision indicators part:
+//
+//	- none: Indicates six decimal for fixed-point in formatting. Indicates auto-detect the precision in parsing.
+//	- '.N': Indicates that the precision is N, It should be a decimal number without any sign.
+//
+// 4. The type indicators part:
+//
+//	- none or 'F': Indicates fixed-point formatting.
+//	- 'G':         Indicates general formatting.
+//	- 'E':         Indicates scientific formatting.
+//	- 'A':         Indicates hex scientific formatting.
+//
+// For pointer values:
+//
+// 1. The type indicators part:
+//
+//	- none or 'P': The pointer value is formatted as hexadecimal with prefix and fill-and-align.
+//		           Same as '#X'. The default width depends on the platform.
+//
+// For tuple values:
+//
+// 1. The type indicators part:
+//
+//	- none: Indicates general formatting. Same as 'T(_, _)'.
+//	- 'M':  Indicates map formatting.     Same as 'T_: _'.
+//	- 'N':  Indicates none formatting.    Same as 'T__'.
+//	- 'T':  Indicates user-defined formatting.
+//
+// 2. The user-defined part:
+//
+//	i.   A begin string:     Indicates the begin string of the tuple. Cannot contain '_' or ':' character.
+//	ii.  '_':                Indicates a placeholder.
+//	iii. A separator string: Indicates the separator string of the tuple. Cannot contain '_' character.
+//	iv.  '_':                Indicates a placeholder.
+//	v.   An end string:      Indicates the end string of the tuple. Cannot contain '_' or ':' character.
+//
+// For container values:
+//
+// 1. The type indicators part:
+//
+//	- none: Indicates general formatting. Same as 'T[_, _]'.
+//	- 'N':  Indicates none formatting.    Same as 'T__'.
+//	- 'T':  Indicates user-defined formatting.
+//
+// 2. The user-defined part:
+//
+//	i.   A begin string:     Indicates the begin string of the container. Cannot contain '_' or ':' character.
+//	ii.  '_':                Indicates a placeholder.
+//	iii. A separator string: Indicates the separator string of the container. Cannot contain '_' character.
+//	iv.  '_':                Indicates a placeholder.
+//	v.   An end string:      Indicates the end string of the container. Cannot contain '_' or ':' character.
+//
+// For the type indicator part of the boolean, integer, and floating-point values,
+// The case of letter indicates the case of the first letter or number part,
+// and other parts can also be uppercase by appended the '!' mark.
+//
+// Specially, the case of letters is ignored by default in parsing,
+// and can be forced to match the required case by appending the '=' mark.
+//
+// When parsing containers, the container size is not automatically detected,
+// and some elements of the container may have been modified when parsing fails.
+//
+// Examples:
+//
+// - '{:}':    Parse the integer value in decimal without positive sign.
+// - '{:+D}':  Parse the integer value in decimal with optional positive sign.
+// - '{:+#I}': Parse the integer value in any formatting.
+// - '{:}':    Parse the floating-point value in fixed-point without positive sign.
+// - '{:+F}':  Parse the floating-point value in fixed-point with optional positive sign.
+// - '{:+#G}': Parse the floating-point value in any formatting.
 
 // NOTE: These functions are recommended for debug programs.
 
@@ -46,6 +240,9 @@ NAMESPACE_PRIVATE_BEGIN
 //	              For parsing, together with the following parameters, it also determines whether to automatically detect the base.
 //	              It is valid for integer and floating-point values.
 //
+// - Padding:     A unsigned integer that represents the '0' padded width of the number.
+//	              It is valid for integer values.
+//
 // - Base:        A unsigned integer that represents the base of the number, between [2, 36].
 //	              However, when parsed and prefixed, 0 is allowed to indicate auto-detection.
 //	              It is valid for integer values.
@@ -57,14 +254,14 @@ NAMESPACE_PRIVATE_BEGIN
 //	              However, when parsed and prefixed, any values allows auto-detection hex scientific format.
 //	              It is valid for floating-point values.
 //
-// - Precision:   A unsigned integer that represents the number of digits after the decimal point.
+// - Precision:   A signed integer that represents the number of digits after the decimal point. Negative value means ignore.
 //	              For parsing, it is used to determine the maximum number of digits after the decimal point.
 //	              It is valid for floating-point values.
 
 template <CCharType T>
 struct TStringObjectFormatter
 {
-	static FORCEINLINE bool Do(auto& Result, auto& Object, auto Param)
+	static bool Do(auto& Result, auto& Object, auto Param)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -80,33 +277,759 @@ struct TStringObjectFormatter
 		{
 			TStringView<T> Fmt = Param.Fmt;
 
-			checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
+			// Parse the fill-and-align part and reserve the space for the result.
+			auto ParseFillAndAlign = [&Result, &Fmt]
+			{
+				TStringView<T> FillCharacter = LITERAL(T, " ");
+
+				T AlignmentOption = CIntegral<U> || CFloatingPoint<U> ? LITERAL(T, '>') : LITERAL(T, '<');
+
+				unsigned AlignmentWidth = 0;
+
+				// Parse the fill-and-align part of the object format.
+				if (!Fmt.IsEmpty())
+				{
+					size_t Index = Fmt.FindFirstOf(LITERAL(T, "123456789"));
+
+					if (Index != INDEX_NONE)
+					{
+						// Create a temporary view to avoid modifying the original view.
+						TStringView<T> TrimmedFmt = Fmt;
+
+						TStringView<T> FillAndAlign = TrimmedFmt.First(Index);
+
+						TrimmedFmt.RemovePrefix(Index);
+
+						unsigned PossibleWidth = TrimmedFmt.template ToIntAndTrim<unsigned>();
+
+						bool bIsValid = true;
+
+						if (!FillAndAlign.IsEmpty())
+						{
+							if      (FillAndAlign.Back() == LITERAL(T, '<')) { FillAndAlign.RemoveSuffix(1); AlignmentOption = LITERAL(T, '<'); }
+							else if (FillAndAlign.Back() == LITERAL(T, '>')) { FillAndAlign.RemoveSuffix(1); AlignmentOption = LITERAL(T, '>'); }
+							else if (FillAndAlign.Back() == LITERAL(T, '^')) { FillAndAlign.RemoveSuffix(1); AlignmentOption = LITERAL(T, '^'); }
+							else
+							{
+								if (FillAndAlign.Num() != 1)
+								{
+									// If the string contains ASCII then it must not be represented as a single unicode.
+									for (T Char : FillAndAlign) if (TChar<T>::IsASCII(Char)) bIsValid = false;
+								}
+								else if (FillAndAlign.Front() == LITERAL(T, '.')) bIsValid = false; // Ambiguously with the precision indicator.
+								else if (FillAndAlign.Front() == LITERAL(T, '_')) bIsValid = false; // Ambiguously with the base indicator.
+							}
+						}
+
+						if (bIsValid)
+						{
+							if (!FillAndAlign.IsEmpty()) FillCharacter = FillAndAlign;
+
+							AlignmentWidth = PossibleWidth;
+
+							Fmt = TrimmedFmt;
+						}
+					}
+				}
+
+				Result.Reserve(Result.Num() + AlignmentWidth * FillCharacter.Num());
+
+				return MakeTuple(FillCharacter, AlignmentOption, AlignmentWidth);
+			};
+
+			// Apply the fill-and-align part to the result.
+			auto ApplyFillAndAlign = [&Result, OriginalNum = Result.Num()](auto FillAndAlign)
+			{
+				auto [FillCharacter, AlignmentOption, AlignmentWidth] = FillAndAlign;
+
+				const size_t AppendedNum = Result.Num() - OriginalNum;
+
+				if (AlignmentWidth > AppendedNum)
+				{
+					size_t LeftWidth  = 0;
+					size_t RightWidth = 0;
+
+					switch (AlignmentOption)
+					{
+					case LITERAL(T, '<'): RightWidth = AlignmentWidth - AppendedNum; break;
+					case LITERAL(T, '>'): LeftWidth  = AlignmentWidth - AppendedNum; break;
+					case LITERAL(T, '^'):
+						{
+							LeftWidth = (AlignmentWidth - AppendedNum) / 2;
+							RightWidth = AlignmentWidth - AppendedNum - LeftWidth;
+							break;
+						}
+					default: check_no_entry();
+					}
+
+					if (LeftWidth != 0)
+					{
+						Result.SetNum(Result.Num() + LeftWidth * FillCharacter.Num(), false);
+
+						for (size_t Index = 0; Index != AppendedNum; ++Index)
+						{
+							Result[Result.Num() - Index - 1] = Result[OriginalNum + AppendedNum - Index - 1];
+						}
+
+						for (size_t Index = 0; Index != LeftWidth * FillCharacter.Num(); ++Index)
+						{
+							Result[OriginalNum + Index] = FillCharacter[Index % FillCharacter.Num()];
+						}
+					}
+
+					if (RightWidth != 0)
+					{
+						for (size_t Index = 0; Index < RightWidth; ++Index)
+						{
+							Result += FillCharacter;
+						}
+					}
+				}
+			};
+
+			// Format the string value by format string.
+			if constexpr (CConvertibleTo<U, TStringView<T>>)
+			{
+				auto FillAndAlign = ParseFillAndAlign();
+
+				bool bNeedToCase      = false;
+				bool bStringLowercase = false;
+				bool bNeedToEscape    = false;
+				bool bEscapeLowercase = false;
+
+				if      (Fmt.StartsWith(LITERAL(T, 'S'))) { bStringLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 's'))) { bStringLowercase = true;  Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '!'))) { bNeedToCase   = true; Fmt.RemovePrefix(1); }
+				if (Fmt.StartsWith(LITERAL(T, '?'))) { bNeedToEscape = true; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+
+				if (bNeedToEscape && Fmt.StartsWith(LITERAL(T, ':')))
+				{
+					Fmt.RemovePrefix(1);
+
+					if      (Fmt.StartsWith(LITERAL(T, 'X'))) { bEscapeLowercase = false; Fmt.RemovePrefix(1); }
+					else if (Fmt.StartsWith(LITERAL(T, 'x'))) { bEscapeLowercase = true;  Fmt.RemovePrefix(1); }
+
+					if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+				}
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				TStringView<T> String = Object;
+
+				if (bNeedToEscape) Result += LITERAL(T, '\"');
+
+				if (bNeedToCase || bNeedToEscape)
+				{
+					for (T Char : String)
+					{
+						if (bNeedToCase)
+						{
+							if (bStringLowercase) Char = TChar<T>::ToLower(Char);
+							else                  Char = TChar<T>::ToUpper(Char);
+						}
+
+						if (bNeedToEscape)
+						{
+							switch (Char)
+							{
+							case LITERAL(T, '\"'): Result += LITERAL(T, "\\\""); break;
+							case LITERAL(T, '\\'): Result += LITERAL(T, "\\\\"); break;
+							case LITERAL(T, '\a'): Result += LITERAL(T, "\\a");  break;
+							case LITERAL(T, '\b'): Result += LITERAL(T, "\\b");  break;
+							case LITERAL(T, '\f'): Result += LITERAL(T, "\\f");  break;
+							case LITERAL(T, '\n'): Result += LITERAL(T, "\\n");  break;
+							case LITERAL(T, '\r'): Result += LITERAL(T, "\\r");  break;
+							case LITERAL(T, '\t'): Result += LITERAL(T, "\\t");  break;
+							case LITERAL(T, '\v'): Result += LITERAL(T, "\\v");  break;
+							default:
+							{
+								if (!TChar<T>::IsASCII(Char) || !TChar<T>::IsPrint(Char))
+								{
+									Result += LITERAL(T, "\\x");
+
+									const TMakeUnsigned<T> IntValue = static_cast<TMakeUnsigned<T>>(Char);
+
+									struct { TStringView<T> Fmt; } DigitParam = { LITERAL(T, "X") };
+
+									if constexpr (sizeof(Char) == 1)
+									{
+										if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "02x");
+										else                  DigitParam.Fmt = LITERAL(T, "02X");
+									}
+									else if constexpr (sizeof(Char) == 2)
+									{
+										if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "04x");
+										else                  DigitParam.Fmt = LITERAL(T, "04X");
+									}
+									else if constexpr (sizeof(Char) == 4)
+									{
+										if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "08x");
+										else                  DigitParam.Fmt = LITERAL(T, "08X");
+									}
+									else static_assert(sizeof(Char) == -1, "Unsupported character type");
+
+									verify(TStringObjectFormatter::Do(Result, IntValue, DigitParam));
+								}
+								else Result += Char;
+							}
+							}
+						}
+						else Result += Char;
+					}
+				}
+				else Result += String;
+
+				if (bNeedToEscape) Result += LITERAL(T, '\"');
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
+			}
+
+			// Format the character value by format string.
+			else if constexpr (CSameAs<U, T>)
+			{
+				if (Fmt.FindFirstOf(LITERAL(T, "Ss")) != INDEX_NONE)
+				{
+					const TStringView<T> StringValue(&Object, 1);
+
+					return TStringObjectFormatter::Do(Result, StringValue, Param);
+				}
+
+				if (Fmt.FindFirstOf(LITERAL(T, "BbDdOoXxIi")) != INDEX_NONE)
+				{
+					const TMakeUnsigned<T> IntValue = static_cast<TMakeUnsigned<T>>(Object);
+
+					return TStringObjectFormatter::Do(Result, IntValue, Param);
+				}
+
+				auto FillAndAlign = ParseFillAndAlign();
+
+				bool bNeedToCase      = false;
+				bool bStringLowercase = false;
+				bool bNeedToEscape    = false;
+				bool bEscapeLowercase = false;
+
+				if      (Fmt.StartsWith(LITERAL(T, 'C'))) { bStringLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'c'))) { bStringLowercase = true;  Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '!'))) { bNeedToCase   = true; Fmt.RemovePrefix(1); }
+				if (Fmt.StartsWith(LITERAL(T, '?'))) { bNeedToEscape = true; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+
+				if (bNeedToEscape && Fmt.StartsWith(LITERAL(T, ':')))
+				{
+					Fmt.RemovePrefix(1);
+
+					if      (Fmt.StartsWith(LITERAL(T, 'X'))) { bEscapeLowercase = false; Fmt.RemovePrefix(1); }
+					else if (Fmt.StartsWith(LITERAL(T, 'x'))) { bEscapeLowercase = true;  Fmt.RemovePrefix(1); }
+
+					if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+				}
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				T Char = Object;
+
+				if (bNeedToEscape) Result += LITERAL(T, '\'');
+
+				if (bNeedToCase || bNeedToEscape)
+				{
+					if (bNeedToCase)
+					{
+						if (bStringLowercase) Char = TChar<T>::ToLower(Char);
+						else                  Char = TChar<T>::ToUpper(Char);
+					}
+
+					if (bNeedToEscape)
+					{
+						switch (Char)
+						{
+						case LITERAL(T, '\''): Result += LITERAL(T, "\\\'"); break;
+						case LITERAL(T, '\\'): Result += LITERAL(T, "\\\\"); break;
+						case LITERAL(T, '\a'): Result += LITERAL(T, "\\a");  break;
+						case LITERAL(T, '\b'): Result += LITERAL(T, "\\b");  break;
+						case LITERAL(T, '\f'): Result += LITERAL(T, "\\f");  break;
+						case LITERAL(T, '\n'): Result += LITERAL(T, "\\n");  break;
+						case LITERAL(T, '\r'): Result += LITERAL(T, "\\r");  break;
+						case LITERAL(T, '\t'): Result += LITERAL(T, "\\t");  break;
+						case LITERAL(T, '\v'): Result += LITERAL(T, "\\v");  break;
+						default:
+						{
+							if (!TChar<T>::IsASCII(Char) || !TChar<T>::IsPrint(Char))
+							{
+								Result += LITERAL(T, "\\x");
+
+								const TMakeUnsigned<T> IntValue = static_cast<TMakeUnsigned<T>>(Char);
+
+								struct { TStringView<T> Fmt; } DigitParam = { LITERAL(T, "X") };
+
+								if constexpr (sizeof(Char) == 1)
+								{
+									if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "02x");
+									else                  DigitParam.Fmt = LITERAL(T, "02X");
+								}
+								else if constexpr (sizeof(Char) == 2)
+								{
+									if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "04x");
+									else                  DigitParam.Fmt = LITERAL(T, "04X");
+								}
+								else if constexpr (sizeof(Char) == 4)
+								{
+									if (bEscapeLowercase) DigitParam.Fmt = LITERAL(T, "08x");
+									else                  DigitParam.Fmt = LITERAL(T, "08X");
+								}
+								else static_assert(sizeof(Char) == -1, "Unsupported character type");
+
+								verify(TStringObjectFormatter::Do(Result, IntValue, DigitParam));
+							}
+							else Result += Char;
+						}
+						}
+					}
+					else Result += Char;
+				}
+				else Result += Char;
+
+				if (bNeedToEscape) Result += LITERAL(T, '\'');
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
+			}
 
 			// Format the boolean value by format string.
-			if constexpr (CSameAs<U, bool>)
+			else if constexpr (CSameAs<U, bool>)
 			{
-				return TStringObjectFormatter::Do(Result, Object, Invalid);
+				if (Fmt.IsEmpty()) return TStringObjectFormatter::Do(Result, Object, Invalid);
+
+				if (Fmt.FindFirstOf(LITERAL(T, 'S')) != INDEX_NONE)
+				{
+					const TStringView<T> StringValue = Object ? LITERAL(T, "True") : LITERAL(T, "False");
+
+					return TStringObjectFormatter::Do(Result, StringValue, Param);
+				}
+
+				if (Fmt.FindFirstOf(LITERAL(T, 's')) != INDEX_NONE)
+				{
+					const TStringView<T> StringValue = Object ? LITERAL(T, "true") : LITERAL(T, "false");
+
+					return TStringObjectFormatter::Do(Result, StringValue, Param);
+				}
+
+				if (Fmt.FindFirstOf(LITERAL(T, 'C')) != INDEX_NONE)
+				{
+					const T CharacterValue = Object ? LITERAL(T, 'T') : LITERAL(T, 'F');
+
+					return TStringObjectFormatter::Do(Result, CharacterValue, Param);
+				}
+
+				if (Fmt.FindFirstOf(LITERAL(T, 'c')) != INDEX_NONE)
+				{
+					const T CharacterValue = Object ? LITERAL(T, 't') : LITERAL(T, 'f');
+
+					return TStringObjectFormatter::Do(Result, CharacterValue, Param);
+				}
+
+				if (Fmt.FindFirstOf(LITERAL(T, "BbDdOoXxIi")) != INDEX_NONE)
+				{
+					const unsigned IntValue = Object ? 1 : 0;
+
+					return TStringObjectFormatter::Do(Result, IntValue, Param);
+				}
+
+				checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+				return false;
 			}
 
 			// Format the integer value by format string.
 			else if constexpr (CIntegral<U> && !CSameAs<U, bool>)
 			{
-				return TStringObjectFormatter::Do(Result, Object, Invalid);
+				if (Fmt.IsEmpty()) return TStringObjectFormatter::Do(Result, Object, Invalid);
+
+				auto FillAndAlign = ParseFillAndAlign();
+
+				T PositiveIndicator = LITERAL(T, '-');
+
+				bool bPrefix  = false;
+
+				unsigned Padding = 0;
+
+				unsigned Base = 10;
+
+				bool bDigitLowercase = false;
+				bool bOtherLowercase = true;
+
+				if      (Fmt.StartsWith(LITERAL(T, '-'))) { PositiveIndicator = LITERAL(T, '-'); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, '+'))) { PositiveIndicator = LITERAL(T, '+'); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, ' '))) { PositiveIndicator = LITERAL(T, ' '); Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '#'))) { bPrefix = true; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '0')) && Fmt.Num() > 1 && TChar<T>::IsDigit(Fmt[1]) && Fmt[1] != LITERAL(T, '0'))
+				{
+					Fmt.RemovePrefix(1);
+
+					Padding = Fmt.template ToIntAndTrim<unsigned>();
+				}
+
+				if (Fmt.StartsWith(LITERAL(T, '_')) && Fmt.Num() > 1 && TChar<T>::IsDigit(Fmt[1]))
+				{
+					Fmt.RemovePrefix(1);
+
+					Base = Fmt.template ToIntAndTrim<unsigned>();
+
+					if      (Fmt.StartsWith(LITERAL(T, 'I'))) { bDigitLowercase = false; Fmt.RemovePrefix(1); }
+					else if (Fmt.StartsWith(LITERAL(T, 'i'))) { bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				}
+				else if (Fmt.StartsWith(LITERAL(T, 'D'))) { Base = 10; bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'd'))) { Base = 10; bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'B'))) { Base =  2; bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'b'))) { Base =  2; bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'O'))) { Base =  8; bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'o'))) { Base =  8; bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'X'))) { Base = 16; bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'x'))) { Base = 16; bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '!'))) { bOtherLowercase = false; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				struct { int DigitStyle; int OtherStyle; T PositiveSign; bool bPrefix; unsigned Padding; unsigned Base; } IntParam =
+				{
+					bDigitLowercase ? -1 : 1,
+					bOtherLowercase ? -1 : 1,
+					PositiveIndicator,
+					bPrefix,
+					Padding,
+					Base,
+				};
+
+				verify(TStringObjectFormatter::Do(Result, Object, IntParam));
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
 			}
 
 			// Format the floating-point value by format string.
 			else if constexpr (CFloatingPoint<U>)
 			{
-				return TStringObjectFormatter::Do(Result, Object, Invalid);
+				if (Fmt.IsEmpty())
+				{
+					struct { bool bFixed; bool bScientific; unsigned Precision; } FloatParam = { true, false, 6 };
+
+					return TStringObjectFormatter::Do(Result, Object, FloatParam);
+				}
+
+				auto FillAndAlign = ParseFillAndAlign();
+
+				T PositiveIndicator = LITERAL(T, '-');
+
+				bool bPrefix = false;
+
+				int Precision = -1;
+
+				bool bDigitLowercase = false;
+				bool bOtherLowercase = true;
+
+				bool bFixed      = true;
+				bool bScientific = false;
+
+				if      (Fmt.StartsWith(LITERAL(T, '-'))) { PositiveIndicator = LITERAL(T, '-'); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, '+'))) { PositiveIndicator = LITERAL(T, '+'); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, ' '))) { PositiveIndicator = LITERAL(T, ' '); Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '#'))) { bPrefix = true; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '.')) && Fmt.Num() > 1 && TChar<T>::IsDigit(Fmt[1]))
+				{
+					Fmt.RemovePrefix(1);
+
+					Precision = Fmt.template ToIntAndTrim<unsigned>();
+				}
+
+				if      (Fmt.StartsWith(LITERAL(T, 'F'))) { bFixed = true; bScientific = false;  bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'f'))) { bFixed = true; bScientific = false;  bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'G'))) { bFixed = true;  bScientific = true;  bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'g'))) { bFixed = true;  bScientific = true;  bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'E'))) { bFixed = false; bScientific = true;  bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'e'))) { bFixed = false; bScientific = true;  bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'A'))) { bFixed = false; bScientific = false; bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'a'))) { bFixed = false; bScientific = false; bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '!'))) { bOtherLowercase = false; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				if (Precision == -1 && bFixed && !bScientific) Precision = 6;
+
+				struct { bool bFixed; bool bScientific; int Precision; int DigitStyle; int OtherStyle; T PositiveSign; bool bPrefix; } FloatParam =
+				{
+					bFixed,
+					bScientific,
+					Precision,
+					bDigitLowercase ? -1 : 1,
+					bOtherLowercase ? -1 : 1,
+					PositiveIndicator,
+					bPrefix,
+				};
+
+				verify(TStringObjectFormatter::Do(Result, Object, FloatParam));
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
 			}
+
+			// Format the pointer value by format string.
+			else if constexpr (CNullPointer<U> || TPointerTraits<U>::bIsPointer)
+			{
+				void* Ptr = nullptr; if constexpr (!CNullPointer<U>) Ptr = ToAddress(Object);
+
+				auto FillAndAlign = ParseFillAndAlign();
+
+				bool bDigitLowercase = false;
+				bool bOtherLowercase = true;
+
+				if      (Fmt.StartsWith(LITERAL(T, 'P'))) { bDigitLowercase = false; Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'p'))) { bDigitLowercase = true;  Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '!'))) { bOtherLowercase = false; Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, '='))) Fmt.RemovePrefix(1);
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				const uintptr IntValue = reinterpret_cast<uintptr>(Ptr);
+
+				struct { int DigitStyle; int OtherStyle; bool bPrefix; unsigned Padding; unsigned Base; } IntParam =
+				{
+					bDigitLowercase ? -1 : 1,
+					bOtherLowercase ? -1 : 1,
+					true,
+					sizeof(uintptr) * 2,
+					16,
+				};
+
+				verify(TStringObjectFormatter::Do(Result, IntValue, IntParam));
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
+			}
+
+			// Format the tuple value by format string.
+			else if constexpr (CTTuple<U>)
+			{
+				auto FillAndAlign = ParseFillAndAlign();
+
+				TStringView<T> Begin     = LITERAL(T, "(");
+				TStringView<T> Separator = LITERAL(T, ", ");
+				TStringView<T> End       = LITERAL(T, ")");
+
+				if (Fmt.StartsWith(LITERAL(T, 'T')) || Fmt.StartsWith(LITERAL(T, 't')))
+				{
+					Fmt.RemovePrefix(1);
+
+					const size_t PlaceholderA = Fmt.FindFirstOf(LITERAL(T, '_'));
+					const size_t PlaceholderB = Fmt.FindFirstOf(LITERAL(T, '_'), PlaceholderA + 1);
+
+					if (PlaceholderA == INDEX_NONE || PlaceholderB == INDEX_NONE || PlaceholderA == PlaceholderB)
+					{
+						checkf(false, TEXT("Illegal format string. Expect placeholders."));
+						return false;
+					}
+
+					size_t UserDefinedEnd = Fmt.FindFirstOf(LITERAL(T, ':'), PlaceholderB + 1);
+
+					if (UserDefinedEnd == INDEX_NONE) UserDefinedEnd = Fmt.Num();
+
+					Begin     = Fmt.First(PlaceholderA);
+					Separator = Fmt.Substr(PlaceholderA + 1, PlaceholderB   - PlaceholderA - 1);
+					End       = Fmt.Substr(PlaceholderB + 1, UserDefinedEnd - PlaceholderB - 1);
+
+					Fmt.RemovePrefix(UserDefinedEnd);
+				}
+				else if (Fmt.StartsWith(LITERAL(T, 'M'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, ": "); End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'm'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, ": "); End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'N'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, "");   End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'n'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, "");   End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				if (Object.IsEmpty())
+				{
+					Result += Begin;
+					Result += End;
+
+					ApplyFillAndAlign(FillAndAlign);
+
+					return true;
+				}
+
+				TString<T, TInlineAllocator<64>> Buffer;
+
+				struct { TStringView<T> Fmt; } Empty = { LITERAL(T, "") };
+
+				bool bIsSuccessful = TStringObjectFormatter::Do(Buffer, Object.template GetValue<0>(), Empty);
+
+				bIsSuccessful = [=, &Object, &Buffer]<size_t... Indices>(TIndexSequence<Indices...>) -> bool
+				{
+					return (bIsSuccessful && ... && (Buffer += Separator, TStringObjectFormatter::Do(Buffer, Object.template GetValue<Indices + 1>(), Empty)));
+				}
+				(TMakeIndexSequence<Object.Num() - 1>());
+
+				if (!bIsSuccessful)
+				{
+					checkf(false, TEXT("Failed to fully format tuple value."));
+					return false;
+				}
+
+				Result += Begin;
+				Result += Buffer;
+				Result += End;
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
+			}
+
+			// Format the container value by format string.
+			else if constexpr (requires { Iteration::Begin(Object); Iteration::End(Object); })
+			{
+				auto FillAndAlign = ParseFillAndAlign();
+
+				TStringView<T> Begin     = LITERAL(T, "[");
+				TStringView<T> Separator = LITERAL(T, ", ");
+				TStringView<T> End       = LITERAL(T, "]");
+
+				TStringView<T> Subfmt = LITERAL(T, "");
+
+				if (Fmt.StartsWith(LITERAL(T, 'T')) || Fmt.StartsWith(LITERAL(T, 't')))
+				{
+					Fmt.RemovePrefix(1);
+
+					const size_t PlaceholderA = Fmt.FindFirstOf(LITERAL(T, '_'));
+					const size_t PlaceholderB = Fmt.FindFirstOf(LITERAL(T, '_'), PlaceholderA + 1);
+
+					if (PlaceholderA == INDEX_NONE || PlaceholderB == INDEX_NONE || PlaceholderA == PlaceholderB)
+					{
+						checkf(false, TEXT("Illegal format string. Expect placeholders."));
+						return false;
+					}
+
+					size_t UserDefinedEnd = Fmt.FindFirstOf(LITERAL(T, ':'), PlaceholderB + 1);
+
+					if (UserDefinedEnd == INDEX_NONE) UserDefinedEnd = Fmt.Num();
+
+					Begin     = Fmt.First(PlaceholderA);
+					Separator = Fmt.Substr(PlaceholderA + 1, PlaceholderB   - PlaceholderA - 1);
+					End       = Fmt.Substr(PlaceholderB + 1, UserDefinedEnd - PlaceholderB - 1);
+
+					Fmt.RemovePrefix(UserDefinedEnd);
+				}
+				else if (Fmt.StartsWith(LITERAL(T, 'N'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, ""); End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+				else if (Fmt.StartsWith(LITERAL(T, 'n'))) { Begin = LITERAL(T, ""); Separator = LITERAL(T, ""); End = LITERAL(T, ""); Fmt.RemovePrefix(1); }
+
+				if (Fmt.StartsWith(LITERAL(T, ':')))
+				{
+					Fmt.RemovePrefix(1);
+
+					Subfmt = Fmt;
+
+					Fmt = LITERAL(T, "");
+				}
+
+				if (!Fmt.IsEmpty())
+				{
+					checkf(false, TEXT("Illegal format string. Redundant unknown characters."));
+					return false;
+				}
+
+				if (Iteration::Begin(Object) == Iteration::End(Object))
+				{
+					Result += Begin;
+					Result += End;
+
+					ApplyFillAndAlign(FillAndAlign);
+
+					return true;
+				}
+
+				TString<T, TInlineAllocator<64>> Buffer;
+
+				struct { TStringView<T> Fmt; } ElementParam = { Subfmt };
+
+				// It is assumed that if the first element is successfully formatted, all elements will succeed.
+				bool bIsSuccessful = TStringObjectFormatter::Do(Buffer, *Iteration::Begin(Object), ElementParam);
+
+				if (!bIsSuccessful)
+				{
+					checkf(false, TEXT("Failed to fully format container value."));
+					return false;
+				}
+
+				Result += Begin;
+				Result += Buffer;
+
+				auto Sentinel = Iteration::End(Object);
+
+				for (auto Iter = ++Iteration::Begin(Object); Iter != Sentinel; ++Iter)
+				{
+					Result += Separator;
+
+					verify(TStringObjectFormatter::Do(Result, *Iter, ElementParam));
+				}
+
+				Result += End;
+
+				ApplyFillAndAlign(FillAndAlign);
+
+				return true;
+			}
+
+			else static_assert(sizeof(U) == -1, "Unsupported object type.");
 		}
 		else
 		{
 			// Format the boolean value by structured parameters.
 			if constexpr (CSameAs<U, bool>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
 				if constexpr (bHasDigitStyle || bHasOtherStyle)
 				{
@@ -148,12 +1071,15 @@ struct TStringObjectFormatter
 			// Format the integer value by structured parameters.
 			else if constexpr (CIntegral<U> && !CSameAs<U, bool>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
-				constexpr bool bHasSign   = requires { { Param.bSign   } -> CBooleanTestable; };
+				constexpr bool bHasSign   = requires { { Param.PositiveSign } -> CConvertibleTo<T>; };
+
 				constexpr bool bHasPrefix = requires { { Param.bPrefix } -> CBooleanTestable; };
 				constexpr bool bHasBase   = requires { { Param.Base    } -> CConvertibleTo<unsigned>; };
+
+				constexpr bool bHasPadding = requires { { Param.Padding } -> CConvertibleTo<unsigned>; };
 
 				static_assert(TChar<T>::IsASCII());
 
@@ -187,6 +1113,8 @@ struct TStringObjectFormatter
 				constexpr size_t BufferSize = sizeof(UnsignedU) * 8 + 4;
 
 				T Buffer[BufferSize];
+
+				T* DigitEnd = Buffer + BufferSize;
 
 				T* Iter = Buffer + BufferSize;
 
@@ -238,6 +1166,16 @@ struct TStringObjectFormatter
 				}
 				else do { *--Iter = static_cast<T>('0' + Unsigned % 10); Unsigned = static_cast<UnsignedU>(Unsigned / 10); } while (Unsigned != 0);
 
+				T* DigitBegin = Iter;
+
+				// Handle the width parameter.
+				if constexpr (bHasPadding) if (Param.Padding > DigitEnd - DigitBegin)
+				{
+					const size_t Padding = Param.Padding - (DigitEnd - DigitBegin);
+
+					if (Param.Padding < sizeof(UnsignedU) * 8) for (size_t Index = 0; Index != Padding; ++Index) *--Iter = LITERAL(T, '0');
+				}
+
 				// Append the prefix to the buffer.
 				if constexpr (bHasPrefix && bHasBase) if (Param.bPrefix && Param.Base != 10)
 				{
@@ -255,9 +1193,28 @@ struct TStringObjectFormatter
 				if constexpr (CSigned<U>) if (bNegative) *--Iter = LITERAL(T, '-');
 
 				// Append the positive sign to the buffer.
-				if constexpr (bHasSign) if (!bNegative && Param.bSign) *--Iter = LITERAL(T, '+');
+				if constexpr (bHasSign) if (!bNegative && Param.PositiveSign != LITERAL(T, '-')) *--Iter = Param.PositiveSign;
 
-				Result.Append(Iter, Buffer + BufferSize);
+				// Handle the width parameter.
+				if constexpr (bHasPadding) if (Param.Padding > DigitEnd - DigitBegin)
+				{
+					const size_t Padding = Param.Padding - (DigitEnd - DigitBegin);
+
+					if (Param.Padding > sizeof(UnsignedU) * 8)
+					{
+						Result.Reserve(Result.Num() + (DigitBegin - Iter) + Param.Padding);
+
+						Result.Append(Iter, DigitBegin);
+
+						for (size_t Index = 0; Index != Padding; ++Index) Result += LITERAL(T, '0');
+
+						Result.Append(DigitBegin, DigitEnd);
+
+						return true;
+					}
+				}
+
+				Result.Append(Iter, DigitEnd);
 
 				return true;
 			}
@@ -265,12 +1222,13 @@ struct TStringObjectFormatter
 			// Format the floating-point value by structured parameters.
 			else if constexpr (CFloatingPoint<U>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
-				constexpr bool bHasSign      = requires { { Param.bSign     } -> CBooleanTestable; };
+				constexpr bool bHasSign = requires { { Param.PositiveSign } -> CConvertibleTo<T>; };
+
 				constexpr bool bHasPrefix    = requires { { Param.bPrefix   } -> CBooleanTestable; };
-				constexpr bool bHasPrecision = requires { { Param.Precision } -> CConvertibleTo<unsigned>; };
+				constexpr bool bHasPrecision = requires { { Param.Precision } -> CConvertibleTo<int>; };
 
 				constexpr bool bHasFormat =
 					requires
@@ -297,9 +1255,13 @@ struct TStringObjectFormatter
 				{
 					Buffer.SetNum(Buffer.Num() * 2);
 
-					if      constexpr (bHasPrecision) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object, Format, Param.Precision);
-					else if constexpr (bHasFormat)    ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object, Format);
-					else                              ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object);
+					if constexpr (bHasPrecision)
+					{
+						if (Param.Precision >= 0) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object, Format, Param.Precision);
+						else                      ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object, Format);
+					}
+					else if constexpr (bHasFormat) ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object, Format);
+					else                           ConvertResult = NAMESPACE_STD::to_chars(ToAddress(Buffer.Begin()), ToAddress(Buffer.End()), Object);
 				}
 				while (ConvertResult.ec == NAMESPACE_STD::errc::value_too_large);
 
@@ -321,7 +1283,7 @@ struct TStringObjectFormatter
 					if (bNegative) Result.Append(LITERAL(T, "-"));
 
 					// Append the positive sign to the buffer.
-					else if constexpr (bHasSign) if (Param.bSign) Result.Append(LITERAL(T, "+"));
+					else if constexpr (bHasSign) if (Param.PositiveSign != LITERAL(T, '-')) Result += Param.PositiveSign;
 
 					if constexpr (bHasDigitStyle || bHasOtherStyle)
 					{
@@ -346,7 +1308,7 @@ struct TStringObjectFormatter
 					if (bNegative) Result.Append(LITERAL(T, "-"));
 
 					// Append the positive sign to the buffer.
-					else if constexpr (bHasSign) if (Param.bSign) Result.Append(LITERAL(T, "+"));
+					else if constexpr (bHasSign) if (Param.PositiveSign != LITERAL(T, '-')) Result += Param.PositiveSign;
 
 					if constexpr (bHasDigitStyle || bHasOtherStyle)
 					{
@@ -369,7 +1331,7 @@ struct TStringObjectFormatter
 				Result.Reserve(Result.Num() + Buffer.Num() + 4);
 
 				// Append the positive sign to the buffer.
-				if constexpr (bHasSign) if (!bNegative && Param.bSign) Result.Append(LITERAL(T, "+"));
+				if constexpr (bHasSign) if (Param.PositiveSign != LITERAL(T, '-')) Result += Param.PositiveSign;
 
 				// Handle the prefix.
 				if constexpr (bHasPrefix) if (Param.bPrefix)
@@ -401,7 +1363,11 @@ struct TStringObjectFormatter
 
 				return true;
 			}
+
+			else static_assert(sizeof(U) == -1, "Unsupported object type.");
 		}
+
+		checkf(false, TEXT("Unsupported type for formatting."));
 
 		return false;
 	}
@@ -410,7 +1376,7 @@ struct TStringObjectFormatter
 template <CCharType T>
 struct TStringObjectParser
 {
-	static FORCEINLINE bool Do(auto& View, auto& Object, auto Param)
+	static bool Do(auto& View, auto& Object, auto Param)
 	{
 		using U = TRemoveCVRef<decltype(Object)>;
 
@@ -428,35 +1394,41 @@ struct TStringObjectParser
 		{
 			TStringView<T> Fmt = Param.Fmt;
 
-			checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
-
 			View.TrimStart();
 
-			// Format the boolean value by format string.
+			// Parse the boolean value by format string.
 			if constexpr (CSameAs<U, bool>)
 			{
+				checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
+
 				return TStringObjectParser::Do(View, Object, Invalid);
 			}
 
-			// Format the integer value by format string.
+			// Parse the integer value by format string.
 			else if constexpr (CIntegral<U> && !CSameAs<U, bool>)
 			{
+				checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
+
 				return TStringObjectParser::Do(View, Object, Invalid);
 			}
 
-			// Format the floating-point value by format string.
+			// Parse the floating-point value by format string.
 			else if constexpr (CFloatingPoint<U>)
 			{
+				checkf(Fmt.IsEmpty(), TEXT("Formatted parsing of arithmetic types not implemented."));
+
 				return TStringObjectParser::Do(View, Object, Invalid);
 			}
+
+			else static_assert(sizeof(U) == -1, "Unsupported object type.");
 		}
 		else
 		{
 			// Parse the boolean value by structured parameters.
 			if constexpr (CSameAs<U, bool>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
 				if (View.Num() < 4) return false;
 
@@ -464,8 +1436,8 @@ struct TStringObjectParser
 				{
 					TOptional<bool> Result;
 
-					signed DigitStyle = 0; if constexpr (bHasDigitStyle) DigitStyle = Param.DigitStyle;
-					signed OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
+					int DigitStyle = 0; if constexpr (bHasDigitStyle) DigitStyle = Param.DigitStyle;
+					int OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
 
 					if (DigitStyle <= 0 && OtherStyle <= 0)
 					{
@@ -527,10 +1499,11 @@ struct TStringObjectParser
 			// Parse the integer value by structured parameters.
 			else if constexpr (CIntegral<U> && !CSameAs<U, bool>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
-				constexpr bool bHasSign   = requires { { Param.bSign   } -> CBooleanTestable; };
+				constexpr bool bHasSign = requires { { Param.PositiveSign } -> CConvertibleTo<T>; };
+
 				constexpr bool bHasPrefix = requires { { Param.bPrefix } -> CBooleanTestable; };
 				constexpr bool bHasBase   = requires { { Param.Base    } -> CConvertibleTo<unsigned>; };
 
@@ -552,14 +1525,14 @@ struct TStringObjectParser
 				}
 
 				// Handle optional positive sign.
-				if constexpr (bHasSign) if (!bNegative && Param.bSign) if (TrimmedView.StartsWith(LITERAL(T, '+'))) TrimmedView.RemovePrefix(1);
+				if constexpr (bHasSign) if (!bNegative && Param.PositiveSign != LITERAL(T, '-')) if (TrimmedView.StartsWith(Param.PositiveSign)) TrimmedView.RemovePrefix(1);
 
 				unsigned Base; if constexpr (bHasBase) Base = Param.Base; else Base = 10;
 
 				// Handle optional prefix.
 				if constexpr (bHasPrefix) if (Param.bPrefix)
 				{
-					signed OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
+					int OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
 
 					// Auto detect base.
 					if (Base == 0)
@@ -673,12 +1646,13 @@ struct TStringObjectParser
 			// Format the floating-point value by structured parameters.
 			else if constexpr (CFloatingPoint<U>)
 			{
-				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<signed>; };
-				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<signed>; };
+				constexpr bool bHasDigitStyle = requires { { Param.DigitStyle } -> CConvertibleTo<int>; };
+				constexpr bool bHasOtherStyle = requires { { Param.OtherStyle } -> CConvertibleTo<int>; };
 
-				constexpr bool bHasSign      = requires { { Param.bSign     } -> CBooleanTestable; };
+				constexpr bool bHasSign = requires { { Param.PositiveSign } -> CConvertibleTo<T>; };
+
 				constexpr bool bHasPrefix    = requires { { Param.bPrefix   } -> CBooleanTestable; };
-				constexpr bool bHasPrecision = requires { { Param.Precision } -> CConvertibleTo<unsigned>; };
+				constexpr bool bHasPrecision = requires { { Param.Precision } -> CConvertibleTo<int>; };
 
 				constexpr bool bHasFormat =
 					requires
@@ -703,10 +1677,12 @@ struct TStringObjectParser
 					bNegative = true;
 					TrimmedView.RemovePrefix(1);
 				}
-				else if constexpr (bHasSign) if (Param.bSign) if (TrimmedView.StartsWith(LITERAL(T, '+'))) TrimmedView.RemovePrefix(1);
 
-				signed DigitStyle = 0; if constexpr (bHasDigitStyle) DigitStyle = Param.DigitStyle;
-				signed OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
+				// Handle optional positive sign.
+				else if constexpr (bHasSign) if (Param.PositiveSign != LITERAL(T, '-')) if (TrimmedView.StartsWith(Param.PositiveSign)) TrimmedView.RemovePrefix(1);
+
+				int DigitStyle = 0; if constexpr (bHasDigitStyle) DigitStyle = Param.DigitStyle;
+				int OtherStyle = 0; if constexpr (bHasOtherStyle) OtherStyle = Param.OtherStyle;
 
 				// Handle the infinity and NaN values.
 				{
@@ -813,9 +1789,11 @@ struct TStringObjectParser
 					// Handle the number after the decimal point.
 					if constexpr (bHasPrecision)
 					{
-						for (unsigned Index = 0; Index < Param.Precision; ++Index)
+						unsigned Precision = static_cast<unsigned>(Param.Precision);
+
+						for (size_t Index = 0; Index != Precision; ++Index)
 						{
-							if (Iter != View.End() && IsDigit(*Iter, bHex ? 16 : 10)) ++Iter;
+							if (Iter != View.End() && IsDigit(*Iter, bHex ? 16 : 10)) ++Iter; else break;
 						}
 					}
 					else while (Iter != View.End() && IsDigit(*Iter, bHex ? 16 : 10)) ++Iter;
@@ -871,7 +1849,11 @@ struct TStringObjectParser
 				Object = Result;
 				return true;
 			}
+
+			else static_assert(sizeof(U) == -1, "Unsupported object type.");
 		}
+
+		checkf(false, TEXT("Unsupported type for parsing."));
 
 		return false;
 	}
@@ -883,8 +1865,8 @@ struct TStringFormatOrParseHelper
 	static constexpr T LeftBrace  = LITERAL(T, '{');
 	static constexpr T RightBrace = LITERAL(T, '}');
 
-	static inline const TStringView EscapeLeftBrace  = LITERAL(T, "<[{");
-	static inline const TStringView EscapeRightBrace = LITERAL(T, "}]>");
+	static inline const TStringView EscapeLeftBrace  = LITERAL(T, "[{");
+	static inline const TStringView EscapeRightBrace = LITERAL(T, "}]");
 
 	static FORCEINLINE size_t Do(auto& Result, TStringView<T> Fmt, auto ArgsTuple)
 	{
@@ -949,6 +1931,7 @@ struct TStringFormatOrParseHelper
 							if (Fmt.First(PlaceholderBegin + 1).EndsWith(EscapeLeftBrace))
 							{
 								++PlaceholderBegin;
+								++SubplaceholderNum;
 							}
 							else break;
 						}
@@ -962,6 +1945,7 @@ struct TStringFormatOrParseHelper
 							if (Fmt.Substr(PlaceholderEnd).StartsWith(EscapeRightBrace))
 							{
 								++PlaceholderEnd;
+								++SubplaceholderNum;
 							}
 							else break;
 						}
@@ -1030,8 +2014,7 @@ struct TStringFormatOrParseHelper
 
 								continue;
 							}
-
-							verify(PlaceholderIndex.Parse(LITERAL(T, "{}"), Index) == 1);
+							else Index = PlaceholderIndex.template ToInt<unsigned>();
 						}
 						else Index = ArgsIndex++;
 
@@ -1040,8 +2023,6 @@ struct TStringFormatOrParseHelper
 						bIsSuccessful = ArgsTuple.Visit(
 							[&String, Subfmt = PlaceholderSubfmt](auto& Object) mutable
 							{
-								if (Subfmt.StartsWith(LITERAL(T, ':'))) Subfmt.RemovePrefix(1);
-
 								struct { TStringView<T> Fmt; } Param = { Subfmt };
 
 								if constexpr (bIsFormat) return TStringObjectFormatter<T>::Do(String, Object, Param);

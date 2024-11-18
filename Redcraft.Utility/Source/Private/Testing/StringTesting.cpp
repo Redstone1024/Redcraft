@@ -468,11 +468,11 @@ void TestStringConversion()
 
 		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 42) == LITERAL(T, "#42#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0.0) == LITERAL(T,  "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0.0) == LITERAL(T,  "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0.0) == LITERAL(T, "#-0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0.0) == LITERAL(T, "#-0.000000#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.14#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.140000#"));
 
 		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +NAMESPACE_STD::numeric_limits<float>::infinity())  == LITERAL(T,  "#Infinity#"));
 		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -NAMESPACE_STD::numeric_limits<float>::infinity())  == LITERAL(T, "#-Infinity#"));
