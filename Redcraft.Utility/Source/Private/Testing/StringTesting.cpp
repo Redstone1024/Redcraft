@@ -483,7 +483,9 @@ void TestStringConversion()
 		{
 			U Object;
 
-			always_check(View.Parse(LITERAL(T, "{0:}"), Object) == 1);
+			if      constexpr (CSameAs<U, bool>)  always_check(View.Parse(LITERAL(T, "{0:}"),    Object) == 1);
+			else if constexpr (CIntegral<U>)      always_check(View.Parse(LITERAL(T, "{0:+#I}"), Object) == 1);
+			else if constexpr (CFloatingPoint<U>) always_check(View.Parse(LITERAL(T, "{0:+#G}"), Object) == 1);
 
 			if constexpr (CFloatingPoint<U>)
 			{
@@ -506,62 +508,53 @@ void TestStringConversion()
 
 		auto CheckParseInt = [&]<typename U>(TInPlaceType<U>)
 		{
-//			CheckParseArithmetic(LITERAL(T, "+0"), static_cast<U>(+0.0));
+			CheckParseArithmetic(LITERAL(T, "+0"), static_cast<U>(+0.0));
 			CheckParseArithmetic(LITERAL(T, " 0"), static_cast<U>( 0.0));
 			CheckParseArithmetic(LITERAL(T, "-0"), static_cast<U>(-0.0));
 
-//			CheckParseArithmetic(LITERAL(T,       "+42"), static_cast<U>(      +42));
-//			CheckParseArithmetic(LITERAL(T,      "+052"), static_cast<U>(     +052));
-//			CheckParseArithmetic(LITERAL(T,     "+0x2A"), static_cast<U>(    +0x2A));
-//			CheckParseArithmetic(LITERAL(T, "+0b101010"), static_cast<U>(+0b101010));
+			CheckParseArithmetic(LITERAL(T,       "+42"), static_cast<U>(      +42));
+			CheckParseArithmetic(LITERAL(T,      "+052"), static_cast<U>(     +052));
+			CheckParseArithmetic(LITERAL(T,     "+0x2A"), static_cast<U>(    +0x2A));
+			CheckParseArithmetic(LITERAL(T, "+0b101010"), static_cast<U>(+0b101010));
 
 			CheckParseArithmetic(LITERAL(T,       "42"), static_cast<U>(      42));
-//			CheckParseArithmetic(LITERAL(T,      "052"), static_cast<U>(     052));
-//			CheckParseArithmetic(LITERAL(T,     "0x2A"), static_cast<U>(    0x2A));
-//			CheckParseArithmetic(LITERAL(T, "0b101010"), static_cast<U>(0b101010));
+			CheckParseArithmetic(LITERAL(T,      "052"), static_cast<U>(     052));
+			CheckParseArithmetic(LITERAL(T,     "0x2A"), static_cast<U>(    0x2A));
+			CheckParseArithmetic(LITERAL(T, "0b101010"), static_cast<U>(0b101010));
 
 			CheckParseArithmetic(LITERAL(T,       "-42"), static_cast<U>(      -42));
-//			CheckParseArithmetic(LITERAL(T,      "-052"), static_cast<U>(     -052));
-//			CheckParseArithmetic(LITERAL(T,     "-0x2A"), static_cast<U>(    -0x2A));
-//			CheckParseArithmetic(LITERAL(T, "-0b101010"), static_cast<U>(-0b101010));
+			CheckParseArithmetic(LITERAL(T,      "-052"), static_cast<U>(     -052));
+			CheckParseArithmetic(LITERAL(T,     "-0x2A"), static_cast<U>(    -0x2A));
+			CheckParseArithmetic(LITERAL(T, "-0b101010"), static_cast<U>(-0b101010));
 		};
-
-//		CheckParseInt(InPlaceType<bool>);
 
 		CheckParseInt(InPlaceType<int8>);
 		CheckParseInt(InPlaceType<int16>);
 		CheckParseInt(InPlaceType<int32>);
 		CheckParseInt(InPlaceType<int64>);
 
-//		CheckParseInt(InPlaceType<uint8>);
-//		CheckParseInt(InPlaceType<uint16>);
-//		CheckParseInt(InPlaceType<uint32>);
-//		CheckParseInt(InPlaceType<uint64>);
-
 		auto CheckParseFloat = [&]<typename U>(TInPlaceType<U>)
 		{
-			CheckParseInt(InPlaceType<U>);
-
-//			CheckParseArithmetic(LITERAL(T,         "+3.14"), static_cast<U>(        +3.14));
-//			CheckParseArithmetic(LITERAL(T,       "+3.14e2"), static_cast<U>(      +3.14e2));
-//			CheckParseArithmetic(LITERAL(T,      "+3.14e-2"), static_cast<U>(     +3.14e-2));
-//			CheckParseArithmetic(LITERAL(T, "+0x1.91eb86p1"), static_cast<U>(+0x1.91eb86p1));
+			CheckParseArithmetic(LITERAL(T,         "+3.14"), static_cast<U>(        +3.14));
+			CheckParseArithmetic(LITERAL(T,       "+3.14e2"), static_cast<U>(      +3.14e2));
+			CheckParseArithmetic(LITERAL(T,      "+3.14e-2"), static_cast<U>(     +3.14e-2));
+			CheckParseArithmetic(LITERAL(T, "+0x1.91eb86p1"), static_cast<U>(+0x1.91eb86p1));
 
 			CheckParseArithmetic(LITERAL(T,         "3.14"), static_cast<U>(        3.14));
 			CheckParseArithmetic(LITERAL(T,       "3.14e2"), static_cast<U>(      3.14e2));
 			CheckParseArithmetic(LITERAL(T,      "3.14e-2"), static_cast<U>(     3.14e-2));
-//			CheckParseArithmetic(LITERAL(T, "0x1.91eb86p1"), static_cast<U>(0x1.91eb86p1));
+			CheckParseArithmetic(LITERAL(T, "0x1.91eb86p1"), static_cast<U>(0x1.91eb86p1));
 
 			CheckParseArithmetic(LITERAL(T,         "-3.14"), static_cast<U>(        -3.14));
 			CheckParseArithmetic(LITERAL(T,       "-3.14e2"), static_cast<U>(      -3.14e2));
 			CheckParseArithmetic(LITERAL(T,      "-3.14e-2"), static_cast<U>(     -3.14e-2));
-//			CheckParseArithmetic(LITERAL(T, "-0x1.91eb86p1"), static_cast<U>(-0x1.91eb86p1));
+			CheckParseArithmetic(LITERAL(T, "-0x1.91eb86p1"), static_cast<U>(-0x1.91eb86p1));
 
-//			CheckParseArithmetic(LITERAL(T, "+Infinity"), +NAMESPACE_STD::numeric_limits<U>::infinity());
+			CheckParseArithmetic(LITERAL(T, "+Infinity"), +NAMESPACE_STD::numeric_limits<U>::infinity());
 			CheckParseArithmetic(LITERAL(T, " Infinity"), +NAMESPACE_STD::numeric_limits<U>::infinity());
 			CheckParseArithmetic(LITERAL(T, "-Infinity"), -NAMESPACE_STD::numeric_limits<U>::infinity());
 
-//			CheckParseArithmetic(LITERAL(T, "+NaN"), +NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
+			CheckParseArithmetic(LITERAL(T, "+NaN"), +NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
 			CheckParseArithmetic(LITERAL(T, " NaN"), +NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
 			CheckParseArithmetic(LITERAL(T, "-NaN"), -NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
 		};
