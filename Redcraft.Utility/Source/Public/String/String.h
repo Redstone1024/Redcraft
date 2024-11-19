@@ -21,44 +21,6 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T            > struct TIsTString                : FFalse { };
 template <typename T, typename A> struct TIsTString<TString<T, A>> : FTrue  { };
 
-template <typename T>
-class TCStringFromTString final : FNoncopyable
-{
-public:
-
-	FORCEINLINE TCStringFromTString(const T* InPtr, bool bInDelete)
-		: Ptr(InPtr), bDelete(bInDelete)
-	{ }
-
-	FORCEINLINE TCStringFromTString(TCStringFromTString&& InValue)
-		: Ptr(InValue.Ptr), bDelete(Exchange(InValue.bDelete, false))
-	{ }
-
-	FORCEINLINE ~TCStringFromTString()
-	{
-		if (bDelete) delete[] Ptr;
-	}
-
-	FORCEINLINE TCStringFromTString& operator=(TCStringFromTString&& InValue)
-	{
-		if (bDelete) delete[] Ptr;
-
-		Ptr = InValue.Ptr;
-
-		bDelete = Exchange(InValue.bDelete, false);
-
-		return *this;
-	}
-
-	NODISCARD FORCEINLINE operator const T*() const { return Ptr; }
-
-private:
-
-	const T* Ptr;
-	bool bDelete;
-
-};
-
 NAMESPACE_PRIVATE_END
 
 template <typename T> concept CTString = NAMESPACE_PRIVATE::TIsTString<TRemoveCV<T>>::Value;
@@ -1068,21 +1030,10 @@ public:
 		{
 			const_cast<ElementType*>(this->GetData())[this->Num()] = LITERAL(ElementType, '\0');
 
-			return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(this->GetData(), false);
+			return *TStringView(this->GetData(), this->Num() + 1);
 		}
 
-		if (this->Back() == LITERAL(ElementType, '\0'))
-		{
-			return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(this->GetData(), false);
-		}
-
-		ElementType* Buffer = new ElementType[this->Num() + 1];
-
-		Copy(Buffer);
-
-		Buffer[this->Num()] = LITERAL(ElementType, '\0');
-
-		return NAMESPACE_PRIVATE::TCStringFromTString<ElementType>(Buffer, true);
+		return *TStringView(*this);
 	}
 
 	/** @return The non-modifiable standard C character string version of the string. */

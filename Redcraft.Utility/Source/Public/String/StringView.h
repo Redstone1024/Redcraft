@@ -31,6 +31,44 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T> struct TIsTStringView                 : FFalse { };
 template <typename T> struct TIsTStringView<TStringView<T>> : FTrue  { };
 
+template <typename T>
+class TCStringFromTStringView final : FNoncopyable
+{
+public:
+
+	FORCEINLINE TCStringFromTStringView(const T* InPtr, bool bInDelete)
+		: Ptr(InPtr), bDelete(bInDelete)
+	{ }
+
+	FORCEINLINE TCStringFromTStringView(TCStringFromTStringView&& InValue)
+		: Ptr(InValue.Ptr), bDelete(Exchange(InValue.bDelete, false))
+	{ }
+
+	FORCEINLINE ~TCStringFromTStringView()
+	{
+		if (bDelete) delete[] Ptr;
+	}
+
+	FORCEINLINE TCStringFromTStringView& operator=(TCStringFromTStringView&& InValue)
+	{
+		if (bDelete) delete[] Ptr;
+
+		Ptr = InValue.Ptr;
+
+		bDelete = Exchange(InValue.bDelete, false);
+
+		return *this;
+	}
+
+	NODISCARD FORCEINLINE operator const T*() const { return Ptr; }
+
+private:
+
+	const T* Ptr;
+	bool bDelete;
+
+};
+
 NAMESPACE_PRIVATE_END
 
 template <typename T> concept CTStringView = NAMESPACE_PRIVATE::TIsTStringView<TRemoveCV<T>>::Value;
@@ -445,6 +483,25 @@ public:
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
 	{
 		return RFind([Char](ElementType C) { return C != Char; }, Index);
+	}
+
+public:
+
+	/** @return The non-modifiable standard C character string version of the string view. */
+	NODISCARD FORCEINLINE auto operator*() const
+	{
+		if (this->Back() == LITERAL(ElementType, '\0') || Contains(LITERAL(ElementType, '\0')))
+		{
+			return NAMESPACE_PRIVATE::TCStringFromTStringView<ElementType>(this->GetData(), false);
+		}
+
+		ElementType* Buffer = new ElementType[this->Num() + 1];
+
+		Copy(Buffer);
+
+		Buffer[this->Num()] = LITERAL(ElementType, '\0');
+
+		return NAMESPACE_PRIVATE::TCStringFromTStringView<ElementType>(Buffer, true);
 	}
 
 public:
