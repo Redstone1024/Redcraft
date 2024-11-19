@@ -18,6 +18,9 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_PRIVATE_BEGIN
 
+template <typename T            > struct TIsTString                : FFalse { };
+template <typename T, typename A> struct TIsTString<TString<T, A>> : FTrue  { };
+
 template <typename T>
 class TCStringFromTString final : FNoncopyable
 {
@@ -57,6 +60,8 @@ private:
 };
 
 NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTString = NAMESPACE_PRIVATE::TIsTString<TRemoveCV<T>>::Value;
 
 /** The default string allocator that uses SSO and can be placed right into FAny without dynamically allocating memory. */
 template <CCharType T>

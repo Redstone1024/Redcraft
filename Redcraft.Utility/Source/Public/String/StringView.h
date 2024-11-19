@@ -20,8 +20,20 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+template <CCharType T>
+class TStringView;
+
 template <CCharType T, CAllocator<T> Allocator>
 class TString;
+
+NAMESPACE_PRIVATE_BEGIN
+
+template <typename T> struct TIsTStringView                 : FFalse { };
+template <typename T> struct TIsTStringView<TStringView<T>> : FTrue  { };
+
+NAMESPACE_PRIVATE_END
+
+template <typename T> concept CTStringView = NAMESPACE_PRIVATE::TIsTStringView<TRemoveCV<T>>::Value;
 
 /**
  * The class template TStringView describes an object that can refer to a constant contiguous sequence of char-like objects
@@ -506,8 +518,8 @@ public:
 	/**
 	 * Converts a string into a boolean value.
 	 *
-	 * - 1, "true",  "True",  "TRUE"  and non-zero integers become true.
-	 * - 0, "false", "False", "FALSE" and unparsable values become false.
+	 * - "True"  and non-zero integers become true.
+	 * - "False" and unparsable values become false.
 	 *
 	 * @return The boolean value.
 	 */
