@@ -144,13 +144,6 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	define PRAGMA_ENABLE_OPTIMIZATION  PRAGMA_ENABLE_OPTIMIZATION_ACTUAL
 #endif
 
-// Unsigned integral types
-
-using uint8  = NAMESPACE_STD::uint8_t;
-using uint16 = NAMESPACE_STD::uint16_t;
-using uint32 = NAMESPACE_STD::uint32_t;
-using uint64 = NAMESPACE_STD::uint64_t;
-
 // Signed integral types
 
 using int8  = NAMESPACE_STD::int8_t;
@@ -158,34 +151,94 @@ using int16 = NAMESPACE_STD::int16_t;
 using int32 = NAMESPACE_STD::int32_t;
 using int64 = NAMESPACE_STD::int64_t;
 
+#ifdef __SIZEOF_INT128__
+using int128 = __int128;
+#else
+using int128 = void;
+#endif
+
+using int8_least   = NAMESPACE_STD::int_least8_t;
+using int16_least  = NAMESPACE_STD::int_least16_t;
+using int32_least  = NAMESPACE_STD::int_least32_t;
+using int64_least  = NAMESPACE_STD::int_least64_t;
+using int128_least = int128;
+
+using int8_fast   = NAMESPACE_STD::int_fast8_t;
+using int16_fast  = NAMESPACE_STD::int_fast16_t;
+using int32_fast  = NAMESPACE_STD::int_fast32_t;
+using int64_fast  = NAMESPACE_STD::int_fast64_t;
+using int128_fast = int128;
+
+#ifdef __SIZEOF_INT128__
+using intmax = int128;
+#else
+using intmax = int64;
+#endif
+
+// Unsigned integral types
+
+using uint8  = NAMESPACE_STD::uint8_t;
+using uint16 = NAMESPACE_STD::uint16_t;
+using uint32 = NAMESPACE_STD::uint32_t;
+using uint64 = NAMESPACE_STD::uint64_t;
+
+#ifdef __SIZEOF_INT128__
+using uint128 = unsigned __int128;
+#else
+using uint128 = void;
+#endif
+
+using uint8_least   = NAMESPACE_STD::uint_least8_t;
+using uint16_least  = NAMESPACE_STD::uint_least16_t;
+using uint32_least  = NAMESPACE_STD::uint_least32_t;
+using uint64_least  = NAMESPACE_STD::uint_least64_t;
+using uint128_least = uint128;
+
+using uint8_fast   = NAMESPACE_STD::int_fast8_t;
+using uint16_fast  = NAMESPACE_STD::int_fast16_t;
+using uint32_fast  = NAMESPACE_STD::int_fast32_t;
+using uint64_fast  = NAMESPACE_STD::int_fast64_t;
+using uint128_fast = uint128;
+
+#ifdef __SIZEOF_INT128__
+using uintmax = uint128;
+#else
+using uintmax = uint64;
+#endif
+
 // Floating point types
 
 #if defined(__STDCPP_FLOAT16_T__)
 using float16 = NAMESPACE_STD::float16_t;
+#else
+using float16 = void;
 #endif
 
 #if defined(__STDCPP_FLOAT32_T__)
 using float32 = NAMESPACE_STD::float32_t;
 #else
+static_assert(sizeof(float) == 4);
 using float32 = float;
 #endif
 
 #if defined(__STDCPP_FLOAT64_T__)
 using float64 = NAMESPACE_STD::float64_t;
 #else
+static_assert(sizeof(double) == 8);
 using float64 = double;
 #endif
 
 #if defined(__STDCPP_FLOAT128_T__)
 using float128 = NAMESPACE_STD::float128_t;
+#else
+using float128 = void;
 #endif
 
 #if defined(__STDCPP_BFLOAT16_T__)
 using bfloat16 = NAMESPACE_STD::bfloat16_t;
+#else
+using bfloat16 = void;
 #endif
-
-static_assert(sizeof(float32) == 4);
-static_assert(sizeof(float64) == 8);
 
 // Character types
 
