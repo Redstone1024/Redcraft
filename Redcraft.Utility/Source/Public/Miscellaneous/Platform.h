@@ -14,7 +14,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// Build information macro
+// Platform information macro
 
 #ifndef PLATFORM_NAME
 #	error "PLATFORM_NAME must be defined."
@@ -31,6 +31,8 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #ifndef PLATFORM_UNKNOWN
 #	define PLATFORM_UNKNOWN 0
 #endif
+
+// Build information macro
 
 #ifndef BUILD_TYPE
 #	error "BUILD_TYPE must be defined."
@@ -52,7 +54,29 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	define BUILD_UNKNOWN 0
 #endif
 
-// Whether the CPU is x86/x64 (i.e. both 32 and 64-bit variants)
+// Compiler information macro
+
+#ifndef PLATFORM_COMPILER_NAME
+#	error "COMPILER_NAME must be defined."
+#endif
+
+#ifndef PLATFORM_COMPILER_MSVC
+#	define PLATFORM_COMPILER_MSVC 0
+#endif
+
+#ifndef PLATFORM_COMPILER_CLANG
+#	define PLATFORM_COMPILER_CLANG 0
+#endif
+
+#ifndef PLATFORM_COMPILER_GCC
+#	define PLATFORM_COMPILER_GCC 0
+#endif
+
+#ifndef PLATFORM_COMPILER_UNKNOWN
+#	define PLATFORM_COMPILER_UNKNOWN 0
+#endif
+
+// Architecture information macro
 
 #ifndef PLATFORM_CPU_X86_FAMILY
 #	if (defined(_M_IX86) || defined(__i386__) || defined(_M_X64) || defined(__amd64__) || defined(__x86_64__))
@@ -62,13 +86,27 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	endif
 #endif
 
-// Whether the CPU is AArch32/AArch64 (i.e. both 32 and 64-bit variants)
-
 #ifndef PLATFORM_CPU_ARM_FAMILY
 #	if (defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || defined(_M_ARM64))
 #		define PLATFORM_CPU_ARM_FAMILY	1
 #	else
 #		define PLATFORM_CPU_ARM_FAMILY	0
+#	endif
+#endif
+
+#ifndef PLATFORM_CPU_UNKNOWN_FAMILY
+#	define PLATFORM_CPU_UNKNOWN_FAMILY	(!(PLATFORM_CPU_X86_FAMILY || PLATFORM_CPU_ARM_FAMILY))
+#endif
+
+// CPU bits information macro
+
+#ifndef PLATFORM_CPU_BITS
+#	if (defined(_M_X64) || defined(__amd64__) || defined(__x86_64__) || defined(__aarch64__) || defined(_M_ARM64))
+#		define PLATFORM_CPU_BITS	64
+#	elif (defined(_M_IX86) || defined(__i386__) || defined(__arm__) || defined(_M_ARM))
+#		define PLATFORM_CPU_BITS	32
+#	else
+#		define PLATFORM_CPU_BITS	0
 #	endif
 #endif
 
