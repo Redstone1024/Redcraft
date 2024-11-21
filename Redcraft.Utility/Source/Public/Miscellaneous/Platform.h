@@ -110,9 +110,155 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	endif
 #endif
 
+// Endian information macro
+
+#if !defined(PLATFORM_LITTLE_ENDIAN) && !defined(PLATFORM_BIG_ENDIAN)
+#	if PLATFORM_COMPILER_MSVC
+#		define PLATFORM_LITTLE_ENDIAN 1
+#		define PLATFORM_BIG_ENDIAN    0
+#	elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)
+#		if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#			define PLATFORM_LITTLE_ENDIAN 1
+#			define PLATFORM_BIG_ENDIAN    0
+#		elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#			define PLATFORM_LITTLE_ENDIAN 0
+#			define PLATFORM_BIG_ENDIAN    1
+#		else
+#			define PLATFORM_LITTLE_ENDIAN 0
+#			define PLATFORM_BIG_ENDIAN    0
+#		endif
+#	endif
+#endif
+
+#ifndef PLATFORM_LITTLE_ENDIAN
+#	define PLATFORM_LITTLE_ENDIAN 0
+#endif
+
+#ifndef PLATFORM_BIG_ENDIAN
+#	define PLATFORM_BIG_ENDIAN    0
+#endif
+
+#ifndef PLATFORM_CPU_MIXED_ENDIAN
+#	define PLATFORM_MIXED_ENDIAN  (!(PLATFORM_LITTLE_ENDIAN || PLATFORM_BIG_ENDIAN))
+#endif
+
+// Integral type information macro
+
+#ifndef PLATFORM_HAS_INT8
+#	define PLATFORM_HAS_INT8  1
+#endif
+
+#ifndef PLATFORM_HAS_INT16
+#	define PLATFORM_HAS_INT16 1
+#endif
+
+#ifndef PLATFORM_HAS_INT32
+#	define PLATFORM_HAS_INT32 1
+#endif
+
+#ifndef PLATFORM_HAS_INT64
+#	define PLATFORM_HAS_INT64 1
+#endif
+
+#ifndef PLATFORM_HAS_INT128
+#	if defined(__SIZEOF_INT128__)
+#		define PLATFORM_HAS_INT128 (__SIZEOF_INT128__ == 16)
+#	else
+#		define PLATFORM_HAS_INT128 0
+#	endif
+#endif
+
+#ifndef PLATFORM_INTMAX_BITS
+#	if PLATFORM_HAS_INT128
+#		define PLATFORM_INTMAX_BITS 128
+#	else
+#		define PLATFORM_INTMAX_BITS 64
+#	endif
+#endif
+
+#if !(PLATFORM_HAS_INT8 && PLATFORM_HAS_INT16 && PLATFORM_HAS_INT32 && PLATFORM_HAS_INT64)
+#	error "64-bit and below integral types must be supported."
+#endif
+
+// Floating point type information macro
+
+#ifndef PLATFORM_HAS_FLOAT16
+#	if defined(__STDCPP_FLOAT16_T__)
+#		define PLATFORM_HAS_FLOAT16 1
+#	else
+#		define PLATFORM_HAS_FLOAT16 0
+#	endif
+#endif
+
+#ifndef PLATFORM_HAS_FLOAT32
+#	define PLATFORM_HAS_FLOAT32 1
+#endif
+
+#ifndef PLATFORM_HAS_FLOAT64
+#	define PLATFORM_HAS_FLOAT64 1
+#endif
+
+#ifndef PLATFORM_HAS_FLOAT128
+#	if defined(__STDCPP_FLOAT128_T__)
+#		define PLATFORM_HAS_FLOAT128 1
+#	else
+#		define PLATFORM_HAS_FLOAT128 0
+#	endif
+#endif
+
+#ifndef PLATFORM_HAS_BFLOAT16
+#	if defined(__STDCPP_BFLOAT16_T__)
+#		define PLATFORM_HAS_BFLOAT16 1
+#	else
+#		define PLATFORM_HAS_BFLOAT16 0
+#	endif
+#endif
+
+// Character type information macro
+
+#ifndef PLATFORM_HAS_WCHAR
+#	define PLATFORM_HAS_WCHAR 1
+#endif
+
+#ifndef PLATFORM_HAS_U8CHAR
+#	ifdef __cpp_char8_t
+#		define PLATFORM_HAS_U8CHAR 1
+#	else
+#		define PLATFORM_HAS_U8CHAR 0
+#	endif
+#endif
+
+#ifndef PLATFORM_HAS_U16CHAR
+#	ifdef __cpp_unicode_characters
+#		define PLATFORM_HAS_U16CHAR 1
+#	else
+#		define PLATFORM_HAS_U16CHAR 0
+#	endif
+#endif
+
+#ifndef PLATFORM_HAS_U32CHAR
+#	ifdef __cpp_unicode_characters
+#		define PLATFORM_HAS_U32CHAR 1
+#	else
+#		define PLATFORM_HAS_U32CHAR 0
+#	endif
+#endif
+
+#ifndef PLATFORM_HAS_UNICODECHAR
+#	ifdef __cpp_unicode_characters
+#		define PLATFORM_HAS_UNICODECHAR 1
+#	else
+#		define PLATFORM_HAS_UNICODECHAR 0
+#	endif
+#endif
+
+#if !(PLATFORM_HAS_WCHAR && PLATFORM_HAS_U8CHAR && PLATFORM_HAS_U16CHAR && PLATFORM_HAS_U32CHAR)
+#	error "All character types must be supported."
+#endif
+
 // Function type macros
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_COMPILER_MSVC
 
 #	define VARARGS              __cdecl
 #	define CDECL                __cdecl
@@ -121,7 +267,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 #	define FORCENOINLINE        __declspec(noinline)
 #	define RESTRICT             __restrict
 
-#elif PLATFORM_LINUX
+#elif PLATFORM_COMPILER_CLANG || PLATFORM_COMPILER_GCC
 
 #	define VARARGS
 #	define CDECL
@@ -148,10 +294,10 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // DLL export and import macros
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_COMPILER_MSVC
 #	define DLLEXPORT    __declspec(dllexport)
 #	define DLLIMPORT    __declspec(dllimport)
-#elif PLATFORM_LINUX
+#elif PLATFORM_COMPILER_CLANG || PLATFORM_COMPILER_GCC
 #	define DLLEXPORT    __attribute__((visibility("default")))
 #	define DLLIMPORT    __attribute__((visibility("default")))
 #else
@@ -160,13 +306,13 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // Optimization macros
 
-#if !defined(__clang__)
+#if PLATFORM_COMPILER_MSVC
 #	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("optimize(\"\", off)")
 #	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("optimize(\"\", on)")
-#elif defined(_MSC_VER)
+#elif PLATFORM_COMPILER_CLANG
 #	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("clang optimize off")
 #	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("clang optimize on")
-#elif defined(__GNUC__ )
+#elif PLATFORM_COMPILER_GCC
 #	define PRAGMA_DISABLE_OPTIMIZATION_ACTUAL _Pragma("GCC push_options") _Pragma("GCC optimize (\"O0\")")
 #	define PRAGMA_ENABLE_OPTIMIZATION_ACTUAL  _Pragma("GCC pop_options")
 #else
@@ -189,25 +335,29 @@ using int16 = NAMESPACE_STD::int16_t;
 using int32 = NAMESPACE_STD::int32_t;
 using int64 = NAMESPACE_STD::int64_t;
 
-#ifdef __SIZEOF_INT128__
+#if PLATFORM_HAS_INT128
 using int128 = __int128;
-#else
-using int128 = void;
 #endif
 
-using int8_least   = NAMESPACE_STD::int_least8_t;
-using int16_least  = NAMESPACE_STD::int_least16_t;
-using int32_least  = NAMESPACE_STD::int_least32_t;
-using int64_least  = NAMESPACE_STD::int_least64_t;
+using int8_least  = NAMESPACE_STD::int_least8_t;
+using int16_least = NAMESPACE_STD::int_least16_t;
+using int32_least = NAMESPACE_STD::int_least32_t;
+using int64_least = NAMESPACE_STD::int_least64_t;
+
+#if PLATFORM_HAS_INT128
 using int128_least = int128;
+#endif
 
-using int8_fast   = NAMESPACE_STD::int_fast8_t;
-using int16_fast  = NAMESPACE_STD::int_fast16_t;
-using int32_fast  = NAMESPACE_STD::int_fast32_t;
-using int64_fast  = NAMESPACE_STD::int_fast64_t;
+using int8_fast  = NAMESPACE_STD::int_fast8_t;
+using int16_fast = NAMESPACE_STD::int_fast16_t;
+using int32_fast = NAMESPACE_STD::int_fast32_t;
+using int64_fast = NAMESPACE_STD::int_fast64_t;
+
+#if PLATFORM_HAS_INT128
 using int128_fast = int128;
+#endif
 
-#ifdef __SIZEOF_INT128__
+#if PLATFORM_HAS_INT128
 using intmax = int128;
 #else
 using intmax = int64;
@@ -220,25 +370,29 @@ using uint16 = NAMESPACE_STD::uint16_t;
 using uint32 = NAMESPACE_STD::uint32_t;
 using uint64 = NAMESPACE_STD::uint64_t;
 
-#ifdef __SIZEOF_INT128__
+#if PLATFORM_HAS_INT128
 using uint128 = unsigned __int128;
-#else
-using uint128 = void;
 #endif
 
-using uint8_least   = NAMESPACE_STD::uint_least8_t;
-using uint16_least  = NAMESPACE_STD::uint_least16_t;
-using uint32_least  = NAMESPACE_STD::uint_least32_t;
-using uint64_least  = NAMESPACE_STD::uint_least64_t;
+using uint8_least  = NAMESPACE_STD::uint_least8_t;
+using uint16_least = NAMESPACE_STD::uint_least16_t;
+using uint32_least = NAMESPACE_STD::uint_least32_t;
+using uint64_least = NAMESPACE_STD::uint_least64_t;
+
+#if PLATFORM_HAS_INT128
 using uint128_least = uint128;
+#endif
 
-using uint8_fast   = NAMESPACE_STD::int_fast8_t;
-using uint16_fast  = NAMESPACE_STD::int_fast16_t;
-using uint32_fast  = NAMESPACE_STD::int_fast32_t;
-using uint64_fast  = NAMESPACE_STD::int_fast64_t;
+using uint8_fast  = NAMESPACE_STD::int_fast8_t;
+using uint16_fast = NAMESPACE_STD::int_fast16_t;
+using uint32_fast = NAMESPACE_STD::int_fast32_t;
+using uint64_fast = NAMESPACE_STD::int_fast64_t;
+
+#if PLATFORM_HAS_INT128
 using uint128_fast = uint128;
+#endif
 
-#ifdef __SIZEOF_INT128__
+#if PLATFORM_HAS_INT128
 using uintmax = uint128;
 #else
 using uintmax = uint64;
@@ -246,36 +400,32 @@ using uintmax = uint64;
 
 // Floating point types
 
-#if defined(__STDCPP_FLOAT16_T__)
+#if PLATFORM_HAS_FLOAT16
 using float16 = NAMESPACE_STD::float16_t;
-#else
-using float16 = void;
 #endif
 
-#if defined(__STDCPP_FLOAT32_T__)
+#if PLATFORM_HAS_FLOAT32
+#	ifdef __STDCPP_FLOAT32_T__
 using float32 = NAMESPACE_STD::float32_t;
-#else
-static_assert(sizeof(float) == 4);
+#	else
 using float32 = float;
+#	endif
 #endif
 
-#if defined(__STDCPP_FLOAT64_T__)
+#if PLATFORM_HAS_FLOAT64
+#	ifdef __STDCPP_FLOAT64_T__
 using float64 = NAMESPACE_STD::float64_t;
-#else
-static_assert(sizeof(double) == 8);
+#	else
 using float64 = double;
+#	endif
 #endif
 
-#if defined(__STDCPP_FLOAT128_T__)
+#if PLATFORM_HAS_FLOAT128
 using float128 = NAMESPACE_STD::float128_t;
-#else
-using float128 = void;
 #endif
 
-#if defined(__STDCPP_BFLOAT16_T__)
+#if PLATFORM_HAS_BFLOAT16
 using bfloat16 = NAMESPACE_STD::bfloat16_t;
-#else
-using bfloat16 = void;
 #endif
 
 // Character types
