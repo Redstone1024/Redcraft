@@ -75,7 +75,7 @@ public:
 
 	// Make sure you call this function after you have destroyed the held object using Destroy().
 	template <typename T, typename U>
-	FORCEINLINE constexpr void Emplace(intptr InCallable, U&& Args)
+	FORCEINLINE constexpr void Emplace(uintptr InCallable, U&& Args)
 	{
 		static_assert(CSameAs<TDecay<T>, TDecay<U>>);
 		ValuePtr = reinterpret_cast<uintptr>(AddressOf(Args));

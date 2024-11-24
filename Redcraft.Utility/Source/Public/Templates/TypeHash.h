@@ -53,7 +53,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	if constexpr (sizeof(T) ==  8) return GetTypeHash(static_cast<uint32>(A)) ^ GetTypeHash(static_cast<uint32>(A >> 32));
 	if constexpr (sizeof(T) == 16) return GetTypeHash(static_cast<uint64>(A)) ^ GetTypeHash(static_cast<uint64>(A >> 64));
 	else check_no_entry();
-	
+
 	return INDEX_NONE;
 }
 
@@ -69,7 +69,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 	if constexpr (sizeof(T) ==  8) return GetTypeHash(*reinterpret_cast<uint64*>(&A));
 	if constexpr (sizeof(T) == 16) return GetTypeHash(*reinterpret_cast<uint64*>(&A) ^ *(reinterpret_cast<uint64*>(&A) + 1));
 	else check_no_entry();
-	
+
 	return INDEX_NONE;
 }
 
@@ -84,7 +84,7 @@ FORCEINLINE constexpr size_t GetTypeHash(T A)
 template <typename T> requires (CPointer<T> || CSameAs<T, nullptr_t>)
 FORCEINLINE constexpr size_t GetTypeHash(T A)
 {
-	return GetTypeHash(reinterpret_cast<intptr>(A));
+	return GetTypeHash(reinterpret_cast<uintptr>(A));
 }
 
 /** Overloads the GetTypeHash algorithm for T::hash_code(). */

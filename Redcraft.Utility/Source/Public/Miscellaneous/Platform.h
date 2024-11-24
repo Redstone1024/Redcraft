@@ -378,12 +378,15 @@ static_assert(sizeof(int16_fast) >= 2, "int16_fast must be at least 2 bytes");
 static_assert(sizeof(int32_fast) >= 4, "int32_fast must be at least 4 bytes");
 static_assert(sizeof(int64_fast) >= 8, "int64_fast must be at least 8 bytes");
 
-static_assert(int8(0xFF)                == -1, "int8 use two's complement");
-static_assert(int16(0xFFFF)             == -1, "int16 use two's complement");
-static_assert(int32(0xFFFFFFFF)         == -1, "int32 use two's complement");
-static_assert(int64(0xFFFFFFFFFFFFFFFF) == -1, "int64 use two's complement");
+static_assert(static_cast<int8>(0xFF)                == -1, "int8 use two's complement");
+static_assert(static_cast<int16>(0xFFFF)             == -1, "int16 use two's complement");
+static_assert(static_cast<int32>(0xFFFFFFFF)         == -1, "int32 use two's complement");
+static_assert(static_cast<int64>(0xFFFFFFFFFFFFFFFF) == -1, "int64 use two's complement");
 
 // Unsigned integral types
+
+using uint = unsigned int;
+using byte = unsigned char;
 
 using uint8  = NAMESPACE_STD::uint8_t;
 using uint16 = NAMESPACE_STD::uint16_t;
@@ -491,16 +494,13 @@ static_assert(!PLATFORM_LINUX   || sizeof(wchar) == sizeof(u32char), "wchar repr
 // Pointer types
 
 using uintptr = NAMESPACE_STD::uintptr_t;
-using intptr  = NAMESPACE_STD::intptr_t;
 using ptrdiff = NAMESPACE_STD::ptrdiff_t;
 using size_t  = NAMESPACE_STD::size_t;
-using ssize_t = intptr_t;
 
 static_assert(sizeof(uintptr) == sizeof(void*), "uintptr must be the same size as a pointer");
-static_assert(sizeof( intptr) == sizeof(void*), "intptr must be the same size as a pointer");
-
+static_assert(sizeof(ptrdiff) == sizeof(void*), "ptrdiff must be the same size as a pointer");
+static_assert(sizeof(size_t)  == sizeof(void*),  "size_t must be the same size as a pointer");
 static_assert(static_cast<uintptr>(-1) > static_cast<uintptr>(0), "uintptr must be unsigned");
-static_assert(static_cast< intptr>(-1) < static_cast< intptr>(0),  "intptr must be signed");
 
 // Null types
 
