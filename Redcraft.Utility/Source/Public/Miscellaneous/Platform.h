@@ -363,6 +363,26 @@ using intmax = int128;
 using intmax = int64;
 #endif
 
+static_assert(sizeof(int8)  == 1, "int8 must be 1 byte");
+static_assert(sizeof(int16) == 2, "int16 must be 2 bytes");
+static_assert(sizeof(int32) == 4, "int32 must be 4 bytes");
+static_assert(sizeof(int64) == 8, "int64 must be 8 bytes");
+
+static_assert(sizeof(int8_least)  >= 1, "int8_least must be at least 1 byte");
+static_assert(sizeof(int16_least) >= 2, "int16_least must be at least 2 bytes");
+static_assert(sizeof(int32_least) >= 4, "int32_least must be at least 4 bytes");
+static_assert(sizeof(int64_least) >= 8, "int64_least must be at least 8 bytes");
+
+static_assert(sizeof(int8_fast)  >= 1, "int8_fast must be at least 1 byte");
+static_assert(sizeof(int16_fast) >= 2, "int16_fast must be at least 2 bytes");
+static_assert(sizeof(int32_fast) >= 4, "int32_fast must be at least 4 bytes");
+static_assert(sizeof(int64_fast) >= 8, "int64_fast must be at least 8 bytes");
+
+static_assert(int8(0xFF)                == -1, "int8 use two's complement");
+static_assert(int16(0xFFFF)             == -1, "int16 use two's complement");
+static_assert(int32(0xFFFFFFFF)         == -1, "int32 use two's complement");
+static_assert(int64(0xFFFFFFFFFFFFFFFF) == -1, "int64 use two's complement");
+
 // Unsigned integral types
 
 using uint8  = NAMESPACE_STD::uint8_t;
@@ -397,6 +417,26 @@ using uintmax = uint128;
 #else
 using uintmax = uint64;
 #endif
+
+static_assert(sizeof(uint8)  == 1,  "uint8 must be 1 byte");
+static_assert(sizeof(uint16) == 2, "uint16 must be 2 bytes");
+static_assert(sizeof(uint32) == 4, "uint32 must be 4 bytes");
+static_assert(sizeof(uint64) == 8, "uint64 must be 8 bytes");
+
+static_assert(sizeof(uint8_least)  >= 1,  "uint8_least must be at least 1 byte");
+static_assert(sizeof(uint16_least) >= 2, "uint16_least must be at least 2 bytes");
+static_assert(sizeof(uint32_least) >= 4, "uint32_least must be at least 4 bytes");
+static_assert(sizeof(uint64_least) >= 8, "uint64_least must be at least 8 bytes");
+
+static_assert(sizeof(uint8_fast)  >= 1,  "uint8_fast must be at least 1 byte");
+static_assert(sizeof(uint16_fast) >= 2, "uint16_fast must be at least 2 bytes");
+static_assert(sizeof(uint32_fast) >= 4, "uint32_fast must be at least 4 bytes");
+static_assert(sizeof(uint64_fast) >= 8, "uint64_fast must be at least 8 bytes");
+
+static_assert(static_cast<uint8 >(-1) > static_cast< uint8>(0),  "uint8 must be unsigned");
+static_assert(static_cast<uint16>(-1) > static_cast<uint16>(0), "uint16 must be unsigned");
+static_assert(static_cast<uint32>(-1) > static_cast<uint32>(0), "uint32 must be unsigned");
+static_assert(static_cast<uint64>(-1) > static_cast<uint64>(0), "uint64 must be unsigned");
 
 // Floating point types
 
@@ -455,6 +495,12 @@ using intptr  = NAMESPACE_STD::intptr_t;
 using ptrdiff = NAMESPACE_STD::ptrdiff_t;
 using size_t  = NAMESPACE_STD::size_t;
 using ssize_t = intptr_t;
+
+static_assert(sizeof(uintptr) == sizeof(void*), "uintptr must be the same size as a pointer");
+static_assert(sizeof( intptr) == sizeof(void*), "intptr must be the same size as a pointer");
+
+static_assert(static_cast<uintptr>(-1) > static_cast<uintptr>(0), "uintptr must be unsigned");
+static_assert(static_cast< intptr>(-1) < static_cast< intptr>(0),  "intptr must be signed");
 
 // Null types
 
