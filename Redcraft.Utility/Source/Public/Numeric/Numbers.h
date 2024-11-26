@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_BEGIN(Math)
 
 template <CFloatingPoint T>
-struct TConstant
+struct TNumbers
 {
 	static constexpr T E           = static_cast<T>(2.71828182845904523536028747135266249775724709369995);
 	static constexpr T Log2E       = static_cast<T>(1.44269504088896340735992468100189213742664595415299);
