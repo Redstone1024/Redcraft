@@ -3,6 +3,7 @@
 #include "CoreTypes.h"
 #include "TypeTraits/TypeTraits.h"
 
+#include <climits>
 #include <limits>
 
 NAMESPACE_REDCRAFT_BEGIN
