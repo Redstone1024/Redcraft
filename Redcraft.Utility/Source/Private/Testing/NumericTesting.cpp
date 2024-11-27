@@ -13,6 +13,7 @@ void TestNumeric()
 {
 	TestLiteral();
 	TestBit();
+	TestMath();
 }
 
 void TestLiteral()
@@ -118,6 +119,54 @@ void TestBit()
 	always_check(Math::RotateRight(0b00011101u8,  4) == 0b11010001u8);
 	always_check(Math::RotateRight(0b00011101u8,  9) == 0b10001110u8);
 	always_check(Math::RotateRight(0b00011101u8, -1) == 0b00111010u8);
+}
+
+void TestMath()
+{
+	always_check(Math::Abs(-1) == 1);
+	always_check(Math::Abs( 0) == 0);
+	always_check(Math::Abs( 1) == 1);
+
+	always_check(Math::Sign(-4) == -1);
+	always_check(Math::Sign( 0) ==  0);
+	always_check(Math::Sign( 4) ==  1);
+
+	always_check(Math::Min(1, 2, 3, 4, 5) == 1);
+	always_check(Math::Min(5, 4, 3, 2, 1) == 1);
+	always_check(Math::Max(1, 2, 3, 4, 5) == 5);
+	always_check(Math::Max(5, 4, 3, 2, 1) == 5);
+
+	always_check(Math::IsNearlyEqual(4.0, 4.0));
+
+	always_check(Math::IsNearlyZero(0.0));
+
+	always_check(Math::IsInfinity( TNumericLimits<float32>::Infinity()));
+	always_check(Math::IsInfinity(-TNumericLimits<float32>::Infinity()));
+
+	always_check(Math::IsNaN( TNumericLimits<float32>::QuietNaN()));
+	always_check(Math::IsNaN(-TNumericLimits<float32>::QuietNaN()));
+	always_check(Math::IsNaN( TNumericLimits<float32>::SignalingNaN()));
+	always_check(Math::IsNaN(-TNumericLimits<float32>::SignalingNaN()));
+
+	always_check(Math::IsNaN(Math::NaN<float32>(4u)));
+
+	always_check(Math::IsNormal(1.0e4));
+	always_check(Math::IsNormal(1.0e8));
+
+	always_check(!Math::IsNegative(+1.0));
+	always_check(!Math::IsNegative(+0.0));
+	always_check( Math::IsNegative(-0.0));
+	always_check( Math::IsNegative(-1.0));
+
+	always_check(Math::Exponent(1.0) == 0);
+	always_check(Math::Exponent(2.0) == 1);
+	always_check(Math::Exponent(4.0) == 2);
+
+	always_check(Math::NaNPayload(Math::NaN<float32>(4u)) == 4u);
+
+	enum class ETest : uint16 { A = 65535 };
+
+	always_check(Math::NaNPayload<ETest>(Math::NaN<float32>(ETest::A)) == ETest::A);
 }
 
 NAMESPACE_END(Testing)

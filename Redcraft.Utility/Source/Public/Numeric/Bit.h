@@ -21,7 +21,7 @@ FORCEINLINE constexpr T BitCast(const U& Value)
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T ByteSwap(T Value)
 {
-	static_assert(sizeof(T) <= 16, "ByteSwap only works with T up to 128 bits.");
+	static_assert(sizeof(T) <= 16, "ByteSwap only works with T up to 128 bits");
 
 	if constexpr (sizeof(T) == 1) return Value;
 

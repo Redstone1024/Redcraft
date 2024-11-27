@@ -11,6 +11,7 @@ NAMESPACE_BEGIN(Testing)
 REDCRAFTUTILITY_API void TestNumeric();
 REDCRAFTUTILITY_API void TestLiteral();
 REDCRAFTUTILITY_API void TestBit();
+REDCRAFTUTILITY_API void TestMath();
 
 NAMESPACE_END(Testing)
 
