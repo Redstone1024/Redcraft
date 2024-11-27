@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AssertionMacros.h"
 #include "CoreTypes.h"
 
 #include <cstdlib>
@@ -83,6 +84,10 @@ NORETURN FORCEINLINE void Unreachable()
 #	ifdef __cpp_lib_unreachable
 	{
 		NAMESPACE_STD::unreachable();
+	}
+#	else
+	{
+		Abort();
 	}
 #	endif
 }
