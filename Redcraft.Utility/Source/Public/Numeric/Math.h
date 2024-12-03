@@ -3,7 +3,9 @@
 #include "CoreTypes.h"
 #include "Numeric/Bit.h"
 #include "Numeric/Limits.h"
+#include "Numeric/Numbers.h"
 #include "Templates/Tuple.h"
+#include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/AssertionMacros.h"
 
@@ -75,64 +77,98 @@ struct TFloatingTypeTraits<double>
 
 NAMESPACE_PRIVATE_END
 
+#define FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(Func)                            \
+	{                                                                            \
+		if constexpr (CSameAs<T, float> || CSameAs<T, double>)                   \
+		{                                                                        \
+			return NAMESPACE_STD::Func(A);                                       \
+		}                                                                        \
+		                                                                         \
+		else static_assert(sizeof(T) == -1, "Unsupported floating point type."); \
+		                                                                         \
+		return TNumericLimits<T>::QuietNaN();                                    \
+	}
+
+#define FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(Func)                            \
+	{                                                                            \
+		if constexpr (CSameAs<T, float> || CSameAs<T, double>)                   \
+		{                                                                        \
+			return NAMESPACE_STD::Func(A, B);                                    \
+		}                                                                        \
+		                                                                         \
+		else static_assert(sizeof(T) == -1, "Unsupported floating point type."); \
+		                                                                         \
+		return TNumericLimits<T>::QuietNaN();                                    \
+	}
+
 #define RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(Concept, Func)       \
 	template <Concept T, Concept U> requires (CCommonType<T, U>) \
-	FORCEINLINE constexpr auto Func(T A, U B)                    \
+	NODISCARD FORCEINLINE constexpr auto Func(T A, U B)          \
 	{                                                            \
-		return Math::Func<TCommonType<T, U>>(A, B);              \
+		using FCommonT = TCommonType<T, U>;                      \
+		                                                         \
+		return Math::Func(                                       \
+			static_cast<FCommonT>(A),                            \
+			static_cast<FCommonT>(B)                             \
+		);                                                       \
 	}
 
 #define RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(Concept, Func)                     \
 	template <Concept T, Concept U, Concept V> requires (CCommonType<T, U, V>) \
-	FORCEINLINE constexpr auto Func(T A, U B, V C)                             \
+	NODISCARD FORCEINLINE constexpr auto Func(T A, U B, V C)                   \
 	{                                                                          \
-		return Math::Func<TCommonType<T, U, V>>(A, B, C);                      \
+		using FCommonT = TCommonType<T, U, V>;                                 \
+		                                                                       \
+		return Math::Func(                                                     \
+			static_cast<FCommonT>(A),                                          \
+			static_cast<FCommonT>(B),                                          \
+			static_cast<FCommonT>(C)                                           \
+		);                                                                     \
 	}
 
+/* @return true if the given value is within a range ['MinValue', 'MaxValue'), false otherwise. */
 template <CArithmetic T>
-FORCEINLINE constexpr T IsWithin(T A, T MinValue, T MaxValue)
+NODISCARD FORCEINLINE constexpr T IsWithin(T A, T MinValue, T MaxValue)
 {
 	return A >= MinValue && A < MaxValue;
 }
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsWithin)
 
+/* @return true if the given value is within a range ['MinValue', 'MaxValue'], false otherwise. */
 template <CArithmetic T>
-FORCEINLINE constexpr T IsWithinInclusive(T A, T MinValue, T MaxValue)
+NODISCARD FORCEINLINE constexpr T IsWithinInclusive(T A, T MinValue, T MaxValue)
 {
 	return A >= MinValue && A <= MaxValue;
 }
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsWithinInclusive)
 
+/* @return The nearest integer not greater in magnitude than the given value. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Trunc(T A)
+NODISCARD FORCEINLINE constexpr T Trunc(T A)
 {
 	if constexpr (CIntegral<T>) return A;
 
-	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::trunc(A);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
+	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(trunc)
 }
 
+/* @return The nearest integer not greater in magnitude than the given value. */
 template <CArithmetic T, CArithmetic U>
-FORCEINLINE constexpr T TruncTo(U A)
+NODISCARD FORCEINLINE constexpr T TruncTo(U A)
 {
-	if constexpr (CIntegral<T> && CIntegral<U>) return A;
+	if constexpr (CIntegral<T>)
+	{
+		if constexpr (!CIntegral<U>)
+		{
+			return static_cast<T>(A);
+		}
+		else return A;
+	}
 
 	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
-		return NAMESPACE_STD::trunc(static_cast<float>(A));
-	}
-
-	else if constexpr (CIntegral<T>)
-	{
-		return static_cast<T>(A);
+		return Math::Trunc(static_cast<T>(A));
 	}
 
 	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
@@ -140,38 +176,35 @@ FORCEINLINE constexpr T TruncTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
+/* @return The nearest integer not less than the given value. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Ceil(T A)
+NODISCARD FORCEINLINE constexpr T Ceil(T A)
 {
 	if constexpr (CIntegral<T>) return A;
 
-	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::ceil(A);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
+	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(ceil)
 }
 
+/* @return The nearest integer not less than the given value. */
 template <CArithmetic T, CArithmetic U>
-FORCEINLINE constexpr T CeilTo(U A)
+NODISCARD FORCEINLINE constexpr T CeilTo(U A)
 {
-	if constexpr (CIntegral<T> && CIntegral<U>) return A;
+	if constexpr (CIntegral<T>)
+	{
+		if constexpr (!CIntegral<U>)
+		{
+			T I = Math::TruncTo<T>(A);
+
+			I += static_cast<U>(I) < A;
+
+			return I;
+		}
+		else return A;
+	}
 
 	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
-		return NAMESPACE_STD::ceil(static_cast<float>(A));
-	}
-
-	else if constexpr (CIntegral<T>)
-	{
-		T I = Math::TruncTo<T>(A);
-
-		I += static_cast<U>(I) < A;
-
-		return I;
+		return Math::Ceil(static_cast<T>(A));
 	}
 
 	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
@@ -179,38 +212,35 @@ FORCEINLINE constexpr T CeilTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
+/* @return The nearest integer not greater than the given value. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Floor(T A)
+NODISCARD FORCEINLINE constexpr T Floor(T A)
 {
 	if constexpr (CIntegral<T>) return A;
 
-	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::floor(A);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
+	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(floor)
 }
 
+/* @return The nearest integer not greater than the given value. */
 template <CArithmetic T, CArithmetic U>
-FORCEINLINE constexpr T FloorTo(U A)
+NODISCARD FORCEINLINE constexpr T FloorTo(U A)
 {
-	if constexpr (CIntegral<T> && CIntegral<U>) return A;
+	if constexpr (CIntegral<T>)
+	{
+		if constexpr (!CIntegral<U>)
+		{
+			T I = Math::TruncTo<T>(A);
+
+			I -= static_cast<U>(I) > A;
+
+			return I;
+		}
+		else return A;
+	}
 
 	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
-		return NAMESPACE_STD::floor(static_cast<float>(A));
-	}
-
-	else if constexpr (CIntegral<T>)
-	{
-		T I = Math::TruncTo<T>(A);
-
-		I -= static_cast<U>(I) > A;
-
-		return I;
+		return Math::Floor(static_cast<T>(A));
 	}
 
 	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
@@ -218,34 +248,31 @@ FORCEINLINE constexpr T FloorTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
+/* @return The nearest integer to the given value, rounding away from zero in halfway cases. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Round(T A)
+NODISCARD FORCEINLINE constexpr T Round(T A)
 {
 	if constexpr (CIntegral<T>) return A;
 
-	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::round(A);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
+	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(round)
 }
 
+/* @return The nearest integer to the given value, rounding away from zero in halfway cases. */
 template <CArithmetic T, CArithmetic U>
-FORCEINLINE constexpr T RoundTo(U A)
+NODISCARD FORCEINLINE constexpr T RoundTo(U A)
 {
-	if constexpr (CIntegral<T> && CIntegral<U>) return A;
+	if constexpr (CIntegral<T>)
+	{
+		if constexpr (!CIntegral<U>)
+		{
+			return Math::FloorTo<T>(A + static_cast<U>(0.5));
+		}
+		else return A;
+	}
 
 	else if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
-		return NAMESPACE_STD::round(static_cast<float>(A));
-	}
-
-	else if constexpr (CIntegral<T>)
-	{
-		return Math::FloorTo<T>(A + static_cast<U>(0.5));
+		return Math::Round(static_cast<T>(A));
 	}
 
 	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
@@ -253,20 +280,23 @@ FORCEINLINE constexpr T RoundTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
+/* @return The absolute value of the given value. */
 template <CSigned T>
-FORCEINLINE constexpr T Abs(T A)
+NODISCARD FORCEINLINE constexpr T Abs(T A)
 {
 	return A < 0 ? -A : A;
 }
 
+/* @return The absolute value of the given value. */
 template <CUnsigned T>
-FORCEINLINE constexpr T Abs(T A)
+NODISCARD FORCEINLINE constexpr T Abs(T A)
 {
 	return A;
 }
 
+/* @return 0 if the given value is zero, -1 if it is negative, and 1 if it is positive. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Sign(T A)
+NODISCARD FORCEINLINE constexpr T Sign(T A)
 {
 	if (A == static_cast<T>(0)) return static_cast<T>( 0);
 	if (A <  static_cast<T>(0)) return static_cast<T>(-1);
@@ -274,8 +304,9 @@ FORCEINLINE constexpr T Sign(T A)
 	return static_cast<T>(1);
 }
 
+/* @return The minimum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr auto Min(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr auto Min(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return A;
 
@@ -289,8 +320,9 @@ FORCEINLINE constexpr auto Min(T A, Ts... InOther)
 	}
 }
 
+/* @return The maximum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr auto Max(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr auto Max(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return A;
 
@@ -305,8 +337,9 @@ FORCEINLINE constexpr auto Max(T A, Ts... InOther)
 
 }
 
+/* @return The index of the minimum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr size_t MinIndex(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr size_t MinIndex(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return 0;
 
@@ -322,8 +355,9 @@ FORCEINLINE constexpr size_t MinIndex(T A, Ts... InOther)
 	}
 }
 
+/* @return The index of the maximum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr size_t MaxIndex(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr size_t MaxIndex(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return 0;
 
@@ -340,11 +374,15 @@ FORCEINLINE constexpr size_t MaxIndex(T A, Ts... InOther)
 }
 
 template <CIntegral T>
-FORCEINLINE constexpr auto Div(T A, T B)
+struct TDiv { T Quotient; T Remainder; };
+
+/* @return The quotient and remainder of the division of the given values. */
+template <CIntegral T>
+NODISCARD FORCEINLINE constexpr Math::TDiv<T> Div(T A, T B)
 {
 	checkf(B != 0, TEXT("Illegal divisor. It must not be zero."));
 
-	struct { T Quotient; T Remainder; } Result;
+	Math::TDiv<T> Result;
 
 	Result.Quotient  = A / B;
 	Result.Remainder = A % B;
@@ -352,30 +390,34 @@ FORCEINLINE constexpr auto Div(T A, T B)
 	return Result;
 }
 
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, Div)
+
+/* @return The quotient of the division of the given values and rounds up. */
 template <CIntegral T>
-FORCEINLINE constexpr T DivAndCeil(T A, T B)
+NODISCARD FORCEINLINE constexpr T DivAndCeil(T A, T B)
 {
-	return (A + B - 1) / B;
+	return A >= 0 ? (A + B - 1) / B : A / B;
 }
 
+/* @return The quotient of the division of the given values and rounds down. */
 template <CIntegral T>
-FORCEINLINE constexpr T DivAndFloor(T A, T B)
+NODISCARD FORCEINLINE constexpr T DivAndFloor(T A, T B)
 {
-	return A / B;
+	return A >= 0 ? A / B : (A - B + 1) / B;
 }
 
+/* @return The quotient of the division of the given values and rounds to nearest. */
 template <CIntegral T>
-FORCEINLINE constexpr T DivAndRound(T A, T B)
+NODISCARD FORCEINLINE constexpr T DivAndRound(T A, T B)
 {
 	return A >= 0
 		? (A + B / 2    ) / B
 		: (A - B / 2 + 1) / B;
 }
 
-RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, Div)
-
+/* @return true if the given values are nearly equal, false otherwise. */
 template <CArithmetic T>
-FORCEINLINE constexpr bool IsNearlyEqual(T A, T B, T Epsilon = TNumericLimits<T>::Epsilon())
+NODISCARD FORCEINLINE constexpr bool IsNearlyEqual(T A, T B, T Epsilon = TNumericLimits<T>::Epsilon())
 {
 	return Math::Abs<T>(A - B) <= Epsilon;
 }
@@ -383,16 +425,18 @@ FORCEINLINE constexpr bool IsNearlyEqual(T A, T B, T Epsilon = TNumericLimits<T>
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyEqual)
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsNearlyEqual)
 
+/* @return true if the given value is nearly zero, false otherwise. */
 template <CArithmetic T>
-FORCEINLINE constexpr bool IsNearlyZero(T A, T Epsilon = TNumericLimits<T>::Epsilon())
+NODISCARD FORCEINLINE constexpr bool IsNearlyZero(T A, T Epsilon = TNumericLimits<T>::Epsilon())
 {
 	return Math::Abs<T>(A) <= Epsilon;
 }
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyZero)
 
+/* @return true if the given value is infinity, false otherwise. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T IsInfinity(T A)
+NODISCARD FORCEINLINE constexpr T IsInfinity(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -401,8 +445,9 @@ FORCEINLINE constexpr T IsInfinity(T A)
 	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) == 0;
 }
 
+/* @return true if the given value is NaN, false otherwise. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T IsNaN(T A)
+NODISCARD FORCEINLINE constexpr T IsNaN(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -411,8 +456,9 @@ FORCEINLINE constexpr T IsNaN(T A)
 	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) != 0;
 }
 
+/* @return true if the given value is normal, false otherwise. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T IsNormal(T A)
+NODISCARD FORCEINLINE constexpr T IsNormal(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -421,8 +467,9 @@ FORCEINLINE constexpr T IsNormal(T A)
 	return (IntegralValue & Traits::ExponentMask) != 0 && (IntegralValue & Traits::ExponentMask) != Traits::ExponentMask;
 }
 
+/* @return true if the given value is subnormal, false otherwise. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T IsDenorm(T A)
+NODISCARD FORCEINLINE constexpr T IsDenorm(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -431,8 +478,9 @@ FORCEINLINE constexpr T IsDenorm(T A)
 	return (IntegralValue & Traits::ExponentMask) == 0 && (IntegralValue & Traits::MantissaMask) != 0;
 }
 
+/* @return true if the given value is negative, even -0.0, false otherwise. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr bool IsNegative(T A)
+NODISCARD FORCEINLINE constexpr bool IsNegative(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -441,8 +489,9 @@ FORCEINLINE constexpr bool IsNegative(T A)
 	return (IntegralValue & Traits::SignMask) >> Traits::SignShift;
 }
 
+/* @return The exponent of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr uint Exponent(T A)
+NODISCARD FORCEINLINE constexpr uint Exponent(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -451,8 +500,9 @@ FORCEINLINE constexpr uint Exponent(T A)
 	return ((IntegralValue & Traits::ExponentMask) >> Traits::ExponentShift) - Traits::ExponentBias;
 }
 
+/* @return The NaN value with the given payload. */
 template <CFloatingPoint T, CUnsignedIntegral U>
-FORCEINLINE constexpr T NaN(U Payload)
+NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -467,16 +517,18 @@ FORCEINLINE constexpr T NaN(U Payload)
 	return Math::BitCast<T>(ValidPayload | Traits::ExponentMask);
 }
 
+/* @return The NaN value with the given payload. */
 template <CFloatingPoint T, CEnum U>
-FORCEINLINE constexpr T NaN(U Payload)
+NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 {
 	TUnderlyingType<U> IntegralValue = static_cast<TUnderlyingType<U>>(Payload);
 
 	return Math::NaN<T>(IntegralValue);
 }
 
+/* @return The NaN payload of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr auto NaNPayload(T A)
+NODISCARD FORCEINLINE constexpr auto NaNPayload(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -485,46 +537,33 @@ FORCEINLINE constexpr auto NaNPayload(T A)
 	return IntegralValue & Traits::MantissaMask;
 }
 
+/* @return The NaN payload of the given value. */
 template <CEnum T, CFloatingPoint U>
-FORCEINLINE constexpr auto NaNPayload(U A)
+NODISCARD FORCEINLINE constexpr auto NaNPayload(U A)
 {
 	return static_cast<T>(Math::NaNPayload(A));
 }
 
+/* @return The remainder of the floating point division operation. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T FMod(T A, T B)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::fmod(A, B);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
+NODISCARD FORCEINLINE constexpr T FMod(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(fmod)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, FMod)
 
+/* @return The signed remainder of the floating point division operation. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Remainder(T A, T B)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::remainder(A, B);
-	}
-
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
+NODISCARD FORCEINLINE constexpr T Remainder(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(remainder)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, Remainder)
 
 template <CFloatingPoint T>
-FORCEINLINE constexpr auto RemQuo(T A, T B)
+struct TRemQuo { int Quotient; T Remainder; };
+
+/* @return The signed remainder and the three last bits of the division operation. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr Math::TRemQuo<T> RemQuo(T A, T B)
 {
-	struct { int Quotient; T Remainder; } Result;
+	Math::TRemQuo<T> Result;
 
 	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
@@ -541,9 +580,13 @@ FORCEINLINE constexpr auto RemQuo(T A, T B)
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, RemQuo)
 
 template <CFloatingPoint T>
-FORCEINLINE constexpr auto ModF(T A)
+struct TModF { T IntegralPart; T FractionalPart; };
+
+/* @return The integral and fractional parts of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr Math::TModF<T> ModF(T A)
 {
-	struct { T IntegralPart; T FractionalPart; } Result;
+	Math::TModF<T> Result;
 
 	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
 	{
@@ -557,111 +600,51 @@ FORCEINLINE constexpr auto ModF(T A)
 	return Result;
 }
 
+/* @return The e raised to the given power. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Exp(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::exp(A);
-	}
+NODISCARD FORCEINLINE constexpr T Exp(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(exp)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The 2 raised to the given power. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Exp2(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::exp2(A);
-	}
+NODISCARD FORCEINLINE constexpr T Exp2(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(exp2)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The e raised to the given power, minus one. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T ExpMinus1(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::expm1(A);
-	}
+NODISCARD FORCEINLINE constexpr T ExpMinus1(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(expm1)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The natural logarithm of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Log(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::log(A);
-	}
+NODISCARD FORCEINLINE constexpr T Log(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The base-2 logarithm of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Log2(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::log2(A);
-	}
+NODISCARD FORCEINLINE constexpr T Log2(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log2)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The base-10 logarithm of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Log10(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::log10(A);
-	}
+NODISCARD FORCEINLINE constexpr T Log10(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log10)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The natural logarithm of one plus the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Log1Plus(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::log1p(A);
-	}
+NODISCARD FORCEINLINE constexpr T Log1Plus(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log1p)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The square of the given values. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Square(T A)
+NODISCARD FORCEINLINE constexpr T Square(T A)
 {
 	return A * A;
 }
 
+/* @return The cube of the given values. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Cube(T A)
+NODISCARD FORCEINLINE constexpr T Cube(T A)
 {
 	return A * A * A;
 }
 
+/* @return The 'A' raised to the power of 'B'. */
 template <CIntegral T>
-FORCEINLINE constexpr T Pow(T A, T B)
+NODISCARD FORCEINLINE constexpr T Pow(T A, T B)
 {
 	if (B < 0)
 	{
@@ -682,23 +665,15 @@ FORCEINLINE constexpr T Pow(T A, T B)
 	return Result;
 }
 
+/* @return The 'A' raised to the power of 'B'. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Pow(T A, T B)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::pow(A, B);
-	}
+NODISCARD FORCEINLINE constexpr T Pow(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(pow)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, Pow)
 
-	return TNumericLimits<T>::QuietNaN();
-}
-
-RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, Pow)
-
+/* @return The square root of the given value. */
 template <CIntegral T>
-FORCEINLINE constexpr T Sqrt(T A)
+NODISCARD FORCEINLINE constexpr T Sqrt(T A)
 {
 	if (A < 0)
 	{
@@ -706,6 +681,8 @@ FORCEINLINE constexpr T Sqrt(T A)
 
 		return TNumericLimits<T>::QuietNaN();
 	}
+
+	if (A == 0) return 0;
 
 	T X = A;
 
@@ -719,23 +696,17 @@ FORCEINLINE constexpr T Sqrt(T A)
 	}
 }
 
+/* @return The square root of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Sqrt(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::sqrt(A);
-	}
+NODISCARD FORCEINLINE constexpr T Sqrt(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sqrt)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The cube root of the given value. */
 template <CIntegral T>
-FORCEINLINE constexpr T Cbrt(T A)
+NODISCARD FORCEINLINE constexpr T Cbrt(T A)
 {
 	if (A < 0) return -Math::Cbrt(-A);
+
+	if (A == 0) return 0;
 
 	T X = A;
 
@@ -749,21 +720,13 @@ FORCEINLINE constexpr T Cbrt(T A)
 	}
 }
 
+/* @return The cube root of the given value. */
 template <CFloatingPoint T>
-FORCEINLINE constexpr T Cbrt(T A)
-{
-	if constexpr (CSameAs<T, float> || CSameAs<T, double>)
-	{
-		return NAMESPACE_STD::cbrt(A);
-	}
+NODISCARD FORCEINLINE constexpr T Cbrt(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cbrt)
 
-	else static_assert(sizeof(T) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<T>::QuietNaN();
-}
-
+/* @return The sum of the given value. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr auto Sum(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr auto Sum(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return A;
 
@@ -777,8 +740,9 @@ FORCEINLINE constexpr auto Sum(T A, Ts... InOther)
 	}
 }
 
+/* @return The sum of the squared values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr auto SquaredSum(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr auto SquaredSum(T A, Ts... InOther)
 {
 	if constexpr (sizeof...(Ts) == 0) return Math::Square(A);
 
@@ -786,83 +750,248 @@ FORCEINLINE constexpr auto SquaredSum(T A, Ts... InOther)
 	{
 		using FCommonT = TCommonType<T, Ts...>;
 
-		FCommonT Sum = A + Math::SquaredSum(InOther...);
+		FCommonT Sum = Math::Square(A) + Math::SquaredSum(InOther...);
 
 		return Sum;
 	}
 }
 
+/* @return The average of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
-FORCEINLINE constexpr auto Avg(T A, Ts... InOther)
+NODISCARD FORCEINLINE constexpr auto Avg(T A, Ts... InOther)
 {
-	if constexpr (sizeof...(Ts) == 0) return A;
+	using FSize =
+		TConditional<sizeof...(Ts) <= 0xFF,       uint8,
+		TConditional<sizeof...(Ts) <= 0xFFFF,     uint16,
+		TConditional<sizeof...(Ts) <= 0xFFFFFFFF, uint32, uint64>>>;
+
+	using FCommonT = TCommonType<FSize, T, Ts...>;
+
+	constexpr FSize Count = sizeof...(Ts) + 1;
+
+	if constexpr (Count == 1) return static_cast<FCommonT>(A);
+
+	else if constexpr (Count == 2)
+	{
+		FCommonT Array[] = { A, InOther... };
+
+		if (Array[1] < Array[0]) Swap(Array[0], Array[1]);
+
+		return static_cast<FCommonT>(Array[0] + (Array[1] - Array[0]) / 2);
+	}
+
+	else if constexpr (CIntegral<FCommonT>)
+	{
+		Math::TDiv<FCommonT> Temp[] =
+		{
+			Math::Div(static_cast<FCommonT>(A      ), static_cast<FCommonT>(Count)),
+			Math::Div(static_cast<FCommonT>(InOther), static_cast<FCommonT>(Count))...
+		};
+
+		FCommonT Quotient  = 0;
+		FCommonT Remainder = 0;
+
+		for (FSize I = 0; I != Count; ++I)
+		{
+			Quotient  += Temp[I].Quotient;
+			Remainder += Temp[I].Remainder;
+		}
+
+		Quotient += Remainder / Count;
+
+		return Quotient;
+	}
 
 	else
 	{
-		using FCommonT = TCommonType<T, Ts...>;
-
 		FCommonT Sum = A + Math::Sum(InOther...);
 
-		return Sum / (sizeof...(Ts) + 1);
+		return static_cast<FCommonT>(Sum / Count);
 	}
 }
 
-template <CArithmetic T>
-FORCEINLINE constexpr T Hypot(T A)
+/* @return The square root of the sum of the squares of the given values. */
+template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
+NODISCARD FORCEINLINE constexpr auto Hypot(T A, Ts... InOther)
 {
-	return Math::Abs(A);
-}
+	using FCommonT = TCommonType<T, Ts...>;
 
-template <CArithmetic T, CArithmetic U>
-FORCEINLINE constexpr auto Hypot(T A, U B)
-{
-	using FCommonT = TCommonType<T, U>;
+	constexpr size_t Count = sizeof...(Ts) + 1;
 
-	if constexpr (CIntegral<FCommonT>) return static_cast<FCommonT>(Math::Sqrt(Math::Square(A) + Math::Square(B)));
+	if constexpr (Count == 1) return Math::Abs(A);
 
-	else if constexpr (CSameAs<FCommonT, float> || CSameAs<FCommonT, double>)
+	else if constexpr (Count == 2)
 	{
-		return NAMESPACE_STD::hypot(static_cast<FCommonT>(A), static_cast<FCommonT>(B));
+		FCommonT Array[] = { A, InOther... };
+
+		if constexpr (CSameAs<FCommonT, float> || CSameAs<FCommonT, double>)
+		{
+			return NAMESPACE_STD::hypot(static_cast<FCommonT>(Array[0]), static_cast<FCommonT>(Array[1]));
+		}
+
+		else return static_cast<FCommonT>(Math::Sqrt(Math::Square(Array[0]) + Math::Square(Array[1])));
 	}
 
-	else static_assert(sizeof(FCommonT) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<FCommonT>::QuietNaN();
-}
-
-template <CArithmetic T, CArithmetic U, CArithmetic V>
-FORCEINLINE constexpr auto Hypot(T A, U B, V C)
-{
-	using FCommonT = TCommonType<T, U, V>;
-
-	if constexpr (CIntegral<FCommonT>) return static_cast<FCommonT>(Math::Sqrt(Math::SquaredSum(A, B, C)));
-
-	else if constexpr (CSameAs<FCommonT, float> || CSameAs<FCommonT, double>)
+	else if constexpr (Count == 3)
 	{
-		return NAMESPACE_STD::hypot(static_cast<FCommonT>(A), static_cast<FCommonT>(B), static_cast<FCommonT>(C));
+		FCommonT Array[] = { A, InOther... };
+
+		if constexpr (CSameAs<FCommonT, float> || CSameAs<FCommonT, double>)
+		{
+			return NAMESPACE_STD::hypot(static_cast<FCommonT>(Array[0]), static_cast<FCommonT>(Array[1]), static_cast<FCommonT>(Array[2]));
+		}
+
+		else return Math::Sqrt(Math::SquaredSum(A, InOther...));
 	}
 
-	else static_assert(sizeof(FCommonT) == -1, "Unsupported floating point type.");
-
-	return TNumericLimits<FCommonT>::QuietNaN();
+	else return Math::Sqrt(Math::SquaredSum(A, InOther...));
 }
 
-template <CArithmetic... Ts> requires (CCommonType<Ts...>)
-FORCEINLINE constexpr auto Hypot(Ts... InOther)
+/* @return The sine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Sin(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sin)
+
+/* @return The cosine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Cos(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cos)
+
+/* @return The tangent of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Tan(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tan)
+
+/* @return The arc sine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Asin(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(asin)
+
+/* @return The arc cosine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Acos(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(acos)
+
+/* @return The arc tangent of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Atan(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(atan)
+
+/* @return The arc tangent of 'A' / 'B'. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Atan2(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(atan2)
+
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, Atan2)
+
+/* @return The hyperbolic sine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Sinh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sinh)
+
+/* @return The hyperbolic cosine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Cosh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cosh)
+
+/* @return The hyperbolic tangent of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Tanh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tanh)
+
+/* @return The hyperbolic arc sine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Asinh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(asinh)
+
+/* @return The hyperbolic arc cosine of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Acosh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(acosh)
+
+/* @return The hyperbolic arc tangent of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Atanh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(atanh)
+
+/* @return The error function of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Erf(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(erf)
+
+/* @return The complementary error function of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Erfc(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(erfc)
+
+/* @return The gamma function of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T Gamma(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tgamma)
+
+/* @return The natural logarithm of the gamma function of the given value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T LogGamma(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(lgamma)
+
+/* @return The value of 'A' is multiplied by 2 raised to the power of 'B'. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T LdExp(T A, int B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(ldexp)
+
+/* @return The degrees of the given radian value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T RadiansToDegrees(T A)
 {
-	return Math::Sqrt(Math::SquaredSum(InOther...));
+	return A * (static_cast<T>(180) / Math::TNumbers<T>::Pi);
 }
 
+/* @return The radians of the given degree value. */
+template <CFloatingPoint T>
+NODISCARD FORCEINLINE constexpr T DegreesToRadians(T A)
+{
+	return A * (Math::TNumbers<T>::Pi / static_cast<T>(180));
+}
+
+/* @return The greatest common divisor of the given values. */
+template <CIntegral T>
+NODISCARD FORCEINLINE constexpr T GCD(T A, T B)
+{
+	using FUnsignedT = TMakeUnsigned<T>;
+
+	FUnsignedT C = Math::Abs(A);
+	FUnsignedT D = Math::Abs(B);
+
+	if (C == 0) return D;
+	if (D == 0) return C;
+
+	uint Shift = Math::CountRightZero(C | D);
+
+	C >>= Math::CountRightZero(C);
+
+	do
+	{
+		D >>= Math::CountRightZero(D);
+
+		if (C > D) Swap(C, D);
+
+		D -= C;
+	}
+	while (D != 0);
+
+	return C << Shift;
+}
+
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, GCD)
+
+/* @return The least common multiple of the given values. */
+template <CIntegral T>
+NODISCARD FORCEINLINE constexpr T LCM(T A, T B)
+{
+	A = Math::Abs(A);
+	B = Math::Abs(B);
+
+	if (A == 0 || B == 0) return 0;
+
+	return A / Math::GCD(A, B) * B;
+}
+
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, LCM)
+
+/* @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue']. */
 template <CArithmetic T>
-FORCEINLINE constexpr T Clamp(T A, T MinValue, T MaxValue)
+NODISCARD FORCEINLINE constexpr T Clamp(T A, T MinValue, T MaxValue)
 {
 	return Math::Min(Math::Max(A, MinValue), MaxValue);
 }
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, Clamp)
 
+/* @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue'], but it wraps around the range when exceeded. */
 template <CArithmetic T>
-FORCEINLINE constexpr T WrappingClamp(T A, T MinValue, T MaxValue)
+NODISCARD FORCEINLINE constexpr T WrappingClamp(T A, T MinValue, T MaxValue)
 {
 	if (MinValue > MaxValue)
 	{
@@ -914,6 +1043,27 @@ FORCEINLINE constexpr T WrappingClamp(T A, T MinValue, T MaxValue)
 }
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, WrappingClamp)
+
+/* @return The linear interpolation of the given values. */
+template <CArithmetic T>
+NODISCARD FORCEINLINE constexpr T Lerp(T A, T B, T Alpha)
+{
+	return A + Alpha * (B - A);
+}
+
+RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, Lerp)
+
+/* @return The stable linear interpolation of the given values. */
+template <CArithmetic T>
+NODISCARD FORCEINLINE constexpr T LerpStable(T A, T B, T Alpha)
+{
+	return A * (static_cast<T>(1) - Alpha) + B * Alpha;
+}
+
+RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, LerpStable)
+
+#undef FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS
+#undef FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS
 
 #undef RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS
 #undef RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS
