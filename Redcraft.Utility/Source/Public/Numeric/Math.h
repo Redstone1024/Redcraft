@@ -436,7 +436,7 @@ RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyZero)
 
 /* @return true if the given value is infinity, false otherwise. */
 template <CFloatingPoint T>
-NODISCARD FORCEINLINE constexpr T IsInfinity(T A)
+NODISCARD FORCEINLINE constexpr bool IsInfinity(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -447,7 +447,7 @@ NODISCARD FORCEINLINE constexpr T IsInfinity(T A)
 
 /* @return true if the given value is NaN, false otherwise. */
 template <CFloatingPoint T>
-NODISCARD FORCEINLINE constexpr T IsNaN(T A)
+NODISCARD FORCEINLINE constexpr bool IsNaN(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -458,7 +458,7 @@ NODISCARD FORCEINLINE constexpr T IsNaN(T A)
 
 /* @return true if the given value is normal, false otherwise. */
 template <CFloatingPoint T>
-NODISCARD FORCEINLINE constexpr T IsNormal(T A)
+NODISCARD FORCEINLINE constexpr bool IsNormal(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
@@ -469,7 +469,7 @@ NODISCARD FORCEINLINE constexpr T IsNormal(T A)
 
 /* @return true if the given value is subnormal, false otherwise. */
 template <CFloatingPoint T>
-NODISCARD FORCEINLINE constexpr T IsDenorm(T A)
+NODISCARD FORCEINLINE constexpr bool IsDenorm(T A)
 {
 	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
