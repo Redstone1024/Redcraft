@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Numeric/Limits.h"
+#include "Numeric/Literal.h"
 #include "TypeTraits/TypeTraits.h"
 
 #include <bit>
