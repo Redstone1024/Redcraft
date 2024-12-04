@@ -399,12 +399,16 @@ NODISCARD FORCEINLINE constexpr T DivAndCeil(T A, T B)
 	return A >= 0 ? (A + B - 1) / B : A / B;
 }
 
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, DivAndCeil)
+
 /** @return The quotient of the division of the given values and rounds down. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T DivAndFloor(T A, T B)
 {
 	return A >= 0 ? A / B : (A - B + 1) / B;
 }
+
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, DivAndFloor)
 
 /** @return The quotient of the division of the given values and rounds to nearest. */
 template <CIntegral T>
@@ -414,6 +418,8 @@ NODISCARD FORCEINLINE constexpr T DivAndRound(T A, T B)
 		? (A + B / 2    ) / B
 		: (A - B / 2 + 1) / B;
 }
+
+RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, DivAndRound)
 
 /** @return true if the given values are nearly equal, false otherwise. */
 template <CArithmetic T>
