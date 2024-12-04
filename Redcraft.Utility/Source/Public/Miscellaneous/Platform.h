@@ -406,10 +406,10 @@ using uint64_least = NAMESPACE_STD::uint_least64_t;
 using uint128_least = uint128;
 #endif
 
-using uint8_fast  = NAMESPACE_STD::int_fast8_t;
-using uint16_fast = NAMESPACE_STD::int_fast16_t;
-using uint32_fast = NAMESPACE_STD::int_fast32_t;
-using uint64_fast = NAMESPACE_STD::int_fast64_t;
+using uint8_fast  = NAMESPACE_STD::uint_fast8_t;
+using uint16_fast = NAMESPACE_STD::uint_fast16_t;
+using uint32_fast = NAMESPACE_STD::uint_fast32_t;
+using uint64_fast = NAMESPACE_STD::uint_fast64_t;
 
 #if PLATFORM_HAS_INT128
 using uint128_fast = uint128;
