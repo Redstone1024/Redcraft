@@ -12,12 +12,14 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Math)
 
+/** @return The reinterpreted value of the given value. */
 template <CTriviallyCopyable T, CTriviallyCopyable U> requires (sizeof(T) == sizeof(U))
 FORCEINLINE constexpr T BitCast(const U& Value)
 {
 	return __builtin_bit_cast(T, Value);
 }
 
+/** @return The value of reversed byte order of the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T ByteSwap(T Value)
 {
@@ -80,6 +82,7 @@ FORCEINLINE constexpr T ByteSwap(T Value)
 	return 0;
 }
 
+/** @return true if the given value is power of two, false otherwise. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr bool IsSingleBit(T Value)
 {
@@ -88,6 +91,7 @@ FORCEINLINE constexpr bool IsSingleBit(T Value)
 	else return Value && !(Value & (Value - 1));
 }
 
+/** @return The number of all zeros in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountAllZero(T Value)
 {
@@ -96,6 +100,7 @@ FORCEINLINE constexpr uint CountAllZero(T Value)
 	else return static_cast<uint>(TNumericLimits<T>::Digits - NAMESPACE_STD::popcount(Value));
 }
 
+/** @return The number of all ones in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountAllOne(T Value)
 {
@@ -104,6 +109,7 @@ FORCEINLINE constexpr uint CountAllOne(T Value)
 	else return static_cast<uint>(NAMESPACE_STD::popcount(Value));
 }
 
+/** @return The number of leading zeros in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountLeftZero(T Value)
 {
@@ -112,12 +118,14 @@ FORCEINLINE constexpr uint CountLeftZero(T Value)
 	else return static_cast<uint>(NAMESPACE_STD::countl_zero(Value));
 }
 
+/** @return The number of leading ones in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountLeftOne(T Value)
 {
 	return Math::CountLeftZero<T>(~Value);
 }
 
+/** @return The number of trailing zeros in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountRightZero(T Value)
 {
@@ -126,18 +134,21 @@ FORCEINLINE constexpr uint CountRightZero(T Value)
 	else return static_cast<uint>(NAMESPACE_STD::countr_zero(Value));
 }
 
+/** @return The number of trailing ones in the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr uint CountRightOne(T Value)
 {
 	return Math::CountRightZero<T>(~Value);
 }
 
+/** @return The smallest number of bits that can represent the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T BitWidth(T Value)
 {
 	return TNumericLimits<T>::Digits - Math::CountLeftZero(Value);
 }
 
+/** @return The smallest integral power of two not less than the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T BitCeil(T Value)
 {
@@ -146,6 +157,7 @@ FORCEINLINE constexpr T BitCeil(T Value)
 	return static_cast<T>(1) << Math::BitWidth(static_cast<T>(Value - 1));
 }
 
+/** @return The largest integral power of two not greater than the given value. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T BitFloor(T Value)
 {
@@ -157,6 +169,7 @@ FORCEINLINE constexpr T BitFloor(T Value)
 template <CUnsignedIntegral T> FORCEINLINE constexpr T RotateLeft (T Value, int Offset);
 template <CUnsignedIntegral T> FORCEINLINE constexpr T RotateRight(T Value, int Offset);
 
+/** @return The value bitwise left-rotation by the given offset. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T RotateLeft(T Value, int Offset)
 {
@@ -175,6 +188,7 @@ FORCEINLINE constexpr T RotateLeft(T Value, int Offset)
 	}
 }
 
+/** @return The value bitwise right-rotation by the given offset. */
 template <CUnsignedIntegral T>
 FORCEINLINE constexpr T RotateRight(T Value, int Offset)
 {
@@ -192,6 +206,7 @@ FORCEINLINE constexpr T RotateRight(T Value, int Offset)
 	}
 }
 
+/** The enum indicates the endianness of scalar types. */
 enum class EEndian
 {
 #if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && defined(__ORDER_BIG_ENDIAN__)

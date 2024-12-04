@@ -126,7 +126,7 @@ NAMESPACE_PRIVATE_END
 		);                                                                     \
 	}
 
-/* @return true if the given value is within a range ['MinValue', 'MaxValue'), false otherwise. */
+/** @return true if the given value is within a range ['MinValue', 'MaxValue'), false otherwise. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T IsWithin(T A, T MinValue, T MaxValue)
 {
@@ -135,7 +135,7 @@ NODISCARD FORCEINLINE constexpr T IsWithin(T A, T MinValue, T MaxValue)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsWithin)
 
-/* @return true if the given value is within a range ['MinValue', 'MaxValue'], false otherwise. */
+/** @return true if the given value is within a range ['MinValue', 'MaxValue'], false otherwise. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T IsWithinInclusive(T A, T MinValue, T MaxValue)
 {
@@ -144,7 +144,7 @@ NODISCARD FORCEINLINE constexpr T IsWithinInclusive(T A, T MinValue, T MaxValue)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsWithinInclusive)
 
-/* @return The nearest integer not greater in magnitude than the given value. */
+/** @return The nearest integer not greater in magnitude than the given value. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Trunc(T A)
 {
@@ -153,7 +153,7 @@ NODISCARD FORCEINLINE constexpr T Trunc(T A)
 	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(trunc)
 }
 
-/* @return The nearest integer not greater in magnitude than the given value. */
+/** @return The nearest integer not greater in magnitude than the given value. */
 template <CArithmetic T, CArithmetic U>
 NODISCARD FORCEINLINE constexpr T TruncTo(U A)
 {
@@ -176,7 +176,7 @@ NODISCARD FORCEINLINE constexpr T TruncTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
-/* @return The nearest integer not less than the given value. */
+/** @return The nearest integer not less than the given value. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Ceil(T A)
 {
@@ -185,7 +185,7 @@ NODISCARD FORCEINLINE constexpr T Ceil(T A)
 	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(ceil)
 }
 
-/* @return The nearest integer not less than the given value. */
+/** @return The nearest integer not less than the given value. */
 template <CArithmetic T, CArithmetic U>
 NODISCARD FORCEINLINE constexpr T CeilTo(U A)
 {
@@ -212,7 +212,7 @@ NODISCARD FORCEINLINE constexpr T CeilTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
-/* @return The nearest integer not greater than the given value. */
+/** @return The nearest integer not greater than the given value. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Floor(T A)
 {
@@ -221,7 +221,7 @@ NODISCARD FORCEINLINE constexpr T Floor(T A)
 	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(floor)
 }
 
-/* @return The nearest integer not greater than the given value. */
+/** @return The nearest integer not greater than the given value. */
 template <CArithmetic T, CArithmetic U>
 NODISCARD FORCEINLINE constexpr T FloorTo(U A)
 {
@@ -248,7 +248,7 @@ NODISCARD FORCEINLINE constexpr T FloorTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
-/* @return The nearest integer to the given value, rounding away from zero in halfway cases. */
+/** @return The nearest integer to the given value, rounding away from zero in halfway cases. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Round(T A)
 {
@@ -257,7 +257,7 @@ NODISCARD FORCEINLINE constexpr T Round(T A)
 	FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(round)
 }
 
-/* @return The nearest integer to the given value, rounding away from zero in halfway cases. */
+/** @return The nearest integer to the given value, rounding away from zero in halfway cases. */
 template <CArithmetic T, CArithmetic U>
 NODISCARD FORCEINLINE constexpr T RoundTo(U A)
 {
@@ -280,21 +280,21 @@ NODISCARD FORCEINLINE constexpr T RoundTo(U A)
 	return TNumericLimits<T>::QuietNaN();
 }
 
-/* @return The absolute value of the given value. */
+/** @return The absolute value of the given value. */
 template <CSigned T>
 NODISCARD FORCEINLINE constexpr T Abs(T A)
 {
 	return A < 0 ? -A : A;
 }
 
-/* @return The absolute value of the given value. */
+/** @return The absolute value of the given value. */
 template <CUnsigned T>
 NODISCARD FORCEINLINE constexpr T Abs(T A)
 {
 	return A;
 }
 
-/* @return 0 if the given value is zero, -1 if it is negative, and 1 if it is positive. */
+/** @return 0 if the given value is zero, -1 if it is negative, and 1 if it is positive. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Sign(T A)
 {
@@ -304,7 +304,7 @@ NODISCARD FORCEINLINE constexpr T Sign(T A)
 	return static_cast<T>(1);
 }
 
-/* @return The minimum value of the given values. */
+/** @return The minimum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto Min(T A, Ts... InOther)
 {
@@ -320,7 +320,7 @@ NODISCARD FORCEINLINE constexpr auto Min(T A, Ts... InOther)
 	}
 }
 
-/* @return The maximum value of the given values. */
+/** @return The maximum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto Max(T A, Ts... InOther)
 {
@@ -337,7 +337,7 @@ NODISCARD FORCEINLINE constexpr auto Max(T A, Ts... InOther)
 
 }
 
-/* @return The index of the minimum value of the given values. */
+/** @return The index of the minimum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr size_t MinIndex(T A, Ts... InOther)
 {
@@ -355,7 +355,7 @@ NODISCARD FORCEINLINE constexpr size_t MinIndex(T A, Ts... InOther)
 	}
 }
 
-/* @return The index of the maximum value of the given values. */
+/** @return The index of the maximum value of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr size_t MaxIndex(T A, Ts... InOther)
 {
@@ -376,7 +376,7 @@ NODISCARD FORCEINLINE constexpr size_t MaxIndex(T A, Ts... InOther)
 template <CIntegral T>
 struct TDiv { T Quotient; T Remainder; };
 
-/* @return The quotient and remainder of the division of the given values. */
+/** @return The quotient and remainder of the division of the given values. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr Math::TDiv<T> Div(T A, T B)
 {
@@ -392,21 +392,21 @@ NODISCARD FORCEINLINE constexpr Math::TDiv<T> Div(T A, T B)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, Div)
 
-/* @return The quotient of the division of the given values and rounds up. */
+/** @return The quotient of the division of the given values and rounds up. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T DivAndCeil(T A, T B)
 {
 	return A >= 0 ? (A + B - 1) / B : A / B;
 }
 
-/* @return The quotient of the division of the given values and rounds down. */
+/** @return The quotient of the division of the given values and rounds down. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T DivAndFloor(T A, T B)
 {
 	return A >= 0 ? A / B : (A - B + 1) / B;
 }
 
-/* @return The quotient of the division of the given values and rounds to nearest. */
+/** @return The quotient of the division of the given values and rounds to nearest. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T DivAndRound(T A, T B)
 {
@@ -415,7 +415,7 @@ NODISCARD FORCEINLINE constexpr T DivAndRound(T A, T B)
 		: (A - B / 2 + 1) / B;
 }
 
-/* @return true if the given values are nearly equal, false otherwise. */
+/** @return true if the given values are nearly equal, false otherwise. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr bool IsNearlyEqual(T A, T B, T Epsilon = TNumericLimits<T>::Epsilon())
 {
@@ -425,7 +425,7 @@ NODISCARD FORCEINLINE constexpr bool IsNearlyEqual(T A, T B, T Epsilon = TNumeri
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyEqual)
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, IsNearlyEqual)
 
-/* @return true if the given value is nearly zero, false otherwise. */
+/** @return true if the given value is nearly zero, false otherwise. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr bool IsNearlyZero(T A, T Epsilon = TNumericLimits<T>::Epsilon())
 {
@@ -434,7 +434,7 @@ NODISCARD FORCEINLINE constexpr bool IsNearlyZero(T A, T Epsilon = TNumericLimit
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyZero)
 
-/* @return true if the given value is infinity, false otherwise. */
+/** @return true if the given value is infinity, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsInfinity(T A)
 {
@@ -445,7 +445,7 @@ NODISCARD FORCEINLINE constexpr bool IsInfinity(T A)
 	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) == 0;
 }
 
-/* @return true if the given value is NaN, false otherwise. */
+/** @return true if the given value is NaN, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNaN(T A)
 {
@@ -456,7 +456,7 @@ NODISCARD FORCEINLINE constexpr bool IsNaN(T A)
 	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) != 0;
 }
 
-/* @return true if the given value is normal, false otherwise. */
+/** @return true if the given value is normal, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNormal(T A)
 {
@@ -467,7 +467,7 @@ NODISCARD FORCEINLINE constexpr bool IsNormal(T A)
 	return (IntegralValue & Traits::ExponentMask) != 0 && (IntegralValue & Traits::ExponentMask) != Traits::ExponentMask;
 }
 
-/* @return true if the given value is subnormal, false otherwise. */
+/** @return true if the given value is subnormal, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsDenorm(T A)
 {
@@ -478,7 +478,7 @@ NODISCARD FORCEINLINE constexpr bool IsDenorm(T A)
 	return (IntegralValue & Traits::ExponentMask) == 0 && (IntegralValue & Traits::MantissaMask) != 0;
 }
 
-/* @return true if the given value is negative, even -0.0, false otherwise. */
+/** @return true if the given value is negative, even -0.0, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNegative(T A)
 {
@@ -489,7 +489,7 @@ NODISCARD FORCEINLINE constexpr bool IsNegative(T A)
 	return (IntegralValue & Traits::SignMask) >> Traits::SignShift;
 }
 
-/* @return The exponent of the given value. */
+/** @return The exponent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr uint Exponent(T A)
 {
@@ -500,7 +500,7 @@ NODISCARD FORCEINLINE constexpr uint Exponent(T A)
 	return ((IntegralValue & Traits::ExponentMask) >> Traits::ExponentShift) - Traits::ExponentBias;
 }
 
-/* @return The NaN value with the given payload. */
+/** @return The NaN value with the given payload. */
 template <CFloatingPoint T, CUnsignedIntegral U>
 NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 {
@@ -517,7 +517,7 @@ NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 	return Math::BitCast<T>(ValidPayload | Traits::ExponentMask);
 }
 
-/* @return The NaN value with the given payload. */
+/** @return The NaN value with the given payload. */
 template <CFloatingPoint T, CEnum U>
 NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 {
@@ -526,7 +526,7 @@ NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 	return Math::NaN<T>(IntegralValue);
 }
 
-/* @return The NaN payload of the given value. */
+/** @return The NaN payload of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr auto NaNPayload(T A)
 {
@@ -537,20 +537,20 @@ NODISCARD FORCEINLINE constexpr auto NaNPayload(T A)
 	return IntegralValue & Traits::MantissaMask;
 }
 
-/* @return The NaN payload of the given value. */
+/** @return The NaN payload of the given value. */
 template <CEnum T, CFloatingPoint U>
 NODISCARD FORCEINLINE constexpr auto NaNPayload(U A)
 {
 	return static_cast<T>(Math::NaNPayload(A));
 }
 
-/* @return The remainder of the floating point division operation. */
+/** @return The remainder of the floating point division operation. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T FMod(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(fmod)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, FMod)
 
-/* @return The signed remainder of the floating point division operation. */
+/** @return The signed remainder of the floating point division operation. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Remainder(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(remainder)
 
@@ -559,7 +559,7 @@ RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, Remainder)
 template <CFloatingPoint T>
 struct TRemQuo { int Quotient; T Remainder; };
 
-/* @return The signed remainder and the three last bits of the division operation. */
+/** @return The signed remainder and the three last bits of the division operation. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr Math::TRemQuo<T> RemQuo(T A, T B)
 {
@@ -582,7 +582,7 @@ RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, RemQuo)
 template <CFloatingPoint T>
 struct TModF { T IntegralPart; T FractionalPart; };
 
-/* @return The integral and fractional parts of the given value. */
+/** @return The integral and fractional parts of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr Math::TModF<T> ModF(T A)
 {
@@ -600,49 +600,49 @@ NODISCARD FORCEINLINE constexpr Math::TModF<T> ModF(T A)
 	return Result;
 }
 
-/* @return The e raised to the given power. */
+/** @return The e raised to the given power. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Exp(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(exp)
 
-/* @return The 2 raised to the given power. */
+/** @return The 2 raised to the given power. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Exp2(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(exp2)
 
-/* @return The e raised to the given power, minus one. */
+/** @return The e raised to the given power, minus one. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T ExpMinus1(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(expm1)
 
-/* @return The natural logarithm of the given value. */
+/** @return The natural logarithm of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Log(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log)
 
-/* @return The base-2 logarithm of the given value. */
+/** @return The base-2 logarithm of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Log2(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log2)
 
-/* @return The base-10 logarithm of the given value. */
+/** @return The base-10 logarithm of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Log10(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log10)
 
-/* @return The natural logarithm of one plus the given value. */
+/** @return The natural logarithm of one plus the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Log1Plus(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(log1p)
 
-/* @return The square of the given values. */
+/** @return The square of the given values. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Square(T A)
 {
 	return A * A;
 }
 
-/* @return The cube of the given values. */
+/** @return The cube of the given values. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Cube(T A)
 {
 	return A * A * A;
 }
 
-/* @return The 'A' raised to the power of 'B'. */
+/** @return The 'A' raised to the power of 'B'. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T Pow(T A, T B)
 {
@@ -665,13 +665,13 @@ NODISCARD FORCEINLINE constexpr T Pow(T A, T B)
 	return Result;
 }
 
-/* @return The 'A' raised to the power of 'B'. */
+/** @return The 'A' raised to the power of 'B'. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Pow(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(pow)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, Pow)
 
-/* @return The square root of the given value. */
+/** @return The square root of the given value. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T Sqrt(T A)
 {
@@ -696,11 +696,11 @@ NODISCARD FORCEINLINE constexpr T Sqrt(T A)
 	}
 }
 
-/* @return The square root of the given value. */
+/** @return The square root of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Sqrt(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sqrt)
 
-/* @return The cube root of the given value. */
+/** @return The cube root of the given value. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T Cbrt(T A)
 {
@@ -720,11 +720,11 @@ NODISCARD FORCEINLINE constexpr T Cbrt(T A)
 	}
 }
 
-/* @return The cube root of the given value. */
+/** @return The cube root of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Cbrt(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cbrt)
 
-/* @return The sum of the given value. */
+/** @return The sum of the given value. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto Sum(T A, Ts... InOther)
 {
@@ -740,7 +740,7 @@ NODISCARD FORCEINLINE constexpr auto Sum(T A, Ts... InOther)
 	}
 }
 
-/* @return The sum of the squared values. */
+/** @return The sum of the squared values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto SquaredSum(T A, Ts... InOther)
 {
@@ -756,7 +756,7 @@ NODISCARD FORCEINLINE constexpr auto SquaredSum(T A, Ts... InOther)
 	}
 }
 
-/* @return The average of the given values. */
+/** @return The average of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto Avg(T A, Ts... InOther)
 {
@@ -810,7 +810,7 @@ NODISCARD FORCEINLINE constexpr auto Avg(T A, Ts... InOther)
 	}
 }
 
-/* @return The square root of the sum of the squares of the given values. */
+/** @return The square root of the sum of the squares of the given values. */
 template <CArithmetic T, CArithmetic... Ts> requires (CCommonType<T, Ts...>)
 NODISCARD FORCEINLINE constexpr auto Hypot(T A, Ts... InOther)
 {
@@ -847,95 +847,95 @@ NODISCARD FORCEINLINE constexpr auto Hypot(T A, Ts... InOther)
 	else return Math::Sqrt(Math::SquaredSum(A, InOther...));
 }
 
-/* @return The sine of the given value. */
+/** @return The sine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Sin(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sin)
 
-/* @return The cosine of the given value. */
+/** @return The cosine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Cos(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cos)
 
-/* @return The tangent of the given value. */
+/** @return The tangent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Tan(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tan)
 
-/* @return The arc sine of the given value. */
+/** @return The arc sine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Asin(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(asin)
 
-/* @return The arc cosine of the given value. */
+/** @return The arc cosine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Acos(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(acos)
 
-/* @return The arc tangent of the given value. */
+/** @return The arc tangent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Atan(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(atan)
 
-/* @return The arc tangent of 'A' / 'B'. */
+/** @return The arc tangent of 'A' / 'B'. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Atan2(T A, T B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(atan2)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CFloatingPoint, Atan2)
 
-/* @return The hyperbolic sine of the given value. */
+/** @return The hyperbolic sine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Sinh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(sinh)
 
-/* @return The hyperbolic cosine of the given value. */
+/** @return The hyperbolic cosine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Cosh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(cosh)
 
-/* @return The hyperbolic tangent of the given value. */
+/** @return The hyperbolic tangent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Tanh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tanh)
 
-/* @return The hyperbolic arc sine of the given value. */
+/** @return The hyperbolic arc sine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Asinh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(asinh)
 
-/* @return The hyperbolic arc cosine of the given value. */
+/** @return The hyperbolic arc cosine of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Acosh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(acosh)
 
-/* @return The hyperbolic arc tangent of the given value. */
+/** @return The hyperbolic arc tangent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Atanh(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(atanh)
 
-/* @return The error function of the given value. */
+/** @return The error function of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Erf(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(erf)
 
-/* @return The complementary error function of the given value. */
+/** @return The complementary error function of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Erfc(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(erfc)
 
-/* @return The gamma function of the given value. */
+/** @return The gamma function of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T Gamma(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(tgamma)
 
-/* @return The natural logarithm of the gamma function of the given value. */
+/** @return The natural logarithm of the gamma function of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T LogGamma(T A) FORWARD_FLOATING_POINT_IMPLEMENT_1_ARGS(lgamma)
 
-/* @return The value of 'A' is multiplied by 2 raised to the power of 'B'. */
+/** @return The value of 'A' is multiplied by 2 raised to the power of 'B'. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T LdExp(T A, int B) FORWARD_FLOATING_POINT_IMPLEMENT_2_ARGS(ldexp)
 
-/* @return The degrees of the given radian value. */
+/** @return The degrees of the given radian value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T RadiansToDegrees(T A)
 {
 	return A * (static_cast<T>(180) / Math::TNumbers<T>::Pi);
 }
 
-/* @return The radians of the given degree value. */
+/** @return The radians of the given degree value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr T DegreesToRadians(T A)
 {
 	return A * (Math::TNumbers<T>::Pi / static_cast<T>(180));
 }
 
-/* @return The greatest common divisor of the given values. */
+/** @return The greatest common divisor of the given values. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T GCD(T A, T B)
 {
@@ -966,7 +966,7 @@ NODISCARD FORCEINLINE constexpr T GCD(T A, T B)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, GCD)
 
-/* @return The least common multiple of the given values. */
+/** @return The least common multiple of the given values. */
 template <CIntegral T>
 NODISCARD FORCEINLINE constexpr T LCM(T A, T B)
 {
@@ -980,7 +980,7 @@ NODISCARD FORCEINLINE constexpr T LCM(T A, T B)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CIntegral, LCM)
 
-/* @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue']. */
+/** @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue']. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Clamp(T A, T MinValue, T MaxValue)
 {
@@ -989,7 +989,7 @@ NODISCARD FORCEINLINE constexpr T Clamp(T A, T MinValue, T MaxValue)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, Clamp)
 
-/* @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue'], but it wraps around the range when exceeded. */
+/** @return The value of 'A' is clamped to the range ['MinValue', 'MaxValue'], but it wraps around the range when exceeded. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T WrappingClamp(T A, T MinValue, T MaxValue)
 {
@@ -1044,7 +1044,7 @@ NODISCARD FORCEINLINE constexpr T WrappingClamp(T A, T MinValue, T MaxValue)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, WrappingClamp)
 
-/* @return The linear interpolation of the given values. */
+/** @return The linear interpolation of the given values. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T Lerp(T A, T B, T Alpha)
 {
@@ -1053,7 +1053,7 @@ NODISCARD FORCEINLINE constexpr T Lerp(T A, T B, T Alpha)
 
 RESOLVE_ARITHMETIC_AMBIGUITY_3_ARGS(CArithmetic, Lerp)
 
-/* @return The stable linear interpolation of the given values. */
+/** @return The stable linear interpolation of the given values. */
 template <CArithmetic T>
 NODISCARD FORCEINLINE constexpr T LerpStable(T A, T B, T Alpha)
 {
