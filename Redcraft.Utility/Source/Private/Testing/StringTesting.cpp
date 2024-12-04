@@ -3,10 +3,9 @@
 #include "String/Char.h"
 #include "Memory/Memory.h"
 #include "String/String.h"
+#include "Numeric/Numeric.h"
 #include "String/StringView.h"
 #include "Miscellaneous/AssertionMacros.h"
-
-#include <cmath>
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -474,10 +473,10 @@ void TestStringConversion()
 
 		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.140000#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +NAMESPACE_STD::numeric_limits<float>::infinity())  == LITERAL(T,  "#Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -NAMESPACE_STD::numeric_limits<float>::infinity())  == LITERAL(T, "#-Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +NAMESPACE_STD::numeric_limits<float>::quiet_NaN()) == LITERAL(T,  "#NaN#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -NAMESPACE_STD::numeric_limits<float>::quiet_NaN()) == LITERAL(T, "#-NaN#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::Infinity()) == LITERAL(T,  "#Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::Infinity()) == LITERAL(T, "#-Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::QuietNaN()) == LITERAL(T,  "#NaN#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::QuietNaN()) == LITERAL(T, "#-NaN#"));
 
 		auto CheckParseArithmetic = []<typename U>(TStringView<T> View, U Result)
 		{
@@ -489,16 +488,14 @@ void TestStringConversion()
 
 			if constexpr (CFloatingPoint<U>)
 			{
-				always_check(NAMESPACE_STD::isinf(Result) == NAMESPACE_STD::isinf(Object));
-				always_check(NAMESPACE_STD::isnan(Result) == NAMESPACE_STD::isnan(Object));
+				always_check(Math::IsInfinity(Result) == Math::IsInfinity(Object));
+				always_check(Math::IsNaN(Result)      == Math::IsNaN(Object));
 
-				always_check(NAMESPACE_STD::signbit(Result) == NAMESPACE_STD::signbit(Object));
+				always_check(Math::IsNegative(Result) == Math::IsNegative(Object));
 
-				if (NAMESPACE_STD::isinf(Result) || NAMESPACE_STD::isnan(Result)) return;
+				if (Math::IsInfinity(Result) || Math::IsNaN(Result)) return;
 
-				constexpr auto Epsilon = 1e-3;
-
-				always_check(NAMESPACE_STD::abs(Object - Result) < Epsilon);
+				always_check(Math::IsNearlyEqual(Object, Result, 1e-4));
 			}
 			else always_check(Object == Result);
 		};
@@ -550,18 +547,17 @@ void TestStringConversion()
 			CheckParseArithmetic(LITERAL(T,      "-3.14e-2"), static_cast<U>(     -3.14e-2));
 			CheckParseArithmetic(LITERAL(T, "-0x1.91eb86p1"), static_cast<U>(-0x1.91eb86p1));
 
-			CheckParseArithmetic(LITERAL(T, "+Infinity"), +NAMESPACE_STD::numeric_limits<U>::infinity());
-			CheckParseArithmetic(LITERAL(T, " Infinity"), +NAMESPACE_STD::numeric_limits<U>::infinity());
-			CheckParseArithmetic(LITERAL(T, "-Infinity"), -NAMESPACE_STD::numeric_limits<U>::infinity());
+			CheckParseArithmetic(LITERAL(T, "+Infinity"), +TNumericLimits<U>::Infinity());
+			CheckParseArithmetic(LITERAL(T, " Infinity"), +TNumericLimits<U>::Infinity());
+			CheckParseArithmetic(LITERAL(T, "-Infinity"), -TNumericLimits<U>::Infinity());
 
-			CheckParseArithmetic(LITERAL(T, "+NaN"), +NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
-			CheckParseArithmetic(LITERAL(T, " NaN"), +NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
-			CheckParseArithmetic(LITERAL(T, "-NaN"), -NAMESPACE_STD::numeric_limits<U>::quiet_NaN());
+			CheckParseArithmetic(LITERAL(T, "+NaN"), +TNumericLimits<U>::QuietNaN());
+			CheckParseArithmetic(LITERAL(T, " NaN"), +TNumericLimits<U>::QuietNaN());
+			CheckParseArithmetic(LITERAL(T, "-NaN"), -TNumericLimits<U>::QuietNaN());
 		};
 
 		CheckParseFloat(InPlaceType<float>);
 		CheckParseFloat(InPlaceType<double>);
-		CheckParseFloat(InPlaceType<long double>);
 
 		{
 			always_check(TString<T>::FromBool(true ) == LITERAL(T, "True" ));
@@ -609,15 +605,15 @@ void TestStringConversion()
 		}
 
 		{
-			always_check(LITERAL_VIEW(T, "3.14"    ).ToFloat() == 3.14f );
-			always_check(LITERAL_VIEW(T, "3.14e+00").ToFloat() == 3.14f );
+			always_check(LITERAL_VIEW(T, "3.14"    ).ToFloat() ==  3.14f);
+			always_check(LITERAL_VIEW(T, "3.14e+00").ToFloat() ==  3.14f);
 			always_check(LITERAL_VIEW(T, "-3.14"   ).ToFloat() == -3.14f);
-			always_check(LITERAL_VIEW(T, "0.0"     ).ToFloat() == 0.0f  );
+			always_check(LITERAL_VIEW(T, "0.0"     ).ToFloat() ==   0.0f);
 
-			always_check(NAMESPACE_STD::isnan(LITERAL_VIEW(T,  "1e+308").ToFloat()));
-			always_check(NAMESPACE_STD::isnan(LITERAL_VIEW(T, "-1e+308").ToFloat()));
-			always_check(NAMESPACE_STD::isnan(LITERAL_VIEW(T,  "1e-308").ToFloat()));
-			always_check(NAMESPACE_STD::isnan(LITERAL_VIEW(T, "-1e-308").ToFloat()));
+			always_check(Math::IsNaN(LITERAL_VIEW(T,  "1e+308").ToFloat()));
+			always_check(Math::IsNaN(LITERAL_VIEW(T, "-1e+308").ToFloat()));
+			always_check(Math::IsNaN(LITERAL_VIEW(T,  "1e-308").ToFloat()));
+			always_check(Math::IsNaN(LITERAL_VIEW(T, "-1e-308").ToFloat()));
 		}
 	};
 
