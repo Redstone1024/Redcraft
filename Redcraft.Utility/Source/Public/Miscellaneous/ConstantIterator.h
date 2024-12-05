@@ -3,7 +3,7 @@
 #include "CoreTypes.h"
 #include "Memory/Address.h"
 #include "Templates/Utility.h"
-#include "Containers/Iterator.h"
+#include "Miscellaneous/Iterator.h"
 #include "Miscellaneous/Compare.h"
 #include "TypeTraits/TypeTraits.h"
 

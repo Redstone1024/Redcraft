@@ -4,10 +4,10 @@
 #include "Templates/Meta.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Templates/Container.h"
-#include "Containers/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
+#include "Miscellaneous/Iterator.h"
+#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN

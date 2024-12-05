@@ -2,15 +2,15 @@
 
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
-#include "Templates/Container.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Miscellaneous/Container.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 template <typename T, T... Ints>
-struct TIntegerSequence 
+struct TIntegerSequence
 {
 	using ValueType = T;
 	FORCEINLINE static constexpr size_t   Num()     { return sizeof...(Ints);                          }
