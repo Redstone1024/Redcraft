@@ -92,8 +92,13 @@ template <typename S, typename I>
 inline constexpr bool bDisableSizedSentinelFor = false;
 
 template <typename S, typename I>
-concept CSizedSentinelFor = CSentinelFor<S, I> && CPartiallyOrdered<S, I> && !bDisableSizedSentinelFor<TRemoveCV<S>, TRemoveCV<I>>
-	&& requires(const I& Iter, const S& Sentinel) { Sentinel - Iter; Iter - Sentinel; };
+concept CSizedSentinelFor = CSentinelFor<S, I> && CPartiallyOrdered<S, I>
+	&& !bDisableSizedSentinelFor<TRemoveCV<S>, TRemoveCV<I>>
+	&& requires(const I& Iter, const S& Sentinel)
+	{
+		{ Sentinel - Iter } -> CSameAs<ptrdiff>;
+		{ Iter - Sentinel } -> CSameAs<ptrdiff>;
+	};
 
 template <typename I>
 concept CInputIterator = CInputOrOutputIterator<I> && CIndirectlyReadable<I>;
@@ -409,7 +414,7 @@ public:
 	FORCEINLINE constexpr TCountedIterator& operator++()                                                 { ++Current; --Length; CheckThis(); return *this; }
 	FORCEINLINE constexpr TCountedIterator& operator--() requires (CBidirectionalIterator<IteratorType>) { --Current; ++Length; CheckThis(); return *this; }
 
-	FORCEINLINE constexpr decltype(auto)   operator++(int)                                                 {                                           --Length; CheckThis(); return Current++; }
+	FORCEINLINE constexpr auto             operator++(int)                                                 {                                           --Length; CheckThis(); return Current++; }
 	FORCEINLINE constexpr TCountedIterator operator++(int) requires       (CForwardIterator<IteratorType>) { TCountedIterator Temp = *this; ++Current; --Length; CheckThis(); return Temp;      }
 	FORCEINLINE constexpr TCountedIterator operator--(int) requires (CBidirectionalIterator<IteratorType>) { TCountedIterator Temp = *this; --Current; ++Length; CheckThis(); return Temp;      }
 
@@ -674,7 +679,7 @@ FORCEINLINE constexpr I Prev(I Iter, TMakeUnsigned<ptrdiff> N = 1)
 
 /** @return The iterator to the beginning of a container. */
 template <typename T> requires (requires(T&& Container) { { Container.Begin() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) Begin(T&& Container)
+FORCEINLINE constexpr auto Begin(T&& Container)
 {
 	return Container.Begin();
 }
@@ -687,14 +692,14 @@ template <typename T, size_t N> FORCEINLINE constexpr const T* Begin(const T(&& 
 
 /** Overloads the Begin algorithm for initializer_list. */
 template <typename T>
-FORCEINLINE constexpr decltype(auto) Begin(initializer_list<T> Container)
+FORCEINLINE constexpr auto Begin(initializer_list<T> Container)
 {
 	return Container.begin();
 }
 
 /** @return The iterator to the end of a container. */
 template <typename T> requires (requires(T&& Container) { { Container.End() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) End(T&& Container)
+FORCEINLINE constexpr auto End(T&& Container)
 {
 	return Container.End();
 }
@@ -707,58 +712,58 @@ template <typename T, size_t N> FORCEINLINE constexpr const T* End(const T(&& Co
 
 /** Overloads the End algorithm for initializer_list. */
 template <typename T>
-FORCEINLINE constexpr decltype(auto) End(initializer_list<T> Container)
+FORCEINLINE constexpr auto End(initializer_list<T> Container)
 {
 	return Container.end();
 }
 
 /** @return The reverse iterator to the beginning of a container. */
 template <typename T> requires (requires(T&& Container) { { Container.RBegin() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) RBegin(T&& Container)
+FORCEINLINE constexpr auto RBegin(T&& Container)
 {
 	return Container.RBegin();
 }
 
 /** Overloads the RBegin algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&  Container)[N]) { return TReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(      T(&& Container)[N]) { return TReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&  Container)[N]) { return TReverseIterator(End(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) RBegin(const T(&& Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto RBegin(      T(&  Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto RBegin(      T(&& Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto RBegin(const T(&  Container)[N]) { return TReverseIterator(End(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto RBegin(const T(&& Container)[N]) { return TReverseIterator(End(Container)); }
 
 /** Overloads the RBegin algorithm for initializer_list. */
 template <typename T>
-FORCEINLINE constexpr decltype(auto) RBegin(initializer_list<T> Container)
+FORCEINLINE constexpr auto RBegin(initializer_list<T> Container)
 {
 	return TReverseIterator(Container.end());
 }
 
 /** @return The reverse iterator to the end of a container. */
 template <typename T> requires (requires(T&& Container) { { Container.REnd() } -> CForwardIterator; })
-FORCEINLINE constexpr decltype(auto) REnd(T&& Container)
+FORCEINLINE constexpr auto REnd(T&& Container)
 {
 	return Container.REnd();
 }
 
 /** Overloads the REnd algorithm for arrays. */
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(      T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
-template <typename T, size_t N> FORCEINLINE constexpr decltype(auto) REnd(const T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto REnd(      T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto REnd(      T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto REnd(const T(&  Container)[N]) { return TReverseIterator(Begin(Container)); }
+template <typename T, size_t N> FORCEINLINE constexpr auto REnd(const T(&& Container)[N]) { return TReverseIterator(Begin(Container)); }
 
 /** Overloads the REnd algorithm for initializer_list. */
 template <typename T>
-FORCEINLINE constexpr decltype(auto) REnd(initializer_list<T> Container)
+FORCEINLINE constexpr auto REnd(initializer_list<T> Container)
 {
 	return TReverseIterator(Container.begin());
 }
 
 NAMESPACE_END(Iteration)
 
-#define ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT public:                                  \
-	NODISCARD FORCEINLINE constexpr decltype(auto) begin()       { return Begin(); } \
-	NODISCARD FORCEINLINE constexpr decltype(auto) begin() const { return Begin(); } \
-	NODISCARD FORCEINLINE constexpr decltype(auto) end()         { return End();   } \
-	NODISCARD FORCEINLINE constexpr decltype(auto) end()   const { return End();   }
+#define ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT public:                        \
+	NODISCARD FORCEINLINE constexpr auto begin()       { return Begin(); } \
+	NODISCARD FORCEINLINE constexpr auto begin() const { return Begin(); } \
+	NODISCARD FORCEINLINE constexpr auto end()         { return End();   } \
+	NODISCARD FORCEINLINE constexpr auto end()   const { return End();   }
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
