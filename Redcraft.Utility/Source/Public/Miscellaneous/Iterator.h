@@ -192,6 +192,40 @@ FORCEINLINE constexpr I Prev(I Iter, TMakeUnsigned<ptrdiff> N = 1)
 
 NAMESPACE_END(Iteration)
 
+template <CIndirectlyReadable J, CIndirectlyWritable<TIteratorReferenceType<J>> I>
+FORCEINLINE void IndirectlyCopy(I&& Iter, J&& Jter)
+{
+	*Iter = *Jter;
+}
+
+template <CIndirectlyReadable J, CIndirectlyWritable<TIteratorRValueReferenceType<J>> I>
+FORCEINLINE void IndirectlyMove(I&& Iter, J&& Jter)
+{
+	*Iter = MoveTemp(*Jter);
+}
+
+template <CIndirectlyReadable I, CIndirectlyReadable J> requires (CSwappable<TIteratorReferenceType<I>, TIteratorReferenceType<J>>)
+FORCEINLINE void IndirectlySwap(I&& Iter, J&& Jter)
+{
+	Swap(*Iter, *Jter);
+}
+
+template <typename I, typename J>
+concept CIndirectlyCopyable = requires(const I Iter, const J Jter) { IndirectlyCopy(Iter, Jter); };
+
+template <typename I, typename J>
+concept CIndirectlyMovable = requires(const I Iter, const J Jter) { IndirectlyMove(Iter, Jter); };
+
+template <typename I, typename J>
+concept CIndirectlySwappable = CIndirectlyReadable<I> && CIndirectlyReadable<J>
+	&& requires(const I Iter, const J Jter)
+	{
+		IndirectlySwap(Iter, Iter);
+		IndirectlySwap(Jter, Jter);
+		IndirectlySwap(Iter, Jter);
+		IndirectlySwap(Jter, Iter);
+	};
+
 /** A iterator adaptor for reverse-order traversal. */
 template <CBidirectionalIterator I>
 class TReverseIterator final
