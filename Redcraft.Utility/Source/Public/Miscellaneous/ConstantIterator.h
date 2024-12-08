@@ -136,16 +136,16 @@ public:
 	FORCEINLINE constexpr explicit TCountedIterator(U&& InValue, ptrdiff N) : Current(Forward<U>(InValue)), Length(N) { check_code({ MaxLength = N; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, const J&>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.GetBase()), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
+	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TCountedIterator(TCountedIterator<J>&& InValue) : Current(MoveTemp(InValue).GetBase()), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
+	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TCountedIterator(TCountedIterator<J>&& InValue) : Current(MoveTemp(InValue).Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
-	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator<J>& InValue) { Current = InValue.GetBase(); Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
+	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator<J>& InValue) { Current = InValue.Current; Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<J&&, IteratorType> && CAssignableFrom<IteratorType&, J&&>)
-	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator<J>&& InValue) { Current = MoveTemp(InValue).GetBase(); Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
+	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator<J>&& InValue) { Current = MoveTemp(InValue).Current; Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
 
 	template <CCommonType<IteratorType> J>
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length == RHS.Length; }
@@ -182,9 +182,9 @@ public:
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
 
-	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return Current; }
-	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return Current; }
-	NODISCARD FORCEINLINE constexpr       ptrdiff           Num() const  { CheckThis(); return Length;  }
+	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return          Current;  }
+	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return MoveTemp(Current); }
+	NODISCARD FORCEINLINE constexpr       ptrdiff           Num() const  { CheckThis(); return          Length;   }
 
 private:
 
