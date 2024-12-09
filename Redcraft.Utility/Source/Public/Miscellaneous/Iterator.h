@@ -437,7 +437,7 @@ struct FUnreachableSentinel
 {
 	explicit FUnreachableSentinel() = default;
 
-	template<CInputOrOutputIterator I>
+	template <CWeaklyIncrementable I>
 	NODISCARD FORCEINLINE constexpr bool operator==(const I&) const& { return false; }
 };
 
