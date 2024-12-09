@@ -342,6 +342,7 @@ concept CViewableRange = CRange<R>
 
 NAMESPACE_BEGIN(Range)
 
+/** A view type that produces a view of no elements of a particular type. */
 template <CObject T>
 class TEmptyView : public TViewInterface<TEmptyView<T>>
 {
@@ -351,8 +352,6 @@ public:
 	using Reference   = T&;
 	using Iterator    = T*;
 	using Sentinel    = T*;
-
-	using ReverseIterator = TReverseIterator<Iterator>;
 
 	FORCEINLINE constexpr TEmptyView() = default;
 
@@ -370,11 +369,12 @@ static_assert(           CView<TEmptyView<int>>);
 
 NAMESPACE_END(Range)
 
-template <typename  T>
+template <typename T>
 constexpr bool bEnableBorrowedRange<Range::TEmptyView<T>> = true;
 
 NAMESPACE_BEGIN(Range)
 
+/** A view type that contains exactly one element of a specified value. */
 template <CObject T> requires (CMoveConstructible<T>)
 class TSingleView : public TViewInterface<TSingleView<T>>
 {
@@ -390,9 +390,6 @@ public:
 
 	using      Sentinel =       T*;
 	using ConstSentinel = const T*;
-
-	using      ReverseIterator = TReverseIterator<     Iterator>;
-	using ConstReverseIterator = TReverseIterator<ConstIterator>;
 
 	FORCEINLINE constexpr TSingleView() requires (CDefaultConstructible<T>) = default;
 
@@ -426,6 +423,254 @@ TSingleView(T) -> TSingleView<T>;
 static_assert(CContiguousRange<TSingleView<int>>);
 static_assert(    CCommonRange<TSingleView<int>>);
 static_assert(           CView<TSingleView<int>>);
+
+/** A view type that generates a sequence of elements by repeatedly incrementing an initial value. Can be either bounded or unbounded. */
+template <CWeaklyIncrementable W, CWeaklyEqualityComparable<W> S = FUnreachableSentinel> requires (CSemiregular<S> && CCopyable<W>)
+class TIotaView : public TViewInterface<TIotaView<W, S>>
+{
+private:
+
+	class FSentinelImpl;
+
+public:
+
+	using ElementType = W;
+
+	using Reference = const W&;
+
+	class Iterator;
+
+	using Sentinel = TConditional<CSameAs<W, S>, Iterator, FSentinelImpl>;
+
+	FORCEINLINE constexpr TIotaView() requires (CDefaultConstructible<W>) = default;
+
+	FORCEINLINE constexpr explicit TIotaView(W InValue) requires (CDefaultConstructible<S>) : First(InValue), Last() { }
+
+	FORCEINLINE constexpr explicit TIotaView(TIdentity<W> InValue, TIdentity<S> InLast) : First(InValue), Last(InLast) { }
+
+	FORCEINLINE constexpr explicit TIotaView(Iterator InFirst, Sentinel InLast) : First(InFirst.Value), Last(InLast.Value) { }
+
+	FORCEINLINE constexpr explicit TIotaView(Iterator InFirst, FUnreachableSentinel) requires (CSameAs<S, FUnreachableSentinel>) : First(InFirst.Value) { }
+
+	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(First); }
+
+	NODISCARD FORCEINLINE constexpr Sentinel End() const { return Sentinel(Last); }
+
+	NODISCARD FORCEINLINE constexpr auto Num() const requires ((CIntegral<W> && CIntegral<S>) || CSizedSentinelFor<S, W>) { return Last - First; }
+
+	NODISCARD FORCEINLINE constexpr bool IsEmpty() const { return First == Last; }
+
+private:
+
+	NO_UNIQUE_ADDRESS W First;
+	NO_UNIQUE_ADDRESS S Last;
+
+public:
+
+	class Iterator final
+	{
+	public:
+
+		using ElementType = TRemoveCV<W>;
+
+		FORCEINLINE constexpr Iterator() requires (CDefaultConstructible<W>) = default;
+
+		NODISCARD friend FORCEINLINE constexpr bool operator==(const Iterator& LHS, const Iterator& RHS) requires (CEqualityComparable<W>) { return LHS.Value == RHS.Value; }
+
+		NODISCARD FORCEINLINE constexpr       W  operator*()  const { return           Value;  }
+		NODISCARD FORCEINLINE constexpr const W* operator->() const { return AddressOf(Value); }
+
+		FORCEINLINE constexpr Iterator& operator++() { ++Value; return *this; }
+
+		FORCEINLINE constexpr Iterator operator++(int) { Iterator Temp = *this; ++Value; return Temp; }
+
+	private:
+
+		W Value;
+
+		constexpr explicit Iterator(W InValue) : Value(InValue) { }
+
+		friend FSentinelImpl;
+
+		friend TIotaView;
+	};
+
+private:
+
+	class FSentinelImpl final
+	{
+	public:
+
+		FORCEINLINE constexpr FSentinelImpl() = default;
+
+		NODISCARD FORCEINLINE constexpr bool operator==(const Iterator& InValue) const& { return Value == InValue.Value; }
+
+	private:
+
+		S Value;
+
+		FORCEINLINE constexpr FSentinelImpl(S InValue) : Value(InValue) { }
+
+		friend TIotaView;
+	};
+
+};
+
+template <typename T, typename U>
+TIotaView(T, U) -> TIotaView<T, U>;
+
+static_assert(CForwardRange<TIotaView<int>>);
+static_assert(        CView<TIotaView<int>>);
+
+NAMESPACE_END(Range)
+
+template <typename T, typename U>
+constexpr bool bEnableBorrowedRange<Range::TIotaView<T, U>> = true;
+
+NAMESPACE_BEGIN(Range)
+
+/** A view type that generates a sequence of elements by repeatedly producing the same value. Can be either bounded or unbounded. */
+template <CObject W, bool bIsUnreachable = true> requires (CMoveConstructible<W> && CSameAs<W, TRemoveCV<W>>)
+class TRepeatView : public TViewInterface<TRepeatView<W, bIsUnreachable>>
+{
+public:
+
+	using ElementType = W;
+
+	using Reference = const W&;
+
+	class Iterator;
+
+	using Sentinel = TConditional<bIsUnreachable, FUnreachableSentinel, Iterator>;
+
+	FORCEINLINE constexpr TRepeatView() requires CDefaultConstructible<W> = default;
+
+	FORCEINLINE constexpr explicit TRepeatView(W InValue) requires (bIsUnreachable) : Value(MoveTemp(InValue)) { }
+
+	FORCEINLINE constexpr explicit TRepeatView(W InValue, size_t InCount) requires (!bIsUnreachable) : Value(MoveTemp(InValue)), Count(InCount) { }
+
+	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(*this, 0); }
+
+	NODISCARD FORCEINLINE constexpr Sentinel End() const
+	{
+		if constexpr (bIsUnreachable)
+		{
+			return UnreachableSentinel;
+		}
+
+		else return Sentinel(*this, Count);
+	}
+
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (!bIsUnreachable) { return Count; }
+
+private:
+
+	using FSizeType = TConditional<bIsUnreachable, FUnreachableSentinel, size_t>;
+
+	NO_UNIQUE_ADDRESS W Value;
+
+	NO_UNIQUE_ADDRESS FSizeType Count;
+
+public:
+
+	class Iterator final
+	{
+	public:
+
+		using ElementType = W;
+
+		FORCEINLINE constexpr Iterator() requires (CDefaultConstructible<W>) = default;
+
+		NODISCARD friend FORCEINLINE constexpr bool operator==(const Iterator& LHS, const Iterator& RHS) { return LHS.Current == RHS.Current; }
+
+		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const Iterator& LHS, const Iterator& RHS) { return LHS.Current <=> RHS.Current; }
+
+		NODISCARD FORCEINLINE constexpr const W& operator*()  const { return           Owner->Value;  }
+		NODISCARD FORCEINLINE constexpr const W* operator->() const { return AddressOf(Owner->Value); }
+
+		NODISCARD FORCEINLINE constexpr const W& operator[](ptrdiff Index) const { return *(*this + Index); }
+
+		FORCEINLINE constexpr Iterator& operator++() { ++Current; return *this; }
+		FORCEINLINE constexpr Iterator& operator--() { --Current; return *this; }
+
+		FORCEINLINE constexpr Iterator operator++(int) { Iterator Temp = *this; --Current; return Temp; }
+		FORCEINLINE constexpr Iterator operator--(int) { Iterator Temp = *this; ++Current; return Temp; }
+
+		FORCEINLINE constexpr Iterator& operator+=(ptrdiff Offset) { Current -= Offset; return *this; }
+		FORCEINLINE constexpr Iterator& operator-=(ptrdiff Offset) { Current += Offset; return *this; }
+
+		NODISCARD friend FORCEINLINE constexpr Iterator operator+(Iterator Iter, ptrdiff Offset) { Iterator Temp = Iter; Temp -= Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr Iterator operator+(ptrdiff Offset, Iterator Iter) { Iterator Temp = Iter; Temp -= Offset; return Temp; }
+
+		NODISCARD FORCEINLINE constexpr Iterator operator-(ptrdiff Offset) const { Iterator Temp = *this; Temp += Offset; return Temp; }
+
+		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const Iterator& LHS, const Iterator& RHS) { return RHS.Current - LHS.Current; }
+
+	private:
+
+		const TRepeatView* Owner;
+
+		NO_UNIQUE_ADDRESS size_t Current;
+
+		FORCEINLINE constexpr Iterator(const TRepeatView& InOwner, size_t InCurrent) : Owner(&InOwner), Current(InCurrent) { }
+
+		friend TRepeatView;
+	};
+
+};
+
+template <typename W>
+TRepeatView(W) -> TRepeatView<W>;
+
+template <typename W>
+TRepeatView(W, size_t) -> TRepeatView<W, false>;
+
+static_assert(CRandomAccessRange<TRepeatView<int, false>>);
+static_assert(      CCommonRange<TRepeatView<int, false>>);
+static_assert(             CView<TRepeatView<int, false>>);
+
+NAMESPACE_END(Range)
+
+NAMESPACE_BEGIN(Range)
+
+/** A view of no elements of a particular type. */
+template <CObject T>
+inline constexpr TEmptyView<T> Empty;
+
+/** Creates a view that contains exactly one element of a specified value. */
+template <typename T> requires (CObject<TDecay<T>> && CMoveConstructible<TDecay<T>>)
+NODISCARD FORCEINLINE constexpr TSingleView<TDecay<T>> Single(T&& Value)
+{
+	return TSingleView<TDecay<T>>(Forward<T>(Value));
+}
+
+/** Creates a view that generates a sequence of elements by repeatedly incrementing an initial value. */
+template <typename W> requires (CWeaklyIncrementable<TDecay<W>> && CCopyable<TDecay<W>>)
+NODISCARD FORCEINLINE constexpr TIotaView<TDecay<W>> Iota(W&& Value)
+{
+	return TIotaView<TDecay<W>>(Forward<W>(Value));
+}
+
+/** Creates a view that generates a sequence of elements by repeatedly incrementing an initial value. */
+template <typename W, typename S> requires (CWeaklyIncrementable<TDecay<W>> && CWeaklyEqualityComparable<W, S> && CCopyable<TDecay<W>> && CSemiregular<TDecay<S>>)
+NODISCARD FORCEINLINE constexpr TIotaView<TDecay<W>, TDecay<S>> Iota(W&& Value, S&& Last)
+{
+	return TIotaView<TDecay<W>, TDecay<S>>(Forward<W>(Value), Forward<S>(Last));
+}
+
+/** Creates a view that generates a sequence of elements by repeatedly producing the same value. */
+template <typename W> requires (CObject<TDecay<W>> && CMoveConstructible<TDecay<W>>)
+NODISCARD FORCEINLINE constexpr TRepeatView<TDecay<W>> Repeat(W&& Value)
+{
+	return TRepeatView<TDecay<W>>(Forward<W>(Value));
+}
+
+/** Creates a view that generates a sequence of elements by repeatedly producing the same value. */
+template <typename W> requires (CObject<TDecay<W>> && CMoveConstructible<TDecay<W>>)
+NODISCARD FORCEINLINE constexpr TRepeatView<TDecay<W>, false> Repeat(W&& Value, size_t Count)
+{
+	return TRepeatView<TDecay<W>, false>(Forward<W>(Value), Count);
+}
 
 NAMESPACE_END(Range)
 
