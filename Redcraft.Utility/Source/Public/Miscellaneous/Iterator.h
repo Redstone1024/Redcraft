@@ -210,13 +210,13 @@ FORCEINLINE void IndirectlySwap(I&& Iter, J&& Jter)
 	Swap(*Iter, *Jter);
 }
 
-template <typename I, typename J>
+template <typename I, typename J = I>
 concept CIndirectlyCopyable = requires(const I Iter, const J Jter) { IndirectlyCopy(Iter, Jter); };
 
-template <typename I, typename J>
+template <typename I, typename J = I>
 concept CIndirectlyMovable = requires(const I Iter, const J Jter) { IndirectlyMove(Iter, Jter); };
 
-template <typename I, typename J>
+template <typename I, typename J = I>
 concept CIndirectlySwappable = CIndirectlyReadable<I> && CIndirectlyReadable<J>
 	&& requires(const I Iter, const J Jter)
 	{
@@ -361,7 +361,7 @@ public:
 
 	NODISCARD FORCEINLINE constexpr TMoveIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<IteratorType>) { TMoveIterator Temp = *this; Temp -= Offset; return Temp; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) { return LHS.Current - RHS.Current; }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) requires (CSizedSentinelFor<I, I>) { return LHS.Current - RHS.Current; }
 
 	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return          Current;  }
 	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return MoveTemp(Current); }
