@@ -3,6 +3,7 @@
 #include "CoreTypes.h"
 #include "Memory/Address.h"
 #include "Templates/Invoke.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
@@ -13,128 +14,17 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T> using WithReference = T&;
-
-template <typename I> struct TIteratorElementType     { using Type = typename I::ElementType; };
-template <typename T> struct TIteratorElementType<T*> { using Type = TRemoveCV<T>;            };
-
-template <typename I> struct TIteratorPointerType     { using Type = void; };
-template <typename T> struct TIteratorPointerType<T*> { using Type = T*;   };
-
-template <typename I> requires (requires(I& Iter) { { Iter.operator->() } -> CPointer; })
-struct TIteratorPointerType<I> { using Type = decltype(DeclVal<I&>().operator->()); };
-
-NAMESPACE_PRIVATE_END
-
-template <typename T>
-concept CReferenceable = requires { typename NAMESPACE_PRIVATE::WithReference<T>; };
-
-template <typename T>
-concept CDereferenceable = requires(T& A) { { *A } -> CReferenceable; };
+template <typename I>
+using TIteratorElementType = TIteratorElement<I>;
 
 template <typename I>
-using TIteratorElementType = typename NAMESPACE_PRIVATE::TIteratorElementType<TRemoveCVRef<I>>::Type;
-
-template <typename I>
-using TIteratorPointerType = typename NAMESPACE_PRIVATE::TIteratorPointerType<TRemoveCVRef<I>>::Type;
+using TIteratorPointerType = TIteratorPointer<I>;
 
 template <CReferenceable I>
-using TIteratorReferenceType = decltype(*DeclVal<I&>());
+using TIteratorReferenceType = TIteratorReference<I>;
 
 template <CReferenceable I> requires (requires(I& Iter) { { MoveTemp(*Iter) } -> CReferenceable; })
-using TIteratorRValueReferenceType = decltype(MoveTemp(*DeclVal<I&>()));
-
-template <typename I>
-concept CIndirectlyReadable =
-	requires(const TRemoveCVRef<I> Iter)
-	{
-		typename TIteratorElementType<I>;
-		typename TIteratorReferenceType<I>;
-		typename TIteratorRValueReferenceType<I>;
-		{          *Iter  } -> CSameAs<TIteratorReferenceType<I>>;
-		{ MoveTemp(*Iter) } -> CSameAs<TIteratorRValueReferenceType<I>>;
-	}
-	&& CSameAs<TIteratorElementType<I>, TRemoveCVRef<TIteratorElementType<I>>>
-	&& CCommonReference<TIteratorReferenceType<I>&&, TIteratorElementType<I>&>
-	&& CCommonReference<TIteratorReferenceType<I>&&, TIteratorRValueReferenceType<I>&&>
-	&& CCommonReference<TIteratorRValueReferenceType<I>&&, const TIteratorElementType<I>&>;
-
-template <typename I, typename T>
-concept CIndirectlyWritable =
-	requires(I&& Iter, T&& A)
-	{
-		*Iter             = Forward<T>(A);
-		*Forward<I>(Iter) = Forward<T>(A);
-		const_cast<const TIteratorReferenceType<I>&&>(*Iter)             = Forward<T>(A);
-		const_cast<const TIteratorReferenceType<I>&&>(*Forward<I>(Iter)) = Forward<T>(A);
-	};
-
-template <typename I>
-concept CWeaklyIncrementable = CMovable<I>
-	&& requires(I Iter) { { ++Iter } -> CSameAs<I&>; Iter++; };
-
-template <typename I>
-concept CIncrementable = CRegular<I> && CWeaklyIncrementable<I>
-	&& requires(I Iter) { { Iter++ } -> CSameAs<I>; };
-
-template <typename I>
-concept CInputOrOutputIterator = CWeaklyIncrementable<I>
-	&& requires(I Iter) { { *Iter } -> CReferenceable; };
-
-template <typename S, typename I>
-concept CSentinelFor = CSemiregular<S> && CInputOrOutputIterator<I> && CWeaklyEqualityComparable<S, I>;
-
-template <typename S, typename I>
-inline constexpr bool bDisableSizedSentinelFor = false;
-
-template <typename S, typename I>
-concept CSizedSentinelFor = CSentinelFor<S, I> && CPartiallyOrdered<S, I>
-	&& !bDisableSizedSentinelFor<TRemoveCV<S>, TRemoveCV<I>>
-	&& requires(const I& Iter, const S& Sentinel)
-	{
-		{ Sentinel - Iter } -> CSameAs<ptrdiff>;
-		{ Iter - Sentinel } -> CSameAs<ptrdiff>;
-	};
-
-template <typename I>
-concept CInputIterator = CInputOrOutputIterator<I> && CIndirectlyReadable<I>;
-
-template <typename I, typename T>
-concept COutputIterator = CInputOrOutputIterator<I> && CIndirectlyWritable<I, T>
-	&& requires(I Iter, T&& A) { *Iter++ = Forward<T>(A); };
-
-template <typename I>
-concept CForwardIterator = CInputIterator<I> && CIncrementable<I> && CSentinelFor<I, I>;
-
-template <typename I>
-concept CBidirectionalIterator = CForwardIterator<I>
-	&& requires(I Iter) {
-		{ --Iter } -> CSameAs<I&>;
-		{ Iter-- } -> CSameAs<I >;
-	};
-
-template <typename I>
-concept CRandomAccessIterator = CBidirectionalIterator<I> && CTotallyOrdered<I> && CSizedSentinelFor<I, I>
-	&& requires(I Iter, const I Jter, const ptrdiff N) {
-		{ Iter   += N } -> CSameAs<I&>;
-		{ Jter   +  N } -> CSameAs<I >;
-		{ N +  Jter   } -> CSameAs<I >;
-		{ Iter   -= N } -> CSameAs<I&>;
-		{ Jter   -  N } -> CSameAs<I >;
-		{   Jter[N]   } -> CSameAs<TIteratorReferenceType<I>>;
-	};
-
-template <typename I>
-concept CContiguousIterator = CRandomAccessIterator<I> && CLValueReference<TIteratorReferenceType<I>>
-	&& CSameAs<TIteratorElementType<I>, TRemoveCVRef<TIteratorReferenceType<I>>>
-	&& requires(I& Iter)
-	{
-		{ ToAddress(Iter) } -> CSameAs<TAddPointer<TIteratorReferenceType<I>>>;
-	};
-
-static_assert(CContiguousIterator<int32*>);
+using TIteratorRValueReferenceType = TIteratorRValueReference<I>;
 
 NAMESPACE_BEGIN(Iteration)
 
