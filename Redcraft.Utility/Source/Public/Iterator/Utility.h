@@ -12,11 +12,14 @@ NAMESPACE_PRIVATE_BEGIN
 
 template <typename T> using TWithReference = T&;
 
-template <typename I> struct TIteratorElementImpl     { using Type = typename I::ElementType; };
-template <typename T> struct TIteratorElementImpl<T*> { using Type = TRemoveCV<T>;            };
+template <typename I> struct TIteratorElementImpl     {                            };
+template <typename T> struct TIteratorElementImpl<T*> { using Type = TRemoveCV<T>; };
 
-template <typename I> struct TIteratorPointerImpl     { using Type = void; };
-template <typename T> struct TIteratorPointerImpl<T*> { using Type = T*;   };
+template <typename I> requires (requires { typename I::ElementType; })
+struct TIteratorElementImpl<I> { using Type = typename I::ElementType; };
+
+template <typename I> struct TIteratorPointerImpl     {                  };
+template <typename T> struct TIteratorPointerImpl<T*> { using Type = T*; };
 
 template <typename I> requires (requires(I& Iter) { { Iter.operator->() } -> CPointer; })
 struct TIteratorPointerImpl<I> { using Type = decltype(DeclVal<I&>().operator->()); };
