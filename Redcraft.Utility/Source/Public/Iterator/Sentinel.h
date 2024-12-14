@@ -92,6 +92,20 @@ static_assert(
 	}
 );
 
+struct FDefaultSentinel { explicit FDefaultSentinel() = default; };
+
+inline constexpr FDefaultSentinel DefaultSentinel{ };
+
+struct FUnreachableSentinel
+{
+	explicit FUnreachableSentinel() = default;
+
+	template <CWeaklyIncrementable I>
+	NODISCARD FORCEINLINE constexpr bool operator==(const I&) const& { return false; }
+};
+
+inline constexpr FUnreachableSentinel UnreachableSentinel{ };
+
 #if PLATFORM_COMPILER_GCC
 #	pragma GCC diagnostic pop
 #endif

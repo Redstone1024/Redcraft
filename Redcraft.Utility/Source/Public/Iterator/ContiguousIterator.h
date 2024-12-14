@@ -5,6 +5,7 @@
 #include "Iterator/Sentinel.h"
 #include "Iterator/RandomAccessIterator.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Memory/Address.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
