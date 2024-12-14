@@ -32,7 +32,7 @@ concept CRandomAccessIterator = CBidirectionalIterator<I> && CTotallyOrdered<I> 
 	};
 
 /** This is an example of a random access iterator, indicate the traits that define a random access iterator. */
-template <CReference T>
+template <CReferenceable T>
 struct IRandomAccessIterator /* : IBidirectionalIterator<T>, ISizedSentinelFor<IRandomAccessIterator> */
 {
 	// ~Begin CBidirectionalIterator.

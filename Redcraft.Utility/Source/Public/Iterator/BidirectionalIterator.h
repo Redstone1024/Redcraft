@@ -28,7 +28,7 @@ concept CBidirectionalIterator = CForwardIterator<I>
  * Regardless of the order in which the increment and decrement operators are applied,
  * the result is always the same if both operations are performed the same number of times.
  */
-template <CReference T>
+template <CReferenceable T>
 struct IBidirectionalIterator /* : IForwardIterator<T> */
 {
 	// ~Begin CForwardIterator.

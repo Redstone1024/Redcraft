@@ -107,7 +107,7 @@ concept CIndirectlyWritable =
 	};
 
 /** This is an example of an indirectly writable type, indicate the traits that define an indirectly writable type. */
-template <CReference T>
+template <CReferenceable T>
 struct IIndirectlyWritable
 {
 	/**
@@ -262,7 +262,7 @@ concept COutputIterator = CInputOrOutputIterator<I> && CIndirectlyWritable<I, T>
 	&& requires(I Iter) { { Iter++ } -> CIndirectlyWritable<T>; };
 
 /** This is an example of an output iterator, indicate the traits that define an output iterator. */
-template <CReference T>
+template <CReferenceable T>
 struct IOutputIterator /* : IInputOrOutputIterator, IIndirectlyWritable<T> */
 {
 	// ~Begin CIndirectlyWritable.

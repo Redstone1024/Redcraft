@@ -19,7 +19,7 @@ template <typename I>
 concept CForwardIterator = CInputIterator<I> && CIncrementable<I> && CSentinelFor<I, I>;
 
 /** This is an example of a forward iterator, indicate the traits that define a forward iterator. */
-template <CReference T>
+template <CReferenceable T>
 struct IForwardIterator /* : IInputIterator<T>, IIncrementable, ISentinelFor<IForwardIterator> */
 {
 	// ~Begin CInputIterator.
