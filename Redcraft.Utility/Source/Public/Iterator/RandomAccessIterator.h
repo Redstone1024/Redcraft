@@ -33,64 +33,54 @@ concept CRandomAccessIterator = CBidirectionalIterator<I> && CTotallyOrdered<I> 
 
 /** This is an example of a random access iterator, indicate the traits that define a random access iterator. */
 template <CReference T>
-struct IRandomAccessIterator /* : IBidirectionalIterator<T> */
+struct IRandomAccessIterator /* : IBidirectionalIterator<T>, ISizedSentinelFor<IRandomAccessIterator> */
 {
-	/** The element type of the indirectly readable type. See 'IIndirectlyReadable'. */
+	// ~Begin CBidirectionalIterator.
+
 	using ElementType = TRemoveCVRef<T>;
 
-	/** Default constructor. See 'IIncrementable' and 'ISentinelFor'. */
+	// ~End CBidirectionalIterator.
+
+	// ~Begin CBidirectionalIterator and CSizedSentinelFor<IRandomAccessIterator>.
+
 	IRandomAccessIterator();
-
-	/** Copy constructor. See 'IIncrementable' and 'ISentinelFor'. */
 	IRandomAccessIterator(const IRandomAccessIterator&);
-
-	/** Copy assignment operator. See 'IIncrementable' and 'ISentinelFor'. */
+	IRandomAccessIterator(IRandomAccessIterator&&);
 	IRandomAccessIterator* operator=(const IRandomAccessIterator&);
+	IRandomAccessIterator* operator=(IRandomAccessIterator&&);
 
-	/** Equality operator. See 'IIncrementable' and 'ISentinelFor'. */
 	friend bool operator==(const IRandomAccessIterator&, const IRandomAccessIterator&);
 
-	/** Three-way comparison operator. */
-	friend strong_ordering operator<=>(const IRandomAccessIterator& LHS, const IRandomAccessIterator& RHS);
+	// ~End CBidirectionalIterator and CSizedSentinelFor<IRandomAccessIterator>.
 
-	/** Dereference operator. See 'IForwardIterator'. */
-	T operator*() const;
+	friend strong_ordering operator<=>(const IRandomAccessIterator&, const IRandomAccessIterator&);
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
+	T operator*() const; // Also satisfies CBidirectionalIterator.
+
+	T operator[](ptrdiff) const;
+
+	// ~Begin CBidirectionalIterator.
+
 	IRandomAccessIterator& operator++();
-
-	/** Pre-decrement operator. See 'IBidirectionalIterator'. */
 	IRandomAccessIterator& operator--();
 
-	/** Post-increment operator. See 'IIncrementable'. */
 	IRandomAccessIterator operator++(int);
-
-	/** Post-decrement operator. See 'IBidirectionalIterator'. */
 	IRandomAccessIterator operator--(int);
 
-	/** Addition assignment operator. */
-	IRandomAccessIterator& operator+=(ptrdiff);
+	// ~End CBidirectionalIterator.
 
-	/** Subtraction assignment operator. */
+	IRandomAccessIterator& operator+=(ptrdiff);
 	IRandomAccessIterator& operator-=(ptrdiff);
 
-	/** Addition operator. */
 	IRandomAccessIterator operator+(ptrdiff) const;
-
-	/** Subtraction operator. */
 	IRandomAccessIterator operator-(ptrdiff) const;
 
-	/** Addition operator. */
 	friend IRandomAccessIterator operator+(ptrdiff, const IRandomAccessIterator&);
 
-	/** Subtraction operator. */
-	friend ptrdiff operator-(const IRandomAccessIterator&, const IRandomAccessIterator&);
-
-	/** Subscript operator. */
-	T operator[](ptrdiff) const;
+	friend ptrdiff operator-(const IRandomAccessIterator&, const IRandomAccessIterator&); // Also satisfies CSizedSentinelFor<IRandomAccessIterator>.
 };
 
-// Use 'IRandomAccessIterator<int>' represents a random access iterator
+// Use IRandomAccessIterator<int> represents a random access iterator
 static_assert(CRandomAccessIterator<IRandomAccessIterator<int&>>);
 static_assert(      COutputIterator<IRandomAccessIterator<int&>, int>);
 

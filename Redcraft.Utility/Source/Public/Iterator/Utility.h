@@ -76,18 +76,18 @@ struct IIndirectlyReadable
 
 	/**
 	 * Indirectly read the element from the indirectly readable type.
-	 * The return type may not be 'const ElementType&', this concept only requires that the return type
-	 * and 'ElementType' has some relationship, such as copy constructible to 'ElementType' if the type is copyable.
-	 * This means that returning a proxy class castable to 'ElementType' is also valid.
-	 * If this is an iterator adaptor, use 'decltype(auto)' to forward the return value.
+	 * The return type may not be const ElementType&, this concept only requires that the return type
+	 * and ElementType has some relationship, such as copy constructible to ElementType if the type is copyable.
+	 * This means that returning a proxy class castable to ElementType is also valid.
+	 * If this is an iterator adaptor, use decltype(auto) to forward the return value.
 	 */
 	T operator*() const;
 };
 
-// Use 'IIndirectlyReadable<int>' represents an indirectly readable type and 'int' is the regular element type.
+// Use IIndirectlyReadable<int> represents an indirectly readable type and int is the regular element type.
 static_assert(CIndirectlyReadable<IIndirectlyReadable<int>> && CRegular<int>);
 
-// The 'CIndirectlyReadable' requires this code is valid.
+// The CIndirectlyReadable requires this code is valid.
 static_assert(
 	requires(IIndirectlyReadable<int> Iter, int& A)
 	{
@@ -112,19 +112,19 @@ struct IIndirectlyWritable
 {
 	/**
 	 * Indirectly write the element from the indirectly writable type.
-	 * The return type may not be 'T&', this concept only requires that the return type and 'T' has some relationship,
-	 * such as can be assigned from 'T&' if the type is copyable or 'T&&' if the type is movable.
-	 * This means that returning a proxy class can be assigned from 'T' is also valid.
+	 * The return type may not be T&, this concept only requires that the return type and T has some relationship,
+	 * such as can be assigned from T& if the type is copyable or T&& if the type is movable.
+	 * This means that returning a proxy class can be assigned from T is also valid.
 	 * If this is also an indirectly readable type, the equivalent value is read after writing.
-	 * If this is an iterator adaptor, use 'decltype(auto)' to forward the return value.
+	 * If this is an iterator adaptor, use decltype(auto) to forward the return value.
 	 */
 	T operator*() const;
 };
 
-// Use 'IIndirectlyWritable<int>' represents an indirectly writable type and 'int' is the regular element type.
+// Use IIndirectlyWritable<int> represents an indirectly writable type and int is the regular element type.
 static_assert(CIndirectlyWritable<IIndirectlyWritable<int&>, int> && CRegular<int>);
 
-// The 'CIndirectlyWritable' requires this code is valid.
+// The CIndirectlyWritable requires this code is valid.
 static_assert(
 	requires(IIndirectlyWritable<int&> Iter, int& A)
 	{
@@ -140,23 +140,16 @@ concept CWeaklyIncrementable = CMovable<I>
 /** This is an example of a weakly incrementable type, indicate the traits that define a weakly incrementable type. */
 struct IWeaklyIncrementable
 {
-	/** Move constructor. */
 	IWeaklyIncrementable(IWeaklyIncrementable&&);
-
-	/** Move assignment operator. */
 	IWeaklyIncrementable* operator=(IWeaklyIncrementable&&);
 
-	/** Pre-increment operator. */
 	IWeaklyIncrementable& operator++();
 
-	/**
-	 * Post-increment operator.
-	 * Specify, the concept not requires the return type is any specific type, so the return type can be 'void'.
-	 */
+	/** Post-increment operator. Specify, the concept not requires the return type is any specific type, so the return type can be void. */
 	void operator++(int);
 };
 
-// Use 'IWeaklyIncrementable' represents a weakly incrementable type.
+// Use IWeaklyIncrementable represents a weakly incrementable type.
 static_assert(CWeaklyIncrementable<IWeaklyIncrementable>);
 
 /**
@@ -174,26 +167,21 @@ concept CIncrementable = CRegular<I> && CWeaklyIncrementable<I>
  */
 struct IIncrementable /* : IWeaklyIncrementable */
 {
-	/** Default constructor. */
 	IIncrementable();
-
-	/** Copy constructor. */
 	IIncrementable(const IIncrementable&);
-
-	/** Copy assignment operator. */
+	IIncrementable(IIncrementable&&);                 // Also satisfies IWeaklyIncrementable.
 	IIncrementable* operator=(const IIncrementable&);
+	IIncrementable* operator=(IIncrementable&&);      // Also satisfies IWeaklyIncrementable.
 
-	/** Equality operator. */
 	friend bool operator==(const IIncrementable&, const IIncrementable&);
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
-	IIncrementable& operator++();
+	IIncrementable& operator++(); // Also satisfies IWeaklyIncrementable.
 
-	/** Post-increment operator. */
+	/** Post-increment operator. Specify, the concept requires the return value is the original value before incrementing. */
 	IIncrementable operator++(int);
 };
 
-// Use 'IIncrementable' represents an incrementable type.
+// Use IIncrementable represents an incrementable type.
 static_assert(CIncrementable<IIncrementable>);
 
 /**
@@ -208,23 +196,22 @@ concept CInputOrOutputIterator = CWeaklyIncrementable<I>
 template <CReferenceable T>
 struct IInputOrOutputIterator /* : IWeaklyIncrementable */
 {
-	/** Move constructor. See 'IWeaklyIncrementable'. */
-	IInputOrOutputIterator(IInputOrOutputIterator&&);
+	// ~Begin CWeklyIncrementable.
 
-	/** Move assignment operator. See 'IWeaklyIncrementable'. */
+	IInputOrOutputIterator(IInputOrOutputIterator&&);
 	IInputOrOutputIterator* operator=(IInputOrOutputIterator&&);
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
 	IInputOrOutputIterator& operator++();
 
-	/** Post-increment operator. See 'IWeaklyIncrementable'. */
 	void operator++(int);
+
+	// ~End CWeklyIncrementable.
 
 	/** Dereference operator. It does not matter what the return type is, as long as it is referenceable. */
 	T operator*() const;
 };
 
-// Use 'IInputOrOutputIterator' represents an input or output iterator.
+// Use IInputOrOutputIterator represents an input or output iterator.
 static_assert(CInputOrOutputIterator<IInputOrOutputIterator<int>>);
 
 /** A concept specifies a type is an input iterator. */
@@ -235,29 +222,30 @@ concept CInputIterator = CInputOrOutputIterator<I> && CIndirectlyReadable<I>;
 template <CReferenceable T>
 struct IInputIterator /* : IInputOrOutputIterator, IIndirectlyReadable */
 {
-	/** The element type of the indirectly readable type. See 'IIndirectlyReadable'. */
+	// ~Begin CIndirectlyReadable.
+
 	using ElementType = TRemoveCVRef<T>;
 
-	/** Move constructor. See 'IWeaklyIncrementable'. */
-	IInputIterator(IInputIterator&&);
+	// ~End CIndirectlyReadable.
 
-	/** Move assignment operator. See 'IWeaklyIncrementable'. */
+	// ~Begin CInputOrOutputIterator.
+
+	IInputIterator(IInputIterator&&);
 	IInputIterator* operator=(IInputIterator&&);
 
-	/** Indirectly read the element from the indirectly readable type. See 'IIndirectlyReadable'. */
-	T operator*() const;
+	T operator*() const; // Also satisfies CIndirectlyReadable.
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
 	IInputIterator& operator++();
 
-	/** Post-increment operator. See 'IWeaklyIncrementable'. */
 	void operator++(int);
+
+	// ~End CInputOrOutputIterator.
 };
 
-// Use 'IInputIterator<int>' represents an input iterator and 'int' is the regular element type.
+// Use IInputIterator<int> represents an input iterator and int is the regular element type.
 static_assert(CInputIterator<IInputIterator<int>> && CRegular<int>);
 
-// The 'CInputIterator' requires this code is valid.
+// The CInputIterator requires this code is valid.
 static_assert(
 	requires(IInputIterator<int> Iter, int& A)
 	{
@@ -277,32 +265,31 @@ concept COutputIterator = CInputOrOutputIterator<I> && CIndirectlyWritable<I, T>
 template <CReference T>
 struct IOutputIterator /* : IInputOrOutputIterator, IIndirectlyWritable<T> */
 {
-	/** Move constructor. See 'IWeaklyIncrementable'. */
-	IOutputIterator(IOutputIterator&&);
+	// ~Begin CIndirectlyWritable.
 
-	/** Move assignment operator. See 'IWeaklyIncrementable'. */
+	IOutputIterator(IOutputIterator&&);
 	IOutputIterator* operator=(IOutputIterator&&);
 
-	/** Indirectly write the element from the indirectly writable type. See 'IIndirectlyWritable'. */
-	T operator*() const;
+	T operator*() const; // Also satisfies CIndirectlyWritable.
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
 	IOutputIterator& operator++();
 
 	/**
 	 * Post-increment operator.
 	 * Specify, the concept not requires the return type is self type,
 	 * but requires the expression '*Iter++ = A;' is equivalent to '*Iter = A; ++Iter;'.
-	 * This means that returning a proxy class that satisfies 'CIndirectlyWritable<T>' is also valid.
-	 * See 'IWeaklyIncrementable'.
+	 * This means that returning a proxy class that satisfies CIndirectlyWritable<T> is also valid.
+	 * Also satisfies CIndirectlyWritable.
 	 */
 	IIndirectlyWritable<T> operator++(int);
+
+	// ~End CIndirectlyWritable.
 };
 
-// Use 'IOutputIterator<int>' represents an output iterator and 'int' is the regular element type.
+// Use IOutputIterator<int> represents an output iterator and int is the regular element type.
 static_assert(COutputIterator<IOutputIterator<int&>, int> && CRegular<int>);
 
-// The 'CInputIterator' requires this code is valid.
+// The CInputIterator requires this code is valid.
 static_assert(
 	requires(IOutputIterator<int&> Iter, int& A)
 	{

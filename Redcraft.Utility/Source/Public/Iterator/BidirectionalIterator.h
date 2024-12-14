@@ -31,38 +31,30 @@ concept CBidirectionalIterator = CForwardIterator<I>
 template <CReference T>
 struct IBidirectionalIterator /* : IForwardIterator<T> */
 {
-	/** The element type of the indirectly readable type. See 'IIndirectlyReadable'. */
+	// ~Begin CForwardIterator.
+
 	using ElementType = TRemoveCVRef<T>;
 
-	/** Default constructor. See 'IIncrementable' and 'ISentinelFor'. */
 	IBidirectionalIterator();
-
-	/** Copy constructor. See 'IIncrementable' and 'ISentinelFor'. */
 	IBidirectionalIterator(const IBidirectionalIterator&);
-
-	/** Copy assignment operator. See 'IIncrementable' and 'ISentinelFor'. */
+	IBidirectionalIterator(IBidirectionalIterator&&);
 	IBidirectionalIterator* operator=(const IBidirectionalIterator&);
+	IBidirectionalIterator* operator=(IBidirectionalIterator&&);
 
-	/** Equality operator. See 'IIncrementable' and 'ISentinelFor'. */
 	friend bool operator==(const IBidirectionalIterator&, const IBidirectionalIterator&);
 
-	/** Dereference operator. See 'IForwardIterator'. */
 	T operator*() const;
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
-	IBidirectionalIterator& operator++();
+	// ~End CForwardIterator.
 
-	/** Pre-decrement operator. */
+	IBidirectionalIterator& operator++(); // Also satisfies CForwardIterator.
 	IBidirectionalIterator& operator--();
 
-	/** Post-increment operator. See 'IIncrementable'. */
-	IBidirectionalIterator operator++(int);
-
-	/** Post-decrement operator. */
+	IBidirectionalIterator operator++(int); // Also satisfies CForwardIterator.
 	IBidirectionalIterator operator--(int);
 };
 
-// Use 'IBidirectionalIterator<int>' represents a bidirectional iterator.
+// Use IBidirectionalIterator<int> represents a bidirectional iterator.
 static_assert(CBidirectionalIterator<IBidirectionalIterator<int&>>);
 static_assert(       COutputIterator<IBidirectionalIterator<int&>, int>);
 

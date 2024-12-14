@@ -24,23 +24,17 @@ concept CSentinelFor = CSemiregular<S> && CInputOrOutputIterator<I> && CWeaklyEq
 template <CInputOrOutputIterator I>
 struct ISentinelFor
 {
-	/** Default constructor. */
 	ISentinelFor();
-
-	/** Copy constructor. */
 	ISentinelFor(const ISentinelFor&);
-
-	/** Copy assignment operator. */
 	ISentinelFor* operator=(const ISentinelFor&);
 
-	/** Equality operator. */
 	bool operator==(const I&) const&;
 };
 
-// Use 'ISentinelFor' represents a sentinel for an iterator.
+// Use ISentinelFor represents a sentinel for an iterator.
 static_assert(CSentinelFor<ISentinelFor<IInputOrOutputIterator<int>>, IInputOrOutputIterator<int>>);
 
-// The 'CSentinelFor' requires this code is valid.
+// The CSentinelFor requires this code is valid.
 static_assert(
 	requires(ISentinelFor<IInputOrOutputIterator<int>> Sentinel, IInputOrOutputIterator<int> Iter)
 	{
@@ -49,7 +43,7 @@ static_assert(
 	}
 );
 
-/** Disable the 'CSizedSentinelFor' concept for specific types. */
+/** Disable the CSizedSentinelFor concept for specific types. */
 template <typename S, typename I>
 inline constexpr bool bDisableSizedSentinelFor = false;
 
@@ -71,27 +65,23 @@ concept CSizedSentinelFor = CSentinelFor<S, I>
 template <CInputOrOutputIterator I>
 struct ISizedSentinelFor /* : ISentinelFor<I> */
 {
-	/** Default constructor. */
-	ISizedSentinelFor();
-
-	/** Copy constructor. */
+	ISizedSentinelFor();                                    // Also satisfies ISentinelFor<I>.
 	ISizedSentinelFor(const ISizedSentinelFor&);
-
-	/** Copy assignment operator. */
+	ISizedSentinelFor(ISizedSentinelFor&&);                 // Also satisfies ISentinelFor<I>.
 	ISizedSentinelFor& operator=(const ISizedSentinelFor&);
+	ISizedSentinelFor& operator=(ISizedSentinelFor&&);      // Also satisfies ISentinelFor<I>.
 
-	/** Equality operator. */
-	bool operator==(const I&) const&;
+	bool operator==(const I&) const&; // Also satisfies ISentinelFor<I>.
 
 	/** Subtraction operator. The 'Sentinel - Iter' is equal to negative 'Iter - Sentinel'. */
 	friend ptrdiff operator-(const I&, const ISizedSentinelFor&);
 	friend ptrdiff operator-(const ISizedSentinelFor&, const I&);
 };
 
-// Use 'ISizedSentinelFor' represents a sized sentinel for an iterator.
+// Use ISizedSentinelFor represents a sized sentinel for an iterator.
 static_assert(CSizedSentinelFor<ISizedSentinelFor<IInputOrOutputIterator<int>>, IInputOrOutputIterator<int>>);
 
-// The 'CSentinelFor' requires this code is valid.
+// The CSentinelFor requires this code is valid.
 static_assert(
 	requires(ISizedSentinelFor<IInputOrOutputIterator<int>> Sentinel, IInputOrOutputIterator<int> Iter)
 	{

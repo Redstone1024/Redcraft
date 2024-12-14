@@ -20,37 +20,38 @@ concept CForwardIterator = CInputIterator<I> && CIncrementable<I> && CSentinelFo
 
 /** This is an example of a forward iterator, indicate the traits that define a forward iterator. */
 template <CReference T>
-struct IForwardIterator /* : IInputIterator<T>, IIncrementable, ISentinelFor<I> */
+struct IForwardIterator /* : IInputIterator<T>, IIncrementable, ISentinelFor<IForwardIterator> */
 {
-	/** The element type of the indirectly readable type. See 'IIndirectlyReadable'. */
+	// ~Begin CInputIterator.
+
 	using ElementType = TRemoveCVRef<T>;
 
-	/** Default constructor. See 'IIncrementable' and 'ISentinelFor'. */
+	// ~End CInputIterator.
+
+	// ~Begin CIncrementable and CSentinelFor<IForwardIterator>.
+
 	IForwardIterator();
-
-	/** Copy constructor. See 'IIncrementable' and 'ISentinelFor'. */
 	IForwardIterator(const IForwardIterator&);
-
-	/** Copy assignment operator. See 'IIncrementable' and 'ISentinelFor'. */
+	IForwardIterator(IForwardIterator&&);                 // Also satisfies IInputIterator.
 	IForwardIterator* operator=(const IForwardIterator&);
+	IForwardIterator* operator=(IForwardIterator&&);      // Also satisfies IInputIterator.
 
-	/** Equality operator. See 'IIncrementable' and 'ISentinelFor'. */
 	friend bool operator==(const IForwardIterator&, const IForwardIterator&);
 
-	/**
-	 * Indirectly read the element from the indirectly readable type. See 'IIndirectlyReadable'.
-	 * Indirectly write the element if the type is also an indirectly writable type. See 'IIndirectlyWritable'.
-	 */
-	T operator*() const;
+	// ~End CIncrementable and CSentinelFor<IForwardIterator>.
 
-	/** Pre-increment operator. See 'IWeaklyIncrementable'. */
-	IForwardIterator& operator++();
+	// ~Begin CInputIterator.
 
-	/** Post-increment operator. See 'IIncrementable'. */
-	IForwardIterator operator++(int);
+	T operator*() const; // Optional satisfies CIndirectlyWritable.
+
+	IForwardIterator& operator++(); // Also satisfies CIncrementable.
+
+	IForwardIterator operator++(int); // Also satisfies CIncrementable.
+
+	// ~End CInputIterator.
 };
 
-// Use 'IForwardIterator<int>' represents a forward iterator.
+// Use IForwardIterator<int> represents a forward iterator.
 static_assert(CForwardIterator<IForwardIterator<int&>>);
 static_assert( COutputIterator<IForwardIterator<int&>, int>);
 
