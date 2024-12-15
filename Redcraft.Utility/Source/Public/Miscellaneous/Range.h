@@ -30,91 +30,9 @@ using TRangeRValueReferenceType = TRangeRValueReference<R>;
 
 NAMESPACE_BEGIN(Range)
 
-template <typename T> requires (CClass<T> && CSameAs<T, TRemoveCV<T>>)
-class TViewInterface
-{
-public:
-
-	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr auto Data()       requires (CContiguousRange<      T>) { return Range::GetData(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto Data() const requires (CContiguousRange<const T>) { return Range::GetData(static_cast<const T&>(*this)); }
-
-	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr auto Begin()       requires (CRange<      T>) { return Range::Begin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto End()         requires (CRange<      T>) { return Range::End  (static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const T>) { return Range::Begin(static_cast<const T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto End()   const requires (CRange<const T>) { return Range::End  (static_cast<const T&>(*this)); }
-
-	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr auto RBegin()       requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return Range::RBegin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto REnd()         requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return Range::REnd  (static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto RBegin() const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return Range::RBegin(static_cast<const T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto REnd()   const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return Range::REnd  (static_cast<const T&>(*this)); }
-
-	/** @return The number of elements in the container. */
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      T>) { return Range::Num(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const T>) { return Range::Num(static_cast<const T&>(*this)); }
-
-	/** @return true if the container is empty, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsEmpty()       requires (CSizedRange<      T> || CForwardRange<      T>) { return Range::IsEmpty(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr bool IsEmpty() const requires (CSizedRange<const T> || CForwardRange<const T>) { return Range::IsEmpty(static_cast<const T&>(*this)); }
-
-	/** @return true if the container is empty, false otherwise. */
-	NODISCARD FORCEINLINE constexpr explicit operator bool()       requires (CSizedRange<      T> || CForwardRange<      T>) { return !Range::IsEmpty(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr explicit operator bool() const requires (CSizedRange<const T> || CForwardRange<const T>) { return !Range::IsEmpty(static_cast<const T&>(*this)); }
-
-	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](size_t Index)       requires (CRandomAccessRange<      T>) { return Range::Begin(static_cast<      T&>(*this))[Index]; }
-	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](size_t Index) const requires (CRandomAccessRange<const T>) { return Range::Begin(static_cast<const T&>(*this))[Index]; }
-
-	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE constexpr decltype(auto) Front()       requires (CForwardRange<      T>)                                { return  *Range::Begin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr decltype(auto) Front() const requires (CForwardRange<const T>)                                { return  *Range::Begin(static_cast<const T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr decltype(auto) Back()        requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return *Range::RBegin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr decltype(auto) Back()  const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return *Range::RBegin(static_cast<const T&>(*this)); }
-
-	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
-
-private:
-
-	FORCEINLINE constexpr TViewInterface() = default;
-
-	FORCEINLINE constexpr TViewInterface(const TViewInterface&)            = default;
-	FORCEINLINE constexpr TViewInterface(TViewInterface&&)                 = default;
-	FORCEINLINE constexpr TViewInterface& operator=(const TViewInterface&) = default;
-	FORCEINLINE constexpr TViewInterface& operator=(TViewInterface&&)      = default;
-
-	FORCEINLINE constexpr ~TViewInterface() = default;
-
-	friend T;
-};
-
-NAMESPACE_END(Range)
-
-template <typename R> requires (bEnableBorrowedRange<R>)
-inline constexpr bool bEnableBorrowedRange<Range::TViewInterface<R>> = true;
-
-template <typename V>
-concept CView = CRange<V> && CMovable<V> && CDerivedFrom<V, Range::TViewInterface<TRemoveCVRef<V>>>;
-
-NAMESPACE_PRIVATE_BEGIN
-
-template <typename T> struct TIsInitializerList                      : FFalse { };
-template <typename T> struct TIsInitializerList<initializer_list<T>> : FTrue  { };
-
-NAMESPACE_PRIVATE_END
-
-template <typename R>
-concept CViewableRange = CRange<R>
-	&& ((CView<TRemoveCVRef<R>> && CConstructibleFrom<TRemoveCVRef<R>, R>)
-	|| (!CView<TRemoveCVRef<R>> && (CLValueReference<R> || (CMovable<TRemoveReference<R>>
-	&& !NAMESPACE_PRIVATE::TIsInitializerList<TRemoveCVRef<R>>::Value))));
-
-NAMESPACE_BEGIN(Range)
-
 /** A view type that produces a view of no elements of a particular type. */
 template <CObject T>
-class TEmptyView : public TViewInterface<TEmptyView<T>>
+class TEmptyView : public IBasicViewInterface<TEmptyView<T>>
 {
 public:
 
@@ -147,7 +65,7 @@ NAMESPACE_BEGIN(Range)
 
 /** A view type that contains exactly one element of a specified value. */
 template <CObject T> requires (CMoveConstructible<T>)
-class TSingleView : public TViewInterface<TSingleView<T>>
+class TSingleView : public IBasicViewInterface<TSingleView<T>>
 {
 public:
 
@@ -198,7 +116,7 @@ static_assert(           CView<TSingleView<int>>);
 
 /** A view type that generates a sequence of elements by repeatedly incrementing an initial value. Can be either bounded or unbounded. */
 template <CWeaklyIncrementable W, CWeaklyEqualityComparable<W> S = FUnreachableSentinel> requires (CSemiregular<S> && CCopyable<W>)
-class TIotaView : public TViewInterface<TIotaView<W, S>>
+class TIotaView : public IBasicViewInterface<TIotaView<W, S>>
 {
 private:
 
@@ -303,7 +221,7 @@ NAMESPACE_BEGIN(Range)
 
 /** A view type that generates a sequence of elements by repeatedly producing the same value. Can be either bounded or unbounded. */
 template <CObject W, bool bIsUnreachable = true> requires (CMoveConstructible<W> && CSameAs<W, TRemoveCV<W>>)
-class TRepeatView : public TViewInterface<TRepeatView<W, bIsUnreachable>>
+class TRepeatView : public IBasicViewInterface<TRepeatView<W, bIsUnreachable>>
 {
 public:
 
@@ -449,57 +367,9 @@ NAMESPACE_END(Range)
 
 NAMESPACE_BEGIN(Range)
 
-/** A view adapter that combines an iterator-sentinel pair. */
-template <CInputOrOutputIterator I, CSentinelFor<I> S = I>
-class TRangeView : public TViewInterface<TRangeView<I, S>>
-{
-public:
-
-	using ElementType = TIteratorElementType<I>;
-	using Reference   = TIteratorReferenceType<I>;
-	using Iterator    = I;
-	using Sentinel    = S;
-
-	FORCEINLINE constexpr TRangeView() requires (CDefaultConstructible<I>) = default;
-
-	FORCEINLINE constexpr TRangeView(I InFirst, S InLast) : First(MoveTemp(InFirst)), Last(InLast) { }
-
-	template <CBorrowedRange R> requires (!CSameAs<TRemoveCVRef<R>, TRangeView>
-		&& CConvertibleTo<TRangeIteratorType<R>, I> && CConvertibleTo<TRangeSentinelType<R>, S>)
-	FORCEINLINE constexpr TRangeView(R&& InRange) : First(Range::Begin(Forward<R>(InRange))), Last(Range::End(Forward<R>(InRange))) { }
-
-	NODISCARD FORCEINLINE constexpr I Begin()       requires (!CCopyable<I>) { return MoveTemp(First); }
-	NODISCARD FORCEINLINE constexpr S End()         requires (!CCopyable<S>) { return MoveTemp(Last);  }
-	NODISCARD FORCEINLINE constexpr I Begin() const requires ( CCopyable<I>) { return          First;  }
-	NODISCARD FORCEINLINE constexpr S End()   const requires ( CCopyable<S>) { return          Last;   }
-
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedSentinelFor<S, I>) { return Last - First; }
-
-	NODISCARD FORCEINLINE constexpr bool IsEmpty() const { return First == Last; }
-
-private:
-
-	NO_UNIQUE_ADDRESS I First;
-	NO_UNIQUE_ADDRESS S Last;
-
-};
-
-template <CInputOrOutputIterator I, CSentinelFor<I> S>
-TRangeView(I, S) -> TRangeView<I, S>;
-
-template <CBorrowedRange R>
-TRangeView(R&&) -> TRangeView<TRangeIteratorType<R>, TRangeSentinelType<R>>;
-
-NAMESPACE_END(Range)
-
-template <typename I, typename S>
-constexpr bool bEnableBorrowedRange<Range::TRangeView<I, S>> = true;
-
-NAMESPACE_BEGIN(Range)
-
 /** A view adapter that references the elements of some other range. */
 template <CRange R> requires (CObject<R>)
-class TRefView : public TViewInterface<TRefView<R>>
+class TRefView : public IBasicViewInterface<TRefView<R>>
 {
 public:
 
@@ -545,7 +415,7 @@ NAMESPACE_BEGIN(Range)
 
 /** A view adapter that has unique ownership of a range. */
 template <CRange R> requires (CMovable<R> && !NAMESPACE_PRIVATE::TIsInitializerList<R>::Value)
-class TOwningView : public TViewInterface<TOwningView<R>>
+class TOwningView : public IBasicViewInterface<TOwningView<R>>
 {
 public:
 
@@ -609,7 +479,7 @@ using TAllView =
 
 /** A view adapter that consists of the elements of a range that satisfies a predicate. */
 template <CInputRange V, CPredicate<TRangeReferenceType<V>> Pred> requires (CView<V> && CObject<Pred> && CMoveConstructible<Pred>)
-class TFilterView : public TViewInterface<TFilterView<V, Pred>>
+class TFilterView : public IBasicViewInterface<TFilterView<V, Pred>>
 {
 private:
 
@@ -752,7 +622,7 @@ static_assert(              CView<TFilterView<TSingleView<int>, decltype([](auto
 /** A view adapter of a sequence that applies a transformation function to each element. */
 template <CInputRange V, CMoveConstructible F> requires (CView<V> && CObject<F>
 	&& CRegularInvocable<F&, TRangeReferenceType<V>> && CReferenceable<TInvokeResult<F&, TRangeReferenceType<V>>>)
-class TTransformView : public TViewInterface<TTransformView<V, F>>
+class TTransformView : public IBasicViewInterface<TTransformView<V, F>>
 {
 private:
 
@@ -939,13 +809,6 @@ static_assert(             CView<TTransformView<TSingleView<int>, decltype([](au
 NAMESPACE_END(Range)
 
 NAMESPACE_BEGIN(Range)
-
-/** Creates A view adapter that combines an iterator-sentinel pair. */
-template <CInputOrOutputIterator I, CSentinelFor<I> S = I>
-NODISCARD FORCEINLINE constexpr TRangeView<I, S> View(I First, S Last)
-{
-	return TRangeView<I, S>(MoveTemp(First), MoveTemp(Last));
-}
 
 /** Creates A view adapter that includes all elements of a range. */
 template <CViewableRange R>
