@@ -47,7 +47,6 @@ NAMESPACE_END(Range)
 template <typename R>
 using TRangeIterator = decltype(Range::Begin(DeclVal<R&>()));
 
-
 NAMESPACE_BEGIN(Range)
 
 /** @return The iterator to the end of a container. */
@@ -355,16 +354,16 @@ struct IContiguousRange /* : IRange<I, S> */
 // Use IContiguousRange<...> represents a contiguous range type.
 static_assert(CContiguousRange<IContiguousRange<IContiguousIterator<int&>>>);
 
-/** A concept specifies a type is a range and its iterators and sentinel types are the same. */
+/** A concept specifies a type is a range and its iterator and sentinel types are the same. */
 template <typename R>
 concept CCommonRange = CRange<R> && CSameAs<TRangeIterator<R>, TRangeSentinel<R>>;
 
 /** This is an example of a common range type, indicate the traits that define a common range type. */
 template <CForwardIterator I>
-using TCommonRange = IRange<I, I>;
+using ICommonRange = IRange<I, I>;
 
 // Use TCommonRange<...> represents a common range type.
-static_assert(CCommonRange<TCommonRange<IForwardIterator<int&>>>);
+static_assert(CCommonRange<ICommonRange<IForwardIterator<int&>>>);
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
