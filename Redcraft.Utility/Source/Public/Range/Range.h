@@ -4,3 +4,6 @@
 #include "Range/Utility.h"
 #include "Range/View.h"
 #include "Range/Factory.h"
+#include "Range/AllView.h"
+#include "Range/FilterView.h"
+#include "Range/TransformView.h"

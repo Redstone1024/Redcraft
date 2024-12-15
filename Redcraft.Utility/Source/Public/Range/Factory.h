@@ -250,8 +250,6 @@ private:
 
 	NO_UNIQUE_ADDRESS FSizeType Count;
 
-public:
-
 	class FIteratorImpl final
 	{
 	public:
