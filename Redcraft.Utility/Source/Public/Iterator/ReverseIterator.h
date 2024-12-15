@@ -44,7 +44,7 @@ public:
 	template <CBidirectionalIterator J> requires (!CSameAs<I, J> && CConvertibleTo<const J&, I> && CAssignableFrom<I&, const J&>)
 	FORCEINLINE constexpr TReverseIterator& operator=(const TReverseIterator<J>& InValue) { Current = InValue.GetBase(); return *this; }
 
-	template <CBidirectionalIterator J> requires (CSentinelFor<J, I>)
+	template <CBidirectionalIterator J> requires (CEqualityComparable<I, J>)
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
 
 	template <CBidirectionalIterator J> requires (CThreeWayComparable<I, J>)
@@ -70,7 +70,7 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset, const TReverseIterator& Iter) requires (CRandomAccessIterator<I>) { return Iter + Offset; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) requires (CRandomAccessIterator<I>) { return RHS.GetBase() - LHS.GetBase(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) requires (CSizedSentinelFor<I, I>) { return RHS.GetBase() - LHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return          Current;  }
 	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return MoveTemp(Current); }

@@ -30,7 +30,8 @@ public:
 
 	using ElementType = TIteratorElement<I>;
 
-	FORCEINLINE constexpr TMoveIterator()                                = default;
+	FORCEINLINE constexpr TMoveIterator() requires (CDefaultConstructible<I>) = default;
+
 	FORCEINLINE constexpr TMoveIterator(const TMoveIterator&)            = default;
 	FORCEINLINE constexpr TMoveIterator(TMoveIterator&&)                 = default;
 	FORCEINLINE constexpr TMoveIterator& operator=(const TMoveIterator&) = default;
@@ -45,7 +46,7 @@ public:
 	template <CInputIterator J> requires (!CSameAs<I, J> && CConvertibleTo<const J&, I> && CAssignableFrom<I&, const J&>)
 	FORCEINLINE constexpr TMoveIterator& operator=(const TMoveIterator<J>& InValue) { Current = InValue.GetBase(); return *this; }
 
-	template <CInputIterator J> requires (CSentinelFor<J, I>)
+	template <CInputIterator J> requires (CEqualityComparable<I, J>)
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
 
 	template <CInputIterator J> requires (CThreeWayComparable<I, J>)
@@ -70,7 +71,7 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr TMoveIterator operator+(ptrdiff Offset, const TMoveIterator& Iter) requires (CRandomAccessIterator<I>) { return Iter + Offset; }
 
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) requires (CRandomAccessIterator<I>) { return LHS.GetBase() - RHS.GetBase(); }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) requires (CSizedSentinelFor<I, I>) { return LHS.GetBase() - RHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return          Current;  }
 	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return MoveTemp(Current); }
