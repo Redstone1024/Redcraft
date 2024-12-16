@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Range/View.h"
+#include "Range/Pipe.h"
 #include "Range/Utility.h"
 #include "Range/AllView.h"
 #include "Templates/Invoke.h"
@@ -221,10 +222,10 @@ NODISCARD FORCEINLINE constexpr auto Transform(R&& Base, F&& Func)
 template <typename F>
 NODISCARD FORCEINLINE constexpr auto Transform(F&& Func)
 {
-	return [&Func]<CViewableRange R> requires (requires { TTransformView(DeclVal<R&&>(), DeclVal<F&&>()); }) (R&& Base)
+	return TAdaptorClosure([&Func]<CViewableRange R> requires (requires { Range::Transform(DeclVal<R&&>(), DeclVal<F&&>()); }) (R&& Base)
 	{
-		return TTransformView(Forward<R>(Base), Forward<F>(Func));
-	};
+		return Range::Transform(Forward<R>(Base), Forward<F>(Func));
+	});
 }
 
 NAMESPACE_END(Range)

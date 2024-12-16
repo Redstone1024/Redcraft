@@ -11,7 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Range)
 
-/** A helper class template for defining a view interface. Not directly instantiable. */
+/** An interface class template for defining a view. Not directly instantiable. */
 template <CClass T> requires (CSameAs<T, TRemoveCV<T>>)
 class IBasicViewInterface
 {

@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Range/View.h"
+#include "Range/Pipe.h"
 #include "Range/Utility.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
@@ -146,6 +147,15 @@ NODISCARD FORCEINLINE constexpr auto All(R&& InRange)
 	}
 
 	else return TOwningView(Forward<R>(InRange));
+}
+
+/** Creates A view adapter that includes all elements of a range. */
+NODISCARD FORCEINLINE constexpr auto All()
+{
+	return TAdaptorClosure([]<CViewableRange R> requires (requires { All(DeclVal<R&&>()); }) (R && Base)
+	{
+		return All(Forward<R>(Base));
+	});
 }
 
 /** A view adapter that includes all elements of a range. */

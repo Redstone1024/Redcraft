@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Range/View.h"
+#include "Range/Pipe.h"
 #include "Range/Utility.h"
 #include "Range/AllView.h"
 #include "Memory/Address.h"
@@ -174,10 +175,10 @@ NODISCARD FORCEINLINE constexpr auto Filter(R&& Base, Pred&& Predicate)
 template <typename Pred>
 NODISCARD FORCEINLINE constexpr auto Filter(Pred&& Predicate)
 {
-	return [&Predicate]<CViewableRange R> requires (requires { TFilterView(DeclVal<R&&>(), DeclVal<Pred&&>()); }) (R&& Base)
+	return TAdaptorClosure([&Predicate]<CViewableRange R> requires (requires { Range::Filter(DeclVal<R&&>(), DeclVal<Pred&&>()); }) (R&& Base)
 	{
-		return TFilterView(Forward<R>(Base), Forward<Pred>(Predicate));
-	};
+		return Range::Filter(Forward<R>(Base), Forward<Pred>(Predicate));
+	});
 }
 
 NAMESPACE_END(Range)
