@@ -28,20 +28,20 @@ private:
 
 public:
 
-	using ElementType   = T;
-	using AllocatorType = Allocator;
+	using FElementType   = T;
+	using FAllocatorType = Allocator;
 
-	using      Reference =       T&;
-	using ConstReference = const T&;
+	using      FReference =       T&;
+	using FConstReference = const T&;
 
-	using      Iterator = TIteratorImpl<false>;
-	using ConstIterator = TIteratorImpl<true >;
+	using      FIterator = TIteratorImpl<false>;
+	using FConstIterator = TIteratorImpl<true >;
 
-	using      ReverseIterator = TReverseIterator<     Iterator>;
-	using ConstReverseIterator = TReverseIterator<ConstIterator>;
+	using      FReverseIterator = TReverseIterator<     FIterator>;
+	using FConstReverseIterator = TReverseIterator<FConstIterator>;
 
-	static_assert(CBidirectionalIterator<     Iterator>);
-	static_assert(CBidirectionalIterator<ConstIterator>);
+	static_assert(CBidirectionalIterator<     FIterator>);
+	static_assert(CBidirectionalIterator<FConstIterator>);
 
 	/** Default constructor. Constructs an empty container with a default-constructed allocator. */
 	TList()
@@ -54,7 +54,7 @@ public:
 	}
 
 	/** Constructs the container with 'Count' default instances of T. */
-	explicit TList(size_t Count) requires (CDefaultConstructible<ElementType>) : TList()
+	explicit TList(size_t Count) requires (CDefaultConstructible<FElementType>) : TList()
 	{
 		FNode* EndNode = Impl.HeadNode->PrevNode;
 
@@ -75,12 +75,12 @@ public:
 	}
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
-	TList(size_t Count, const ElementType& InValue) requires (CCopyable<ElementType>)
+	TList(size_t Count, const FElementType& InValue) requires (CCopyable<FElementType>)
 		: TList(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
 	TList(I First, S Last) : TList()
 	{
 		FNode* EndNode = Impl.HeadNode->PrevNode;
@@ -102,13 +102,13 @@ public:
 	}
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
-	FORCEINLINE TList(const TList& InValue) requires (CCopyConstructible<ElementType>) : TList(InValue.Begin(), InValue.End()) { }
+	FORCEINLINE TList(const TList& InValue) requires (CCopyConstructible<FElementType>) : TList(InValue.Begin(), InValue.End()) { }
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
 	FORCEINLINE TList(TList&& InValue) : TList() { Swap(*this, InValue); }
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TList(initializer_list<ElementType> IL) requires (CCopyConstructible<ElementType>) : TList(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TList(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TList(Iteration::Begin(IL), Iteration::End(IL)) { }
 
 	/** Destructs the list. The destructors of the elements are called and the used storage is deallocated. */
 	~TList()
@@ -129,12 +129,12 @@ public:
 	}
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
-	TList& operator=(const TList& InValue) requires (CCopyable<ElementType>)
+	TList& operator=(const TList& InValue) requires (CCopyable<FElementType>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
-		     Iterator ThisIter  =         Begin();
-		ConstIterator OtherIter = InValue.Begin();
+		     FIterator ThisIter  =         Begin();
+		FConstIterator OtherIter = InValue.Begin();
 
 		while (ThisIter != End() && OtherIter != InValue.End())
 		{
@@ -166,10 +166,10 @@ public:
 	FORCEINLINE TList& operator=(TList&& InValue) { Swap(*this, InValue); InValue.Reset(); return *this; }
 
 	/** Replaces the contents with those identified by initializer list. */
-	TList& operator=(initializer_list<ElementType> IL) requires (CCopyable<ElementType>)
+	TList& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
-		      Iterator     ThisIter  =            Begin();
-		const ElementType* OtherIter = Iteration::Begin(IL);
+		      FIterator     ThisIter  =            Begin();
+		const FElementType* OtherIter = Iteration::Begin(IL);
 
 		while (ThisIter != End() && OtherIter != Iteration::End(IL))
 		{
@@ -198,12 +198,12 @@ public:
 	}
 
 	/** Compares the contents of two lists. */
-	NODISCARD friend bool operator==(const TList& LHS, const TList& RHS) requires (CWeaklyEqualityComparable<ElementType>)
+	NODISCARD friend bool operator==(const TList& LHS, const TList& RHS) requires (CWeaklyEqualityComparable<FElementType>)
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
-		ConstIterator LHSIter = LHS.Begin();
-		ConstIterator RHSIter = RHS.Begin();
+		FConstIterator LHSIter = LHS.Begin();
+		FConstIterator RHSIter = RHS.Begin();
 
 		while (LHSIter != LHS.End())
 		{
@@ -219,10 +219,10 @@ public:
 	}
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend auto operator<=>(const TList& LHS, const TList& RHS) requires (CSynthThreeWayComparable<ElementType>)
+	NODISCARD friend auto operator<=>(const TList& LHS, const TList& RHS) requires (CSynthThreeWayComparable<FElementType>)
 	{
-		ConstIterator LHSIter = LHS.Begin();
-		ConstIterator RHSIter = RHS.Begin();
+		FConstIterator LHSIter = LHS.Begin();
+		FConstIterator RHSIter = RHS.Begin();
 
 		while (LHSIter != LHS.End() && RHSIter != RHS.End())
 		{
@@ -236,22 +236,22 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, const ElementType& InValue) requires (CCopyConstructible<ElementType>) { return Emplace(Iter, InValue); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, const FElementType& InValue) requires (CCopyConstructible<FElementType>) { return Emplace(Iter, InValue); }
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, ElementType&& InValue) requires (CMoveConstructible<ElementType>) { return Emplace(Iter, MoveTemp(InValue)); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, FElementType&& InValue) requires (CMoveConstructible<FElementType>) { return Emplace(Iter, MoveTemp(InValue)); }
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
-	Iterator Insert(ConstIterator Iter, size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
+	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
 	{
 		return Insert(Iter, MakeCountedConstantIterator(InValue, Count), DefaultSentinel);
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	Iterator Insert(ConstIterator Iter, I First, S Last)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
-		if (First == Last) return Iterator(Iter.Pointer);
+		if (First == Last) return FIterator(Iter.Pointer);
 
 		FNode* InsertNode = Iter.Pointer->PrevNode;
 
@@ -279,15 +279,15 @@ public:
 		InsertNode->NextNode = Iter.Pointer;
 		Iter.Pointer->PrevNode = InsertNode;
 
-		return Iterator(FirstNode);
+		return FIterator(FirstNode);
 	}
 
 	/** Inserts elements from initializer list before 'Iter' in the container. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL) requires (CCopyConstructible<ElementType>) { return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL)); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) { return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL)); }
 
 	/** Inserts a new element into the container directly before 'Iter'. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...>)
-	Iterator Emplace(ConstIterator Iter, Ts&&... Args)
+	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...>)
+	FIterator Emplace(FConstIterator Iter, Ts&&... Args)
 	{
 		FNode* Node = new (Impl->Allocate(1)) FNode(InPlace, Forward<Ts>(Args)...);
 
@@ -299,11 +299,11 @@ public:
 		Node->PrevNode->NextNode = Node;
 		Node->NextNode->PrevNode = Node;
 
-		return Iterator(Node);
+		return FIterator(Node);
 	}
 
 	/** Removes the element at 'Iter' in the container. */
-	Iterator Erase(ConstIterator Iter)
+	FIterator Erase(FConstIterator Iter)
 	{
 		FNode* NodeToErase = Iter.Pointer;
 
@@ -319,11 +319,11 @@ public:
 
 		--Impl.ListNum;
 
-		return Iterator(NextNode);
+		return FIterator(NextNode);
 	}
 
 	/** Removes the elements in the range ['First', 'Last') in the container. */
-	Iterator Erase(ConstIterator First, ConstIterator Last)
+	FIterator Erase(FConstIterator First, FConstIterator Last)
 	{
 		FNode* FirstToErase = First.Pointer;
 		FNode* LastToErase  = Last.Pointer;
@@ -343,43 +343,43 @@ public:
 			FirstToErase = NextNode;
 		}
 
-		return Iterator(LastToErase);
+		return FIterator(LastToErase);
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(const ElementType& InValue) requires (CCopyConstructible<ElementType>) { EmplaceBack(InValue); }
+	FORCEINLINE void PushBack(const FElementType& InValue) requires (CCopyConstructible<FElementType>) { EmplaceBack(InValue); }
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(ElementType&& InValue) requires (CMoveConstructible<ElementType>) { EmplaceBack(MoveTemp(InValue)); }
+	FORCEINLINE void PushBack(FElementType&& InValue) requires (CMoveConstructible<FElementType>) { EmplaceBack(MoveTemp(InValue)); }
 
 	/** Appends a new element to the end of the container. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...>)
-	FORCEINLINE Reference EmplaceBack(Ts&&... Args) { return *Emplace(End(), Forward<Ts>(Args)...); }
+	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...>)
+	FORCEINLINE FReference EmplaceBack(Ts&&... Args) { return *Emplace(End(), Forward<Ts>(Args)...); }
 
 	/** Removes the last element of the container. The list cannot be empty. */
 	FORCEINLINE void PopBack() { Erase(--End()); }
 
 	/** Prepends the given element value to the beginning of the container. */
-	FORCEINLINE void PushFront(const ElementType& InValue) requires (CCopyConstructible<ElementType>) { EmplaceFront(InValue); }
+	FORCEINLINE void PushFront(const FElementType& InValue) requires (CCopyConstructible<FElementType>) { EmplaceFront(InValue); }
 
 	/** Prepends the given element value to the beginning of the container. */
-	FORCEINLINE void PushFront(ElementType&& InValue) requires (CMoveConstructible<ElementType>) { EmplaceFront(MoveTemp(InValue)); }
+	FORCEINLINE void PushFront(FElementType&& InValue) requires (CMoveConstructible<FElementType>) { EmplaceFront(MoveTemp(InValue)); }
 
 	/** Prepends a new element to the beginning of the container. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...>)
-	FORCEINLINE Reference EmplaceFront(Ts&&... Args) { return *Emplace(Begin(), Forward<Ts>(Args)...); }
+	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...>)
+	FORCEINLINE FReference EmplaceFront(Ts&&... Args) { return *Emplace(Begin(), Forward<Ts>(Args)...); }
 
 	/** Removes the first element of the container. The list cannot be empty. */
 	FORCEINLINE void PopFront() { Erase(Begin()); }
 
 	/** Resizes the container to contain 'Count' elements. Additional default elements are appended. */
-	void SetNum(size_t Count) requires (CDefaultConstructible<ElementType>)
+	void SetNum(size_t Count) requires (CDefaultConstructible<FElementType>)
 	{
 		if (Count == Impl.ListNum) return;
 
 		if (Count < Impl.ListNum)
 		{
-			Iterator First = End();
+			FIterator First = End();
 
 			Iteration::Advance(First, Count - Impl.ListNum);
 
@@ -409,13 +409,13 @@ public:
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional copies of 'InValue' are appended. */
-	void SetNum(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
+	void SetNum(size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
 	{
 		if (Count == Impl.ListNum) return;
 
 		if (Count < Impl.ListNum)
 		{
-			Iterator First = End();
+			FIterator First = End();
 
 			Iteration::Advance(First, Count - Impl.ListNum);
 
@@ -445,16 +445,16 @@ public:
 	}
 
 	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(Impl.HeadNode->NextNode); }
-	NODISCARD FORCEINLINE ConstIterator Begin() const { return ConstIterator(Impl.HeadNode->NextNode); }
-	NODISCARD FORCEINLINE      Iterator End()         { return      Iterator(Impl.HeadNode);           }
-	NODISCARD FORCEINLINE ConstIterator End()   const { return ConstIterator(Impl.HeadNode);           }
+	NODISCARD FORCEINLINE      FIterator Begin()       { return      FIterator(Impl.HeadNode->NextNode); }
+	NODISCARD FORCEINLINE FConstIterator Begin() const { return FConstIterator(Impl.HeadNode->NextNode); }
+	NODISCARD FORCEINLINE      FIterator End()         { return      FIterator(Impl.HeadNode);           }
+	NODISCARD FORCEINLINE FConstIterator End()   const { return FConstIterator(Impl.HeadNode);           }
 
 	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
-	NODISCARD FORCEINLINE ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
-	NODISCARD FORCEINLINE      ReverseIterator REnd()         { return      ReverseIterator(Begin()); }
-	NODISCARD FORCEINLINE ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE      FReverseIterator RBegin()       { return      FReverseIterator(End());   }
+	NODISCARD FORCEINLINE FConstReverseIterator RBegin() const { return FConstReverseIterator(End());   }
+	NODISCARD FORCEINLINE      FReverseIterator REnd()         { return      FReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE FConstReverseIterator REnd()   const { return FConstReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
 	NODISCARD FORCEINLINE size_t Num() const { return Impl.ListNum; }
@@ -463,7 +463,7 @@ public:
 	NODISCARD FORCEINLINE bool IsEmpty() const { return Num() == 0; }
 
 	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE bool IsValidIterator(ConstIterator Iter) const
+	NODISCARD FORCEINLINE bool IsValidIterator(FConstIterator Iter) const
 	{
 		FNode* Current = Impl.HeadNode;
 
@@ -481,10 +481,10 @@ public:
 	}
 
 	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE       ElementType& Front()       { return *Begin();     }
-	NODISCARD FORCEINLINE const ElementType& Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE       ElementType& Back()        { return *(End() - 1); }
-	NODISCARD FORCEINLINE const ElementType& Back()  const { return *(End() - 1); }
+	NODISCARD FORCEINLINE       FElementType& Front()       { return *Begin();     }
+	NODISCARD FORCEINLINE const FElementType& Front() const { return *Begin();     }
+	NODISCARD FORCEINLINE       FElementType& Back()        { return *(End() - 1); }
+	NODISCARD FORCEINLINE const FElementType& Back()  const { return *(End() - 1); }
 
 	/** Erases all elements from the container. After this call, Num() returns zero. */
 	void Reset()
@@ -508,11 +508,11 @@ public:
 	}
 
 	/** Overloads the GetTypeHash algorithm for TList. */
-	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TList& A) requires (CHashable<ElementType>)
+	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TList& A) requires (CHashable<FElementType>)
 	{
 		size_t Result = 0;
 
-		for (const ElementType& Element : A)
+		for (const FElementType& Element : A)
 		{
 			Result = HashCombine(Result, GetTypeHash(Element));
 		}
@@ -535,7 +535,7 @@ private:
 	{
 		FNode* PrevNode;
 		FNode* NextNode;
-		ElementType Value;
+		FElementType Value;
 
 		FORCEINLINE FNode() = default;
 
@@ -543,21 +543,21 @@ private:
 		FORCEINLINE FNode(FInPlace, Ts&&... Args) : Value(Forward<Ts>(Args)...) { }
 	};
 
-	static_assert(CMultipleAllocator<AllocatorType, FNode>);
+	static_assert(CMultipleAllocator<FAllocatorType, FNode>);
 
-	ALLOCATOR_WRAPPER_BEGIN(AllocatorType, FNode, Impl)
+	ALLOCATOR_WRAPPER_BEGIN(FAllocatorType, FNode, Impl)
 	{
 		FNode* HeadNode;
 		size_t ListNum;
 	}
-	ALLOCATOR_WRAPPER_END(AllocatorType, FNode, Impl)
+	ALLOCATOR_WRAPPER_END(FAllocatorType, FNode, Impl)
 
 	template <bool bConst, typename U>
 	class TIteratorImpl final
 	{
 	public:
 
-		using ElementType = TRemoveCV<T>;
+		using FElementType = TRemoveCV<T>;
 
 		FORCEINLINE TIteratorImpl() = default;
 

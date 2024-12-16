@@ -25,22 +25,22 @@ private:
 
 public:
 
-	using ElementType = T;
+	using FElementType = T;
 
-	using      Reference =       T&;
-	using ConstReference = const T&;
+	using      FReference =       T&;
+	using FConstReference = const T&;
 
-	using      Iterator = TIteratorImpl<false>;
-	using ConstIterator = TIteratorImpl<true >;
+	using      FIterator = TIteratorImpl<false>;
+	using FConstIterator = TIteratorImpl<true >;
 
-	using      ReverseIterator = TReverseIterator<     Iterator>;
-	using ConstReverseIterator = TReverseIterator<ConstIterator>;
+	using      FReverseIterator = TReverseIterator<     FIterator>;
+	using FConstReverseIterator = TReverseIterator<FConstIterator>;
 
-	static_assert(CContiguousIterator<     Iterator>);
-	static_assert(CContiguousIterator<ConstIterator>);
+	static_assert(CContiguousIterator<     FIterator>);
+	static_assert(CContiguousIterator<FConstIterator>);
 
 	/** Compares the contents of two arrays. */
-	NODISCARD friend constexpr bool operator==(const TStaticArray& LHS, const TStaticArray& RHS) requires (CWeaklyEqualityComparable<ElementType>)
+	NODISCARD friend constexpr bool operator==(const TStaticArray& LHS, const TStaticArray& RHS) requires (CWeaklyEqualityComparable<FElementType>)
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
@@ -53,7 +53,7 @@ public:
 	}
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend constexpr auto operator<=>(const TStaticArray& LHS, const TStaticArray& RHS) requires (CSynthThreeWayComparable<ElementType>)
+	NODISCARD friend constexpr auto operator<=>(const TStaticArray& LHS, const TStaticArray& RHS) requires (CSynthThreeWayComparable<FElementType>)
 	{
 		const size_t NumToCompare = LHS.Num() < RHS.Num() ? LHS.Num() : RHS.Num();
 
@@ -66,20 +66,20 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr       ElementType* GetData()       { return _; }
-	NODISCARD FORCEINLINE constexpr const ElementType* GetData() const { return _; }
+	NODISCARD FORCEINLINE constexpr       FElementType* GetData()       { return _; }
+	NODISCARD FORCEINLINE constexpr const FElementType* GetData() const { return _; }
 
 	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr      Iterator Begin()       { return      Iterator(this, _);         }
-	NODISCARD FORCEINLINE constexpr ConstIterator Begin() const { return ConstIterator(this, _);         }
-	NODISCARD FORCEINLINE constexpr      Iterator End()         { return      Iterator(this, _ + Num()); }
-	NODISCARD FORCEINLINE constexpr ConstIterator End()   const { return ConstIterator(this, _ + Num()); }
+	NODISCARD FORCEINLINE constexpr      FIterator Begin()       { return      FIterator(this, _);         }
+	NODISCARD FORCEINLINE constexpr FConstIterator Begin() const { return FConstIterator(this, _);         }
+	NODISCARD FORCEINLINE constexpr      FIterator End()         { return      FIterator(this, _ + Num()); }
+	NODISCARD FORCEINLINE constexpr FConstIterator End()   const { return FConstIterator(this, _ + Num()); }
 
 	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr      ReverseIterator REnd()         { return      ReverseIterator(Begin()); }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr      FReverseIterator RBegin()       { return      FReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr FConstReverseIterator RBegin() const { return FConstReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr      FReverseIterator REnd()         { return      FReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr FConstReverseIterator REnd()   const { return FConstReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
 	NODISCARD FORCEINLINE constexpr size_t Num() const { return N; }
@@ -88,24 +88,24 @@ public:
 	NODISCARD FORCEINLINE constexpr bool IsEmpty() const { return Num() == 0; }
 
 	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsValidIterator(ConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
+	NODISCARD FORCEINLINE constexpr bool IsValidIterator(FConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE constexpr       ElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return _[Index]; }
-	NODISCARD FORCEINLINE constexpr const ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return _[Index]; }
+	NODISCARD FORCEINLINE constexpr       FElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return _[Index]; }
+	NODISCARD FORCEINLINE constexpr const FElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return _[Index]; }
 
 	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE constexpr       ElementType& Front()       { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr const ElementType& Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr       ElementType& Back()        { return *(End() - 1); }
-	NODISCARD FORCEINLINE constexpr const ElementType& Back()  const { return *(End() - 1); }
+	NODISCARD FORCEINLINE constexpr       FElementType& Front()       { return *Begin();     }
+	NODISCARD FORCEINLINE constexpr const FElementType& Front() const { return *Begin();     }
+	NODISCARD FORCEINLINE constexpr       FElementType& Back()        { return *(End() - 1); }
+	NODISCARD FORCEINLINE constexpr const FElementType& Back()  const { return *(End() - 1); }
 
 	/** Overloads the GetTypeHash algorithm for TStaticArray. */
-	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TStaticArray& A) requires (CHashable<ElementType>)
+	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TStaticArray& A) requires (CHashable<FElementType>)
 	{
 		size_t Result = 0;
 
-		for (ConstIterator Iter = A.Begin(); Iter != A.End(); ++Iter)
+		for (FConstIterator Iter = A.Begin(); Iter != A.End(); ++Iter)
 		{
 			Result = HashCombine(Result, GetTypeHash(*Iter));
 		}
@@ -114,7 +114,7 @@ public:
 	}
 
 	/** Overloads the Swap algorithm for TStaticArray. */
-	friend FORCEINLINE constexpr void Swap(TStaticArray& A, TStaticArray& B) requires (CSwappable<ElementType>) { Swap(A._, B._); }
+	friend FORCEINLINE constexpr void Swap(TStaticArray& A, TStaticArray& B) requires (CSwappable<FElementType>) { Swap(A._, B._); }
 
 	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
 
@@ -127,7 +127,7 @@ private:
 	{
 	public:
 
-		using ElementType = TRemoveCV<T>;
+		using FElementType = TRemoveCV<T>;
 
 		FORCEINLINE constexpr TIteratorImpl() = default;
 
@@ -224,6 +224,8 @@ NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
 
+// ReSharper disable CppInconsistentNaming
+
 NAMESPACE_STD_BEGIN
 
 // Support structure binding, should not be directly used.
@@ -245,3 +247,5 @@ template <size_t Index, typename T, size_t N> FORCEINLINE constexpr decltype(aut
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
+
+// ReSharper restore CppInconsistentNaming

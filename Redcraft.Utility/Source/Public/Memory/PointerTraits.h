@@ -19,10 +19,10 @@ struct TPointerTraits<T*>
 {
 	static constexpr bool bIsPointer = true;
 
-	using PointerType = T*;
-	using ElementType = T;
+	using FPointerType = T*;
+	using FElementType = T;
 
-	static FORCEINLINE constexpr ElementType* ToAddress(PointerType InPtr)
+	static FORCEINLINE constexpr FElementType* ToAddress(FPointerType InPtr)
 	{
 		return InPtr;
 	}
@@ -34,29 +34,29 @@ struct TPointerTraits<T(*)[]>
 {
 	static constexpr bool bIsPointer = true;
 
-	using PointerType = T(*)[];
-	using ElementType = T;
+	using FPointerType = T(*)[];
+	using FElementType = T;
 
-	static FORCEINLINE constexpr ElementType* ToAddress(PointerType InPtr)
+	static FORCEINLINE constexpr FElementType* ToAddress(FPointerType InPtr)
 	{
 		return InPtr;
 	}
 };
 
 /** A specialization of TPointerTraits is provided for pointer-like type. */
-#define DEFINE_TPointerTraits(TPtr)                                                   \
-	template <typename T>                                                             \
-	struct TPointerTraits<TPtr<T>>                                                    \
-	{                                                                                 \
-		static constexpr bool bIsPointer = true;                                      \
-		                                                                              \
-		using PointerType = TPtr<T>;                                                  \
-		using ElementType = TPtr<T>::ElementType;                                     \
-		                                                                              \
-		static FORCEINLINE constexpr ElementType* ToAddress(const PointerType& InPtr) \
-		{                                                                             \
-			return InPtr.Get();                                                       \
-		}                                                                             \
+#define DEFINE_TPointerTraits(TPtr)                                                     \
+	template <typename T>                                                               \
+	struct TPointerTraits<TPtr<T>>                                                      \
+	{                                                                                   \
+		static constexpr bool bIsPointer = true;                                        \
+		                                                                                \
+		using FPointerType = TPtr<T>;                                                   \
+		using FElementType = TPtr<T>::FElementType;                                     \
+		                                                                                \
+		static FORCEINLINE constexpr FElementType* ToAddress(const FPointerType& InPtr) \
+		{                                                                               \
+			return InPtr.Get();                                                         \
+		}                                                                               \
 	};
 
 NAMESPACE_MODULE_END(Utility)

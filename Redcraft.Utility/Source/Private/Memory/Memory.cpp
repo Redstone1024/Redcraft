@@ -46,7 +46,7 @@ public:
 
 };
 
-FMemoryLeakChecker MemoryLeakChecker;
+FMemoryLeakChecker GMemoryLeakChecker;
 
 #endif
 
@@ -80,7 +80,7 @@ void* Malloc(size_t Count, size_t Alignment)
 
 	check(Result != nullptr);
 
-	check_code({ MemoryLeakChecker.AddMemoryAllocationCount(); });
+	check_code({ GMemoryLeakChecker.AddMemoryAllocationCount(); });
 
 	return Result;
 }
@@ -139,7 +139,7 @@ void Free(void* Ptr)
 	}
 #	endif
 
-	check_code({ MemoryLeakChecker.ReleaseMemoryAllocationCount(); });
+	check_code({ GMemoryLeakChecker.ReleaseMemoryAllocationCount(); });
 }
 
 size_t QuantizeSize(size_t Count, size_t Alignment)

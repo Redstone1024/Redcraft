@@ -35,33 +35,33 @@ class TString : public TArray<T, Allocator>
 {
 private:
 
-	using Super = TArray<T, Allocator>;
+	using FSuper = TArray<T, Allocator>;
 
 public:
 
-	using ElementType   = typename Super::ElementType;
-	using AllocatorType = typename Super::AllocatorType;
+	using FElementType   = typename FSuper::FElementType;
+	using FAllocatorType = typename FSuper::FAllocatorType;
 
-	using      Reference = typename Super::     Reference;
-	using ConstReference = typename Super::ConstReference;
+	using      FReference = typename FSuper::     FReference;
+	using FConstReference = typename FSuper::FConstReference;
 
-	using      Iterator = typename Super::     Iterator;
-	using ConstIterator = typename Super::ConstIterator;
+	using      FIterator = typename FSuper::     FIterator;
+	using FConstIterator = typename FSuper::FConstIterator;
 
-	using      ReverseIterator = typename Super::     ReverseIterator;
-	using ConstReverseIterator = typename Super::ConstReverseIterator;
+	using      FReverseIterator = typename FSuper::     FReverseIterator;
+	using FConstReverseIterator = typename FSuper::FConstReverseIterator;
 
-	static_assert(CContiguousIterator<     Iterator>);
-	static_assert(CContiguousIterator<ConstIterator>);
+	static_assert(CContiguousIterator<     FIterator>);
+	static_assert(CContiguousIterator<FConstIterator>);
 
 	/** Default constructor. Constructs an empty string. */
 	FORCEINLINE TString() = default;
 
 	/** Constructs the string with 'Count' copies of characters with 'InValue'. */
-	FORCEINLINE TString(size_t Count, ElementType InChar) : Super(Count, InChar) { }
+	FORCEINLINE TString(size_t Count, FElementType InChar) : FSuper(Count, InChar) { }
 
 	/** Constructs a string with the contents of the range ['InPtr', 'InPtr' + 'Count'). */
-	FORCEINLINE TString(const ElementType* InPtr, size_t Count) : TString(TStringView<ElementType>(InPtr, Count))
+	FORCEINLINE TString(const FElementType* InPtr, size_t Count) : TString(TStringView<FElementType>(InPtr, Count))
 	{
 		checkf(InPtr != nullptr, TEXT("TString cannot be initialized by nullptr. Please check the pointer."));
 	}
@@ -69,7 +69,7 @@ public:
 	FORCEINLINE TString(nullptr_t, size_t) = delete;
 
 	/** Constructs a string with the contents of the range ['InPtr', '\0'). */
-	FORCEINLINE TString(const ElementType* InPtr) : TString(TStringView<ElementType>(InPtr))
+	FORCEINLINE TString(const FElementType* InPtr) : TString(TStringView<FElementType>(InPtr))
 	{
 		checkf(InPtr != nullptr, TEXT("TString cannot be initialized by nullptr. Please check the pointer."));
 	}
@@ -77,11 +77,11 @@ public:
 	FORCEINLINE TString(nullptr_t) = delete;
 
 	/** Constructs the string with the contents of the 'View'. */
-	FORCEINLINE TString(TStringView<ElementType> View) : TString(View.Begin(), View.End()) { }
+	FORCEINLINE TString(TStringView<FElementType> View) : TString(View.Begin(), View.End()) { }
 
 	/** Constructs the string with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	FORCEINLINE TString(I First, S Last) : Super(MoveTemp(First), MoveTemp(Last)) { }
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	FORCEINLINE TString(I First, S Last) : FSuper(MoveTemp(First), MoveTemp(Last)) { }
 
 	/** Copy constructor. Constructs the string with the copy of the contents of 'InValue'. */
 	FORCEINLINE TString(const TString&) = default;
@@ -90,7 +90,7 @@ public:
 	FORCEINLINE TString(TString&&) = default;
 
 	/** Constructs the string with the contents of the initializer list. */
-	FORCEINLINE TString(initializer_list<ElementType> IL) : TString(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TString(initializer_list<FElementType> IL) : TString(Iteration::Begin(IL), Iteration::End(IL)) { }
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
 	FORCEINLINE TString& operator=(const TString&) = default;
@@ -99,27 +99,27 @@ public:
 	FORCEINLINE TString& operator=(TString&&) = default;
 
 	/** Compares the contents of two strings. */
-	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) == TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const TString& RHS) { return TStringView<FElementType>(LHS) == TStringView<FElementType>(RHS); }
 
 	/** Compares the contents of a string and a character. */
-	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) == RHS; }
-	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) == RHS; }
-	NODISCARD friend FORCEINLINE bool operator==(      ElementType  LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
-	NODISCARD friend FORCEINLINE bool operator==(const ElementType* LHS, const TString& RHS) { return LHS == TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS,       FElementType  RHS) { return TStringView<FElementType>(LHS) == RHS; }
+	NODISCARD friend FORCEINLINE bool operator==(const TString& LHS, const FElementType* RHS) { return TStringView<FElementType>(LHS) == RHS; }
+	NODISCARD friend FORCEINLINE bool operator==(      FElementType  LHS, const TString& RHS) { return LHS == TStringView<FElementType>(RHS); }
+	NODISCARD friend FORCEINLINE bool operator==(const FElementType* LHS, const TString& RHS) { return LHS == TStringView<FElementType>(RHS); }
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const TString& RHS) { return TStringView<ElementType>(LHS) <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const TString& RHS) { return TStringView<FElementType>(LHS) <=> TStringView<FElementType>(RHS); }
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS,       ElementType  RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
-	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const ElementType* RHS) { return TStringView<ElementType>(LHS) <=> RHS; }
-	NODISCARD friend FORCEINLINE auto operator<=>(      ElementType  LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
-	NODISCARD friend FORCEINLINE auto operator<=>(const ElementType* LHS, const TString& RHS) { return LHS <=> TStringView<ElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS,       FElementType  RHS) { return TStringView<FElementType>(LHS) <=> RHS; }
+	NODISCARD friend FORCEINLINE auto operator<=>(const TString& LHS, const FElementType* RHS) { return TStringView<FElementType>(LHS) <=> RHS; }
+	NODISCARD friend FORCEINLINE auto operator<=>(      FElementType  LHS, const TString& RHS) { return LHS <=> TStringView<FElementType>(RHS); }
+	NODISCARD friend FORCEINLINE auto operator<=>(const FElementType* LHS, const TString& RHS) { return LHS <=> TStringView<FElementType>(RHS); }
 
 public:
 
 	/** Inserts 'InValue' before 'Index' in the string. */
-	FORCEINLINE Iterator Insert(size_t Index, ElementType InValue)
+	FORCEINLINE FIterator Insert(size_t Index, FElementType InValue)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
@@ -127,15 +127,15 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the string. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, ElementType InValue)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, FElementType InValue)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::Insert(Iter, InValue);
+		return FSuper::Insert(Iter, InValue);
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Index' in the string. */
-	FORCEINLINE Iterator Insert(size_t Index, size_t Count, ElementType InValue)
+	FORCEINLINE FIterator Insert(size_t Index, size_t Count, FElementType InValue)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
@@ -143,15 +143,15 @@ public:
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the string. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, size_t Count, ElementType InValue)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, size_t Count, FElementType InValue)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::Insert(Iter, Count, InValue);
+		return FSuper::Insert(Iter, Count, InValue);
 	}
 
 	/** Inserts characters from the 'View' before 'Index' in the string. */
-	FORCEINLINE Iterator Insert(size_t Index, TStringView<ElementType> View)
+	FORCEINLINE FIterator Insert(size_t Index, TStringView<FElementType> View)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
@@ -159,7 +159,7 @@ public:
 	}
 
 	/** Inserts characters from the 'View' before 'Iter' in the string. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, TStringView<ElementType> View)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, TStringView<FElementType> View)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -167,8 +167,8 @@ public:
 	}
 
 	/** Inserts characters from the range ['First', 'Last') before 'Index' in the string. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	FORCEINLINE Iterator Insert(size_t Index, I First, S Last)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	FORCEINLINE FIterator Insert(size_t Index, I First, S Last)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
@@ -176,16 +176,16 @@ public:
 	}
 
 	/** Inserts characters from the range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	FORCEINLINE Iterator Insert(ConstIterator Iter, I First, S Last)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::Insert(Iter, MoveTemp(First), MoveTemp(Last));
+		return FSuper::Insert(Iter, MoveTemp(First), MoveTemp(Last));
 	}
 
 	/** Inserts characters from the initializer list before 'Index' in the string. */
-	FORCEINLINE Iterator Insert(size_t Index, initializer_list<ElementType> IL)
+	FORCEINLINE FIterator Insert(size_t Index, initializer_list<FElementType> IL)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
 
@@ -193,15 +193,15 @@ public:
 	}
 
 	/** Inserts characters from the initializer list before 'Iter' in the string. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::Insert(Iter, IL);
+		return FSuper::Insert(Iter, IL);
 	}
 
 	/** Erases the character at 'Index' in the string. But it may change the order of characters. */
-	FORCEINLINE Iterator Erase(size_t Index, bool bAllowShrinking = true)
+	FORCEINLINE FIterator Erase(size_t Index, bool bAllowShrinking = true)
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index < Num()."));
 
@@ -209,15 +209,15 @@ public:
 	}
 
 	/** Erases the character at 'Iter' in the string. But it may change the order of characters. */
-	FORCEINLINE Iterator Erase(ConstIterator Iter, bool bAllowShrinking = true)
+	FORCEINLINE FIterator Erase(FConstIterator Iter, bool bAllowShrinking = true)
 	{
 		checkf(this->IsValidIterator(Iter) && Iter != this->End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::StableErase(Iter, bAllowShrinking);
+		return FSuper::StableErase(Iter, bAllowShrinking);
 	}
 
 	/** Erases 'CountToErase' characters starting from 'Index' in the string. But it may change the order of characters. */
-	FORCEINLINE Iterator Erase(size_t Index, size_t CountToErase, bool bAllowShrinking = true)
+	FORCEINLINE FIterator Erase(size_t Index, size_t CountToErase, bool bAllowShrinking = true)
 	{
 		checkf(Index <= this->Num() && Index + CountToErase <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToErase."));
 
@@ -226,24 +226,24 @@ public:
 	}
 
 	/** Erases the characters in the range ['First', 'Last') in the string. But it may change the order of characters. */
-	FORCEINLINE Iterator Erase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true)
+	FORCEINLINE FIterator Erase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Super::StableErase(First, Last, bAllowShrinking);
+		return FSuper::StableErase(First, Last, bAllowShrinking);
 	}
 
 	/** Here, the 'Erase' is already stable and there is no need to provide 'StableErase'. */
 	void StableErase(...) = delete;
 
 	/** Appends 'Count' copies of the 'InValue' to the end of the string. */
-	TString& Append(size_t Count, ElementType InChar) { return Append(MakeCountedConstantIterator(InChar, Count), DefaultSentinel); }
+	TString& Append(size_t Count, FElementType InChar) { return Append(MakeCountedConstantIterator(InChar, Count), DefaultSentinel); }
 
 	/** Appends the contents of the 'View' to the end of the string. */
-	FORCEINLINE TString& Append(TStringView<ElementType> View) { return Append(View.Begin(), View.End()); }
+	FORCEINLINE TString& Append(TStringView<FElementType> View) { return Append(View.Begin(), View.End()); }
 
 	/** Appends the contents of the range ['First', 'Last') to the end of the string. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
 	TString& Append(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
@@ -258,7 +258,7 @@ public:
 
 			for (size_t Index = CurrentNum; Index != CurrentNum + Count; ++Index)
 			{
-				(*this)[Index] = ElementType(*First++);
+				(*this)[Index] = FElementType(*First++);
 			}
 		}
 		else
@@ -270,40 +270,40 @@ public:
 	}
 
 	/** Appends the contents of the initializer list to the end of the string. */
-	FORCEINLINE TString& Append(initializer_list<ElementType> IL) { return Append(Iteration::Begin(IL), Iteration::End(IL)); }
+	FORCEINLINE TString& Append(initializer_list<FElementType> IL) { return Append(Iteration::Begin(IL), Iteration::End(IL)); }
 
 	/** Appends the given character value to the end of the string. */
-	FORCEINLINE TString& operator+=(ElementType InChar) { return Append(1, InChar); }
+	FORCEINLINE TString& operator+=(FElementType InChar) { return Append(1, InChar); }
 
 	/** Appends the contents of the 'View' to the end of the string. */
-	FORCEINLINE TString& operator+=(TStringView<ElementType> View) { return Append(View); }
+	FORCEINLINE TString& operator+=(TStringView<FElementType> View) { return Append(View); }
 
 	/** Appends the contents of the range ['First', 'Last') to the end of the string. */
-	FORCEINLINE TString& operator+=(initializer_list<ElementType> IL) { return Append(IL); }
+	FORCEINLINE TString& operator+=(initializer_list<FElementType> IL) { return Append(IL); }
 
 	/** Concatenates two strings. */
 	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS, const TString& RHS) { return TString(LHS).Append(RHS); }
 
 	/** Concatenates the string with the given character value. */
-	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS,             ElementType  RHS) { return TString(LHS).Append(1, RHS); }
-	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS,       const ElementType* RHS) { return TString(LHS).Append(   RHS); }
-	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS, TStringView<ElementType> RHS) { return TString(LHS).Append(   RHS); }
-	NODISCARD friend FORCEINLINE TString operator+(            ElementType  LHS, const TString& RHS) { return TString(1, LHS).Append(RHS); }
-	NODISCARD friend FORCEINLINE TString operator+(      const ElementType* LHS, const TString& RHS) { return TString(   LHS).Append(RHS); }
-	NODISCARD friend FORCEINLINE TString operator+(TStringView<ElementType> LHS, const TString& RHS) { return TString(   LHS).Append(RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS,             FElementType  RHS) { return TString(LHS).Append(1, RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS,       const FElementType* RHS) { return TString(LHS).Append(   RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(const TString& LHS, TStringView<FElementType> RHS) { return TString(LHS).Append(   RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(            FElementType  LHS, const TString& RHS) { return TString(1, LHS).Append(RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(      const FElementType* LHS, const TString& RHS) { return TString(   LHS).Append(RHS); }
+	NODISCARD friend FORCEINLINE TString operator+(TStringView<FElementType> LHS, const TString& RHS) { return TString(   LHS).Append(RHS); }
 
 	/** Concatenates two strings. The rvalue maybe modified. */
 	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS, TString&& RHS) { LHS.Append(MoveTemp(RHS)); return LHS; }
 
 	/** Concatenates two strings. The rvalue maybe modified. */
-	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,               ElementType   RHS) { LHS.Append(1, RHS); return LHS; }
-	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,         const ElementType*  RHS) { LHS.Append(   RHS); return LHS; }
-	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,   TStringView<ElementType>  RHS) { LHS.Append(   RHS); return LHS; }
-	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS, const TString<ElementType>& RHS) { LHS.Append(   RHS); return LHS; }
-	NODISCARD friend FORCEINLINE TString operator+(              ElementType   LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
-	NODISCARD friend FORCEINLINE TString operator+(        const ElementType*  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
-	NODISCARD friend FORCEINLINE TString operator+(  TStringView<ElementType>  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
-	NODISCARD friend FORCEINLINE TString operator+(const TString<ElementType>& LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
+	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,               FElementType   RHS) { LHS.Append(1, RHS); return LHS; }
+	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,         const FElementType*  RHS) { LHS.Append(   RHS); return LHS; }
+	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS,   TStringView<FElementType>  RHS) { LHS.Append(   RHS); return LHS; }
+	NODISCARD friend FORCEINLINE TString operator+(TString&& LHS, const TString<FElementType>& RHS) { LHS.Append(   RHS); return LHS; }
+	NODISCARD friend FORCEINLINE TString operator+(              FElementType   LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
+	NODISCARD friend FORCEINLINE TString operator+(        const FElementType*  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
+	NODISCARD friend FORCEINLINE TString operator+(  TStringView<FElementType>  LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
+	NODISCARD friend FORCEINLINE TString operator+(const TString<FElementType>& LHS, TString&& RHS) { RHS.Insert(0, LHS); return RHS; }
 
 public:
 
@@ -330,7 +330,7 @@ public:
 	/** Removes whitespace characters from the start of this string. */
 	FORCEINLINE constexpr TString& TrimStart(bool bAllowShrinking = true)
 	{
-		auto Index = Find([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+		auto Index = Find([](FElementType Char) { return !TChar<FElementType>::IsSpace(Char); });
 
 		if (Index != INDEX_NONE)
 		{
@@ -344,7 +344,7 @@ public:
 	/** Removes whitespace characters from the end of this string. */
 	FORCEINLINE constexpr TString& TrimEnd(bool bAllowShrinking = true)
 	{
-		auto Index = RFind([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+		auto Index = RFind([](FElementType Char) { return !TChar<FElementType>::IsSpace(Char); });
 
 		if (Index != INDEX_NONE)
 		{
@@ -367,7 +367,7 @@ public:
 	/** Removes characters after the first null-terminator. */
 	FORCEINLINE constexpr TString& TrimToNullTerminator(bool bAllowShrinking = true)
 	{
-		auto Index = Find(LITERAL(ElementType, '\0'));
+		auto Index = Find(LITERAL(FElementType, '\0'));
 
 		if (Index != INDEX_NONE)
 		{
@@ -380,50 +380,50 @@ public:
 public:
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
-	NODISCARD FORCEINLINE bool StartsWith(TStringView<ElementType> Prefix) const
+	NODISCARD FORCEINLINE bool StartsWith(TStringView<FElementType> Prefix) const
 	{
-		return TStringView<ElementType>(*this).StartsWith(Prefix);
+		return TStringView<FElementType>(*this).StartsWith(Prefix);
 	}
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
-	NODISCARD FORCEINLINE bool StartsWith(ElementType Prefix) const
+	NODISCARD FORCEINLINE bool StartsWith(FElementType Prefix) const
 	{
-		return TStringView<ElementType>(*this).StartsWith(Prefix);
+		return TStringView<FElementType>(*this).StartsWith(Prefix);
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
-	NODISCARD FORCEINLINE bool EndsWith(TStringView<ElementType> Suffix) const
+	NODISCARD FORCEINLINE bool EndsWith(TStringView<FElementType> Suffix) const
 	{
-		return TStringView<ElementType>(*this).EndsWith(Suffix);
+		return TStringView<FElementType>(*this).EndsWith(Suffix);
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
-	NODISCARD FORCEINLINE bool EndsWith(ElementType Suffix) const
+	NODISCARD FORCEINLINE bool EndsWith(FElementType Suffix) const
 	{
-		return TStringView<ElementType>(*this).EndsWith(Suffix);
+		return TStringView<FElementType>(*this).EndsWith(Suffix);
 	}
 
 	/** @return true if the string view contains the given substring, false otherwise. */
-	NODISCARD FORCEINLINE bool Contains(TStringView<ElementType> View) const
+	NODISCARD FORCEINLINE bool Contains(TStringView<FElementType> View) const
 	{
-		return TStringView<ElementType>(*this).Contains(View);
+		return TStringView<FElementType>(*this).Contains(View);
 	}
 
 	/** @return true if the string view contains the given character, false otherwise. */
-	NODISCARD FORCEINLINE bool Contains(ElementType Char) const
+	NODISCARD FORCEINLINE bool Contains(FElementType Char) const
 	{
-		return TStringView<ElementType>(*this).Contains(Char);
+		return TStringView<FElementType>(*this).Contains(Char);
 	}
 
 	/** @return true if the string view contains character that satisfy the given predicate, false otherwise. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD FORCEINLINE bool Contains(F&& InPredicate) const
 	{
-		return TStringView<ElementType>(*this).Contains(Forward<F>(InPredicate));
+		return TStringView<FElementType>(*this).Contains(Forward<F>(InPredicate));
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with 'Count' copies of the 'InChar'. */
-	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, size_t Count, ElementType InChar)
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, size_t Count, FElementType InChar)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
@@ -431,7 +431,7 @@ public:
 	}
 
 	/** Replace the substring ['First', 'Last') with 'Count' copies of the 'InChar'. */
-	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, size_t Count, ElementType InChar)
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, size_t Count, FElementType InChar)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -439,7 +439,7 @@ public:
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the 'View'. */
-	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, TStringView<ElementType> View)
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, TStringView<FElementType> View)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
@@ -447,7 +447,7 @@ public:
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the 'View'. */
-	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, TStringView<ElementType> View)
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, TStringView<FElementType> View)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -455,7 +455,7 @@ public:
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, I InString, S Sentinel)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
@@ -464,8 +464,8 @@ public:
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the range ['InString', 'Sentinel'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>)
-	TString& Replace(ConstIterator First, ConstIterator Last, I InString, S Sentinel)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	TString& Replace(FConstIterator First, FConstIterator Last, I InString, S Sentinel)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -484,7 +484,7 @@ public:
 			{
 				for (size_t Index = InsertIndex; Index != InsertIndex + InsertCount; ++Index)
 				{
-					(*this)[Index] = ElementType(*InString++);
+					(*this)[Index] = FElementType(*InString++);
 				}
 
 				for (size_t Index = InsertIndex + InsertCount; Index != NumToReset; ++Index)
@@ -505,7 +505,7 @@ public:
 
 				for (size_t Index = InsertIndex; Index != InsertIndex + InsertCount; ++Index)
 				{
-					(*this)[Index] = ElementType(*InString++);
+					(*this)[Index] = FElementType(*InString++);
 				}
 			}
 		}
@@ -520,7 +520,7 @@ public:
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the initializer list. */
-	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, initializer_list<ElementType> IL)
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, initializer_list<FElementType> IL)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
@@ -528,7 +528,7 @@ public:
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the initializer list. */
-	FORCEINLINE TString& Replace(ConstIterator First, ConstIterator Last, initializer_list<ElementType> IL)
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, initializer_list<FElementType> IL)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -540,133 +540,133 @@ public:
 	{
 		checkf(Offset <= this->Num() && Offset + Count <= this->Num(), TEXT("Illegal substring range. Please check Offset and Count."));
 
-		return TStringView<ElementType>(*this).Substr(Offset, Count);
+		return TStringView<FElementType>(*this).Substr(Offset, Count);
 	}
 
 	/** Copies the characters of this string to the destination buffer without null-termination. */
-	FORCEINLINE size_t Copy(ElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
+	FORCEINLINE size_t Copy(FElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
 	{
 		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
 
 		checkf(Offset <= this->Num() && (Count == DynamicExtent || Offset + Count <= this->Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
-		return TStringView<ElementType>(*this).Copy(Dest, Count, Offset);
+		return TStringView<FElementType>(*this).Copy(Dest, Count, Offset);
 	}
 
 	FORCEINLINE size_t Copy(nullptr_t, size_t = DynamicExtent, size_t = 0) const = delete;
 
 	/** @return The index of the first occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD size_t Find(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD size_t Find(TStringView<FElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).Find(View, Index);
+		return TStringView<FElementType>(*this).Find(View, Index);
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD size_t Find(ElementType Char, size_t Index = 0) const
+	NODISCARD size_t Find(FElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).Find(Char, Index);
+		return TStringView<FElementType>(*this).Find(Char, Index);
 	}
 
 	/** @return The index of the first occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).Find(Forward<F>(InPredicate), Index);
+		return TStringView<FElementType>(*this).Find(Forward<F>(InPredicate), Index);
 	}
 
 	/** @return The index of the last occurrence of the given substring, or INDEX_NONE if not found. */
-	NODISCARD size_t RFind(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD size_t RFind(TStringView<FElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).RFind(View, Index);
+		return TStringView<FElementType>(*this).RFind(View, Index);
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD size_t RFind(FElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).RFind(Char, Index);
+		return TStringView<FElementType>(*this).RFind(Char, Index);
 	}
 
 	/** @return The index of the last occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).RFind(Forward<F>(InPredicate), Index);
+		return TStringView<FElementType>(*this).RFind(Forward<F>(InPredicate), Index);
 	}
 
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindFirstOf(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstOf(TStringView<FElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindFirstOf(View, Index);
+		return TStringView<FElementType>(*this).FindFirstOf(View, Index);
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindFirstOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstOf(FElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindFirstOf(Char, Index);
+		return TStringView<FElementType>(*this).FindFirstOf(Char, Index);
 	}
 
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindLastOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastOf(TStringView<FElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindLastOf(View, Index);
+		return TStringView<FElementType>(*this).FindLastOf(View, Index);
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastOf(FElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindLastOf(Char, Index);
+		return TStringView<FElementType>(*this).FindLastOf(Char, Index);
 	}
 
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindFirstNotOf(TStringView<ElementType> View, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstNotOf(TStringView<FElementType> View, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindFirstNotOf(View, Index);
+		return TStringView<FElementType>(*this).FindFirstNotOf(View, Index);
 	}
 
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE size_t FindFirstNotOf(FElementType Char, size_t Index = 0) const
 	{
 		checkf(Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindFirstNotOf(Char, Index);
+		return TStringView<FElementType>(*this).FindFirstNotOf(Char, Index);
 	}
 
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindLastNotOf(TStringView<ElementType> View, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastNotOf(TStringView<FElementType> View, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindLastNotOf(View, Index);
+		return TStringView<FElementType>(*this).FindLastNotOf(View, Index);
 	}
 
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE size_t FindLastNotOf(FElementType Char, size_t Index = INDEX_NONE) const
 	{
 		checkf(Index == INDEX_NONE || Index < this->Num(), TEXT("Illegal index. Please check Index."));
 
-		return TStringView<ElementType>(*this).FindLastNotOf(Char, Index);
+		return TStringView<FElementType>(*this).FindLastNotOf(Char, Index);
 	}
 
 public:
@@ -1028,7 +1028,7 @@ public:
 	{
 		if (this->Max() >= this->Num() + 1)
 		{
-			const_cast<ElementType*>(this->GetData())[this->Num()] = LITERAL(ElementType, '\0');
+			const_cast<FElementType*>(this->GetData())[this->Num()] = LITERAL(FElementType, '\0');
 
 			return *TStringView(this->GetData(), this->Num() + 1);
 		}
@@ -1052,31 +1052,31 @@ public:
 	/** @return true if the string only contains valid characters, false otherwise. */
 	NODISCARD FORCEINLINE bool IsValid() const
 	{
-		return TStringView<ElementType>(*this).IsValid();
+		return TStringView<FElementType>(*this).IsValid();
 	}
 
 	/** @return true if the string only contains ASCII characters, false otherwise. */
 	NODISCARD FORCEINLINE bool IsASCII() const
 	{
-		return TStringView<ElementType>(*this).IsASCII();
+		return TStringView<FElementType>(*this).IsASCII();
 	}
 
 	/** @return true if the string can be fully represented as a boolean value, false otherwise. */
 	NODISCARD FORCEINLINE bool IsBoolean() const
 	{
-		return TStringView<ElementType>(*this).IsBoolean();
+		return TStringView<FElementType>(*this).IsBoolean();
 	}
 
 	/** @return true if the string can be fully represented as an integer value, false otherwise. */
 	NODISCARD FORCEINLINE bool IsInteger(unsigned Base = 10, bool bSigned = true) const
 	{
-		return TStringView<ElementType>(*this).IsInteger(Base, bSigned);
+		return TStringView<FElementType>(*this).IsInteger(Base, bSigned);
 	}
 
 	/** @return true if the string can be fully represented as a floating-point value, false otherwise. */
 	NODISCARD FORCEINLINE bool IsFloatingPoint(bool bFixed = true, bool bScientific = true, bool bSigned = true) const
 	{
-		return TStringView<ElementType>(*this).IsFloatingPoint(bFixed, bScientific, bSigned);
+		return TStringView<FElementType>(*this).IsFloatingPoint(bFixed, bScientific, bSigned);
 	}
 
 public:
@@ -1202,7 +1202,7 @@ public:
 	 */
 	NODISCARD FORCEINLINE bool ToBool() const
 	{
-		return TStringView<ElementType>(*this).ToBool();
+		return TStringView<FElementType>(*this).ToBool();
 	}
 
 	/**
@@ -1223,7 +1223,7 @@ public:
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
 
-		return TStringView<ElementType>(*this).template ToInt<U>(Base);
+		return TStringView<FElementType>(*this).template ToInt<U>(Base);
 	}
 
 	/**
@@ -1244,13 +1244,13 @@ public:
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
 	NODISCARD FORCEINLINE U ToFloat(bool bFixed = true, bool bScientific = false) const
 	{
-		return TStringView<ElementType>(*this).template ToFloat<U>(bFixed, bScientific);
+		return TStringView<FElementType>(*this).template ToFloat<U>(bFixed, bScientific);
 	}
 
 	/** Converts a string into a boolean value and remove the parsed substring. */
 	NODISCARD FORCEINLINE bool ToBoolAndTrim()
 	{
-		TStringView<ElementType> View = *this;
+		TStringView<FElementType> View = *this;
 
 		bool Result = View.ToBoolAndTrim();
 
@@ -1265,7 +1265,7 @@ public:
 	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
 	NODISCARD FORCEINLINE U ToIntAndTrim(unsigned Base = 10)
 	{
-		TStringView<ElementType> View = *this;
+		TStringView<FElementType> View = *this;
 
 		U Result = View.template ToIntAndTrim<U>(Base);
 
@@ -1280,7 +1280,7 @@ public:
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
 	NODISCARD FORCEINLINE U ToFloatAndTrim(bool bFixed = true, bool bScientific = true)
 	{
-		TStringView<ElementType> View = *this;
+		TStringView<FElementType> View = *this;
 
 		U Result = View.template ToFloatAndTrim<U>(bFixed, bScientific);
 
@@ -1302,7 +1302,7 @@ public:
 	 * @return The formatted string containing the objects.
 	 */
 	template <typename... Ts>
-	NODISCARD static FORCEINLINE TString Format(TStringView<ElementType> Fmt, const Ts&... Args)
+	NODISCARD static FORCEINLINE TString Format(TStringView<FElementType> Fmt, const Ts&... Args)
 	{
 		TString Result;
 
@@ -1313,7 +1313,7 @@ public:
 
 	/** Format some objects using a format string and append to the string. */
 	template <typename... Ts>
-	void AppendFormat(TStringView<ElementType> Fmt, const Ts&... Args);
+	void AppendFormat(TStringView<FElementType> Fmt, const Ts&... Args);
 
 	/**
 	 * Parse a string using a format string to objects.
@@ -1324,16 +1324,16 @@ public:
 	 * @return The number of objects successfully parsed.
 	 */
 	template <typename... Ts>
-	FORCEINLINE size_t Parse(TStringView<ElementType> Fmt, Ts&... Args) const
+	FORCEINLINE size_t Parse(TStringView<FElementType> Fmt, Ts&... Args) const
 	{
 		return TStringView(*this).Parse(Fmt, Args...);
 	}
 
 	/** Parse a string using a format string to objects and remove the parsed substring. */
 	template <typename... Ts>
-	FORCEINLINE size_t ParseAndTrim(TStringView<ElementType> Fmt, Ts&... Args)
+	FORCEINLINE size_t ParseAndTrim(TStringView<FElementType> Fmt, Ts&... Args)
 	{
-		TStringView<ElementType> View = *this;
+		TStringView<FElementType> View = *this;
 
 		size_t Result = View.ParseAndTrim(Fmt, Args...);
 
@@ -1347,10 +1347,10 @@ public:
 public:
 
 	/** Overloads the GetTypeHash algorithm for TString. */
-	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TString& A) { return GetTypeHash(TStringView<ElementType>(A)); }
+	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TString& A) { return GetTypeHash(TStringView<FElementType>(A)); }
 
 	/** Overloads the Swap algorithm for TString. */
-	friend FORCEINLINE void Swap(TString& A, TString& B) { Swap(static_cast<Super&>(A), static_cast<Super&>(B)); }
+	friend FORCEINLINE void Swap(TString& A, TString& B) { Swap(static_cast<FSuper&>(A), static_cast<FSuper&>(B)); }
 
 };
 
@@ -1373,7 +1373,7 @@ using FU16String     = TString<u16char>;
 using FU32String     = TString<u32char>;
 using FUnicodeString = TString<unicodechar>;
 
-template <CCharType T> template <typename Allocator> constexpr TStringView<T>::TStringView(const TString<ElementType, Allocator>& InString)
+template <CCharType T> template <typename Allocator> constexpr TStringView<T>::TStringView(const TString<FElementType, Allocator>& InString)
 	: TStringView(InString.GetData(), InString.Num()) { }
 
 NAMESPACE_MODULE_END(Utility)

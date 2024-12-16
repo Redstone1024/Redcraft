@@ -68,31 +68,31 @@ static_assert(CUnsigned<unicodechar>, "TChar assumes unicodechar is an unsigned 
 template <CCharType T>
 struct TChar
 {
-	using CharType = T;
+	using FCharType = T;
 
 	/** The maximum number of code units required to represent a single character. if unknown, guess 1. */
 	static constexpr size_t MaxCodeUnitLength =
-		CSameAs<CharType, char>    ? MB_LEN_MAX :
-		CSameAs<CharType, wchar>   ?
+		CSameAs<FCharType, char>    ? MB_LEN_MAX :
+		CSameAs<FCharType, wchar>   ?
 			PLATFORM_WINDOWS ? 2 :
 			PLATFORM_LINUX   ? 1 : 1 :
-		CSameAs<CharType, u8char>  ? 4 :
-		CSameAs<CharType, u16char> ? 2 :
-		CSameAs<CharType, u32char> ? 1 : 1;
+		CSameAs<FCharType, u8char>  ? 4 :
+		CSameAs<FCharType, u16char> ? 2 :
+		CSameAs<FCharType, u32char> ? 1 : 1;
 
 	/** Whether the character type is fixed-length. */
 	static constexpr bool bIsFixedLength = MaxCodeUnitLength == 1;
 
-	NODISCARD FORCEINLINE static constexpr bool IsValid(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsValid(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, u8char>)
+		if constexpr (CSameAs<FCharType, u8char>)
 		{
 			if ((InChar & 0b10000000) == 0b00000000) return true;
 
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char> || CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u16char> || CSameAs<FCharType, u32char>)
 		{
 			if (InChar >= 0xD800 && InChar <= 0xDBFF) return false;
 			if (InChar >= 0xDC00 && InChar <= 0xDFFF) return false;
@@ -101,30 +101,30 @@ struct TChar
 		}
 
 		// Windows uses UTF-16 encoding for wchar.
-		else if constexpr (PLATFORM_WINDOWS && (CSameAs<CharType, wchar>))
+		else if constexpr (PLATFORM_WINDOWS && (CSameAs<FCharType, wchar>))
 		{
 			return TChar::IsValid(static_cast<u16char>(InChar));
 		}
 
 		// Linux uses UTF-32 encoding for wchar.
-		else if constexpr (PLATFORM_LINUX && (CSameAs<CharType, wchar>))
+		else if constexpr (PLATFORM_LINUX && (CSameAs<FCharType, wchar>))
 		{
 			return TChar::IsValid(static_cast<u32char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsNonch(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsNonch(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, u8char>)
+		if constexpr (CSameAs<FCharType, u8char>)
 		{
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			if (InChar >= U16TEXT('\uFDD0') && InChar <= U16TEXT('\uFDEF')) return true;
 
@@ -134,7 +134,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			if (InChar >= U32TEXT('\uFDD0') && InChar <= U32TEXT('\uFDEF')) return true;
 
@@ -144,25 +144,25 @@ struct TChar
 		}
 
 		// Windows uses UTF-16 encoding for wchar.
-		else if constexpr (PLATFORM_WINDOWS && (CSameAs<CharType, wchar>))
+		else if constexpr (PLATFORM_WINDOWS && (CSameAs<FCharType, wchar>))
 		{
 			return TChar::IsNonch(static_cast<u16char>(InChar));
 		}
 
 		// Linux uses UTF-32 encoding for wchar.
-		else if constexpr (PLATFORM_LINUX && (CSameAs<CharType, wchar>))
+		else if constexpr (PLATFORM_LINUX && (CSameAs<FCharType, wchar>))
 		{
 			return TChar::IsNonch(static_cast<u32char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsASCII(CharType InChar = LITERAL(CharType, '\0'))
+	NODISCARD FORCEINLINE static constexpr bool IsASCII(FCharType InChar = LITERAL(FCharType, '\0'))
 	{
-		if constexpr (CSameAs<CharType, char>)
+		if constexpr (CSameAs<FCharType, char>)
 		{
 			constexpr bool ASCIICompatible = []() -> bool
 			{
@@ -188,7 +188,7 @@ struct TChar
 			return ASCIICompatible && 0x00 <= InChar && InChar <= 0x7F;
 		}
 
-		else if constexpr (CSameAs<CharType, wchar>)
+		else if constexpr (CSameAs<FCharType, wchar>)
 		{
 			constexpr bool ASCIICompatible = []() -> bool
 			{
@@ -214,19 +214,19 @@ struct TChar
 			return ASCIICompatible && 0x00 <= InChar && InChar <= 0x7F;
 		}
 
-		else if constexpr (CSameAs<CharType, u8char> || CSameAs<CharType, u16char> || CSameAs<CharType, u32char> || CSameAs<CharType, unicodechar>)
+		else if constexpr (CSameAs<FCharType, u8char> || CSameAs<FCharType, u16char> || CSameAs<FCharType, u32char> || CSameAs<FCharType, unicodechar>)
 		{
 			return InChar <= 0x7F;
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsAlnum(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsAlnum(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isalnum(InChar, Loc);
@@ -237,15 +237,15 @@ struct TChar
 		}
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsAlpha(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsAlpha(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isalpha(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -258,29 +258,29 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char> || CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u16char> || CSameAs<FCharType, u32char>)
 		{
-			checkf(InChar <= LITERAL(CharType, '\u007F'), TEXT("TChar::IsAlpha() only supports basic latin block."));
+			checkf(InChar <= LITERAL(FCharType, '\u007F'), TEXT("TChar::IsAlpha() only supports basic latin block."));
 
-			if (InChar > LITERAL(CharType, '\u007F')) return false;
+			if (InChar > LITERAL(FCharType, '\u007F')) return false;
 
 			return TChar<u8char>::IsAlpha(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsLower(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsLower(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::islower(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -291,7 +291,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::IsLower() only supports basic latin block."));
 
@@ -300,7 +300,7 @@ struct TChar
 			return TChar<u8char>::IsLower(static_cast<u8char>(InChar));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::IsLower() only supports basic latin block."));
 
@@ -309,20 +309,20 @@ struct TChar
 			return TChar<u8char>::IsLower(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsUpper(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsUpper(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isupper(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -333,7 +333,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::IsUpper() only supports basic latin block."));
 
@@ -342,7 +342,7 @@ struct TChar
 			return TChar<u8char>::IsUpper(static_cast<u8char>(InChar));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::IsUpper() only supports basic latin block."));
 
@@ -351,20 +351,20 @@ struct TChar
 			return TChar<u8char>::IsUpper(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsDigit(FCharType InChar)
 	{
 		static_assert(TChar::IsASCII());
 
 		/* <U0030>..<U0039>; */
-		return InChar >= LITERAL(CharType, '0') && InChar <= LITERAL(CharType, '9');
+		return InChar >= LITERAL(FCharType, '0') && InChar <= LITERAL(FCharType, '9');
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsDigit(CharType InChar, unsigned Base)
+	NODISCARD FORCEINLINE static constexpr bool IsDigit(FCharType InChar, unsigned Base)
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Base must be in the range [2, 36]."));
 
@@ -373,32 +373,32 @@ struct TChar
 		bool bResult = false;
 
 		/* <U0030>..<U0039>; */
-		bResult |= InChar >= LITERAL(CharType, '0') && InChar < LITERAL(CharType, '0') + static_cast<signed>(Base);
+		bResult |= InChar >= LITERAL(FCharType, '0') && InChar < LITERAL(FCharType, '0') + static_cast<signed>(Base);
 
 		/* <U0041>..<U0046>; */
-		bResult |= InChar >= LITERAL(CharType, 'a') && InChar < LITERAL(CharType, 'a') + static_cast<signed>(Base) - 10;
+		bResult |= InChar >= LITERAL(FCharType, 'a') && InChar < LITERAL(FCharType, 'a') + static_cast<signed>(Base) - 10;
 
 		/* <U0061>..<U0066>; */
-		bResult |= InChar >= LITERAL(CharType, 'A') && InChar < LITERAL(CharType, 'A') + static_cast<signed>(Base) - 10;
+		bResult |= InChar >= LITERAL(FCharType, 'A') && InChar < LITERAL(FCharType, 'A') + static_cast<signed>(Base) - 10;
 
 		return bResult;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsCntrl(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsCntrl(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::iscntrl(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/* <U0000>..<U001F>;<U007F>; */
 			return (InChar >= U8TEXT('\u0000') && InChar <= U8TEXT('\u001F')) || InChar == U8TEXT('\u007F');
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			/* <U0000>..<U001F>;<U007F>..<U009F>;<U2028>;<U2029>; */
 			return
@@ -407,7 +407,7 @@ struct TChar
 				(InChar == U16TEXT('\u2028') || InChar == U16TEXT('\u2029'));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			/* <U0000>..<U001F>;<U007F>..<U009F>;<U2028>;<U2029>; */
 			return
@@ -416,20 +416,20 @@ struct TChar
 				(InChar == U32TEXT('\u2028') || InChar == U32TEXT('\u2029'));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsGraph(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsGraph(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isgraph(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -440,7 +440,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::IsGraph() only supports basic latin block."));
 
@@ -449,7 +449,7 @@ struct TChar
 			return TChar<u8char>::IsGraph(static_cast<u8char>(InChar));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::IsGraph() only supports basic latin block."));
 
@@ -458,20 +458,20 @@ struct TChar
 			return TChar<u8char>::IsGraph(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsSpace(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsSpace(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isspace(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * ISO/IEC 6429
@@ -488,7 +488,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			/*
 			 * ISO/IEC 6429
@@ -533,7 +533,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			/*
 			 * ISO/IEC 6429
@@ -578,26 +578,26 @@ struct TChar
 			return false;
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsBlank(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsBlank(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isblank(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/* <U0009>;<U0020>; */
 			return InChar == U8TEXT('\u0009') || InChar == U8TEXT('\u0020');
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			/* <U0009>;<U0020>;<U1680>;<U180E>;<U2000>..<U2006>;<U2008>..<U200A>;<U205F>;<U3000>; */
 			return
@@ -608,7 +608,7 @@ struct TChar
 				(InChar == U16TEXT('\u205F') || InChar == U16TEXT('\u3000'));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			/* <U0009>;<U0020>;<U1680>;<U180E>;<U2000>..<U2006>;<U2008>..<U200A>;<U205F>;<U3000>; */
 			return
@@ -619,20 +619,20 @@ struct TChar
 				(InChar == U32TEXT('\u205F') || InChar == U32TEXT('\u3000'));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsPrint(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsPrint(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::isprint(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -643,7 +643,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::IsPrint() only supports basic latin block."));
 
@@ -652,7 +652,7 @@ struct TChar
 			return TChar<u8char>::IsPrint(static_cast<u8char>(InChar));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::IsPrint() only supports basic latin block."));
 
@@ -661,20 +661,20 @@ struct TChar
 			return TChar<u8char>::IsPrint(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr bool IsPunct(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr bool IsPunct(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
 			return NAMESPACE_STD::ispunct(InChar, Loc);
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -689,7 +689,7 @@ struct TChar
 			return false;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::IsPunct() only supports basic latin block."));
 
@@ -698,7 +698,7 @@ struct TChar
 			return TChar<u8char>::IsPunct(static_cast<u8char>(InChar));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::IsPunct() only supports basic latin block."));
 
@@ -707,20 +707,20 @@ struct TChar
 			return TChar<u8char>::IsPunct(static_cast<u8char>(InChar));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return false;
 	}
 
-	NODISCARD FORCEINLINE static constexpr CharType ToLower(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr FCharType ToLower(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
-			return static_cast<CharType>(NAMESPACE_STD::tolower(InChar, Loc));
+			return static_cast<FCharType>(NAMESPACE_STD::tolower(InChar, Loc));
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -737,7 +737,7 @@ struct TChar
 			return InChar;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::ToLower() only supports basic latin block."));
 
@@ -746,7 +746,7 @@ struct TChar
 			return static_cast<u16char>(TChar<u8char>::ToLower(static_cast<u8char>(InChar)));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::ToLower() only supports basic latin block."));
 
@@ -755,20 +755,20 @@ struct TChar
 			return static_cast<u16char>(TChar<u8char>::ToLower(static_cast<u8char>(InChar)));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return InChar;
 	}
 
-	NODISCARD FORCEINLINE static constexpr CharType ToUpper(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr FCharType ToUpper(FCharType InChar)
 	{
-		if constexpr (CSameAs<CharType, char> || CSameAs<CharType, wchar>)
+		if constexpr (CSameAs<FCharType, char> || CSameAs<FCharType, wchar>)
 		{
 			NAMESPACE_STD::locale Loc("");
-			return static_cast<CharType>(NAMESPACE_STD::toupper(InChar, Loc));
+			return static_cast<FCharType>(NAMESPACE_STD::toupper(InChar, Loc));
 		}
 
-		else if constexpr (CSameAs<CharType, u8char>)
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			/*
 			 * BASIC LATIN
@@ -785,7 +785,7 @@ struct TChar
 			return InChar;
 		}
 
-		else if constexpr (CSameAs<CharType, u16char>)
+		else if constexpr (CSameAs<FCharType, u16char>)
 		{
 			checkf(InChar <= U16TEXT('\u007F'), TEXT("TChar::ToUpper() only supports basic latin block."));
 
@@ -794,7 +794,7 @@ struct TChar
 			return static_cast<u16char>(TChar<u8char>::ToUpper(static_cast<u8char>(InChar)));
 		}
 
-		else if constexpr (CSameAs<CharType, u32char>)
+		else if constexpr (CSameAs<FCharType, u32char>)
 		{
 			checkf(InChar <= U32TEXT('\u007F'), TEXT("TChar::ToUpper() only supports basic latin block."));
 
@@ -803,12 +803,12 @@ struct TChar
 			return static_cast<u16char>(TChar<u8char>::ToUpper(static_cast<u8char>(InChar)));
 		}
 
-		else static_assert(sizeof(CharType) == -1, "Unsupported character type");
+		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
 
 		return InChar;
 	}
 
-	NODISCARD FORCEINLINE static constexpr unsigned ToDigit(CharType InChar)
+	NODISCARD FORCEINLINE static constexpr unsigned ToDigit(FCharType InChar)
 	{
 		static_assert(TChar::IsASCII());
 
@@ -834,12 +834,12 @@ struct TChar
 
 		static_assert(sizeof(DigitFromChar) == 256);
 
-		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return DigitFromChar[0];
+		if constexpr (sizeof(FCharType) > 1) if (InChar >> 8) return DigitFromChar[0];
 
 		return DigitFromChar[InChar];
 	}
 
-	NODISCARD FORCEINLINE static constexpr unsigned ToDigit(CharType InChar, bool bLowercase)
+	NODISCARD FORCEINLINE static constexpr unsigned ToDigit(FCharType InChar, bool bLowercase)
 	{
 		static_assert(TChar::IsASCII());
 
@@ -867,7 +867,7 @@ struct TChar
 
 			static_assert(sizeof(DigitFromChar) == 256);
 
-			if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return DigitFromChar[0];
+			if constexpr (sizeof(FCharType) > 1) if (InChar >> 8) return DigitFromChar[0];
 
 			return DigitFromChar[InChar];
 		}
@@ -894,25 +894,25 @@ struct TChar
 
 		static_assert(sizeof(DigitFromChar) == 256);
 
-		if constexpr (sizeof(CharType) > 1) if (InChar >> 8) return DigitFromChar[0];
+		if constexpr (sizeof(FCharType) > 1) if (InChar >> 8) return DigitFromChar[0];
 
 		return DigitFromChar[InChar];
 	}
 
-	NODISCARD FORCEINLINE static constexpr CharType FromDigit(unsigned InDigit)
+	NODISCARD FORCEINLINE static constexpr FCharType FromDigit(unsigned InDigit)
 	{
 		checkf(InDigit < 36, TEXT("Digit must be in the range [0, 35]."));
 
-		return LITERAL(CharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
+		return LITERAL(FCharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
 	}
 
-	NODISCARD FORCEINLINE static constexpr CharType FromDigit(unsigned InDigit, bool bLowercase)
+	NODISCARD FORCEINLINE static constexpr FCharType FromDigit(unsigned InDigit, bool bLowercase)
 	{
 		checkf(InDigit < 36, TEXT("Digit must be in the range [0, 35]."));
 
-		if (bLowercase) return LITERAL(CharType, "0123456789abcdefghijklmnopqrstuvwxyz")[InDigit];
+		if (bLowercase) return LITERAL(FCharType, "0123456789abcdefghijklmnopqrstuvwxyz")[InDigit];
 
-		return LITERAL(CharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
+		return LITERAL(FCharType, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")[InDigit];
 	}
 
 };

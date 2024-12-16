@@ -25,9 +25,9 @@ class TReverseIterator final
 {
 public:
 
-	using IteratorType = I;
+	using FIteratorType = I;
 
-	using ElementType = TIteratorElement<I>;
+	using FElementType = TIteratorElement<I>;
 
 	FORCEINLINE constexpr TReverseIterator()                                   = default;
 	FORCEINLINE constexpr TReverseIterator(const TReverseIterator&)            = default;
@@ -36,7 +36,7 @@ public:
 	FORCEINLINE constexpr TReverseIterator& operator=(TReverseIterator&&)      = default;
 	FORCEINLINE constexpr ~TReverseIterator()                                  = default;
 
-	FORCEINLINE constexpr explicit TReverseIterator(IteratorType InValue) : Current(InValue) { }
+	FORCEINLINE constexpr explicit TReverseIterator(FIteratorType InValue) : Current(InValue) { }
 
 	template <CBidirectionalIterator J> requires (!CSameAs<I, J> && CConstructibleFrom<I, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TReverseIterator(const TReverseIterator<J>& InValue) : Current(InValue.GetBase()) { }
@@ -50,9 +50,9 @@ public:
 	template <CBidirectionalIterator J> requires (CThreeWayComparable<I, J>)
 	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<I, J> operator<=>(const TReverseIterator& LHS, const TReverseIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*() const { IteratorType Temp = GetBase(); return *--Temp; }
+	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*() const { FIteratorType Temp = GetBase(); return *--Temp; }
 
-	NODISCARD FORCEINLINE constexpr auto operator->() const requires (requires(const I Iter) { { ToAddress(Iter) } -> CSameAs<TIteratorPointer<I>>; }) { IteratorType Temp = GetBase(); return ToAddress(--Temp); }
+	NODISCARD FORCEINLINE constexpr auto operator->() const requires (requires(const I Iter) { { ToAddress(Iter) } -> CSameAs<TIteratorPointer<I>>; }) { FIteratorType Temp = GetBase(); return ToAddress(--Temp); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator[](ptrdiff Index) const requires (CRandomAccessIterator<I>) { return GetBase()[-Index - 1]; }
 
@@ -72,12 +72,12 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TReverseIterator& LHS, const TReverseIterator& RHS) requires (CSizedSentinelFor<I, I>) { return RHS.GetBase() - LHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return          Current;  }
-	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return MoveTemp(Current); }
+	NODISCARD FORCEINLINE constexpr const FIteratorType& GetBase() const& { return          Current;  }
+	NODISCARD FORCEINLINE constexpr       FIteratorType  GetBase() &&     { return MoveTemp(Current); }
 
 private:
 
-	IteratorType Current;
+	FIteratorType Current;
 
 };
 

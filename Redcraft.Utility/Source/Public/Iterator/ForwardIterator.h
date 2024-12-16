@@ -24,7 +24,7 @@ struct IForwardIterator /* : IInputIterator<T>, IIncrementable, ISentinelFor<IFo
 {
 	// ~Begin CInputIterator.
 
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	// ~End CInputIterator.
 

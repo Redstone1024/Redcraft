@@ -35,7 +35,7 @@ struct IContiguousIterator /* : IRandomAccessIterator<T> */
 {
 	// ~Begin CRandomAccessIterator.
 
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	IContiguousIterator();
 	IContiguousIterator(const IContiguousIterator&);

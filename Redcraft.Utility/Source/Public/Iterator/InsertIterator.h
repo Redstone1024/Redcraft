@@ -140,7 +140,7 @@ NODISCARD FORCEINLINE constexpr auto MakeBackInserter(C& Container)
 
 /** Creates an iterator adapter inserted in the container. */
 template <typename C>
-NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::ConstIterator& InIter)
+NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::FConstIterator& InIter)
 {
 	return NAMESPACE_PRIVATE::TInsertIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); });
 }

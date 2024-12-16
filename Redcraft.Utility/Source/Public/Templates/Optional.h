@@ -45,9 +45,9 @@ class TOptional<T, false> final
 {
 public:
 
-	using ValueType = T;
+	using FValueType = T;
 
-	static_assert(!CReference<ValueType>);
+	static_assert(!CReference<FValueType>);
 
 	/** Constructs an object that does not contain a value. */
 	FORCEINLINE constexpr TOptional() : bIsValid(false) { }
@@ -67,7 +67,7 @@ public:
 	FORCEINLINE constexpr explicit TOptional(FInPlace, Ts&&... Args)
 		: bIsValid(true)
 	{
-		new (&Value) ValueType(Forward<Ts>(Args)...);
+		new (&Value) FValueType(Forward<Ts>(Args)...);
 	}
 
 	/** Constructs an object with initial content an object, direct-non-list-initialized from IL, Forward<Ts>(Args).... */
@@ -75,7 +75,7 @@ public:
 	FORCEINLINE constexpr explicit TOptional(FInPlace, initializer_list<W> IL, Ts&&... Args)
 		: bIsValid(true)
 	{
-		new (&Value) ValueType(IL, Forward<Ts>(Args)...);
+		new (&Value) FValueType(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Copies content of other into a new instance. */
@@ -85,7 +85,7 @@ public:
 	FORCEINLINE constexpr TOptional(const TOptional& InValue) requires (CCopyConstructible<T> && !CTriviallyCopyConstructible<T>)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new (&Value) ValueType(InValue.GetValue());
+		if (InValue.IsValid()) new (&Value) FValueType(InValue.GetValue());
 	}
 
 	/** Moves content of other into a new instance. */
@@ -95,7 +95,7 @@ public:
 	FORCEINLINE constexpr TOptional(TOptional&& InValue) requires (CMoveConstructible<T> && !CTriviallyMoveConstructible<T>)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new (&Value) ValueType(MoveTemp(InValue.GetValue()));
+		if (InValue.IsValid()) new (&Value) FValueType(MoveTemp(InValue.GetValue()));
 	}
 
 	/** Converting copy constructor. */
@@ -103,7 +103,7 @@ public:
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const U&, T>) TOptional(const TOptional<U>& InValue)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new (&Value) ValueType(InValue.GetValue());
+		if (InValue.IsValid()) new (&Value) FValueType(InValue.GetValue());
 	}
 
 	/** Converting move constructor. */
@@ -111,7 +111,7 @@ public:
 	FORCEINLINE constexpr explicit (!CConvertibleTo<U&&, T>) TOptional(TOptional<U>&& InValue)
 		: bIsValid(InValue.IsValid())
 	{
-		if (InValue.IsValid()) new (&Value) ValueType(MoveTemp(InValue.GetValue()));
+		if (InValue.IsValid()) new (&Value) FValueType(MoveTemp(InValue.GetValue()));
 	}
 
 	/** Destroys the contained object, if any, as if by a call to Reset(). */
@@ -141,7 +141,7 @@ public:
 		if (IsValid()) GetValue() = InValue.GetValue();
 		else
 		{
-			new (&Value) ValueType(InValue.GetValue());
+			new (&Value) FValueType(InValue.GetValue());
 			bIsValid = true;
 		}
 
@@ -166,7 +166,7 @@ public:
 		if (IsValid()) GetValue() = MoveTemp(InValue.GetValue());
 		else
 		{
-			new (&Value) ValueType(MoveTemp(InValue.GetValue()));
+			new (&Value) FValueType(MoveTemp(InValue.GetValue()));
 			bIsValid = true;
 		}
 
@@ -187,7 +187,7 @@ public:
 		if (IsValid()) GetValue() = InValue.GetValue();
 		else
 		{
-			new (&Value) ValueType(InValue.GetValue());
+			new (&Value) FValueType(InValue.GetValue());
 			bIsValid = true;
 		}
 
@@ -208,7 +208,7 @@ public:
 		if (IsValid()) GetValue() = MoveTemp(InValue.GetValue());
 		else
 		{
-			new (&Value) ValueType(MoveTemp(InValue.GetValue()));
+			new (&Value) FValueType(MoveTemp(InValue.GetValue()));
 			bIsValid = true;
 		}
 
@@ -222,7 +222,7 @@ public:
 		if (IsValid()) GetValue() = Forward<U>(InValue);
 		else
 		{
-			new (&Value) ValueType(Forward<U>(InValue));
+			new (&Value) FValueType(Forward<U>(InValue));
 			bIsValid = true;
 		}
 
@@ -278,7 +278,7 @@ public:
 	{
 		Reset();
 
-		T* Result = new (&Value) ValueType(Forward<Ts>(Args)...);
+		T* Result = new (&Value) FValueType(Forward<Ts>(Args)...);
 		bIsValid = true;
 
 		return *Result;
@@ -298,7 +298,7 @@ public:
 	{
 		Reset();
 
-		T* Result = new (&Value) ValueType(IL, Forward<Ts>(Args)...);
+		T* Result = new (&Value) FValueType(IL, Forward<Ts>(Args)...);
 		bIsValid = true;
 
 		return *Result;
@@ -335,7 +335,7 @@ public:
 		{
 			bIsValid = false;
 
-			reinterpret_cast<T*>(&Value)->~ValueType();
+			reinterpret_cast<T*>(&Value)->~FValueType();
 		}
 	}
 
@@ -380,9 +380,9 @@ class TOptional<T, true> final
 {
 public:
 
-	using ValueType = TRemoveReference<T>;
+	using FValueType = TRemoveReference<T>;
 
-	static_assert(!CReference<ValueType>);
+	static_assert(!CReference<FValueType>);
 
 	/** Constructs an object that does not contain a reference. */
 	FORCEINLINE constexpr TOptional() : Ptr(nullptr) { }
@@ -408,13 +408,13 @@ public:
 	{ }
 
 	/** Converting constructor. */
-	template <typename U> requires (!CConst<ValueType> && CConstructibleFrom<T, U&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<U, T>)
+	template <typename U> requires (!CConst<FValueType> && CConstructibleFrom<T, U&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<U, T>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<U&, T>) TOptional(TOptional<U, false>& InValue)
 		: Ptr(InValue.IsValid() ? AddressOf(static_cast<T>(InValue.GetValue())) : nullptr)
 	{ }
 
 	/** Converting constructor. */
-	template <typename U> requires (CConst<ValueType> && CConstructibleFrom<T, const U&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<U, T>)
+	template <typename U> requires (CConst<FValueType> && CConstructibleFrom<T, const U&> && NAMESPACE_PRIVATE::CTOptionalAllowUnwrappable<U, T>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const U&, T>) TOptional(const TOptional<U, false>& InValue)
 		: Ptr(InValue.IsValid() ? AddressOf(static_cast<T>(InValue.GetValue())) : nullptr)
 	{ }
@@ -492,7 +492,7 @@ public:
 
 private:
 
-	ValueType* Ptr;
+	FValueType* Ptr;
 
 };
 

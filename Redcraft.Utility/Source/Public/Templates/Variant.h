@@ -40,30 +40,30 @@ struct TVariantAlternativeImpl;
 template <size_t I, typename... Ts>
 struct TVariantAlternativeImpl<I, TVariant<Ts...>>
 {
-	using Type = Meta::TType<I, TTypeSequence<Ts...>>;
+	using FType = Meta::TType<I, TTypeSequence<Ts...>>;
 };
 
 template <typename T, typename TSequence>
 struct TVariantOverloadType
 {
-	using FrontType = Meta::TFront<TSequence>;
-	using NextSequence = Meta::TPop<TSequence>;
-	using NextUniqueSequence = typename TVariantOverloadType<T, NextSequence>::Type;
+	using FFrontType = Meta::TFront<TSequence>;
+	using FNextSequence = Meta::TPop<TSequence>;
+	using FNextUniqueSequence = typename TVariantOverloadType<T, FNextSequence>::FType;
 
 	// T_i x[] = { Forward<T>(t) };
-	static constexpr bool bConditional = requires { DeclVal<void(FrontType(&&)[1])>()({ DeclVal<T>() }); };
+	static constexpr bool bConditional = requires { DeclVal<void(FFrontType(&&)[1])>()({ DeclVal<T>() }); };
 
-	using Type = TConditional<bConditional, Meta::TPush<FrontType, NextUniqueSequence>, NextUniqueSequence>;
+	using FType = TConditional<bConditional, Meta::TPush<FFrontType, FNextUniqueSequence>, FNextUniqueSequence>;
 };
 
 template <typename T>
 struct TVariantOverloadType<T, TTypeSequence<>>
 {
-	using Type = TTypeSequence<>;
+	using FType = TTypeSequence<>;
 };
 
 template <typename T, typename... Ts>
-using TVariantSelectedType = Meta::TOverloadResolution<T, typename NAMESPACE_PRIVATE::TVariantOverloadType<T, TTypeSequence<Ts...>>::Type>;
+using TVariantSelectedType = Meta::TOverloadResolution<T, typename NAMESPACE_PRIVATE::TVariantOverloadType<T, TTypeSequence<Ts...>>::FType>;
 
 NAMESPACE_PRIVATE_END
 
@@ -77,7 +77,7 @@ template <typename T, CTVariant U>
 inline constexpr size_t TVariantIndex = NAMESPACE_PRIVATE::TVariantIndexImpl<T, TRemoveCV<U>>::Value;
 
 template <size_t I, CTVariant U>
-using TVariantAlternative = TCopyCV<U, typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, TRemoveCV<U>>::Type>;
+using TVariantAlternative = TCopyCV<U, typename NAMESPACE_PRIVATE::TVariantAlternativeImpl<I, TRemoveCV<U>>::FType>;
 
 /**
  * The class template TVariant represents a type-safe union. An instance of TVariant
@@ -113,7 +113,7 @@ public:
 	{
 		if (IsValid()) MoveConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 	}
-	
+
 	/**
 	 * Converting constructor. Constructs a variant holding the alternative type that would be selected
 	 * by overload resolution for the expression F(Forward<T>(InValue)) if there was an overload of
@@ -126,7 +126,7 @@ public:
 		&& !CSameAs<TVariant, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TVariant(T&& InValue) : TVariant(InPlaceType<NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>>, Forward<T>(InValue))
 	{ }
-	
+
 	/** Constructs a variant with the specified alternative T and initializes the contained value with the arguments Forward<Us>(Args).... */
 	template <typename T, typename... Us> requires (CConstructibleFrom<T, Us...>)
 	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, Us&&... Args)
@@ -139,10 +139,10 @@ public:
 	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, Us&&... Args)
 		: TypeIndex(I)
 	{
-		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		new (&Value) SelectedType(Forward<Us>(Args)...);
+		using FSelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		new (&Value) FSelectedType(Forward<Us>(Args)...);
 	}
-	
+
 	/** Constructs a variant with the specified alternative T and initializes the contained value with the arguments IL, Forward<Us>(Args).... */
 	template <typename T, typename U, typename... Us> requires (CConstructibleFrom<T, initializer_list<U>, Us...>)
 	FORCEINLINE constexpr explicit TVariant(TInPlaceType<T>, initializer_list<U> IL, Us&&... Args)
@@ -155,8 +155,8 @@ public:
 	FORCEINLINE constexpr explicit TVariant(TInPlaceIndex<I>, initializer_list<T> IL, Us&&... Args)
 		: TypeIndex(I)
 	{
-		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		new (&Value) SelectedType(IL, Forward<Us>(Args)...);
+		using FSelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		new (&Value) FSelectedType(IL, Forward<Us>(Args)...);
 	}
 
 	/** Destroys the contained object, if any, as if by a call to Reset(). */
@@ -185,7 +185,7 @@ public:
 
 		if (GetIndex() == InValue.GetIndex()) CopyAssignImpl[InValue.GetIndex()](&Value, &InValue.Value);
 		else
-		{	
+		{
 			Reset();
 			CopyConstructImpl[InValue.GetIndex()](&Value, &InValue.Value);
 			TypeIndex = static_cast<uint8>(InValue.GetIndex());
@@ -224,14 +224,14 @@ public:
 	template <typename T> requires (requires { typename NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>; })
 	FORCEINLINE constexpr TVariant& operator=(T&& InValue)
 	{
-		using SelectedType = NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>;
+		using FSelectedType = NAMESPACE_PRIVATE::TVariantSelectedType<T, Ts...>;
 
-		if (GetIndex() == TVariantIndex<SelectedType, TVariant<Ts...>>) GetValue<SelectedType>() = Forward<T>(InValue);
+		if (GetIndex() == TVariantIndex<FSelectedType, TVariant<Ts...>>) GetValue<FSelectedType>() = Forward<T>(InValue);
 		else
 		{
 			Reset();
-			new (&Value) SelectedType(Forward<T>(InValue));
-			TypeIndex = TVariantIndex<SelectedType, TVariant<Ts...>>;
+			new (&Value) FSelectedType(Forward<T>(InValue));
+			TypeIndex = TVariantIndex<FSelectedType, TVariant<Ts...>>;
 		}
 
 		return *this;
@@ -277,7 +277,7 @@ public:
 
 	/** @return true if instance does not contain a value, otherwise false. */
 	NODISCARD FORCEINLINE constexpr bool operator==(FInvalid) const& { return !IsValid(); }
-	
+
 	/** Equivalent to Emplace<I>(Forward<Us>(Args)...), where I is the zero-based index of T in Types.... */
 	template <typename T, typename... Us> requires (CConstructibleFrom<T, Us...>)
 	FORCEINLINE constexpr T& Emplace(Us&&... Args)
@@ -290,7 +290,7 @@ public:
 	 * Then direct-initializes the contained value as if constructing a value of type T with the arguments Forward<Us>(Args)....
 	 *
 	 * @param  Args - The arguments to be passed to the constructor of the contained object.
-	 * 
+	 *
 	 * @return A reference to the new contained object.
 	 */
 	template <size_t I, typename... Us> requires (I < sizeof...(Ts)
@@ -299,13 +299,13 @@ public:
 	{
 		Reset();
 
-		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		SelectedType* Result = new (&Value) SelectedType(Forward<Us>(Args)...);
+		using FSelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		FSelectedType* Result = new (&Value) FSelectedType(Forward<Us>(Args)...);
 		TypeIndex = I;
 
 		return *Result;
 	}
-	
+
 	/** Equivalent to Emplace<I>(IL, Forward<Us>(Args)...), where I is the zero-based index of T in Types.... */
 	template <typename T, typename U, typename... Us> requires (CConstructibleFrom<T, initializer_list<U>, Us...>)
 	FORCEINLINE constexpr T& Emplace(initializer_list<U> IL, Us&&... Args)
@@ -318,7 +318,7 @@ public:
 	 * Then direct-initializes the contained value as if constructing a value of type T with the arguments IL, Forward<Us>(Args)....
 	 *
 	 * @param  IL, Args - The arguments to be passed to the constructor of the contained object.
-	 * 
+	 *
 	 * @return A reference to the new contained object.
 	 */
 	template <size_t I, typename T, typename... Us> requires (I < sizeof...(Ts)
@@ -327,8 +327,8 @@ public:
 	{
 		Reset();
 
-		using SelectedType = TVariantAlternative<I, TVariant<Ts...>>;
-		SelectedType* Result = new (&Value) SelectedType(IL, Forward<Us>(Args)...);
+		using FSelectedType = TVariantAlternative<I, TVariant<Ts...>>;
+		FSelectedType* Result = new (&Value) FSelectedType(IL, Forward<Us>(Args)...);
 		TypeIndex = I;
 
 		return *Result;
@@ -423,7 +423,7 @@ public:
 	}
 
 private:
-	
+
 	static constexpr const type_info* TypeInfos[] = { &typeid(Ts)... };
 
 	using FCopyConstructImpl = void(*)(void*, const void*);
@@ -448,7 +448,7 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename F, typename... VariantTypes>
 struct TVariantVisitImpl
 {
-	struct GetTotalNum
+	struct FGetTotalNum
 	{
 		FORCEINLINE static constexpr size_t Do()
 		{
@@ -464,10 +464,10 @@ struct TVariantVisitImpl
 			}
 
 			return Result;
-		};
+		}
 	};
 
-	struct EncodeIndices
+	struct FEncodeIndices
 	{
 		FORCEINLINE static constexpr size_t Do(initializer_list<size_t> Indices)
 		{
@@ -482,10 +482,10 @@ struct TVariantVisitImpl
 			}
 
 			return Result;
-		};
+		}
 	};
 
-	struct DecodeExtent
+	struct FDecodeExtent
 	{
 		FORCEINLINE static constexpr size_t Do(size_t EncodedIndex, size_t Extent)
 		{
@@ -497,76 +497,76 @@ struct TVariantVisitImpl
 			}
 
 			return EncodedIndex % VariantNums[Extent];
-		};
+		}
 	};
 
 	template <size_t EncodedIndex, typename>
-	struct InvokeEncoded;
+	struct FInvokeEncoded;
 
 	template <size_t EncodedIndex, size_t... ExtentIndices>
-	struct InvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
+	struct FInvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
 	{
 		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
-			return Invoke(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
+			return Invoke(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<FDecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
 		}
 
 		template <typename Ret>
-		struct Result
+		struct FResult
 		{
 			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
-				return InvokeResult<Ret>(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<DecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
+				return InvokeResult<Ret>(Forward<F>(Func), Forward<VariantTypes>(Variants).template GetValue<FDecodeExtent::Do(EncodedIndex, ExtentIndices)>()...);
 			}
 		};
 	};
 
 	template <typename>
-	struct InvokeVariant;
+	struct FInvokeVariant;
 
 	template <size_t... EncodedIndices>
-	struct InvokeVariant<TIndexSequence<EncodedIndices...>>
+	struct FInvokeVariant<TIndexSequence<EncodedIndices...>>
 	{
 		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
-			using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
+			using FExtentIndices = TIndexSequenceFor<VariantTypes...>;
 
-			using ResultType = TCommonType<decltype(InvokeEncoded<EncodedIndices, ExtentIndices>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...))...>;
-			
-			using InvokeImplType = ResultType(*)(F&&, VariantTypes&&...);
+			using FResultType = TCommonType<decltype(FInvokeEncoded<EncodedIndices, FExtentIndices>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...))...>;
 
-			constexpr InvokeImplType InvokeImpl[] = { InvokeEncoded<EncodedIndices, ExtentIndices>::template Result<ResultType>::Do... };
+			using FInvokeImplType = FResultType(*)(F&&, VariantTypes&&...);
 
-			return InvokeImpl[EncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+			constexpr FInvokeImplType InvokeImpl[] = { FInvokeEncoded<EncodedIndices, FExtentIndices>::template FResult<FResultType>::Do... };
+
+			return InvokeImpl[FEncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 		}
 
 		template <typename Ret>
-		struct Result
+		struct FResult
 		{
 			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
-				using ExtentIndices = TIndexSequenceFor<VariantTypes...>;
+				using FExtentIndices = TIndexSequenceFor<VariantTypes...>;
 
-				using InvokeImplType = Ret(*)(F&&, VariantTypes&&...);
+				using FInvokeImplType = Ret(*)(F&&, VariantTypes&&...);
 
-				constexpr InvokeImplType InvokeImpl[] = { InvokeEncoded<EncodedIndices, ExtentIndices>::template Result<Ret>::Do... };
+				constexpr FInvokeImplType InvokeImpl[] = { FInvokeEncoded<EncodedIndices, FExtentIndices>::template FResult<Ret>::Do... };
 
-				return InvokeImpl[EncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+				return InvokeImpl[FEncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 			}
 		};
 	};
 
 	FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 	{
-		return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+		return FInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 	}
 
 	template <typename Ret>
-	struct Result
+	struct FResult
 	{
 		FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 		{
-			return InvokeVariant<TMakeIndexSequence<GetTotalNum::Do()>>::template Result<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+			return FInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::template FResult<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 		}
 	};
 };
@@ -588,7 +588,7 @@ template <typename Ret, typename F, typename FirstVariantType, typename... Varia
 constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
 {
 	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template Result<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
+	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template FResult<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
 }
 
 NAMESPACE_MODULE_END(Utility)

@@ -262,29 +262,29 @@ public:
 	{
 		Callable = InCallable;
 
-		using DecayedType = TDecay<T>;
+		using FDecayedType = TDecay<T>;
 
-		static constexpr const FRTTI SelectedRTTI(InPlaceType<DecayedType>);
+		static constexpr const FRTTI SelectedRTTI(InPlaceType<FDecayedType>);
 		RTTI = reinterpret_cast<uintptr>(&SelectedRTTI);
 
-		if constexpr (CEmpty<DecayedType> && CTrivial<DecayedType>) return; // ERepresentation::Empty
+		if constexpr (CEmpty<FDecayedType> && CTrivial<FDecayedType>) return; // ERepresentation::Empty
 
-		constexpr bool bIsTriviallyStorable = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage) && CTriviallyCopyable<DecayedType>;
-		constexpr bool bIsSmallStorable     = sizeof(DecayedType) <= sizeof(InternalStorage) && alignof(DecayedType) <= alignof(TFunctionStorage);
+		constexpr bool bIsTriviallyStorable = sizeof(FDecayedType) <= sizeof(InternalStorage) && alignof(FDecayedType) <= alignof(TFunctionStorage) && CTriviallyCopyable<FDecayedType>;
+		constexpr bool bIsSmallStorable     = sizeof(FDecayedType) <= sizeof(InternalStorage) && alignof(FDecayedType) <= alignof(TFunctionStorage);
 
 		if constexpr (bIsTriviallyStorable)
 		{
-			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
+			new (&InternalStorage) FDecayedType(Forward<Ts>(Args)...);
 			RTTI |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsSmallStorable)
 		{
-			new (&InternalStorage) DecayedType(Forward<Ts>(Args)...);
+			new (&InternalStorage) FDecayedType(Forward<Ts>(Args)...);
 			RTTI |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
-			ExternalStorage = new DecayedType(Forward<Ts>(Args)...);
+			ExternalStorage = new FDecayedType(Forward<Ts>(Args)...);
 			RTTI |= static_cast<uintptr>(ERepresentation::Big);
 		}
 
@@ -446,12 +446,12 @@ template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature
 template <typename Ret, typename... Ts, typename F> struct TIsInvocableSignature<Ret(Ts...) const&&, F> : TBoolConstant<CInvocableResult<Ret, const F , Ts...>> { };
 
 template <typename F>                   struct TFunctionInfo;
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...)        > { using Fn = Ret(Ts...); using CVRef =       int;   };
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &      > { using Fn = Ret(Ts...); using CVRef =       int&;  };
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &&     > { using Fn = Ret(Ts...); using CVRef =       int&&; };
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const  > { using Fn = Ret(Ts...); using CVRef = const int;   };
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const& > { using Fn = Ret(Ts...); using CVRef = const int&;  };
-template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const&&> { using Fn = Ret(Ts...); using CVRef = const int&&; };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...)        > { using FFn = Ret(Ts...); using FCVRef =       int;   };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &      > { using FFn = Ret(Ts...); using FCVRef =       int&;  };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) &&     > { using FFn = Ret(Ts...); using FCVRef =       int&&; };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const  > { using FFn = Ret(Ts...); using FCVRef = const int;   };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const& > { using FFn = Ret(Ts...); using FCVRef = const int&;  };
+template <typename Ret, typename... Ts> struct TFunctionInfo<Ret(Ts...) const&&> { using FFn = Ret(Ts...); using FCVRef = const int&&; };
 
 template <typename F, typename CVRef, bool bIsRef, bool bIsUnique = false> class TFunctionImpl;
 
@@ -460,8 +460,8 @@ class TFunctionImpl<Ret(Ts...), CVRef, bIsRef, bIsUnique>
 {
 public:
 
-	using ResultType = Ret;
-	using ArgumentType = TTypeSequence<Ts...>;
+	using FResultType = Ret;
+	using FArgumentType = TTypeSequence<Ts...>;
 
 	FORCEINLINE constexpr TFunctionImpl()                                = default;
 	FORCEINLINE constexpr TFunctionImpl(const TFunctionImpl&)            = default;
@@ -471,12 +471,12 @@ public:
 	FORCEINLINE constexpr ~TFunctionImpl()                               = default;
 
 	/** Invokes the stored callable function target with the parameters args. */
-	FORCEINLINE ResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
-	FORCEINLINE ResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
-	FORCEINLINE ResultType operator()(Ts... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Ts>(Args)...); }
-	FORCEINLINE ResultType operator()(Ts... Args) const   requires (CSameAs<CVRef, const int  >) { return CallImpl(Forward<Ts>(Args)...); }
-	FORCEINLINE ResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
-	FORCEINLINE ResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args)         requires (CSameAs<CVRef,       int  >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args) &       requires (CSameAs<CVRef,       int& >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args) &&      requires (CSameAs<CVRef,       int&&>) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args) const   requires (CSameAs<CVRef, const int  >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args) const&  requires (CSameAs<CVRef, const int& >) { return CallImpl(Forward<Ts>(Args)...); }
+	FORCEINLINE FResultType operator()(Ts... Args) const&& requires (CSameAs<CVRef, const int&&>) { return CallImpl(Forward<Ts>(Args)...); }
 
 	/** @return false if instance stores a callable function target, true otherwise. */
 	NODISCARD FORCEINLINE constexpr bool operator==(nullptr_t) const& requires (!bIsRef) { return !IsValid(); }
@@ -487,14 +487,14 @@ public:
 
 private:
 
-	using CallableType = ResultType(*)(uintptr, Ts&&...);
+	using FCallableType = FResultType(*)(uintptr, Ts&&...);
 
 	TFunctionStorage<bIsRef, bIsUnique> Storage;
 
-	FORCEINLINE ResultType CallImpl(Ts&&... Args) const
+	FORCEINLINE FResultType CallImpl(Ts&&... Args) const
 	{
 		checkf(Storage.IsValid(), TEXT("Attempting to call an unbound TFunction!"));
-		CallableType Callable = reinterpret_cast<CallableType>(Storage.GetCallable());
+		FCallableType Callable = reinterpret_cast<FCallableType>(Storage.GetCallable());
 		return Callable(Storage.GetValuePtr(), Forward<Ts>(Args)...);
 	}
 
@@ -510,26 +510,26 @@ protected:
 	template <typename T, typename... Us>
 	FORCEINLINE constexpr TDecay<T>& Emplace(Us&&... Args)
 	{
-		using DecayedType = TDecay<T>;
+		using FDecayedType = TDecay<T>;
 
 		// This add a l-value reference to a non-reference type, while preserving the r-value reference.
-		using ObjectType = TCopyCVRef<CVRef, DecayedType>;
-		using InvokeType = TConditional<CReference<ObjectType>, ObjectType, ObjectType&>;
+		using FObjectType = TCopyCVRef<CVRef, FDecayedType>;
+		using FInvokeType = TConditional<CReference<FObjectType>, FObjectType, FObjectType&>;
 
-		CallableType Callable = [](uintptr ObjectPtr, Ts&&... Args) -> ResultType
+		FCallableType Callable = [](uintptr ObjectPtr, Ts&&... Args) -> FResultType
 		{
-			return InvokeResult<ResultType>(
-				static_cast<InvokeType>(*reinterpret_cast<DecayedType*>(ObjectPtr)),
+			return InvokeResult<FResultType>(
+				static_cast<FInvokeType>(*reinterpret_cast<FDecayedType*>(ObjectPtr)),
 				Forward<Ts>(Args)...
 			);
 		};
 
-		Storage.template Emplace<DecayedType>(
+		Storage.template Emplace<FDecayedType>(
 			reinterpret_cast<uintptr>(Callable),
 			Forward<Us>(Args)...
 		);
 
-		return *reinterpret_cast<DecayedType*>(Storage.GetValuePtr());
+		return *reinterpret_cast<FDecayedType*>(Storage.GetValuePtr());
 	}
 
 	friend FORCEINLINE constexpr void Swap(TFunctionImpl& A, TFunctionImpl& B) requires (!bIsRef) { Swap(A.Storage, B.Storage); }
@@ -552,15 +552,15 @@ NAMESPACE_PRIVATE_END
 template <CFunction F>
 class TFunctionRef final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		true>
 {
 private:
 
-	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+	using FImpl = NAMESPACE_PRIVATE::TFunctionImpl<
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		true>;
 
 public:
@@ -585,7 +585,7 @@ public:
 	FORCEINLINE constexpr TFunctionRef(T&& InValue)
 	{
 		checkf(NAMESPACE_PRIVATE::FunctionIsBound(InValue), TEXT("Cannot bind a null/unbound callable to a TFunctionRef"));
-		Impl::template Emplace<T>(Forward<T>(InValue));
+		FImpl::template Emplace<T>(Forward<T>(InValue));
 	}
 
 	template <typename T>
@@ -602,21 +602,21 @@ public:
 template <CFunction F>
 class TFunction final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		false, false>
 {
 private:
 
-	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+	using FImpl = NAMESPACE_PRIVATE::TFunctionImpl<
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		false, false>;
 
 public:
 
 	/**  Default constructor. */
-	FORCEINLINE constexpr TFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
+	FORCEINLINE constexpr TFunction(nullptr_t = nullptr) { FImpl::Invalidate(); }
 
 	FORCEINLINE TFunction(const TFunction&)            = default;
 	FORCEINLINE TFunction(TFunction&&)                 = default;
@@ -634,8 +634,8 @@ public:
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TFunction(T&& InValue)
 	{
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
-		else Impl::template Emplace<T>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) FImpl::Invalidate();
+		else FImpl::template Emplace<T>(Forward<T>(InValue));
 	}
 
 	/**
@@ -647,7 +647,7 @@ public:
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE explicit TFunction(TInPlaceType<T>, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(Forward<Ts>(Args)...);
+		FImpl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
 
 	/**
@@ -659,7 +659,7 @@ public:
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE explicit TFunction(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
+		FImpl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
@@ -692,8 +692,8 @@ public:
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
-		Impl::Destroy();
-		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
+		FImpl::Destroy();
+		return FImpl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
 
 	/**
@@ -710,15 +710,15 @@ public:
 		&& CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(initializer_list<U> IL, Ts&&... Args)
 	{
-		Impl::Destroy();
-		return Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
+		FImpl::Destroy();
+		return FImpl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TFunction, restoring it to the default empty state. */
-	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
+	FORCEINLINE constexpr void Reset() { FImpl::Destroy(); FImpl::Invalidate(); }
 
 	/** Overloads the Swap algorithm for TFunction. */
-	friend FORCEINLINE constexpr void Swap(TFunction& A, TFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
+	friend FORCEINLINE constexpr void Swap(TFunction& A, TFunction& B) { Swap(static_cast<FImpl&>(A), static_cast<FImpl&>(B)); }
 
 };
 
@@ -731,21 +731,21 @@ public:
 template <CFunction F>
 class TUniqueFunction final
 	: public NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		false, true>
 {
 private:
 
-	using Impl = NAMESPACE_PRIVATE::TFunctionImpl<
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::Fn,
-		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::CVRef,
+	using FImpl = NAMESPACE_PRIVATE::TFunctionImpl<
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FFn,
+		typename NAMESPACE_PRIVATE::TFunctionInfo<F>::FCVRef,
 		false, true>;
 
 public:
 
 	/**  Default constructor. */
-	FORCEINLINE constexpr TUniqueFunction(nullptr_t = nullptr) { Impl::Invalidate(); }
+	FORCEINLINE constexpr TUniqueFunction(nullptr_t = nullptr) { FImpl::Invalidate(); }
 
 	FORCEINLINE TUniqueFunction(const TUniqueFunction&)            = delete;
 	FORCEINLINE TUniqueFunction(TUniqueFunction&&)                 = default;
@@ -788,8 +788,8 @@ public:
 		&& NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value)
 	FORCEINLINE TUniqueFunction(T&& InValue)
 	{
-		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) Impl::Invalidate();
-		else Impl::template Emplace<T>(Forward<T>(InValue));
+		if (!NAMESPACE_PRIVATE::FunctionIsBound(InValue)) FImpl::Invalidate();
+		else FImpl::template Emplace<T>(Forward<T>(InValue));
 	}
 
 	/**
@@ -800,7 +800,7 @@ public:
 		&& CConstructibleFrom<TDecay<T>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(Forward<Ts>(Args)...);
+		FImpl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
 
 	/**
@@ -811,11 +811,11 @@ public:
 		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE explicit TUniqueFunction(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
 	{
-		Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
+		FImpl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */
-	FORCEINLINE constexpr TUniqueFunction& operator=(nullptr_t) { Impl::Destroy(); Impl::Invalidate(); return *this; }
+	FORCEINLINE constexpr TUniqueFunction& operator=(nullptr_t) { FImpl::Destroy(); FImpl::Invalidate(); return *this; }
 
 	template <typename T> requires (NAMESPACE_PRIVATE::TIsInvocableSignature<F, TDecay<T>>::Value
 		&& !CTFunctionRef<TDecay<T>> && !CTFunction<TDecay<T>> && !CTUniqueFunction<TDecay<T>>
@@ -841,9 +841,9 @@ public:
 		&& CConstructibleFrom<TDecay<T>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(Ts&&... Args)
 	{
-		Impl::Destroy();
-		using DecayedType = TDecay<T>;
-		return Impl::template Emplace<T>(Forward<Ts>(Args)...);
+		FImpl::Destroy();
+
+		return FImpl::template Emplace<T>(Forward<Ts>(Args)...);
 	}
 
 	/**
@@ -859,16 +859,16 @@ public:
 		&& CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts...> && CMoveConstructible<TDecay<T>> && CDestructible<TDecay<T>>)
 	FORCEINLINE TDecay<T>& Emplace(initializer_list<U> IL, Ts&&... Args)
 	{
-		Impl::Destroy();
-		using DecayedType = TDecay<T>;
-		return Impl::template Emplace<T>(IL, Forward<Ts>(Args)...);
+		FImpl::Destroy();
+
+		return FImpl::template Emplace<T>(IL, Forward<Ts>(Args)...);
 	}
 
 	/** Removes any bound callable from the TUniqueFunction, restoring it to the default empty state. */
-	FORCEINLINE constexpr void Reset() { Impl::Destroy(); Impl::Invalidate(); }
+	FORCEINLINE constexpr void Reset() { FImpl::Destroy(); FImpl::Invalidate(); }
 
 	/** Overloads the Swap algorithm for TUniqueFunction. */
-	friend FORCEINLINE constexpr void Swap(TUniqueFunction& A, TUniqueFunction& B) { Swap(static_cast<Impl&>(A), static_cast<Impl&>(B)); }
+	friend FORCEINLINE constexpr void Swap(TUniqueFunction& A, TUniqueFunction& B) { Swap(static_cast<FImpl&>(A), static_cast<FImpl&>(B)); }
 
 };
 

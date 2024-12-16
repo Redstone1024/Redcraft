@@ -100,7 +100,7 @@ class TRangeView : public IBasicViewInterface<TRangeView<I, S>>
 {
 public:
 
-	using ElementType = TIteratorElementType<I>;
+	using FElementType = TIteratorElementType<I>;
 
 	FORCEINLINE constexpr TRangeView() requires (CDefaultConstructible<I>) = default;
 

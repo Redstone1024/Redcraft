@@ -58,18 +58,18 @@ class alignas(Memory::ConstructiveInterference) FSharedController : private FSin
 {
 private:
 
-	using RefCounter = TAtomic<size_t>;
+	using FRefCounter = TAtomic<size_t>;
 
 	// Ensure that counters are lock-free for performance.
-	static_assert(RefCounter::bIsAlwaysLockFree);
+	static_assert(FRefCounter::bIsAlwaysLockFree);
 
 	// When this count is zero the object is destroyed.
 	// This count is the number of TSharedRef and TSharedPtr.
-	RefCounter SharedReferenceCount;
+	FRefCounter SharedReferenceCount;
 
 	// When this count is zero the controller is destroyed.
 	// If SharedCounter is not zero this count is one more than the number of TWeakPtr.
-	RefCounter WeakReferenceCount;
+	FRefCounter WeakReferenceCount;
 
 public:
 
@@ -86,7 +86,7 @@ public:
 	virtual void DestroyThis() { delete this; }
 
 	// Get shared reference count, no definite operation order.
-	FORCEINLINE RefCounter::ValueType GetSharedReferenceCount()
+	FORCEINLINE FRefCounter::FValueType GetSharedReferenceCount()
 	{
 		// Get the shared reference count as EMemoryOrder::Relaxed,
 		// since this count is for reference only and has no guarantees,
@@ -109,7 +109,7 @@ public:
 	// if the shared reference count is zero return false.
 	bool AddSharedReferenceIfUnexpired()
 	{
-		RefCounter::ValueType OldSharedReferenceCount = GetSharedReferenceCount();
+		FRefCounter::FValueType OldSharedReferenceCount = GetSharedReferenceCount();
 
 		// We need to make sure we don't increase the reference count from zero to one.
 		while (true)
@@ -131,7 +131,7 @@ public:
 		// where EMemoryOrder::Release ensures that the side effects of all operations
 		// on the shared reference count of all threads are visible to this thread,
 		// preventing the shared reference count from actually going to zero.
-		RefCounter::ValueType OldSharedReferenceCount = SharedReferenceCount.FetchSub(1, EMemoryOrder::Release);
+		FRefCounter::FValueType OldSharedReferenceCount = SharedReferenceCount.FetchSub(1, EMemoryOrder::Release);
 
 		// Make sure the shared reference count is not zero before.
 		check(OldSharedReferenceCount != 0);
@@ -166,7 +166,7 @@ public:
 	{
 		// The use of EMemoryOrder is the same as in ReleaseSharedReference().
 
-		RefCounter::ValueType OldWeakReferenceCount = WeakReferenceCount.FetchSub(1, EMemoryOrder::Release);
+		FRefCounter::FValueType OldWeakReferenceCount = WeakReferenceCount.FetchSub(1, EMemoryOrder::Release);
 
 		check(OldWeakReferenceCount != 0);
 
@@ -407,12 +407,12 @@ struct FSharedHelper
 		if constexpr (CTWeakPtr<T> && CTWeakPtr<U>)
 		{
 			if (&InValue == &This) UNLIKELY return This;
-			
+
 			if (This.Controller != nullptr)
 			{
 				This.Controller->ReleaseWeakReference();
 			}
-			
+
 			This.Pointer    = Exchange(InValue.Pointer,    nullptr);
 			This.Controller = Exchange(InValue.Controller, nullptr);
 		}
@@ -522,7 +522,7 @@ protected:
 
 private:
 
-	using SharedFromThisType = TSharedFromThis;
+	using FSharedFromThisType = TSharedFromThis;
 
 	// Here it is updated by the private constructor of TSharedRef or TSharedPtr.
 	mutable TWeakPtr<T> WeakThis;
@@ -539,12 +539,12 @@ class TSharedRef final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
-	using WeakType    = TWeakPtr<T>;
+	using FElementType = T;
+	using FWeakType    = TWeakPtr<T>;
 
 	/** TSharedRef cannot be initialized by nullptr. */
 	TSharedRef() = delete;
@@ -580,7 +580,7 @@ public:
 
 		Controller->AddSharedReference();
 	}
-	
+
 	/**
 	 * Aliasing constructor used to create a shared reference which shares its reference count with
 	 * another shared object, but pointing to a different object, typically a subobject.
@@ -610,18 +610,18 @@ public:
 	FORCEINLINE ~TSharedRef() { Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
 	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
@@ -732,15 +732,15 @@ private:
 	{
 		check(!((Pointer == nullptr) ^ (Controller == nullptr)));
 
-		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::SharedFromThisType; })
+		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::FSharedFromThisType; })
 		{
-			using SharedFromThisType = T::SharedFromThisType;
+			using FSharedFromThisType = typename T::FSharedFromThisType;
 
-			if constexpr (CDerivedFrom<T, SharedFromThisType>)
+			if constexpr (CDerivedFrom<T, FSharedFromThisType>)
 			{
 				if (Pointer != nullptr)
 				{
-					const SharedFromThisType& SharedFromThis = *Pointer;
+					const FSharedFromThisType& SharedFromThis = *Pointer;
 					checkf(!SharedFromThis.DoesSharedInstanceExist(), TEXT("This object is incorrectly managed by multiple TSharedRef or TSharedPtr."));
 					SharedFromThis.WeakThis = ConstCast<TRemoveCV<T>>(*this);
 				}
@@ -762,12 +762,12 @@ class TSharedRef<T[]> final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
-	using WeakType    = TWeakPtr<T>;
+	using FElementType = T;
+	using FWeakType    = TWeakPtr<T>;
 
 	/** TSharedRef cannot be initialized by nullptr. */
 	TSharedRef() = delete;
@@ -835,18 +835,18 @@ public:
 	FORCEINLINE ~TSharedRef() { Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedRef& operator=(const TSharedRef<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedRef& operator=(TSharedRef<U>&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Compares the pointer values of two TSharedRef. */
 	template <typename U> requires (CEqualityComparable<T*, TRemoveExtent<U>*>)
@@ -972,13 +972,13 @@ class TSharedPtr final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
-	using WeakType    = TWeakPtr<T>;
-	
+	using FElementType = T;
+	using FWeakType    = TWeakPtr<T>;
+
 	/** Constructs an empty shared pointer. */
 	FORCEINLINE constexpr TSharedPtr() : Pointer(nullptr), Controller(nullptr) { }
 
@@ -1073,22 +1073,22 @@ public:
 	FORCEINLINE ~TSharedPtr() { if (Controller != nullptr) Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<U*, T*> && !CArray<U> && (CDestructible<E> || CLValueReference<E>))
@@ -1200,14 +1200,14 @@ private:
 
 	T* Pointer;
 	NAMESPACE_PRIVATE::FSharedController* Controller;
-	
+
 	FORCEINLINE TSharedPtr(const TWeakPtr<T>& InValue)
 	{
 		const bool bIsUnexpired = InValue.Controller != nullptr && InValue.Controller->AddSharedReferenceIfUnexpired();
 
 		Pointer    = bIsUnexpired ? InValue.Pointer    : nullptr;
 		Controller = bIsUnexpired ? InValue.Controller : nullptr;
-	
+
 	}
 
 	FORCEINLINE TSharedPtr(T* InPtr, NAMESPACE_PRIVATE::FSharedController* InController)
@@ -1215,15 +1215,15 @@ private:
 	{
 		check(!((Pointer == nullptr) ^ (Controller == nullptr)));
 
-		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::SharedFromThisType; })
+		if constexpr (CClass<T> && !CVolatile<T> && requires { typename T::FSharedFromThisType; })
 		{
-			using SharedFromThisType = T::SharedFromThisType;
+			using FSharedFromThisType = typename T::FSharedFromThisType;
 
-			if constexpr (CDerivedFrom<T, SharedFromThisType>)
+			if constexpr (CDerivedFrom<T, FSharedFromThisType>)
 			{
 				if (Pointer != nullptr)
 				{
-					const SharedFromThisType& SharedFromThis = *Pointer;
+					const FSharedFromThisType& SharedFromThis = *Pointer;
 					checkf(!SharedFromThis.DoesSharedInstanceExist(), TEXT("This object is incorrectly managed by multiple TSharedRef or TSharedPtr."));
 					SharedFromThis.WeakThis = ConstCast<TRemoveCV<T>>(*this);
 				}
@@ -1245,12 +1245,12 @@ class TSharedPtr<T[]> final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
-	using WeakType    = TWeakPtr<T>;
+	using FElementType = T;
+	using FWeakType    = TWeakPtr<T>;
 
 	/** Constructs an empty shared pointer. */
 	FORCEINLINE constexpr TSharedPtr() : Pointer(nullptr), Controller(nullptr) { }
@@ -1348,22 +1348,22 @@ public:
 	FORCEINLINE ~TSharedPtr() { if (Controller != nullptr) Controller->ReleaseSharedReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedPtr<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopySharedReference(*this, InValue); }
+	FORCEINLINE TSharedPtr& operator=(const TSharedRef<U>& InValue) { return FHelper::CopySharedReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return Helper::MoveSharedReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TSharedPtr& operator=(TSharedPtr<U>&& InValue) { return FHelper::MoveSharedReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U, typename E> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U> && (CDestructible<E> || CLValueReference<E>))
@@ -1482,7 +1482,7 @@ private:
 
 		Pointer    = bIsUnexpired ? InValue.Pointer    : nullptr;
 		Controller = bIsUnexpired ? InValue.Controller : nullptr;
-	
+
 	}
 
 	FORCEINLINE TSharedPtr(T* InPtr, NAMESPACE_PRIVATE::FSharedController* InController)
@@ -1505,11 +1505,11 @@ class TWeakPtr final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
+	using FElementType = T;
 
 	/** Constructs an empty TWeakPtr */
 	FORCEINLINE constexpr TWeakPtr() : Pointer(nullptr), Controller(nullptr) { }
@@ -1542,7 +1542,7 @@ public:
 	/** Move constructors. Moves a TWeakPtr instance from 'InValue' into this. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(TWeakPtr<U>&& InValue) : Pointer(Exchange(InValue.Pointer, nullptr)), Controller(Exchange(InValue.Controller, nullptr)) { }
-	
+
 	/** Constructs a weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
 	FORCEINLINE constexpr TWeakPtr(const TSharedRef<U>& InValue) : Pointer(InValue.Pointer), Controller(InValue.Controller)
@@ -1564,26 +1564,26 @@ public:
 	FORCEINLINE ~TWeakPtr() { if (Controller != nullptr) Controller->ReleaseWeakReference(); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return FHelper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed object with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return FHelper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Assignment operator sets this weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Assignment operator sets this weak pointer from a shared pointer. */
 	template <typename U> requires (CConvertibleTo<U*, T*> && !CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Effectively the same as calling Reset(). */
 	FORCEINLINE TWeakPtr& operator=(nullptr_t) { Reset(); return *this; }
@@ -1639,11 +1639,11 @@ class TWeakPtr<T[]> final
 {
 private:
 
-	using Helper = NAMESPACE_PRIVATE::FSharedHelper;
+	using FHelper = NAMESPACE_PRIVATE::FSharedHelper;
 
 public:
 
-	using ElementType = T;
+	using FElementType = T;
 
 	/** Constructs an empty TWeakPtr */
 	FORCEINLINE constexpr TWeakPtr() : Pointer(nullptr), Controller(nullptr) { }
@@ -1698,26 +1698,26 @@ public:
 	FORCEINLINE ~TWeakPtr() { if (Controller != nullptr) Controller->ReleaseWeakReference(); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TWeakPtr<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr&& InValue) { return FHelper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Replaces the managed array with the one managed by 'InValue'. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return Helper::MoveWeakReference(*this, MoveTemp(InValue)); }
+	FORCEINLINE TWeakPtr& operator=(TWeakPtr<U>&& InValue) { return FHelper::MoveWeakReference(*this, MoveTemp(InValue)); }
 
 	/** Assignment operator sets this weak pointer from a shared reference. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TSharedRef<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Assignment operator sets this weak pointer from a shared pointer. */
 	template <typename U> requires (CConvertibleTo<TRemoveExtent<U>(*)[], T(*)[]> && CArray<U>)
-	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return Helper::CopyWeakReference(*this, InValue); }
+	FORCEINLINE TWeakPtr& operator=(const TSharedPtr<U>& InValue) { return FHelper::CopyWeakReference(*this, InValue); }
 
 	/** Effectively the same as calling Reset(). */
 	FORCEINLINE TWeakPtr& operator=(nullptr_t) { Reset(); return *this; }

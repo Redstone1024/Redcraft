@@ -33,7 +33,7 @@ struct IBidirectionalIterator /* : IForwardIterator<T> */
 {
 	// ~Begin CForwardIterator.
 
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	IBidirectionalIterator();
 	IBidirectionalIterator(const IBidirectionalIterator&);

@@ -264,6 +264,7 @@ struct TStringObjectFormatter
 {
 	static bool Do(auto& Result, auto& Object, auto Param)
 	{
+		// ReSharper disable once CppInconsistentNaming
 		using U = TRemoveCVRef<decltype(Object)>;
 
 		if constexpr (!CConst<TRemoveReference<decltype(Object)>>)
@@ -1065,9 +1066,9 @@ struct TStringObjectFormatter
 					}
 				}
 
-				using UnsignedU = TMakeUnsigned<U>;
+				using FUnsignedU = TMakeUnsigned<U>;
 
-				UnsignedU Unsigned = static_cast<UnsignedU>(Object);
+				FUnsignedU Unsigned = static_cast<FUnsignedU>(Object);
 
 				bool bNegative = false;
 
@@ -1077,11 +1078,11 @@ struct TStringObjectFormatter
 					{
 						bNegative = true;
 
-						Unsigned = static_cast<UnsignedU>(-Unsigned);
+						Unsigned = static_cast<FUnsignedU>(-Unsigned);
 					}
 				}
 
-				constexpr size_t BufferSize = sizeof(UnsignedU) * 8 + 4;
+				constexpr size_t BufferSize = sizeof(FUnsignedU) * 8 + 4;
 
 				T Buffer[BufferSize];
 
@@ -1111,8 +1112,8 @@ struct TStringObjectFormatter
 						case 6:
 						case 7:
 						case 9:
-						case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base);             Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
-						default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base, bLowercase); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+						case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base);             Unsigned = static_cast<FUnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+						default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base, bLowercase); Unsigned = static_cast<FUnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
 						}
 					}
 					else
@@ -1130,12 +1131,12 @@ struct TStringObjectFormatter
 						case 6:
 						case 7:
 						case 9:
-						case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
-						default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base); Unsigned = static_cast<UnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+						case 10: do { *--Iter = static_cast<T>('0' + Unsigned % Param.Base); Unsigned = static_cast<FUnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
+						default: do { *--Iter =  TChar<T>::FromDigit(Unsigned % Param.Base); Unsigned = static_cast<FUnsignedU>(Unsigned / Param.Base); } while (Unsigned != 0); break;
 						}
 					}
 				}
-				else do { *--Iter = static_cast<T>('0' + Unsigned % 10); Unsigned = static_cast<UnsignedU>(Unsigned / 10); } while (Unsigned != 0);
+				else do { *--Iter = static_cast<T>('0' + Unsigned % 10); Unsigned = static_cast<FUnsignedU>(Unsigned / 10); } while (Unsigned != 0);
 
 				T* DigitBegin = Iter;
 
@@ -1144,7 +1145,7 @@ struct TStringObjectFormatter
 				{
 					const size_t Padding = Param.Padding - (DigitEnd - DigitBegin);
 
-					if (Param.Padding < sizeof(UnsignedU) * 8) for (size_t Index = 0; Index != Padding; ++Index) *--Iter = LITERAL(T, '0');
+					if (Param.Padding < sizeof(FUnsignedU) * 8) for (size_t Index = 0; Index != Padding; ++Index) *--Iter = LITERAL(T, '0');
 				}
 
 				// Append the prefix to the buffer.
@@ -1171,7 +1172,7 @@ struct TStringObjectFormatter
 				{
 					const size_t Padding = Param.Padding - (DigitEnd - DigitBegin);
 
-					if (Param.Padding > sizeof(UnsignedU) * 8)
+					if (Param.Padding > sizeof(FUnsignedU) * 8)
 					{
 						Result.Reserve(Result.Num() + (DigitBegin - Iter) + Param.Padding);
 
@@ -1349,6 +1350,7 @@ struct TStringObjectParser
 {
 	static bool Do(auto& View, auto& Object, auto Param)
 	{
+		// ReSharper disable once CppInconsistentNaming
 		using U = TRemoveCVRef<decltype(Object)>;
 
 		if constexpr (CConst<TRemoveReference<decltype(Object)>>)
@@ -2200,17 +2202,17 @@ struct TStringObjectParser
 					return TChar<T>::ToDigit(Char);
 				};
 
-				using UnsignedU = TMakeUnsigned<U>;
+				using FUnsignedU = TMakeUnsigned<U>;
 
 				// The limit value that can be stored in an unsigned integer.
-				constexpr UnsignedU UnsignedMaximum = static_cast<UnsignedU>(-1);
+				constexpr FUnsignedU UnsignedMaximum = static_cast<FUnsignedU>(-1);
 
 				// The limit value that can be stored in a signed integer.
 				constexpr U SignedMaximum = static_cast<U>(UnsignedMaximum >> 1);
 				constexpr U SignedMinimum =  -static_cast<U>(SignedMaximum) - 1;
 
-				UnsignedU LastValue = 0;
-				UnsignedU Unsigned  = 0;
+				FUnsignedU LastValue = 0;
+				FUnsignedU Unsigned  = 0;
 
 				if (TrimmedView.IsEmpty()) return false;
 
@@ -2223,7 +2225,7 @@ struct TStringObjectParser
 
 				TrimmedView.RemovePrefix(1);
 
-				Unsigned = static_cast<UnsignedU>(Digit);
+				Unsigned = static_cast<FUnsignedU>(Digit);
 
 				while (!TrimmedView.IsEmpty())
 				{
@@ -2235,7 +2237,7 @@ struct TStringObjectParser
 
 					LastValue = Unsigned;
 
-					Unsigned = static_cast<UnsignedU>(LastValue * Base + Digit);
+					Unsigned = static_cast<FUnsignedU>(LastValue * Base + Digit);
 
 					if (Unsigned < LastValue) return false;
 				}
@@ -2245,11 +2247,11 @@ struct TStringObjectParser
 				if constexpr (CSigned<U>)
 				{
 					// Handle overflow.
-					if (!bNegative && Unsigned >= static_cast<UnsignedU>(SignedMaximum)) return false;
-					if ( bNegative && Unsigned >= static_cast<UnsignedU>(SignedMinimum)) return false;
+					if (!bNegative && Unsigned >= static_cast<FUnsignedU>(SignedMaximum)) return false;
+					if ( bNegative && Unsigned >= static_cast<FUnsignedU>(SignedMinimum)) return false;
 
 					// Handle negative sign.
-					if (bNegative) Unsigned = static_cast<UnsignedU>(-Unsigned);
+					if (bNegative) Unsigned = static_cast<FUnsignedU>(-Unsigned);
 				}
 
 				Object = static_cast<U>(Unsigned);
@@ -2705,14 +2707,14 @@ NAMESPACE_PRIVATE_END
 
 template <CCharType T, CAllocator<T> Allocator>
 template <typename ... Ts>
-void TString<T, Allocator>::AppendFormat(TStringView<ElementType> Fmt, const Ts&... Args)
+void TString<T, Allocator>::AppendFormat(TStringView<FElementType> Fmt, const Ts&... Args)
 {
 	// The Unreal Engine says that the starting buffer size catches 99.97% of printf calls.
 	constexpr size_t ReserveBufferSize = 512;
 
 	TString<T, TInlineAllocator<ReserveBufferSize>> Result;
 
-	NAMESPACE_PRIVATE::TStringFormatOrParseHelper<ElementType, true>::Do(Result, Fmt, ForwardAsTuple(Args...));
+	NAMESPACE_PRIVATE::TStringFormatOrParseHelper<FElementType, true>::Do(Result, Fmt, ForwardAsTuple(Args...));
 
 	Append(Result.Begin(), Result.End());
 }
@@ -2721,13 +2723,13 @@ template <CCharType T>
 template <typename ... Ts>
 size_t TStringView<T>::ParseAndTrim(TStringView Fmt, Ts&... Args)
 {
-	return NAMESPACE_PRIVATE::TStringFormatOrParseHelper<ElementType, false>::Do(*this, Fmt, ForwardAsTuple(Args...));
+	return NAMESPACE_PRIVATE::TStringFormatOrParseHelper<FElementType, false>::Do(*this, Fmt, ForwardAsTuple(Args...));
 }
 
 template <CCharType T, CAllocator<T> Allocator>
 void TString<T, Allocator>::AppendBool(bool Value)
 {
-	NAMESPACE_PRIVATE::TStringObjectFormatter<ElementType>::Do(*this, AsConst(Value), Invalid);
+	NAMESPACE_PRIVATE::TStringObjectFormatter<FElementType>::Do(*this, AsConst(Value), Invalid);
 }
 
 template <CCharType T, CAllocator<T> Allocator>
@@ -2738,13 +2740,13 @@ void TString<T, Allocator>::AppendInt(U Value, unsigned Base)
 
 	struct { unsigned Base; } Param = { Base };
 
-	NAMESPACE_PRIVATE::TStringObjectFormatter<ElementType>::Do(*this, AsConst(Value), Param);
+	NAMESPACE_PRIVATE::TStringObjectFormatter<FElementType>::Do(*this, AsConst(Value), Param);
 }
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
 void TString<T, Allocator>::AppendFloat(U Value)
 {
-	NAMESPACE_PRIVATE::TStringObjectFormatter<ElementType>::Do(*this, AsConst(Value), Invalid);
+	NAMESPACE_PRIVATE::TStringObjectFormatter<FElementType>::Do(*this, AsConst(Value), Invalid);
 }
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
@@ -2752,7 +2754,7 @@ void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific)
 {
 	struct { bool bFixed; bool bScientific; } Param = { bFixed, bScientific };
 
-	NAMESPACE_PRIVATE::TStringObjectFormatter<ElementType>::Do(*this, AsConst(Value), Param);
+	NAMESPACE_PRIVATE::TStringObjectFormatter<FElementType>::Do(*this, AsConst(Value), Param);
 }
 
 template <CCharType T, CAllocator<T> Allocator> template <CFloatingPoint U> requires (!CConst<U> && !CVolatile<U>)
@@ -2760,7 +2762,7 @@ void TString<T, Allocator>::AppendFloat(U Value, bool bFixed, bool bScientific, 
 {
 	struct { bool bFixed; bool bScientific; unsigned Precision; } Param = { bFixed, bScientific, Precision };
 
-	NAMESPACE_PRIVATE::TStringObjectFormatter<ElementType>::Do(*this, AsConst(Value), Param);
+	NAMESPACE_PRIVATE::TStringObjectFormatter<FElementType>::Do(*this, AsConst(Value), Param);
 }
 
 template <CCharType T>
@@ -2768,9 +2770,9 @@ constexpr bool TStringView<T>::ToBoolAndTrim()
 {
 	bool Value = false;
 
-	if (!NAMESPACE_PRIVATE::TStringObjectParser<ElementType>::Do(*this, Value, Invalid))
+	if (!NAMESPACE_PRIVATE::TStringObjectParser<FElementType>::Do(*this, Value, Invalid))
 	{
-		if (int IntValue; NAMESPACE_PRIVATE::TStringObjectParser<ElementType>::Do(*this, IntValue, Invalid))
+		if (int IntValue; NAMESPACE_PRIVATE::TStringObjectParser<FElementType>::Do(*this, IntValue, Invalid))
 		{
 			Value = IntValue != 0;
 		}
@@ -2789,7 +2791,7 @@ constexpr U TStringView<T>::ToIntAndTrim(unsigned Base)
 
 	struct { unsigned Base; } Param = { Base };
 
-	NAMESPACE_PRIVATE::TStringObjectParser<ElementType>::Do(*this, Value, Param);
+	NAMESPACE_PRIVATE::TStringObjectParser<FElementType>::Do(*this, Value, Param);
 
 	return Value;
 }
@@ -2802,7 +2804,7 @@ constexpr U TStringView<T>::ToFloatAndTrim(bool bFixed, bool bScientific)
 
 	struct { bool bFixed; bool bScientific; } Param = { bFixed, bScientific };
 
-	NAMESPACE_PRIVATE::TStringObjectParser<ElementType>::Do(*this, Value, Param);
+	NAMESPACE_PRIVATE::TStringObjectParser<FElementType>::Do(*this, Value, Param);
 
 	return Value;
 }

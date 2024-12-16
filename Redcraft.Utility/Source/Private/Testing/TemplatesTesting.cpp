@@ -64,9 +64,9 @@ void TestInvoke()
 
 void TestReferenceWrapper()
 {
-	typedef int32(*FuncType)(int32, int32, int32);
-	FuncType TempA = [](int32 A, int32 B, int32 C) -> int32 { return A * B * C; };
-	TReferenceWrapper<FuncType> TempB(TempA);
+	typedef int32(*FFuncType)(int32, int32, int32);
+	FFuncType TempA = [](int32 A, int32 B, int32 C) -> int32 { return A * B * C; };
+	TReferenceWrapper<FFuncType> TempB(TempA);
 	always_check(TempB(1, 1, 1) == 1);
 	TempB.Get() = &TestFunctionA;
 	always_check(TempA(1, 1, 1) == 3);
@@ -330,14 +330,15 @@ void TestVariant()
 	}
 
 	{
-		using VariantType = TVariant<int32, int64, float64>;
-		VariantType TempArray[] = { 10, 15ll, 1.5 };
+		using FVariantType = TVariant<int32, int64, float64>;
+		FVariantType TempArray[] = { 10, 15ll, 1.5 };
 
 		for(auto&& TempA : TempArray)
 		{
 			Visit(
 				[](auto&& A)
 				{
+					// ReSharper disable once CppInconsistentNaming
 					using T = TRemoveCVRef<decltype(A)>;
 					if constexpr (CSameAs<T, int32>) always_check(A == 10);
 					else if constexpr (CSameAs<T, int64>) always_check(A == 15ll);
@@ -347,11 +348,12 @@ void TestVariant()
 				TempA
 			);
 
-			VariantType TempB = Visit([](auto&& A) -> VariantType { return A + A; }, TempA);
+			FVariantType TempB = Visit([](auto&& A) -> FVariantType { return A + A; }, TempA);
 
 			Visit(
 				[](auto&& A, auto&& B)
 				{
+					// ReSharper disable once CppInconsistentNaming
 					using T = TRemoveCVRef<decltype(A)>;
 					if constexpr (CSameAs<T, int32>) always_check(A == 10 && B == 20);
 					else if constexpr (CSameAs<T, int64>) always_check(A == 15ll && B == 30ll);
@@ -366,6 +368,7 @@ void TestVariant()
 			Visit(
 				[](auto&& A)
 				{
+					// ReSharper disable once CppInconsistentNaming
 					using T = TRemoveCVRef<decltype(A)>;
 					if constexpr (CSameAs<T, int32>) always_check(A == 20);
 					else if constexpr (CSameAs<T, int64>) always_check(A == 30ll);
@@ -417,6 +420,7 @@ void TestVariant()
 
 		auto TestQualifiers = [&bIsConst, &bIsLValue, &bIsRValue](auto&& A) -> int32
 		{
+			// ReSharper disable once CppInconsistentNaming
 			using T = decltype(A);
 			always_check(A == 10);
 			always_check(CConst<TRemoveReference<T>> == bIsConst);
@@ -428,6 +432,8 @@ void TestVariant()
 		bIsConst = false;
 		bIsLValue = true;
 		bIsRValue = false;
+
+		// ReSharper disable CppInconsistentNaming
 
 		TVariant<int32> TempLA = 10;
 		auto ReturnLA = Visit(TestQualifiers, TempLA);
@@ -488,6 +494,8 @@ void TestVariant()
 		const TVariant<int32> TempRD = TempLC;
 		auto ReturnRD = Visit<int32>(TestQualifiers, MoveTemp(TempRD));
 		always_check((CSameAs<int32, decltype(ReturnRD)>));
+
+		// ReSharper restore CppInconsistentNaming
 	}
 
 	{
@@ -869,11 +877,11 @@ void TestTuple()
 //	always_check((CSameAs<TTupleElement<4, TTuple<double, float&, char&&>>, double>));
 
 	{
-		using Type = TTuple<int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64,
+		using FType = TTuple<int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64,
 			int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64,
 			int8, uint8, int16, uint16, int32, uint32, int64, uint64, int8, uint8, int16, uint16, int32, uint32, int64, uint64>;
 
-		Type Temp;
+		FType Temp;
 
 		Temp.First = 0;
 		Temp.Second = 0;
@@ -892,20 +900,20 @@ void TestTuple()
 		Temp.Fifteenth = 0;
 		Temp.Sixteenth = 0;
 
-		always_check(CDefaultConstructible<Type>);
-		always_check(CTriviallyDefaultConstructible<Type>);
-		always_check(CConstructibleFrom<Type>);
-		always_check(CTriviallyConstructibleFrom<Type>);
-		always_check(CCopyConstructible<Type>);
-		always_check(CTriviallyCopyConstructible<Type>);
-		always_check(CMoveConstructible<Type>);
-		always_check(CTriviallyMoveConstructible<Type>);
-		always_check(CCopyAssignable<Type>);
-		always_check(CTriviallyCopyAssignable<Type>);
-		always_check(CMoveAssignable<Type>);
-		always_check(CTriviallyMoveAssignable<Type>);
-		always_check(CDestructible<Type>);
-		always_check(CTriviallyDestructible<Type>);
+		always_check(CDefaultConstructible<FType>);
+		always_check(CTriviallyDefaultConstructible<FType>);
+		always_check(CConstructibleFrom<FType>);
+		always_check(CTriviallyConstructibleFrom<FType>);
+		always_check(CCopyConstructible<FType>);
+		always_check(CTriviallyCopyConstructible<FType>);
+		always_check(CMoveConstructible<FType>);
+		always_check(CTriviallyMoveConstructible<FType>);
+		always_check(CCopyAssignable<FType>);
+		always_check(CTriviallyCopyAssignable<FType>);
+		always_check(CMoveAssignable<FType>);
+		always_check(CTriviallyMoveAssignable<FType>);
+		always_check(CDestructible<FType>);
+		always_check(CTriviallyDestructible<FType>);
 	}
 
 	{
@@ -1084,25 +1092,25 @@ struct FFunctionDebug
 	void Print(int32 In) { Output[Index++] = In; }
 };
 
-FFunctionDebug FunctionDebug;
+FFunctionDebug GFunctionDebug;
 
 struct FPrintAdd
 {
 	FPrintAdd(int32 InNum) : Num(InNum) { }
-	void F(int32 I) const { FunctionDebug.Print(Num + I); }
+	void F(int32 I) const { GFunctionDebug.Print(Num + I); }
 	int32 Num;
 };
 
 void PrintNum(int32 I)
 {
-	FunctionDebug.Print(I);
+	GFunctionDebug.Print(I);
 }
 
 struct FPrintNum
 {
 	void operator()(int32 I) const
 	{
-		FunctionDebug.Print(I);
+		GFunctionDebug.Print(I);
 	}
 };
 
@@ -1310,7 +1318,7 @@ void TestFunction()
 		AddDisplay(314159, 1);
 
 		TFunction<int32(FPrintAdd const&)> Num = &FPrintAdd::Num;
-		FunctionDebug.Print(Num(Foo));
+		GFunctionDebug.Print(Num(Foo));
 
 		TFunction<void(int32)> AddDisplay2 = [Foo](int32 A) { Foo.F(A); };
 		AddDisplay2(2);
@@ -1326,21 +1334,21 @@ void TestFunction()
 			return Fac(N);
 		};
 
-		for (int32 I = 5; I < 8; ++I) FunctionDebug.Print(Factorial(I));
+		for (int32 I = 5; I < 8; ++I) GFunctionDebug.Print(Factorial(I));
 
-		always_check(FunctionDebug.Index == 12);
-		always_check(FunctionDebug.Output[0] == -9);
-		always_check(FunctionDebug.Output[1] == 42);
-		always_check(FunctionDebug.Output[2] == 31337);
-		always_check(FunctionDebug.Output[3] == 314160);
-		always_check(FunctionDebug.Output[4] == 314160);
-		always_check(FunctionDebug.Output[5] == 314159);
-		always_check(FunctionDebug.Output[6] == 314161);
-		always_check(FunctionDebug.Output[7] == 314162);
-		always_check(FunctionDebug.Output[8] == 18);
-		always_check(FunctionDebug.Output[9] == 120);
-		always_check(FunctionDebug.Output[10] == 720);
-		always_check(FunctionDebug.Output[11] == 5040);
+		always_check(GFunctionDebug.Index == 12);
+		always_check(GFunctionDebug.Output[0] == -9);
+		always_check(GFunctionDebug.Output[1] == 42);
+		always_check(GFunctionDebug.Output[2] == 31337);
+		always_check(GFunctionDebug.Output[3] == 314160);
+		always_check(GFunctionDebug.Output[4] == 314160);
+		always_check(GFunctionDebug.Output[5] == 314159);
+		always_check(GFunctionDebug.Output[6] == 314161);
+		always_check(GFunctionDebug.Output[7] == 314162);
+		always_check(GFunctionDebug.Output[8] == 18);
+		always_check(GFunctionDebug.Output[9] == 120);
+		always_check(GFunctionDebug.Output[10] == 720);
+		always_check(GFunctionDebug.Output[11] == 5040);
 	}
 
 	{

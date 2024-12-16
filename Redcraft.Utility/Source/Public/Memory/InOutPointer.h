@@ -14,7 +14,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename RT, typename ST>
-using TRawPointer = TConditional<CVoid<RT>, typename TPointerTraits<TRemoveCVRef<ST>>::ElementType*, RT>;
+using TRawPointer = TConditional<CVoid<RT>, typename TPointerTraits<TRemoveCVRef<ST>>::FElementType*, RT>;
 
 template <bool bEnableInput, typename RT, typename ST, typename... Ts>
 class FInOutPtr final : private FSingleton
@@ -57,7 +57,7 @@ NAMESPACE_PRIVATE_END
 template <typename RT = void, typename ST, typename... Ts> requires ((CVoid<RT>) || (CPointer<RT>)
 	&& (requires(NAMESPACE_PRIVATE::TRawPointer<RT, ST>* RPtr, ST& SPtr, Ts&&... Args) { SPtr.Reset(RPtr, Forward<Ts>(Args)...); })
 	|| (CConstructibleFrom<ST, NAMESPACE_PRIVATE::TRawPointer<RT, ST>, Ts...> && CMoveAssignable<ST>)
-	&& requires { typename TPointerTraits<TRemoveCV<ST>>::ElementType; })
+	&& requires { typename TPointerTraits<TRemoveCV<ST>>::FElementType; })
 auto OutPtr(ST& InPtr, Ts&&... Args)
 {
 	return NAMESPACE_PRIVATE::FInOutPtr<false, NAMESPACE_PRIVATE::TRawPointer<RT, ST>, ST, Ts...>(InPtr, Forward<Ts>(Args)...);
@@ -67,7 +67,7 @@ template <typename RT = void, typename ST, typename... Ts> requires ((CVoid<RT>)
 	&& (requires(NAMESPACE_PRIVATE::TRawPointer<RT, ST>* RPtr, ST& SPtr, Ts&&... Args) { SPtr.Reset(RPtr, Forward<Ts>(Args)...); })
 	|| (CConstructibleFrom<ST, NAMESPACE_PRIVATE::TRawPointer<RT, ST>, Ts...> && CMoveAssignable<ST>)
 	&& requires(ST& SPtr) { { SPtr.Release() } -> CConvertibleTo<NAMESPACE_PRIVATE::TRawPointer<RT, ST>>; }
-	&& requires { typename TPointerTraits<TRemoveCV<ST>>::ElementType; })
+	&& requires { typename TPointerTraits<TRemoveCV<ST>>::FElementType; })
 auto InOutPtr(ST& InPtr, Ts&&... Args)
 {
 	return NAMESPACE_PRIVATE::FInOutPtr<true, NAMESPACE_PRIVATE::TRawPointer<RT, ST>, ST, Ts...>(InPtr, Forward<Ts>(Args)...);

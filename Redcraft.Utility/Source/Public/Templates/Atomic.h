@@ -20,7 +20,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
  * the values change in an order different from the order another thread wrote them. Indeed,
  * the apparent order of changes can even differ among multiple reader threads. Some similar effects
  * can occur even on uniprocessor systems due to compiler transformations allowed by the memory model.
- * 
+ *
  * @see https://en.cppreference.com/w/cpp/atomic/memory_order
  */
 enum class EMemoryOrder : uint8
@@ -68,48 +68,48 @@ struct TAtomicImpl : FSingleton
 {
 protected:
 
-	using NativeAtomicType = TConditional<bIsRef, NAMESPACE_STD::atomic_ref<T>, NAMESPACE_STD::atomic<T>>;
+	using FNativeAtomic = TConditional<bIsRef, NAMESPACE_STD::atomic_ref<T>, NAMESPACE_STD::atomic<T>>;
 
 public:
 
-	using ValueType = T;
+	using FValueType = T;
 
 	/** Indicates that the type is always lock-free */
-	static constexpr bool bIsAlwaysLockFree = NativeAtomicType::is_always_lock_free;
+	static constexpr bool bIsAlwaysLockFree = FNativeAtomic::is_always_lock_free;
 
 	/** Indicates the required alignment of an object to be referenced by TAtomicRef. */
 	static constexpr size_t RequiredAlignment = NAMESPACE_STD::atomic_ref<T>::required_alignment;
 
 	/** Constructs an atomic object. */
-	FORCEINLINE constexpr TAtomicImpl()                  requires (!bIsRef) : NativeAtomic()        { };
-	FORCEINLINE constexpr TAtomicImpl(ValueType Desired) requires (!bIsRef) : NativeAtomic(Desired) { };
+	FORCEINLINE constexpr TAtomicImpl()                  requires (!bIsRef) : NativeAtomic()         { }
+	FORCEINLINE constexpr TAtomicImpl(FValueType Desired) requires (!bIsRef) : NativeAtomic(Desired) { }
 
 	/** Constructs an atomic reference. */
-	FORCEINLINE explicit TAtomicImpl(ValueType&   Desired) requires (bIsRef) : NativeAtomic(Desired) { check(Memory::IsAligned(&Desired, RequiredAlignment)); };
-	FORCEINLINE          TAtomicImpl(TAtomicImpl& InValue) requires (bIsRef) : NativeAtomic(InValue) { };
+	FORCEINLINE explicit TAtomicImpl(FValueType&  Desired) requires (bIsRef) : NativeAtomic(Desired) { check(Memory::IsAligned(&Desired, RequiredAlignment)); }
+	FORCEINLINE          TAtomicImpl(TAtomicImpl& InValue) requires (bIsRef) : NativeAtomic(InValue) { }
 
 	/** Stores a value into an atomic object. */
-	FORCEINLINE ValueType operator=(ValueType Desired)                                       { return NativeAtomic = Desired; }
-	FORCEINLINE ValueType operator=(ValueType Desired) volatile requires (bIsAlwaysLockFree) { return NativeAtomic = Desired; }
+	FORCEINLINE FValueType operator=(FValueType Desired)                                       { return NativeAtomic = Desired; }
+	FORCEINLINE FValueType operator=(FValueType Desired) volatile requires (bIsAlwaysLockFree) { return NativeAtomic = Desired; }
 
 	/** Atomically replaces the value of the atomic object with a non-atomic argument. */
-	FORCEINLINE void Store(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)                                       { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE void Store(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (bIsAlwaysLockFree) { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	FORCEINLINE void Store(FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)                                       { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE void Store(FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (bIsAlwaysLockFree) { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.store(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically obtains the value of the atomic object. */
-	NODISCARD FORCEINLINE ValueType Load(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const                                       { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.load(static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	NODISCARD FORCEINLINE ValueType Load(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const volatile requires (bIsAlwaysLockFree) { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.load(static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	NODISCARD FORCEINLINE FValueType Load(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const                                       { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.load(static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	NODISCARD FORCEINLINE FValueType Load(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const volatile requires (bIsAlwaysLockFree) { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.load(static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Loads a value from an atomic object. */
-	NODISCARD FORCEINLINE operator ValueType() const                                       { return static_cast<ValueType>(NativeAtomic); }
-	NODISCARD FORCEINLINE operator ValueType() const volatile requires (bIsAlwaysLockFree) { return static_cast<ValueType>(NativeAtomic); }
-	
+	NODISCARD FORCEINLINE operator FValueType() const                                       { return static_cast<FValueType>(NativeAtomic); }
+	NODISCARD FORCEINLINE operator FValueType() const volatile requires (bIsAlwaysLockFree) { return static_cast<FValueType>(NativeAtomic); }
+
 	/** Atomically replaces the value of the atomic object and obtains the value held previously. */
-	NODISCARD FORCEINLINE ValueType Exchange(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) { return NativeAtomic.exchange(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	NODISCARD FORCEINLINE ValueType Exchange(ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (bIsAlwaysLockFree) { return NativeAtomic.exchange(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	NODISCARD FORCEINLINE FValueType Exchange(FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) { return NativeAtomic.exchange(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	NODISCARD FORCEINLINE FValueType Exchange(FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (bIsAlwaysLockFree) { return NativeAtomic.exchange(Desired, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically compares the value of the atomic object with non-atomic argument and performs atomic exchange if equal or atomic load if not. */
-	NODISCARD FORCEINLINE bool CompareExchange(ValueType& Expected, ValueType Desired, EMemoryOrder Success, EMemoryOrder Failure, bool bIsWeak = false)
+	NODISCARD FORCEINLINE bool CompareExchange(FValueType& Expected, FValueType Desired, EMemoryOrder Success, EMemoryOrder Failure, bool bIsWeak = false)
 	{
 		MEMORY_ORDER_CHECK(Failure, 0x01 | 0x02 | 0x04 | 0x20);
 		if (bIsWeak) return NativeAtomic.compare_exchange_weak(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Success), static_cast<NAMESPACE_STD::memory_order>(Failure));
@@ -117,7 +117,7 @@ public:
 	}
 
 	/** Atomically compares the value of the atomic object with non-atomic argument and performs atomic exchange if equal or atomic load if not. */
-	NODISCARD FORCEINLINE bool CompareExchange(ValueType& Expected, ValueType Desired, EMemoryOrder Success, EMemoryOrder Failure, bool bIsWeak = false) volatile requires (bIsAlwaysLockFree)
+	NODISCARD FORCEINLINE bool CompareExchange(FValueType& Expected, FValueType Desired, EMemoryOrder Success, EMemoryOrder Failure, bool bIsWeak = false) volatile requires (bIsAlwaysLockFree)
 	{
 		MEMORY_ORDER_CHECK(Failure, 0x01 | 0x02 | 0x04 | 0x20);
 		if (bIsWeak) return NativeAtomic.compare_exchange_weak(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Success), static_cast<NAMESPACE_STD::memory_order>(Failure));
@@ -125,162 +125,162 @@ public:
 	}
 
 	/** Atomically compares the value of the atomic object with non-atomic argument and performs atomic exchange if equal or atomic load if not. */
-	NODISCARD FORCEINLINE bool CompareExchange(ValueType& Expected, ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent, bool bIsWeak = false)
+	NODISCARD FORCEINLINE bool CompareExchange(FValueType& Expected, FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent, bool bIsWeak = false)
 	{
 		if (bIsWeak) return NativeAtomic.compare_exchange_weak(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Order));
 		else       return NativeAtomic.compare_exchange_strong(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Order));
 	}
 
 	/** Atomically compares the value of the atomic object with non-atomic argument and performs atomic exchange if equal or atomic load if not. */
-	NODISCARD FORCEINLINE bool CompareExchange(ValueType& Expected, ValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent, bool bIsWeak = false) volatile requires (bIsAlwaysLockFree)
+	NODISCARD FORCEINLINE bool CompareExchange(FValueType& Expected, FValueType Desired, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent, bool bIsWeak = false) volatile requires (bIsAlwaysLockFree)
 	{
 		if (bIsWeak) return NativeAtomic.compare_exchange_weak(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Order));
 		else       return NativeAtomic.compare_exchange_strong(Expected, Desired, static_cast<NAMESPACE_STD::memory_order>(Order));
 	}
-	
+
 	/** Blocks the thread until notified and the atomic value changes. */
-	FORCEINLINE void Wait(ValueType Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); NativeAtomic.wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE void Wait(ValueType Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); NativeAtomic.wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE void Wait(FValueType Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); NativeAtomic.wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE void Wait(FValueType Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); NativeAtomic.wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 
 	/** Notifies at least one or all threads blocked waiting on the atomic object. */
 	FORCEINLINE void Notify(bool bIsAll = false)          { if (bIsAll) NativeAtomic.notify_all(); else NativeAtomic.notify_one(); }
 	FORCEINLINE void Notify(bool bIsAll = false) volatile { if (bIsAll) NativeAtomic.notify_all(); else NativeAtomic.notify_one(); }
 
 	/** Atomically executes the 'Func' on the value stored in the atomic object and obtains the value held previously. */
-	template <typename F> requires (CInvocableResult<ValueType, F, ValueType>)
-	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)
+	template <typename F> requires (CInvocableResult<FValueType, F, FValueType>)
+	FORCEINLINE FValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)
 	{
-		ValueType Temp(Load(EMemoryOrder::Relaxed));
+		FValueType Temp(Load(EMemoryOrder::Relaxed));
 		// We do a weak read here because we require a loop.
-		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order, true));
+		while (!CompareExchange(Temp, InvokeResult<FValueType>(Forward<F>(Func), Temp), Order, true));
 		return Temp;
 	}
 
 	/** Atomically executes the 'Func' on the value stored in the atomic object and obtains the value held previously. */
-	template <typename F> requires (CInvocableResult<ValueType, F, ValueType> && bIsAlwaysLockFree)
-	FORCEINLINE ValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile
+	template <typename F> requires (CInvocableResult<FValueType, F, FValueType> && bIsAlwaysLockFree)
+	FORCEINLINE FValueType FetchFn(F&& Func, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile
 	{
-		ValueType Temp(Load(EMemoryOrder::Relaxed));
+		FValueType Temp(Load(EMemoryOrder::Relaxed));
 		// We do a weak read here because we require a loop.
-		while (!CompareExchange(Temp, InvokeResult<ValueType>(Forward<F>(Func), Temp), Order, true));
+		while (!CompareExchange(Temp, InvokeResult<FValueType>(Forward<F>(Func), Temp), Order, true));
 		return Temp;
 	}
 
 	/** Atomically adds the argument to the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAdd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchAdd(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchAdd(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 
 	/** Atomically adds the argument to the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CPointer<T>                     ) { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CPointer<T>                     ) { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchAdd(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_add(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 
 	/** Atomically subtracts the argument from the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchSub(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	FORCEINLINE FValueType FetchSub(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchSub(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically subtracts the argument from the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CPointer<T>                     ) { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CPointer<T>                     ) { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchSub(ptrdiff InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_sub(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 
 	/** Atomically multiples the argument from the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
-	FORCEINLINE ValueType FetchMul(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old * InValue; }); }
+	FORCEINLINE FValueType FetchMul(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](FValueType Old) -> FValueType { return Old * InValue; }); }
+	FORCEINLINE FValueType FetchMul(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](FValueType Old) -> FValueType { return Old * InValue; }); }
 
 	/** Atomically divides the argument from the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
-	FORCEINLINE ValueType FetchDiv(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](ValueType Old) -> ValueType { return Old / InValue; }); }
+	FORCEINLINE FValueType FetchDiv(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T> || CFloatingPoint<T>)                      { return FetchFn([InValue](FValueType Old) -> FValueType { return Old / InValue; }); }
+	FORCEINLINE FValueType FetchDiv(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree { return FetchFn([InValue](FValueType Old) -> FValueType { return Old / InValue; }); }
 
 	/** Atomically models the argument from the value stored in the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
-	FORCEINLINE ValueType FetchMod(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old % InValue; }); }
-	
+	FORCEINLINE FValueType FetchMod(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old % InValue; }); }
+	FORCEINLINE FValueType FetchMod(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old % InValue; }); }
+
 	/** Atomically performs bitwise AND between the argument and the value of the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchAnd(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-		
+	FORCEINLINE FValueType FetchAnd(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchAnd(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_and(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically performs bitwise OR between the argument and the value of the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchOr(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	FORCEINLINE FValueType FetchOr(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchOr(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_or(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically performs bitwise XOR between the argument and the value of the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	FORCEINLINE ValueType FetchXor(ValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+	FORCEINLINE FValueType FetchXor(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return NativeAtomic.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+	FORCEINLINE FValueType FetchXor(FValueType InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic.fetch_xor(InValue, static_cast<NAMESPACE_STD::memory_order>(Order)); }
+
 	/** Atomically performs bitwise LSH between the argument and the value of the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
-	FORCEINLINE ValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old << InValue; }); }
-	
+	FORCEINLINE FValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old << InValue; }); }
+	FORCEINLINE FValueType FetchLsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old << InValue; }); }
+
 	/** Atomically performs bitwise RSH between the argument and the value of the atomic object and obtains the value held previously. */
-	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
-	FORCEINLINE ValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](ValueType Old) -> ValueType { return Old >> InValue; }); }
-	
-	/** Increments the atomic value by one. */
-	FORCEINLINE ValueType operator++()          requires ((CIntegral<T> || CPointer<T>)                     ) { return ++NativeAtomic; }
-	FORCEINLINE ValueType operator++() volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return ++NativeAtomic; }
+	FORCEINLINE FValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          requires (CIntegral<T>                     ) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old >> InValue; }); }
+	FORCEINLINE FValueType FetchRsh(size_t InValue, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchFn([InValue](FValueType Old) -> FValueType { return Old >> InValue; }); }
 
 	/** Increments the atomic value by one. */
-	FORCEINLINE ValueType operator++(int)          requires ((CIntegral<T> || CPointer<T>)                     ) { return NativeAtomic++; }
-	FORCEINLINE ValueType operator++(int) volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return NativeAtomic++; }
+	FORCEINLINE FValueType operator++()          requires ((CIntegral<T> || CPointer<T>)                     ) { return ++NativeAtomic; }
+	FORCEINLINE FValueType operator++() volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return ++NativeAtomic; }
+
+	/** Increments the atomic value by one. */
+	FORCEINLINE FValueType operator++(int)          requires ((CIntegral<T> || CPointer<T>)                     ) { return NativeAtomic++; }
+	FORCEINLINE FValueType operator++(int) volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return NativeAtomic++; }
 
 	/** Decrements the atomic value by one. */
-	FORCEINLINE ValueType operator--()          requires ((CIntegral<T> || CPointer<T>)                     ) { return --NativeAtomic; }
-	FORCEINLINE ValueType operator--() volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return --NativeAtomic; }
+	FORCEINLINE FValueType operator--()          requires ((CIntegral<T> || CPointer<T>)                     ) { return --NativeAtomic; }
+	FORCEINLINE FValueType operator--() volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return --NativeAtomic; }
 
 	/** Decrements the atomic value by one. */
-	FORCEINLINE ValueType operator--(int)          requires ((CIntegral<T> || CPointer<T>)                     ) { return NativeAtomic--; }
-	FORCEINLINE ValueType operator--(int) volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return NativeAtomic--; }
-	
-	/** Adds with the atomic value. */
-	FORCEINLINE ValueType operator+=(ValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return NativeAtomic += InValue; }
-	FORCEINLINE ValueType operator+=(ValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return NativeAtomic += InValue; }
+	FORCEINLINE FValueType operator--(int)          requires ((CIntegral<T> || CPointer<T>)                     ) { return NativeAtomic--; }
+	FORCEINLINE FValueType operator--(int) volatile requires ((CIntegral<T> || CPointer<T>) && bIsAlwaysLockFree) { return NativeAtomic--; }
 
 	/** Adds with the atomic value. */
-	FORCEINLINE ValueType operator+=(ptrdiff InValue)          requires (CPointer<T>                     ) { return NativeAtomic += InValue; }
-	FORCEINLINE ValueType operator+=(ptrdiff InValue) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic += InValue; }
+	FORCEINLINE FValueType operator+=(FValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return NativeAtomic += InValue; }
+	FORCEINLINE FValueType operator+=(FValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return NativeAtomic += InValue; }
+
+	/** Adds with the atomic value. */
+	FORCEINLINE FValueType operator+=(ptrdiff InValue)          requires (CPointer<T>                     ) { return NativeAtomic += InValue; }
+	FORCEINLINE FValueType operator+=(ptrdiff InValue) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic += InValue; }
 
 	/** Subtracts with the atomic value. */
-	FORCEINLINE ValueType operator-=(ValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return NativeAtomic -= InValue; }
-	FORCEINLINE ValueType operator-=(ValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return NativeAtomic -= InValue; }
+	FORCEINLINE FValueType operator-=(FValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return NativeAtomic -= InValue; }
+	FORCEINLINE FValueType operator-=(FValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return NativeAtomic -= InValue; }
 
 	/** Subtracts with the atomic value. */
-	FORCEINLINE ValueType operator-=(ptrdiff InValue)          requires (CPointer<T>                     ) { return NativeAtomic -= InValue; }
-	FORCEINLINE ValueType operator-=(ptrdiff InValue) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic -= InValue; }
+	FORCEINLINE FValueType operator-=(ptrdiff InValue)          requires (CPointer<T>                     ) { return NativeAtomic -= InValue; }
+	FORCEINLINE FValueType operator-=(ptrdiff InValue) volatile requires (CPointer<T> && bIsAlwaysLockFree) { return NativeAtomic -= InValue; }
 
 	/** Multiples with the atomic value. */
-	FORCEINLINE ValueType operator*=(ValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return FetchMul(InValue) * InValue; }
-	FORCEINLINE ValueType operator*=(ValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return FetchMul(InValue) * InValue; }
+	FORCEINLINE FValueType operator*=(FValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return FetchMul(InValue) * InValue; }
+	FORCEINLINE FValueType operator*=(FValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return FetchMul(InValue) * InValue; }
 
 	/** Divides with the atomic value. */
-	FORCEINLINE ValueType operator/=(ValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return FetchDiv(InValue) / InValue; }
-	FORCEINLINE ValueType operator/=(ValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return FetchDiv(InValue) / InValue; }
+	FORCEINLINE FValueType operator/=(FValueType InValue)          requires ((CIntegral<T> || CFloatingPoint<T>)                     ) { return FetchDiv(InValue) / InValue; }
+	FORCEINLINE FValueType operator/=(FValueType InValue) volatile requires ((CIntegral<T> || CFloatingPoint<T>) && bIsAlwaysLockFree) { return FetchDiv(InValue) / InValue; }
 
 	/** Models with the atomic value. */
-	FORCEINLINE ValueType operator%=(ValueType InValue)          requires (CIntegral<T>                     ) { return FetchMod(InValue) % InValue; }
-	FORCEINLINE ValueType operator%=(ValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchMod(InValue) % InValue; }
+	FORCEINLINE FValueType operator%=(FValueType InValue)          requires (CIntegral<T>                     ) { return FetchMod(InValue) % InValue; }
+	FORCEINLINE FValueType operator%=(FValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchMod(InValue) % InValue; }
 
 	/** Performs bitwise AND with the atomic value. */
-	FORCEINLINE ValueType operator&=(ValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic &= InValue; }
-	FORCEINLINE ValueType operator&=(ValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic &= InValue; }
+	FORCEINLINE FValueType operator&=(FValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic &= InValue; }
+	FORCEINLINE FValueType operator&=(FValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic &= InValue; }
 
 	/** Performs bitwise OR with the atomic value. */
-	FORCEINLINE ValueType operator|=(ValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic |= InValue; }
-	FORCEINLINE ValueType operator|=(ValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic |= InValue; }
+	FORCEINLINE FValueType operator|=(FValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic |= InValue; }
+	FORCEINLINE FValueType operator|=(FValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic |= InValue; }
 
 	/** Performs bitwise XOR with the atomic value. */
-	FORCEINLINE ValueType operator^=(ValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic ^= InValue; }
-	FORCEINLINE ValueType operator^=(ValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic ^= InValue; }
+	FORCEINLINE FValueType operator^=(FValueType InValue)          requires (CIntegral<T>                     ) { return NativeAtomic ^= InValue; }
+	FORCEINLINE FValueType operator^=(FValueType InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return NativeAtomic ^= InValue; }
 
 	/** Performs bitwise LSH with the atomic value. */
-	FORCEINLINE ValueType operator<<=(size_t InValue)          requires (CIntegral<T>                     ) { return FetchLsh(InValue) << InValue; }
-	FORCEINLINE ValueType operator<<=(size_t InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchLsh(InValue) << InValue; }
+	FORCEINLINE FValueType operator<<=(size_t InValue)          requires (CIntegral<T>                     ) { return FetchLsh(InValue) << InValue; }
+	FORCEINLINE FValueType operator<<=(size_t InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchLsh(InValue) << InValue; }
 
 	/** Performs bitwise RSH with the atomic value. */
-	FORCEINLINE ValueType operator>>=(size_t InValue)          requires (CIntegral<T>                     ) { return FetchRsh(InValue) >> InValue; }
-	FORCEINLINE ValueType operator>>=(size_t InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchRsh(InValue) >> InValue; }
-	
+	FORCEINLINE FValueType operator>>=(size_t InValue)          requires (CIntegral<T>                     ) { return FetchRsh(InValue) >> InValue; }
+	FORCEINLINE FValueType operator>>=(size_t InValue) volatile requires (CIntegral<T> && bIsAlwaysLockFree) { return FetchRsh(InValue) >> InValue; }
+
 protected:
 
-	NativeAtomicType NativeAtomic;
+	FNativeAtomic NativeAtomic;
 
 };
 
@@ -311,7 +311,7 @@ struct FAtomicFlag final : FSingleton
 public:
 
 	/** Constructs an atomic flag. */
-	FORCEINLINE constexpr FAtomicFlag() : NativeAtomic() { };
+	FORCEINLINE constexpr FAtomicFlag() = default;
 
 	/** Atomically sets flag to false. */
 	FORCEINLINE void Clear(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent)          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x08 | 0x20); NativeAtomic.clear(static_cast<NAMESPACE_STD::memory_order>(Order)); }
@@ -324,7 +324,7 @@ public:
 	/** Atomically returns the value of the flag. */
 	NODISCARD FORCEINLINE bool Test(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.test(static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	NODISCARD FORCEINLINE bool Test(EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const volatile { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); return NativeAtomic.test(static_cast<NAMESPACE_STD::memory_order>(Order)); }
-	
+
 	/** Blocks the thread until notified and the atomic value changes. */
 	FORCEINLINE void Wait(bool Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const          { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); const_cast<const NAMESPACE_STD::atomic_flag&>(NativeAtomic).wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
 	FORCEINLINE void Wait(bool Old, EMemoryOrder Order = EMemoryOrder::SequentiallyConsistent) const volatile { MEMORY_ORDER_CHECK(Order, 0x01 | 0x02 | 0x04 | 0x20); const_cast<const NAMESPACE_STD::atomic_flag&>(NativeAtomic).wait(Old, static_cast<NAMESPACE_STD::memory_order>(Order)); }
@@ -332,7 +332,7 @@ public:
 	/** Notifies at least one or all threads blocked waiting on the atomic object. */
 	FORCEINLINE void Notify(bool bIsAll = false)          { if (bIsAll) const_cast<NAMESPACE_STD::atomic_flag&>(NativeAtomic).notify_all(); else const_cast<NAMESPACE_STD::atomic_flag&>(NativeAtomic).notify_one(); }
 	FORCEINLINE void Notify(bool bIsAll = false) volatile { if (bIsAll) const_cast<NAMESPACE_STD::atomic_flag&>(NativeAtomic).notify_all(); else const_cast<NAMESPACE_STD::atomic_flag&>(NativeAtomic).notify_one(); }
-	
+
 private:
 
 	NAMESPACE_STD::atomic_flag NativeAtomic;

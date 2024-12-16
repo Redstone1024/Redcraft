@@ -26,9 +26,9 @@ class TMoveIterator final
 {
 public:
 
-	using IteratorType = I;
+	using FIteratorType = I;
 
-	using ElementType = TIteratorElement<I>;
+	using FElementType = TIteratorElement<I>;
 
 	FORCEINLINE constexpr TMoveIterator() requires (CDefaultConstructible<I>) = default;
 
@@ -38,7 +38,7 @@ public:
 	FORCEINLINE constexpr TMoveIterator& operator=(TMoveIterator&&)      = default;
 	FORCEINLINE constexpr ~TMoveIterator()                               = default;
 
-	FORCEINLINE constexpr explicit TMoveIterator(IteratorType InValue) : Current(MoveTemp(InValue)) { }
+	FORCEINLINE constexpr explicit TMoveIterator(FIteratorType InValue) : Current(MoveTemp(InValue)) { }
 
 	template <CInputIterator J> requires (!CSameAs<I, J> && CConstructibleFrom<I, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TMoveIterator(const TReverseIterator<J>& InValue) : Current(InValue.GetBase()) { }
@@ -73,12 +73,12 @@ public:
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator& LHS, const TMoveIterator& RHS) requires (CSizedSentinelFor<I, I>) { return LHS.GetBase() - RHS.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { return          Current;  }
-	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { return MoveTemp(Current); }
+	NODISCARD FORCEINLINE constexpr const FIteratorType& GetBase() const& { return          Current;  }
+	NODISCARD FORCEINLINE constexpr       FIteratorType  GetBase() &&     { return MoveTemp(Current); }
 
 private:
 
-	IteratorType Current;
+	FIteratorType Current;
 
 };
 
@@ -100,7 +100,7 @@ class TMoveSentinel
 {
 public:
 
-	using SentinelType = S;
+	using FSentinelType = S;
 
 	FORCEINLINE constexpr TMoveSentinel()                                = default;
 	FORCEINLINE constexpr TMoveSentinel(const TMoveSentinel&)            = default;
@@ -109,7 +109,7 @@ public:
 	FORCEINLINE constexpr TMoveSentinel& operator=(TMoveSentinel&&)      = default;
 	FORCEINLINE constexpr ~TMoveSentinel()                               = default;
 
-	FORCEINLINE constexpr explicit TMoveSentinel(SentinelType InValue) : Last(InValue) { }
+	FORCEINLINE constexpr explicit TMoveSentinel(FSentinelType InValue) : Last(InValue) { }
 
 	template <CSemiregular T> requires (!CSameAs<S, T> && CConstructibleFrom<S, const T&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const T&, S>) TMoveSentinel(const TMoveSentinel<T>& InValue) : Last(InValue.Last) { }
@@ -126,12 +126,12 @@ public:
 	template <CInputIterator I> requires (CSizedSentinelFor<S, I>)
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TMoveIterator<I>& Iter, const TMoveSentinel& Sentinel) { return Iter.GetBase() - Sentinel.GetBase(); }
 
-	NODISCARD FORCEINLINE constexpr const SentinelType& GetBase() const& { return          Last;  }
-	NODISCARD FORCEINLINE constexpr       SentinelType  GetBase() &&     { return MoveTemp(Last); }
+	NODISCARD FORCEINLINE constexpr const FSentinelType& GetBase() const& { return          Last;  }
+	NODISCARD FORCEINLINE constexpr       FSentinelType  GetBase() &&     { return MoveTemp(Last); }
 
 private:
 
-	SentinelType Last;
+	FSentinelType Last;
 
 };
 

@@ -19,18 +19,18 @@ class TEmptyView : public IBasicViewInterface<TEmptyView<T>>
 {
 public:
 
-	using ElementType = T;
-	using Reference   = T&;
-	using Iterator    = T*;
-	using Sentinel    = T*;
+	using FElementType = T;
+	using FReference   = T&;
+	using FIterator    = T*;
+	using FSentinel    = T*;
 
 	FORCEINLINE constexpr TEmptyView() = default;
 
-	NODISCARD static FORCEINLINE constexpr Iterator Begin()   { return nullptr; }
-	NODISCARD static FORCEINLINE constexpr Sentinel End()     { return nullptr; }
-	NODISCARD static FORCEINLINE constexpr T*       GetData() { return nullptr; }
-	NODISCARD static FORCEINLINE constexpr size_t   Num()     { return 0;       }
-	NODISCARD static FORCEINLINE constexpr bool     IsEmpty() { return true;    }
+	NODISCARD static FORCEINLINE constexpr FIterator Begin()   { return nullptr; }
+	NODISCARD static FORCEINLINE constexpr FSentinel End()     { return nullptr; }
+	NODISCARD static FORCEINLINE constexpr T*        GetData() { return nullptr; }
+	NODISCARD static FORCEINLINE constexpr size_t    Num()     { return 0;       }
+	NODISCARD static FORCEINLINE constexpr bool      IsEmpty() { return true;    }
 
 };
 
@@ -52,16 +52,16 @@ class TSingleView : public IBasicViewInterface<TSingleView<T>>
 {
 public:
 
-	using ElementType = T;
+	using FElementType = T;
 
-	using      Reference =       T&;
-	using ConstReference = const T&;
+	using      FReference =       T&;
+	using FConstReference = const T&;
 
-	using      Iterator =       T*;
-	using ConstIterator = const T*;
+	using      FIterator =       T*;
+	using FConstIterator = const T*;
 
-	using      Sentinel =       T*;
-	using ConstSentinel = const T*;
+	using      FSentinel =       T*;
+	using FConstSentinel = const T*;
 
 	FORCEINLINE constexpr TSingleView() requires (CDefaultConstructible<T>) = default;
 
@@ -72,10 +72,10 @@ public:
 	template <typename... Ts> requires (CConstructibleFrom<T, Ts...>)
 	FORCEINLINE constexpr explicit TSingleView(FInPlace, Ts&&... Args) : Value(Forward<Ts>(Args)...) { }
 
-	FORCEINLINE constexpr      Iterator Begin()       { return GetData();     }
-	FORCEINLINE constexpr ConstIterator Begin() const { return GetData();     }
-	FORCEINLINE constexpr      Sentinel End()         { return GetData() + 1; }
-	FORCEINLINE constexpr ConstSentinel End()   const { return GetData() + 1; }
+	FORCEINLINE constexpr      FIterator Begin()       { return GetData();     }
+	FORCEINLINE constexpr FConstIterator Begin() const { return GetData();     }
+	FORCEINLINE constexpr      FSentinel End()         { return GetData() + 1; }
+	FORCEINLINE constexpr FConstSentinel End()   const { return GetData() + 1; }
 
 	NODISCARD FORCEINLINE constexpr       T* GetData()       { return AddressOf(Value); }
 	NODISCARD FORCEINLINE constexpr const T* GetData() const { return AddressOf(Value); }
@@ -108,13 +108,13 @@ private:
 
 public:
 
-	using ElementType = TRemoveCV<W>;
+	using FElementType = TRemoveCV<W>;
 
-	using Reference = W;
+	using FReference = W;
 
-	using Iterator = FIteratorImpl;
+	using FIterator = FIteratorImpl;
 
-	using Sentinel = TConditional<CSameAs<W, S>, FIteratorImpl, FSentinelImpl>;
+	using FSentinel = TConditional<CSameAs<W, S>, FIteratorImpl, FSentinelImpl>;
 
 	FORCEINLINE constexpr TIotaView() requires (CDefaultConstructible<W>) = default;
 
@@ -122,13 +122,13 @@ public:
 
 	FORCEINLINE constexpr explicit TIotaView(TIdentity<W> InValue, TIdentity<S> InLast) : First(InValue), Last(InLast) { }
 
-	FORCEINLINE constexpr explicit TIotaView(Iterator InFirst, Sentinel InLast) : First(InFirst.Value), Last(InLast.Value) { }
+	FORCEINLINE constexpr explicit TIotaView(FIterator InFirst, FSentinel InLast) : First(InFirst.Value), Last(InLast.Value) { }
 
-	FORCEINLINE constexpr explicit TIotaView(Iterator InFirst, FUnreachableSentinel) requires (CSameAs<S, FUnreachableSentinel>) : First(InFirst.Value) { }
+	FORCEINLINE constexpr explicit TIotaView(FIterator InFirst, FUnreachableSentinel) requires (CSameAs<S, FUnreachableSentinel>) : First(InFirst.Value) { }
 
-	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(First); }
+	NODISCARD FORCEINLINE constexpr FIterator Begin() const { return FIterator(First); }
 
-	NODISCARD FORCEINLINE constexpr Sentinel End() const { return Sentinel(Last); }
+	NODISCARD FORCEINLINE constexpr FSentinel End() const { return FSentinel(Last); }
 
 	NODISCARD FORCEINLINE constexpr size_t Num() const requires ((CIntegral<W> && CIntegral<S>) || CSizedSentinelFor<S, W>) { return Last - First; }
 
@@ -143,13 +143,13 @@ private:
 	{
 	public:
 
-		using ElementType = TRemoveCV<W>;
+		using FElementType = TRemoveCV<W>;
 
 		FORCEINLINE constexpr FIteratorImpl() requires (CDefaultConstructible<W>) = default;
 
 		NODISCARD friend FORCEINLINE constexpr bool operator==(const FIteratorImpl& LHS, const FIteratorImpl& RHS) requires (CEqualityComparable<W>) { return LHS.Value == RHS.Value; }
 
-		NODISCARD FORCEINLINE constexpr Reference operator*()  const { return           Value;  }
+		NODISCARD FORCEINLINE constexpr FReference operator*() const { return           Value;  }
 		NODISCARD FORCEINLINE constexpr const W*  operator->() const { return AddressOf(Value); }
 
 		FORCEINLINE constexpr FIteratorImpl& operator++() { ++Value; return *this; }
@@ -207,13 +207,13 @@ private:
 
 public:
 
-	using ElementType = W;
+	using FElementType = W;
 
-	using Reference = const W&;
+	using FReference = const W&;
 
-	using Iterator = FIteratorImpl;
+	using FIterator = FIteratorImpl;
 
-	using Sentinel = TConditional<bIsUnreachable, FUnreachableSentinel, Iterator>;
+	using FSentinel = TConditional<bIsUnreachable, FUnreachableSentinel, FIterator>;
 
 	FORCEINLINE constexpr TRepeatView() requires (CDefaultConstructible<W>) = default;
 
@@ -228,16 +228,16 @@ public:
 	template <typename... Ts> requires (CConstructibleFrom<W, Ts...>)
 	FORCEINLINE constexpr explicit TRepeatView(FInPlace, Ts&&... Args, size_t InCount) : Value(Forward<Ts>(Args)...), Count(InCount) { }
 
-	NODISCARD FORCEINLINE constexpr Iterator Begin() const { return Iterator(Value, 0); }
+	NODISCARD FORCEINLINE constexpr FIterator Begin() const { return FIterator(Value, 0); }
 
-	NODISCARD FORCEINLINE constexpr Sentinel End() const
+	NODISCARD FORCEINLINE constexpr FSentinel End() const
 	{
 		if constexpr (bIsUnreachable)
 		{
 			return UnreachableSentinel;
 		}
 
-		else return Sentinel(Value, Count);
+		else return FSentinel(Value, Count);
 	}
 
 	NODISCARD FORCEINLINE constexpr size_t Num() const requires (!bIsUnreachable) { return Count; }
@@ -254,7 +254,7 @@ private:
 	{
 	public:
 
-		using ElementType = W;
+		using FElementType = W;
 
 		FORCEINLINE constexpr FIteratorImpl() requires (CDefaultConstructible<W>) = default;
 
@@ -262,10 +262,10 @@ private:
 
 		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const FIteratorImpl& LHS, const FIteratorImpl& RHS) { return LHS.Current <=> RHS.Current; }
 
-		NODISCARD FORCEINLINE constexpr Reference operator*()  const { return *Ptr; }
+		NODISCARD FORCEINLINE constexpr FReference operator*() const { return *Ptr; }
 		NODISCARD FORCEINLINE constexpr const W*  operator->() const { return  Ptr; }
 
-		NODISCARD FORCEINLINE constexpr Reference operator[](ptrdiff) const { return *Ptr; }
+		NODISCARD FORCEINLINE constexpr FReference operator[](ptrdiff) const { return *Ptr; }
 
 		FORCEINLINE constexpr FIteratorImpl& operator++() { ++Current; return *this; }
 		FORCEINLINE constexpr FIteratorImpl& operator--() { --Current; return *this; }

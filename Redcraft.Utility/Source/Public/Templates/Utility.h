@@ -24,8 +24,8 @@ void AsConst(const T&& Ref) = delete;
 template <typename T>
 FORCEINLINE constexpr TRemoveReference<T>&& MoveTemp(T&& Obj)
 {
-	using CastType = TRemoveReference<T>;
-	return static_cast<CastType&&>(Obj);
+	using FCastType = TRemoveReference<T>;
+	return static_cast<FCastType&&>(Obj);
 }
 
 /** CopyTemp will enforce the creation of an rvalue which can bind to rvalue reference parameters. */

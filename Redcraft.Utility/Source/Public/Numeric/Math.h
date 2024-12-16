@@ -444,83 +444,83 @@ RESOLVE_ARITHMETIC_AMBIGUITY_2_ARGS(CArithmetic, IsNearlyZero)
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsInfinity(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) == 0;
+	return (IntegralValue & FTraits::ExponentMask) == FTraits::ExponentMask && (IntegralValue & FTraits::MantissaMask) == 0;
 }
 
 /** @return true if the given value is NaN, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNaN(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return (IntegralValue & Traits::ExponentMask) == Traits::ExponentMask && (IntegralValue & Traits::MantissaMask) != 0;
+	return (IntegralValue & FTraits::ExponentMask) == FTraits::ExponentMask && (IntegralValue & FTraits::MantissaMask) != 0;
 }
 
 /** @return true if the given value is normal, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNormal(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return (IntegralValue & Traits::ExponentMask) != 0 && (IntegralValue & Traits::ExponentMask) != Traits::ExponentMask;
+	return (IntegralValue & FTraits::ExponentMask) != 0 && (IntegralValue & FTraits::ExponentMask) != FTraits::ExponentMask;
 }
 
 /** @return true if the given value is subnormal, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsDenorm(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return (IntegralValue & Traits::ExponentMask) == 0 && (IntegralValue & Traits::MantissaMask) != 0;
+	return (IntegralValue & FTraits::ExponentMask) == 0 && (IntegralValue & FTraits::MantissaMask) != 0;
 }
 
 /** @return true if the given value is negative, even -0.0, false otherwise. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr bool IsNegative(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return (IntegralValue & Traits::SignMask) >> Traits::SignShift;
+	return (IntegralValue & FTraits::SignMask) >> FTraits::SignShift;
 }
 
 /** @return The exponent of the given value. */
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr uint Exponent(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return ((IntegralValue & Traits::ExponentMask) >> Traits::ExponentShift) - Traits::ExponentBias;
+	return ((IntegralValue & FTraits::ExponentMask) >> FTraits::ExponentShift) - FTraits::ExponentBias;
 }
 
 /** @return The NaN value with the given payload. */
 template <CFloatingPoint T, CUnsignedIntegral U>
 NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
 	checkf(Payload != 0, TEXT("Illegal payload. It must not be zero."));
 
-	checkf(Payload < (static_cast<typename Traits::FIntegralT>(1) << Traits::MantissaBits), TEXT("Illegal payload. It must be less than 2^MantissaBits."));
+	checkf(Payload < (static_cast<typename FTraits::FIntegralT>(1) << FTraits::MantissaBits), TEXT("Illegal payload. It must be less than 2^MantissaBits."));
 
 	if (Payload == 0) return TNumericLimits<T>::QuietNaN();
 
-	typename Traits::FIntegralT ValidPayload = Payload & Traits::MantissaMask;
+	typename FTraits::FIntegralT ValidPayload = Payload & FTraits::MantissaMask;
 
-	return Math::BitCast<T>(ValidPayload | Traits::ExponentMask);
+	return Math::BitCast<T>(ValidPayload | FTraits::ExponentMask);
 }
 
 /** @return The NaN value with the given payload. */
@@ -536,11 +536,11 @@ NODISCARD FORCEINLINE constexpr T NaN(U Payload)
 template <CFloatingPoint T>
 NODISCARD FORCEINLINE constexpr auto NaNPayload(T A)
 {
-	using Traits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
+	using FTraits = NAMESPACE_PRIVATE::TFloatingTypeTraits<T>;
 
-	auto IntegralValue = Math::BitCast<typename Traits::FIntegralT>(A);
+	auto IntegralValue = Math::BitCast<typename FTraits::FIntegralT>(A);
 
-	return IntegralValue & Traits::MantissaMask;
+	return IntegralValue & FTraits::MantissaMask;
 }
 
 /** @return The NaN payload of the given value. */

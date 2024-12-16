@@ -255,23 +255,23 @@ void TestPointerTraits()
 	always_check(!TPointerTraits<int64>::bIsPointer);
 
 	always_check(TPointerTraits<int64*>::bIsPointer);
-	always_check((CSameAs<TPointerTraits<int64*>::PointerType, int64*>));
-	always_check((CSameAs<TPointerTraits<int64*>::ElementType, int64>));
+	always_check((CSameAs<TPointerTraits<int64*>::FPointerType, int64*>));
+	always_check((CSameAs<TPointerTraits<int64*>::FElementType, int64>));
 	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
 
 	always_check(TPointerTraits<int64(*)[]>::bIsPointer);
-	always_check((CSameAs<TPointerTraits<int64(*)[]>::PointerType, int64(*)[]>));
-	always_check((CSameAs<TPointerTraits<int64(*)[]>::ElementType, int64>));
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::FPointerType, int64(*)[]>));
+	always_check((CSameAs<TPointerTraits<int64(*)[]>::FElementType, int64>));
 	always_check(TPointerTraits<int64*>::ToAddress(nullptr) == nullptr);
 
 	always_check(TPointerTraits<TSharedPtr<int64>>::bIsPointer);
-	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::PointerType, TSharedPtr<int64>>));
-	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::ElementType, int64>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::FPointerType, TSharedPtr<int64>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64>>::FElementType, int64>));
 	always_check(TPointerTraits<TSharedPtr<int64>>::ToAddress(nullptr) == nullptr);
 
 	always_check(TPointerTraits<TSharedPtr<int64[]>>::bIsPointer);
-	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::PointerType, TSharedPtr<int64[]>>));
-	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::ElementType, int64>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::FPointerType, TSharedPtr<int64[]>>));
+	always_check((CSameAs<TPointerTraits<TSharedPtr<int64[]>>::FElementType, int64>));
 	always_check(TPointerTraits<TSharedPtr<int64[]>>::ToAddress(nullptr) == nullptr);
 
 }

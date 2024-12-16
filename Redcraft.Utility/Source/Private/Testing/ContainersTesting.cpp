@@ -7,6 +7,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+// ReSharper disable CppInconsistentNaming
+
 NAMESPACE_BEGIN(Testing)
 
 void TestContainers()
@@ -602,6 +604,8 @@ void TestList()
 }
 
 NAMESPACE_END(Testing)
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

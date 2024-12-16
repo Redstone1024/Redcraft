@@ -31,20 +31,20 @@ private:
 
 public:
 
-	using ElementType = TRangeElement<V>;
-	using Reference = TRangeReference<V>;
+	using FElementType = TRangeElement<V>;
+	using FReference = TRangeReference<V>;
 
-	using Iterator = FIteratorImpl;
+	using FIterator = FIteratorImpl;
 
-	using Sentinel = TConditional<CCommonRange<V>, FIteratorImpl, FSentinelImpl>;
+	using FSentinel = TConditional<CCommonRange<V>, FIteratorImpl, FSentinelImpl>;
 
 	FORCEINLINE constexpr TFilterView() requires (CDefaultConstructible<V> && CDefaultConstructible<Pred>) = default;
 
 	FORCEINLINE constexpr explicit TFilterView(V InBase, Pred InPredicate) : Base(MoveTemp(InBase)), Predicate(MoveTemp(InPredicate)) { }
 
-	NODISCARD FORCEINLINE constexpr Iterator Begin()
+	NODISCARD FORCEINLINE constexpr FIterator Begin()
 	{
-		Iterator Iter(*this, Range::Begin(Base));
+		FIterator Iter(*this, Range::Begin(Base));
 
 		do
 		{
@@ -61,7 +61,7 @@ public:
 		return Iter;
 	}
 
-	NODISCARD FORCEINLINE constexpr Sentinel End() { return Sentinel(*this, Range::End(Base)); }
+	NODISCARD FORCEINLINE constexpr FSentinel End() { return FSentinel(*this, Range::End(Base)); }
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
 	NODISCARD FORCEINLINE constexpr V GetBase() &&                                      { return MoveTemp(Base); }
@@ -79,7 +79,7 @@ private:
 
 	public:
 
-		using ElementType = TIteratorElementType<TRangeIterator<V>>;
+		using FElementType = TIteratorElementType<TRangeIterator<V>>;
 
 		FORCEINLINE constexpr FIteratorImpl() requires (CDefaultConstructible<TRangeIterator<V>>) { } // Use '{ }' instead of '= default;' to avoid MSVC bug.
 

@@ -9,6 +9,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+// ReSharper disable CppInconsistentNaming
+
 #define NORETURN               [[noreturn]]
 #define CARRIES_DEPENDENCY     [[carries_dependency]]
 #define DEPRECATED(Message)    [[deprecated(Message)]]
@@ -41,6 +43,8 @@ using type_info        = NAMESPACE_STD::type_info;
 
 template <typename T>
 using initializer_list = NAMESPACE_STD::initializer_list<T>;
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

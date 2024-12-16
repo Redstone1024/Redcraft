@@ -12,17 +12,17 @@ NAMESPACE_PRIVATE_BEGIN
 
 template <typename T> using TWithReference = T&;
 
-template <typename I> struct TIteratorElementImpl     {                            };
-template <typename T> struct TIteratorElementImpl<T*> { using Type = TRemoveCV<T>; };
+template <typename I> struct TIteratorElementImpl     {                             };
+template <typename T> struct TIteratorElementImpl<T*> { using FType = TRemoveCV<T>; };
 
-template <typename I> requires (requires { typename I::ElementType; })
-struct TIteratorElementImpl<I> { using Type = typename I::ElementType; };
+template <typename I> requires (requires { typename I::FElementType; })
+struct TIteratorElementImpl<I> { using FType = typename I::FElementType; };
 
-template <typename I> struct TIteratorPointerImpl     {                  };
-template <typename T> struct TIteratorPointerImpl<T*> { using Type = T*; };
+template <typename I> struct TIteratorPointerImpl     {                   };
+template <typename T> struct TIteratorPointerImpl<T*> { using FType = T*; };
 
 template <typename I> requires (requires(I& Iter) { { Iter.operator->() } -> CPointer; })
-struct TIteratorPointerImpl<I> { using Type = decltype(DeclVal<I&>().operator->()); };
+struct TIteratorPointerImpl<I> { using FType = decltype(DeclVal<I&>().operator->()); };
 
 NAMESPACE_PRIVATE_END
 
@@ -33,10 +33,10 @@ template <typename T>
 concept CDereferenceable = requires(T& A) { { *A } -> CReferenceable; };
 
 template <typename I>
-using TIteratorElement = typename NAMESPACE_PRIVATE::TIteratorElementImpl<TRemoveCVRef<I>>::Type;
+using TIteratorElement = typename NAMESPACE_PRIVATE::TIteratorElementImpl<TRemoveCVRef<I>>::FType;
 
 template <typename I>
-using TIteratorPointer = typename NAMESPACE_PRIVATE::TIteratorPointerImpl<TRemoveCVRef<I>>::Type;
+using TIteratorPointer = typename NAMESPACE_PRIVATE::TIteratorPointerImpl<TRemoveCVRef<I>>::FType;
 
 template <CReferenceable I>
 using TIteratorReference = decltype(*DeclVal<I&>());
@@ -75,13 +75,13 @@ struct IIndirectlyReadable
 	 * The element type of the indirectly readable type.
 	 * It must be a non-const, non-volatile and non-reference type and can be referenced, i.e. not a void type.
 	 */
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	/**
 	 * Indirectly read the element from the indirectly readable type.
-	 * The return type may not be const ElementType&, this concept only requires that the return type
-	 * and ElementType has some relationship, such as copy constructible to ElementType if the type is copyable.
-	 * This means that returning a proxy class castable to ElementType is also valid.
+	 * The return type may not be const FElementType&, this concept only requires that the return type
+	 * and FElementType has some relationship, such as copy constructible to FElementType if the type is copyable.
+	 * This means that returning a proxy class castable to FElementType is also valid.
 	 * If this is an iterator adaptor, use decltype(auto) to forward the return value.
 	 */
 	T operator*() const;
@@ -227,7 +227,7 @@ struct IInputIterator /* : IInputOrOutputIterator, IIndirectlyReadable */
 {
 	// ~Begin CIndirectlyReadable.
 
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	// ~End CIndirectlyReadable.
 

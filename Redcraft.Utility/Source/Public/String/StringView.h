@@ -82,36 +82,36 @@ class TStringView : public TArrayView<const T>
 {
 private:
 
-	using Super = TArrayView<const T>;
+	using FSuper = TArrayView<const T>;
 
 public:
 
-	using ElementType = T;
+	using FElementType = T;
 
-	using Reference = typename Super::Reference;
+	using FReference = typename FSuper::FReference;
 
-	using Iterator        = typename Super::Iterator;
-	using ReverseIterator = typename Super::ReverseIterator;
+	using        FIterator = typename FSuper::       FIterator;
+	using FReverseIterator = typename FSuper::FReverseIterator;
 
-	static_assert(CContiguousIterator<Iterator>);
+	static_assert(CContiguousIterator<FIterator>);
 
 	/** Constructs an empty string view. */
 	FORCEINLINE constexpr TStringView() = default;
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
-	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const ElementType(*)[]>)
-	FORCEINLINE constexpr TStringView(I InFirst, size_t InCount) : Super(InFirst, InCount) { }
+	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const FElementType(*)[]>)
+	FORCEINLINE constexpr TStringView(I InFirst, size_t InCount) : FSuper(InFirst, InCount) { }
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InLast'). */
-	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const ElementType(*)[]>)
-	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : Super(InFirst, InLast) { }
+	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const FElementType(*)[]>)
+	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : FSuper(InFirst, InLast) { }
 
 	/** Constructs a string view that is a view over the string 'InString'. */
 	template <typename Allocator>
-	FORCEINLINE constexpr TStringView(const TString<ElementType, Allocator>& InString);
+	FORCEINLINE constexpr TStringView(const TString<FElementType, Allocator>& InString);
 
 	/** Constructs a string view that is a view over the range ['InPtr', 'InPtr' + 'Count'). */
-	FORCEINLINE constexpr TStringView(const ElementType* InPtr, size_t Count) : Super(InPtr, Count)
+	FORCEINLINE constexpr TStringView(const FElementType* InPtr, size_t Count) : FSuper(InPtr, Count)
 	{
 		checkf(InPtr != nullptr, TEXT("TStringView cannot be initialized by nullptr. Please check the pointer."));
 	}
@@ -119,23 +119,23 @@ public:
 	FORCEINLINE constexpr TStringView(nullptr_t, size_t) = delete;
 
 	/** Constructs a string view that is a view over the range ['InPtr', '\0'). */
-	FORCEINLINE constexpr TStringView(const ElementType* InPtr)
+	FORCEINLINE constexpr TStringView(const FElementType* InPtr)
 	{
 		checkf(InPtr != nullptr, TEXT("TStringView cannot be initialized by nullptr. Please check the pointer."));
 
 		size_t Length = 0;
 
-		if constexpr (CSameAs<ElementType, char>)
+		if constexpr (CSameAs<FElementType, char>)
 		{
 			Length = NAMESPACE_STD::strlen(InPtr);
 		}
-		else if constexpr (CSameAs<ElementType, wchar>)
+		else if constexpr (CSameAs<FElementType, wchar>)
 		{
 			Length = NAMESPACE_STD::wcslen(InPtr);
 		}
 		else
 		{
-			while (InPtr[Length] != LITERAL(ElementType, '\0')) ++Length;
+			while (InPtr[Length] != LITERAL(FElementType, '\0')) ++Length;
 		}
 
 		*this = TStringView(InPtr, Length);
@@ -150,18 +150,18 @@ public:
 	FORCEINLINE constexpr TStringView& operator=(const TStringView&) noexcept = default;
 
 	/** Compares the contents of two string views. */
-	NODISCARD friend constexpr bool operator==(TStringView LHS, TStringView RHS) { return static_cast<Super>(LHS) == static_cast<Super>(RHS); }
+	NODISCARD friend constexpr bool operator==(TStringView LHS, TStringView RHS) { return static_cast<FSuper>(LHS) == static_cast<FSuper>(RHS); }
 
 	/** Compares the contents of a string view and a character. */
-	NODISCARD friend constexpr bool operator==(TStringView LHS, ElementType RHS) { return LHS == TStringView(&RHS, 1); }
-	NODISCARD friend constexpr bool operator==(ElementType LHS, TStringView RHS) { return TStringView(&LHS, 1) == RHS; }
+	NODISCARD friend constexpr bool operator==(TStringView  LHS, FElementType RHS) { return LHS == TStringView(&RHS, 1); }
+	NODISCARD friend constexpr bool operator==(FElementType LHS, TStringView  RHS) { return TStringView(&LHS, 1) == RHS; }
 
 	/** Compares the contents of two string views. */
-	NODISCARD friend constexpr auto operator<=>(TStringView LHS, TStringView RHS) { return static_cast<Super>(LHS) <=> static_cast<Super>(RHS); }
+	NODISCARD friend constexpr auto operator<=>(TStringView LHS, TStringView RHS) { return static_cast<FSuper>(LHS) <=> static_cast<FSuper>(RHS); }
 
 	/** Compares the contents of a string view and a character. */
-	NODISCARD friend constexpr auto operator<=>(TStringView LHS, ElementType RHS) { return LHS <=> TStringView(&RHS, 1); }
-	NODISCARD friend constexpr auto operator<=>(ElementType LHS, TStringView RHS) { return TStringView(&LHS, 1) <=> RHS; }
+	NODISCARD friend constexpr auto operator<=>(TStringView  LHS, FElementType RHS) { return LHS <=> TStringView(&RHS, 1); }
+	NODISCARD friend constexpr auto operator<=>(FElementType LHS, TStringView  RHS) { return TStringView(&LHS, 1) <=> RHS; }
 
 public:
 
@@ -188,7 +188,7 @@ public:
 	/** Removes whitespace characters from the start of this string. */
 	FORCEINLINE constexpr TStringView& TrimStart()
 	{
-		auto Index = Find([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+		auto Index = Find([](FElementType Char) { return !TChar<FElementType>::IsSpace(Char); });
 
 		if (Index != INDEX_NONE)
 		{
@@ -202,7 +202,7 @@ public:
 	/** Removes whitespace characters from the end of this string. */
 	FORCEINLINE constexpr TStringView& TrimEnd()
 	{
-		auto Index = RFind([](ElementType Char) { return !TChar<ElementType>::IsSpace(Char); });
+		auto Index = RFind([](FElementType Char) { return !TChar<FElementType>::IsSpace(Char); });
 
 		if (Index != INDEX_NONE)
 		{
@@ -225,7 +225,7 @@ public:
 	/** Removes characters after the first null-terminator. */
 	FORCEINLINE constexpr TStringView& TrimToNullTerminator()
 	{
-		auto Index = Find(LITERAL(ElementType, '\0'));
+		auto Index = Find(LITERAL(FElementType, '\0'));
 
 		if (Index != INDEX_NONE)
 		{
@@ -238,7 +238,7 @@ public:
 public:
 
 	/** Copies the elements of this string view to the destination buffer without null-termination. */
-	FORCEINLINE constexpr size_t Copy(ElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
+	FORCEINLINE constexpr size_t Copy(FElementType* Dest, size_t Count = DynamicExtent, size_t Offset = 0) const
 	{
 		checkf(Dest != nullptr, TEXT("Illegal destination buffer. Please check the pointer."));
 
@@ -277,7 +277,7 @@ public:
 	{
 		checkf(Offset <= this->Num() && (Count == DynamicExtent || Offset + Count <= this->Num()), TEXT("Illegal subview range. Please check Offset and Count."));
 
-		Super Temp = this->Subview(Offset, Count);
+		FSuper Temp = this->Subview(Offset, Count);
 
 		return TStringView(Temp.GetData(), Temp.Num());
 	}
@@ -289,7 +289,7 @@ public:
 	}
 
 	/** @return true if the string view starts with the given prefix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool StartsWith(ElementType Prefix) const
+	NODISCARD FORCEINLINE constexpr bool StartsWith(FElementType Prefix) const
 	{
 		return this->Num() >= 1 && this->Front() == Prefix;
 	}
@@ -301,7 +301,7 @@ public:
 	}
 
 	/** @return true if the string view ends with the given suffix, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool EndsWith(ElementType Suffix) const
+	NODISCARD FORCEINLINE constexpr bool EndsWith(FElementType Suffix) const
 	{
 		return this->Num() >= 1 && this->Back() == Suffix;
 	}
@@ -313,13 +313,13 @@ public:
 	}
 
 	/** @return true if the string view contains the given character, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool Contains(ElementType Char) const
+	NODISCARD FORCEINLINE constexpr bool Contains(FElementType Char) const
 	{
 		return Find(Char) != INDEX_NONE;
 	}
 
 	/** @return true if the string view contains character that satisfy the given predicate, false otherwise. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD FORCEINLINE constexpr bool Contains(F&& InPredicate) const
 	{
 		return Find(Forward<F>(InPredicate)) != INDEX_NONE;
@@ -346,7 +346,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t Find(ElementType Char, size_t Index = 0) const
+	NODISCARD constexpr size_t Find(FElementType Char, size_t Index = 0) const
 	{
 		if (Index >= this->Num()) return INDEX_NONE;
 
@@ -362,7 +362,7 @@ public:
 	}
 
 	/** @return The index of the first occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD constexpr size_t Find(F&& InPredicate, size_t Index = 0) const
 	{
 		if (Index >= this->Num()) return INDEX_NONE;
@@ -401,7 +401,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD constexpr size_t RFind(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD constexpr size_t RFind(FElementType Char, size_t Index = INDEX_NONE) const
 	{
 		if (Index != INDEX_NONE && Index >= this->Num()) return INDEX_NONE;
 
@@ -419,7 +419,7 @@ public:
 	}
 
 	/** @return The index of the last occurrence of the character that satisfy the given predicate, or INDEX_NONE if not found. */
-	template <CPredicate<ElementType> F>
+	template <CPredicate<FElementType> F>
 	NODISCARD constexpr size_t RFind(F&& InPredicate, size_t Index = INDEX_NONE) const
 	{
 		if (Index != INDEX_NONE && Index >= this->Num()) return INDEX_NONE;
@@ -440,11 +440,11 @@ public:
 	/** @return The index of the first occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(TStringView View, size_t Index = 0) const
 	{
-		return Find([View](ElementType Char) { return View.Contains(Char); }, Index);
+		return Find([View](FElementType Char) { return View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the first occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE constexpr size_t FindFirstOf(FElementType Char, size_t Index = 0) const
 	{
 		return Find(Char, Index);
 	}
@@ -452,11 +452,11 @@ public:
 	/** @return The index of the last occurrence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		return RFind([View](ElementType Char) { return View.Contains(Char); }, Index);
+		return RFind([View](FElementType Char) { return View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the last occurrence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE constexpr size_t FindLastOf(FElementType Char, size_t Index = INDEX_NONE) const
 	{
 		return RFind(Char, Index);
 	}
@@ -464,25 +464,25 @@ public:
 	/** @return The index of the first absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(TStringView View, size_t Index = 0) const
 	{
-		return Find([View](ElementType Char) { return !View.Contains(Char); }, Index);
+		return Find([View](FElementType Char) { return !View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the first absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(ElementType Char, size_t Index = 0) const
+	NODISCARD FORCEINLINE constexpr size_t FindFirstNotOf(FElementType Char, size_t Index = 0) const
 	{
-		return Find([Char](ElementType C) { return C != Char; }, Index);
+		return Find([Char](FElementType C) { return C != Char; }, Index);
 	}
 
 	/** @return The index of the last absence of the character contained in the given view, or INDEX_NONE if not found. */
 	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(TStringView View, size_t Index = INDEX_NONE) const
 	{
-		return RFind([View](ElementType Char) { return !View.Contains(Char); }, Index);
+		return RFind([View](FElementType Char) { return !View.Contains(Char); }, Index);
 	}
 
 	/** @return The index of the last absence of the given character, or INDEX_NONE if not found. */
-	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(ElementType Char, size_t Index = INDEX_NONE) const
+	NODISCARD FORCEINLINE constexpr size_t FindLastNotOf(FElementType Char, size_t Index = INDEX_NONE) const
 	{
-		return RFind([Char](ElementType C) { return C != Char; }, Index);
+		return RFind([Char](FElementType C) { return C != Char; }, Index);
 	}
 
 public:
@@ -490,18 +490,18 @@ public:
 	/** @return The non-modifiable standard C character string version of the string view. */
 	NODISCARD FORCEINLINE auto operator*() const
 	{
-		if (this->Back() == LITERAL(ElementType, '\0') || Contains(LITERAL(ElementType, '\0')))
+		if (this->Back() == LITERAL(FElementType, '\0') || Contains(LITERAL(FElementType, '\0')))
 		{
-			return NAMESPACE_PRIVATE::TCStringFromTStringView<ElementType>(this->GetData(), false);
+			return NAMESPACE_PRIVATE::TCStringFromTStringView<FElementType>(this->GetData(), false);
 		}
 
-		ElementType* Buffer = new ElementType[this->Num() + 1];
+		FElementType* Buffer = new FElementType[this->Num() + 1];
 
 		Copy(Buffer);
 
-		Buffer[this->Num()] = LITERAL(ElementType, '\0');
+		Buffer[this->Num()] = LITERAL(FElementType, '\0');
 
-		return NAMESPACE_PRIVATE::TCStringFromTStringView<ElementType>(Buffer, true);
+		return NAMESPACE_PRIVATE::TCStringFromTStringView<FElementType>(Buffer, true);
 	}
 
 public:
@@ -509,9 +509,9 @@ public:
 	/** @return true if the string only contains valid characters, false otherwise. */
 	NODISCARD constexpr bool IsValid() const
 	{
-		for (ElementType Char : *this)
+		for (FElementType Char : *this)
 		{
-			if (!TChar<ElementType>::IsValid(Char)) return false;
+			if (!TChar<FElementType>::IsValid(Char)) return false;
 		}
 
 		return true;
@@ -520,9 +520,9 @@ public:
 	/** @return true if the string only contains ASCII characters, false otherwise. */
 	NODISCARD constexpr bool IsASCII() const
 	{
-		for (ElementType Char : *this)
+		for (FElementType Char : *this)
 		{
-			if (!TChar<ElementType>::IsASCII(Char)) return false;
+			if (!TChar<FElementType>::IsASCII(Char)) return false;
 		}
 
 		return true;
@@ -543,7 +543,7 @@ public:
 	{
 		TStringView View = *this;
 
-		if (View.StartsWith(LITERAL(ElementType, '-')))
+		if (View.StartsWith(LITERAL(FElementType, '-')))
 		{
 			if (bSigned) View.RemovePrefix(1);
 			else return false;
@@ -559,7 +559,7 @@ public:
 	{
 		TStringView View = *this;
 
-		if (View.StartsWith(LITERAL(ElementType, '-')))
+		if (View.StartsWith(LITERAL(FElementType, '-')))
 		{
 			if (bSigned) View.RemovePrefix(1);
 			else return false;
@@ -659,7 +659,7 @@ public:
 public:
 
 	/** Overloads the GetTypeHash algorithm for TStringView. */
-	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TStringView A) { return GetTypeHash(static_cast<Super>(A)); }
+	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(TStringView A) { return GetTypeHash(static_cast<FSuper>(A)); }
 
 };
 
@@ -676,6 +676,8 @@ using FU16StringView     = TStringView<u16char>;
 using FU32StringView     = TStringView<u32char>;
 using FUnicodeStringView = TStringView<unicodechar>;
 
+// ReSharper disable CppInconsistentNaming
+
 #define TEXT_VIEW(X)        TStringView(TEXT(X))
 #define WTEXT_VIEW(X)       TStringView(WTEXT(X))
 #define U8TEXT_VIEW(X)      TStringView(U8TEXT(X))
@@ -684,6 +686,8 @@ using FUnicodeStringView = TStringView<unicodechar>;
 #define UNICODETEXT_VIEW(X) TStringView(UNICODETEXT(X))
 
 #define LITERAL_VIEW(T, X)  TStringView(LITERAL(T, X))
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

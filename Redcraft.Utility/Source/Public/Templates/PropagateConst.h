@@ -24,7 +24,7 @@ template <typename T>
 concept CTPropagateConst = NAMESPACE_PRIVATE::TIsTPropagateConst<TRemoveCV<T>>::Value;
 
 /**
- * TPropagateConst is a const-propagating wrapper for pointers and pointer-like objects. 
+ * TPropagateConst is a const-propagating wrapper for pointers and pointer-like objects.
  * It treats the wrapped pointer as a pointer to const when accessed through a const access path, hence the name.
  */
 template <typename T> requires (TPointerTraits<T>::bIsPointer)
@@ -32,7 +32,7 @@ class TPropagateConst final
 {
 public:
 
-	using ElementType = TPointerTraits<T>::ElementType;
+	using FElementType = TPointerTraits<T>::FElementType;
 
 	/** Constructs an TPropagateConst, default-initializing underlying pointer. */
 	FORCEINLINE constexpr TPropagateConst() = default;
@@ -105,26 +105,26 @@ public:
 	NODISCARD FORCEINLINE constexpr decltype(auto) operator<=>(U InPtr) const& { return SynthThreeWayCompare(Ptr, InPtr); }
 
 	/** @return The pointer to the object pointed to by the wrapped pointer. */
-	NODISCARD FORCEINLINE constexpr       ElementType* Get()       { return TPointerTraits<T>::ToAddress(Ptr); }
-	NODISCARD FORCEINLINE constexpr const ElementType* Get() const { return TPointerTraits<T>::ToAddress(Ptr); }
+	NODISCARD FORCEINLINE constexpr       FElementType* Get()       { return TPointerTraits<T>::ToAddress(Ptr); }
+	NODISCARD FORCEINLINE constexpr const FElementType* Get() const { return TPointerTraits<T>::ToAddress(Ptr); }
 
 	/** @return true if *this owns an object, false otherwise. */
 	NODISCARD FORCEINLINE constexpr bool           IsValid() const { return Get() != nullptr; }
 	NODISCARD FORCEINLINE constexpr explicit operator bool() const { return Get() != nullptr; }
 
 	/** @return The a reference or pointer to the object owned by *this, i.e. Get(). */
-	NODISCARD FORCEINLINE constexpr       ElementType& operator*()        { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
-	NODISCARD FORCEINLINE constexpr const ElementType& operator*()  const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
-	NODISCARD FORCEINLINE constexpr       ElementType* operator->()       { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
-	NODISCARD FORCEINLINE constexpr const ElementType* operator->() const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
+	NODISCARD FORCEINLINE constexpr       FElementType& operator*()        { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
+	NODISCARD FORCEINLINE constexpr const FElementType& operator*()  const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return *Get(); }
+	NODISCARD FORCEINLINE constexpr       FElementType* operator->()       { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
+	NODISCARD FORCEINLINE constexpr const FElementType* operator->() const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return  Get(); }
 
 	/** @return The element at index, i.e. Get()[Index]. */
 	NODISCARD FORCEINLINE constexpr       T& operator[](size_t Index)       { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return Get()[Index]; }
 	NODISCARD FORCEINLINE constexpr const T& operator[](size_t Index) const { checkf(IsValid(), TEXT("Read access violation. Please check IsValid().")); return Get()[Index]; }
 
 	/** @return The pointer to the object pointed to by the wrapped pointer-like object. */
-	NODISCARD FORCEINLINE constexpr operator       ElementType*()       requires (CConvertibleTo<T, ElementType*>) { return Ptr; }
-	NODISCARD FORCEINLINE constexpr operator const ElementType*() const requires (CConvertibleTo<T, ElementType*>) { return Ptr; }
+	NODISCARD FORCEINLINE constexpr operator       FElementType*()       requires (CConvertibleTo<T, FElementType*>) { return Ptr; }
+	NODISCARD FORCEINLINE constexpr operator const FElementType*() const requires (CConvertibleTo<T, FElementType*>) { return Ptr; }
 
 	/** @return The reference to the pointer-like object stored. */
 	NODISCARD FORCEINLINE constexpr       T& GetUnderlying()       { return Ptr; }

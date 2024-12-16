@@ -27,41 +27,41 @@ private:
 
 public:
 
-	using ElementType   = T;
-	using AllocatorType = Allocator;
+	using FElementType   = T;
+	using FAllocatorType = Allocator;
 
-	using      Reference =       T&;
-	using ConstReference = const T&;
+	using      FReference =       T&;
+	using FConstReference = const T&;
 
-	using      Iterator = TIteratorImpl<false>;
-	using ConstIterator = TIteratorImpl<true >;
+	using      FIterator = TIteratorImpl<false>;
+	using FConstIterator = TIteratorImpl<true >;
 
-	using      ReverseIterator = TReverseIterator<     Iterator>;
-	using ConstReverseIterator = TReverseIterator<ConstIterator>;
+	using      FReverseIterator = TReverseIterator<     FIterator>;
+	using FConstReverseIterator = TReverseIterator<FConstIterator>;
 
-	static_assert(CContiguousIterator<     Iterator>);
-	static_assert(CContiguousIterator<ConstIterator>);
+	static_assert(CContiguousIterator<     FIterator>);
+	static_assert(CContiguousIterator<FConstIterator>);
 
 	/** Default constructor. Constructs an empty container with a default-constructed allocator. */
 	FORCEINLINE TArray() : TArray(0) { }
 
 	/** Constructs the container with 'Count' default instances of T. */
-	explicit TArray(size_t Count) requires (CDefaultConstructible<ElementType>)
+	explicit TArray(size_t Count) requires (CDefaultConstructible<FElementType>)
 	{
 		Impl.ArrayNum = Count;
 		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
 		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::DefaultConstruct<ElementType>(Impl.Pointer, Num());
+		Memory::DefaultConstruct<FElementType>(Impl.Pointer, Num());
 	}
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
-	TArray(size_t Count, const ElementType& InValue) requires (CCopyConstructible<ElementType>)
+	TArray(size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
 		: TArray(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>> && CMovable<ElementType>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>> && CMovable<FElementType>)
 	TArray(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
@@ -76,7 +76,7 @@ public:
 
 			for (size_t Index = 0; Index != Count; ++Index)
 			{
-				new (Impl.Pointer + Index) ElementType(*First++);
+				new (Impl.Pointer + Index) FElementType(*First++);
 			}
 		}
 		else
@@ -94,17 +94,17 @@ public:
 	}
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
-	TArray(const TArray& InValue) requires (CCopyConstructible<ElementType>)
+	TArray(const TArray& InValue) requires (CCopyConstructible<FElementType>)
 	{
 		Impl.ArrayNum = InValue.Num();
 		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
 		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::CopyConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
+		Memory::CopyConstruct<FElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 	}
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
-	TArray(TArray&& InValue) requires (CMoveConstructible<ElementType>)
+	TArray(TArray&& InValue) requires (CMoveConstructible<FElementType>)
 	{
 		Impl.ArrayNum = InValue.Num();
 
@@ -122,14 +122,14 @@ public:
 			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 		}
 
 		InValue.Reset();
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TArray(initializer_list<ElementType> IL) requires (CCopyConstructible<ElementType>) : TArray(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TArray(Iteration::Begin(IL), Iteration::End(IL)) { }
 
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	~TArray()
@@ -139,7 +139,7 @@ public:
 	}
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
-	TArray& operator=(const TArray& InValue) requires (CCopyable<ElementType>)
+	TArray& operator=(const TArray& InValue) requires (CCopyable<FElementType>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -157,7 +157,7 @@ public:
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 
 			return *this;
 		}
@@ -170,7 +170,7 @@ public:
 		else if (InValue.Num() <= Max())
 		{
 			Memory::CopyAssign(Impl.Pointer, InValue.Impl.Pointer, Num());
-			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
 		}
 		else check_no_entry();
 
@@ -180,7 +180,7 @@ public:
 	}
 
 	/** Move assignment operator. After the move, 'InValue' is guaranteed to be empty. */
-	TArray& operator=(TArray&& InValue) requires (CMovable<ElementType>)
+	TArray& operator=(TArray&& InValue) requires (CMovable<FElementType>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -214,7 +214,7 @@ public:
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, InValue.Impl.Pointer, Num());
 
 			InValue.Reset();
 
@@ -229,7 +229,7 @@ public:
 		else if (InValue.Num() <= Max())
 		{
 			Memory::MoveAssign(Impl.Pointer, InValue.Impl.Pointer, Num());
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + Num(), InValue.Impl.Pointer + Num(), InValue.Num() - Num());
 		}
 		else check_no_entry();
 
@@ -241,7 +241,7 @@ public:
 	}
 
 	/** Replaces the contents with those identified by initializer list. */
-	TArray& operator=(initializer_list<ElementType> IL) requires (CCopyable<ElementType>)
+	TArray& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
 		size_t NumToAllocate = GetNum(IL);
 
@@ -257,7 +257,7 @@ public:
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<ElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
 
 			return *this;
 		}
@@ -270,7 +270,7 @@ public:
 		else if (GetNum(IL) <= Max())
 		{
 			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
-			Memory::CopyConstruct<ElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL) + Num(), GetNum(IL) - Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL) + Num(), GetNum(IL) - Num());
 		}
 		else check_no_entry();
 
@@ -280,7 +280,7 @@ public:
 	}
 
 	/** Compares the contents of two arrays. */
-	NODISCARD friend bool operator==(const TArray& LHS, const TArray& RHS) requires (CWeaklyEqualityComparable<ElementType>)
+	NODISCARD friend bool operator==(const TArray& LHS, const TArray& RHS) requires (CWeaklyEqualityComparable<FElementType>)
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
@@ -293,7 +293,7 @@ public:
 	}
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend auto operator<=>(const TArray& LHS, const TArray& RHS) requires (CSynthThreeWayComparable<ElementType>)
+	NODISCARD friend auto operator<=>(const TArray& LHS, const TArray& RHS) requires (CSynthThreeWayComparable<FElementType>)
 	{
 		const size_t NumToCompare = LHS.Num() < RHS.Num() ? LHS.Num() : RHS.Num();
 
@@ -306,7 +306,7 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	Iterator Insert(ConstIterator Iter, const ElementType& InValue) requires (CCopyable<ElementType>)
+	FIterator Insert(FConstIterator Iter, const FElementType& InValue) requires (CCopyable<FElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -318,26 +318,26 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() + 1;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
-			new (Impl.Pointer + InsertIndex) ElementType(InValue);
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) FElementType(InValue);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Impl.Pointer + InsertIndex);
+			return FIterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
+			new (Impl.Pointer + Num()) FElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
@@ -346,15 +346,15 @@ public:
 
 			Impl.Pointer[InsertIndex] = InValue;
 		}
-		else new (Impl.Pointer + Num()) ElementType(InValue);
+		else new (Impl.Pointer + Num()) FElementType(InValue);
 
 		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Impl.Pointer + InsertIndex);
+		return FIterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	Iterator Insert(ConstIterator Iter, ElementType&& InValue) requires (CMovable<ElementType>)
+	FIterator Insert(FConstIterator Iter, FElementType&& InValue) requires (CMovable<FElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -366,26 +366,26 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() + 1;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
-			new (Impl.Pointer + InsertIndex) ElementType(MoveTemp(InValue));
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) FElementType(MoveTemp(InValue));
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Impl.Pointer + InsertIndex);
+			return FIterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
+			new (Impl.Pointer + Num()) FElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
@@ -394,15 +394,15 @@ public:
 
 			Impl.Pointer[InsertIndex] = MoveTemp(InValue);
 		}
-		else new (Impl.Pointer + Num()) ElementType(MoveTemp(InValue));
+		else new (Impl.Pointer + Num()) FElementType(MoveTemp(InValue));
 
 		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Impl.Pointer + InsertIndex);
+		return FIterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
-	Iterator Insert(ConstIterator Iter, size_t Count, const ElementType& InValue) requires (CCopyable<ElementType>)
+	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyable<FElementType>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -410,9 +410,9 @@ public:
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<ElementType, TIteratorReferenceType<I>>
-		&& CAssignableFrom<ElementType&, TIteratorReferenceType<I>> && CMovable<ElementType>)
-	Iterator Insert(ConstIterator Iter, I First, S Last)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>
+		&& CAssignableFrom<FElementType&, TIteratorReferenceType<I>> && CMovable<FElementType>)
+	FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -423,7 +423,7 @@ public:
 			const size_t InsertIndex = Iter - Begin();
 			const size_t Count = Iteration::Distance(First, Last);
 
-			if (Count == 0) return Iterator(this, Impl.Pointer + InsertIndex);
+			if (Count == 0) return FIterator(this, Impl.Pointer + InsertIndex);
 
 			const size_t NumToAllocate = Num() + Count > Max() ? Impl->CalculateSlackGrow(Num() + Count, Max()) : Max();
 
@@ -431,26 +431,26 @@ public:
 
 			if (NumToAllocate != Max())
 			{
-				ElementType* OldAllocation = Impl.Pointer;
-				const size_t NumToDestruct = Num();
+				FElementType* OldAllocation = Impl.Pointer;
+				const size_t  NumToDestruct = Num();
 
 				Impl.ArrayNum = Num() + Count;
 				Impl.ArrayMax = NumToAllocate;
 				Impl.Pointer  = Impl->Allocate(Max());
 
-				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+				Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, InsertIndex);
 
 				for (size_t Index = InsertIndex; Index != InsertIndex + Count; ++Index)
 				{
-					new (Impl.Pointer + Index) ElementType(*First++);
+					new (Impl.Pointer + Index) FElementType(*First++);
 				}
 
-				Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+				Memory::MoveConstruct<FElementType>(Impl.Pointer + InsertIndex + Count, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 				Memory::Destruct(OldAllocation, NumToDestruct);
 				Impl->Deallocate(OldAllocation);
 
-				return Iterator(this, Impl.Pointer + InsertIndex);
+				return FIterator(this, Impl.Pointer + InsertIndex);
 			}
 
 			/*
@@ -492,7 +492,7 @@ public:
 
 			for (size_t TargetIndex = IndexO - 1; TargetIndex != IndexD - 1; --TargetIndex)
 			{
-				new (Impl.Pointer + TargetIndex) ElementType(MoveTemp(Impl.Pointer[TargetIndex - Count]));
+				new (Impl.Pointer + TargetIndex) FElementType(MoveTemp(Impl.Pointer[TargetIndex - Count]));
 			}
 
 			for (size_t TargetIndex = IndexD - 1; TargetIndex != IndexC - 1; --TargetIndex)
@@ -507,14 +507,14 @@ public:
 
 			for (size_t TargetIndex = IndexB; TargetIndex != IndexC; ++TargetIndex)
 			{
-				new (Impl.Pointer + TargetIndex) ElementType(*First++);
+				new (Impl.Pointer + TargetIndex) FElementType(*First++);
 			}
 
 			check(First == Last);
 
 			Impl.ArrayNum = Num() + Count;
 
-			return Iterator(this, Impl.Pointer + InsertIndex);
+			return FIterator(this, Impl.Pointer + InsertIndex);
 		}
 		else
 		{
@@ -524,14 +524,14 @@ public:
 	}
 
 	/** Inserts elements from initializer list before 'Iter' in the container. */
-	FORCEINLINE Iterator Insert(ConstIterator Iter, initializer_list<ElementType> IL) requires (CCopyable<ElementType>)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
 		return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL));
 	}
 
 	/** Inserts a new element into the container directly before 'Iter'. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMovable<ElementType>)
-	Iterator Emplace(ConstIterator Iter, Ts&&... Args)
+	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...> && CMovable<FElementType>)
+	FIterator Emplace(FConstIterator Iter, Ts&&... Args)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -543,43 +543,43 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() + 1;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, InsertIndex);
-			new (Impl.Pointer + InsertIndex) ElementType(Forward<Ts>(Args)...);
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, InsertIndex);
+			new (Impl.Pointer + InsertIndex) FElementType(Forward<Ts>(Args)...);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + InsertIndex + 1, OldAllocation + InsertIndex, NumToDestruct - InsertIndex);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Impl.Pointer + InsertIndex);
+			return FIterator(this, Impl.Pointer + InsertIndex);
 		}
 
 		if (InsertIndex != Num())
 		{
-			new (Impl.Pointer + Num()) ElementType(MoveTemp(Impl.Pointer[Num() - 1]));
+			new (Impl.Pointer + Num()) FElementType(MoveTemp(Impl.Pointer[Num() - 1]));
 
 			for (size_t Index = Num() - 1; Index != InsertIndex; --Index)
 			{
 				Impl.Pointer[Index] = MoveTemp(Impl.Pointer[Index - 1]);
 			}
 
-			Impl.Pointer[InsertIndex] = ElementType(Forward<Ts>(Args)...);
+			Impl.Pointer[InsertIndex] = FElementType(Forward<Ts>(Args)...);
 		}
-		else new (Impl.Pointer + Num()) ElementType(Forward<Ts>(Args)...);
+		else new (Impl.Pointer + Num()) FElementType(Forward<Ts>(Args)...);
 
 		Impl.ArrayNum = Num() + 1;
 
-		return Iterator(this, Impl.Pointer + InsertIndex);
+		return FIterator(this, Impl.Pointer + InsertIndex);
 	}
 
 	/** Removes the element at 'Iter' in the container. Without changing the order of elements. */
-	FORCEINLINE Iterator StableErase(ConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<ElementType>)
+	FORCEINLINE FIterator StableErase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<FElementType>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -587,33 +587,33 @@ public:
 	}
 
 	/** Removes the elements in the range ['First', 'Last') in the container. Without changing the order of elements. */
-	Iterator StableErase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true) requires (CMovable<ElementType>)
+	FIterator StableErase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<FElementType>)
 	{
 		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		const size_t EraseIndex = First - Begin();
 		const size_t EraseCount = Last - First;
 
-		if (EraseCount == 0) return Iterator(this, Impl.Pointer + EraseIndex);
+		if (EraseCount == 0) return FIterator(this, Impl.Pointer + EraseIndex);
 
 		const size_t NumToAllocate = bAllowShrinking ? Impl->CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() - EraseCount;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, EraseIndex);
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, EraseIndex);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Impl.Pointer + EraseIndex);
+			return FIterator(this, Impl.Pointer + EraseIndex);
 		}
 
 		for (size_t Index = EraseIndex + EraseCount; Index != Num(); ++Index)
@@ -625,11 +625,11 @@ public:
 
 		Impl.ArrayNum = Num() - EraseCount;
 
-		return Iterator(this, Impl.Pointer + EraseIndex);
+		return FIterator(this, Impl.Pointer + EraseIndex);
 	}
 
 	/** Removes the element at 'Iter' in the container. But it may change the order of elements. */
-	FORCEINLINE Iterator Erase(ConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<ElementType>)
+	FORCEINLINE FIterator Erase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<FElementType>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -637,33 +637,33 @@ public:
 	}
 
 	/** Removes the elements in the range ['First', 'Last') in the container. But it may change the order of elements. */
-	Iterator Erase(ConstIterator First, ConstIterator Last, bool bAllowShrinking = true) requires (CMovable<ElementType>)
+	FIterator Erase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<FElementType>)
 	{
 		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		const size_t EraseIndex = First - Begin();
 		const size_t EraseCount = Last - First;
 
-		if (EraseCount == 0) return Iterator(this, Impl.Pointer + EraseIndex);
+		if (EraseCount == 0) return FIterator(this, Impl.Pointer + EraseIndex);
 
 		const size_t NumToAllocate = bAllowShrinking ? Impl->CalculateSlackShrink(Num() - EraseCount, Max()) : Max();
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() - EraseCount;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, EraseIndex);
-			Memory::MoveConstruct<ElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, EraseIndex);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer + EraseIndex, OldAllocation + EraseIndex + EraseCount, NumToDestruct - EraseIndex - EraseCount);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
 
-			return Iterator(this, Impl.Pointer + EraseIndex);
+			return FIterator(this, Impl.Pointer + EraseIndex);
 		}
 
 		for (size_t Index = 0; Index != EraseCount; ++Index)
@@ -677,24 +677,24 @@ public:
 
 		Impl.ArrayNum = Num() - EraseCount;
 
-		return Iterator(this, Impl.Pointer + EraseIndex);
+		return FIterator(this, Impl.Pointer + EraseIndex);
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(const ElementType& InValue) requires (CCopyable<ElementType>)
+	FORCEINLINE void PushBack(const FElementType& InValue) requires (CCopyable<FElementType>)
 	{
 		EmplaceBack(InValue);
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(ElementType&& InValue) requires (CMovable<ElementType>)
+	FORCEINLINE void PushBack(FElementType&& InValue) requires (CMovable<FElementType>)
 	{
 		EmplaceBack(MoveTemp(InValue));
 	}
 
 	/** Appends a new element to the end of the container. */
-	template <typename... Ts> requires (CConstructibleFrom<ElementType, Ts...> && CMovable<ElementType>)
-	ElementType& EmplaceBack(Ts&&... Args)
+	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...> && CMovable<FElementType>)
+	FElementType& EmplaceBack(Ts&&... Args)
 	{
 		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
 
@@ -702,15 +702,15 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Num() + 1;
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num() - 1);
-			new (Impl.Pointer + Num() - 1) ElementType(Forward<Ts>(Args)...);
+			Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, Num() - 1);
+			new (Impl.Pointer + Num() - 1) FElementType(Forward<Ts>(Args)...);
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
 			Impl->Deallocate(OldAllocation);
@@ -718,7 +718,7 @@ public:
 			return Impl.Pointer[Num() - 1];
 		}
 
-		new (Impl.Pointer + Num()) ElementType(Forward<Ts>(Args)...);
+		new (Impl.Pointer + Num()) FElementType(Forward<Ts>(Args)...);
 
 		Impl.ArrayNum = Num() + 1;
 
@@ -726,13 +726,13 @@ public:
 	}
 
 	/** Removes the last element of the container. The array cannot be empty. */
-	FORCEINLINE void PopBack(bool bAllowShrinking = true) requires (CMovable<ElementType>)
+	FORCEINLINE void PopBack(bool bAllowShrinking = true) requires (CMovable<FElementType>)
 	{
 		Erase(End() - 1, bAllowShrinking);
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional default elements are appended. */
-	void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<ElementType> && CMovable<ElementType>)
+	void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<FElementType> && CMovable<FElementType>)
 	{
 		size_t NumToAllocate = Count;
 
@@ -741,8 +741,8 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Count;
 			Impl.ArrayMax = NumToAllocate;
@@ -750,12 +750,12 @@ public:
 
 			if (NumToDestruct <= Num())
 			{
-				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
-				Memory::DefaultConstruct<ElementType>(Impl.Pointer + NumToDestruct, Num() - NumToDestruct);
+				Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
+				Memory::DefaultConstruct<FElementType>(Impl.Pointer + NumToDestruct, Num() - NumToDestruct);
 			}
 			else
 			{
-				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
+				Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, Num());
 			}
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
@@ -770,7 +770,7 @@ public:
 		}
 		else if (Count <= Max())
 		{
-			Memory::DefaultConstruct<ElementType>(Impl.Pointer + Num(), Count - Num());
+			Memory::DefaultConstruct<FElementType>(Impl.Pointer + Num(), Count - Num());
 		}
 		else check_no_entry();
 
@@ -778,7 +778,7 @@ public:
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional copies of 'InValue' are appended. */
-	void SetNum(size_t Count, const ElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<ElementType> && CMovable<ElementType>)
+	void SetNum(size_t Count, const FElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<FElementType> && CMovable<FElementType>)
 	{
 		size_t NumToAllocate = Count;
 
@@ -787,8 +787,8 @@ public:
 
 		if (NumToAllocate != Max())
 		{
-			ElementType* OldAllocation = Impl.Pointer;
-			const size_t NumToDestruct = Num();
+			FElementType* OldAllocation = Impl.Pointer;
+			const size_t  NumToDestruct = Num();
 
 			Impl.ArrayNum = Count;
 			Impl.ArrayMax = NumToAllocate;
@@ -796,16 +796,16 @@ public:
 
 			if (NumToDestruct <= Num())
 			{
-				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
+				Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, NumToDestruct);
 
 				for (size_t Index = NumToDestruct; Index != Num(); ++Index)
 				{
-					new (Impl.Pointer + Index) ElementType(InValue);
+					new (Impl.Pointer + Index) FElementType(InValue);
 				}
 			}
 			else
 			{
-				Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
+				Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, Num());
 			}
 
 			Memory::Destruct(OldAllocation, NumToDestruct);
@@ -822,7 +822,7 @@ public:
 		{
 			for (size_t Index = Num(); Index != Count; ++Index)
 			{
-				new (Impl.Pointer + Index) ElementType(InValue);
+				new (Impl.Pointer + Index) FElementType(InValue);
 			}
 		}
 		else check_no_entry();
@@ -831,19 +831,19 @@ public:
 	}
 
 	/** Increase the max capacity of the array to a value that's greater or equal to 'Count'. */
-	void Reserve(size_t Count) requires (CMovable<ElementType>)
+	void Reserve(size_t Count) requires (CMovable<FElementType>)
 	{
 		if (Count <= Max()) return;
 
-		const size_t NumToAllocate = Impl->CalculateSlackReserve(Count);
-		ElementType* OldAllocation = Impl.Pointer;
+		const size_t  NumToAllocate = Impl->CalculateSlackReserve(Count);
+		FElementType* OldAllocation = Impl.Pointer;
 
 		check(NumToAllocate > Max());
 
 		Impl.ArrayMax = NumToAllocate;
 		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
+		Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, Num());
 
 		Memory::Destruct(OldAllocation, Num());
 		Impl->Deallocate(OldAllocation);
@@ -858,32 +858,32 @@ public:
 
 		if (NumToAllocate == Max()) return;
 
-		ElementType* OldAllocation = Impl.Pointer;
+		FElementType* OldAllocation = Impl.Pointer;
 
 		Impl.ArrayMax = NumToAllocate;
 		Impl.Pointer  = Impl->Allocate(Max());
 
-		Memory::MoveConstruct<ElementType>(Impl.Pointer, OldAllocation, Num());
+		Memory::MoveConstruct<FElementType>(Impl.Pointer, OldAllocation, Num());
 		Memory::Destruct(OldAllocation, Num());
 
 		Impl->Deallocate(OldAllocation);
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE       ElementType* GetData()       { return Impl.Pointer; }
-	NODISCARD FORCEINLINE const ElementType* GetData() const { return Impl.Pointer; }
+	NODISCARD FORCEINLINE       FElementType* GetData()       { return Impl.Pointer; }
+	NODISCARD FORCEINLINE const FElementType* GetData() const { return Impl.Pointer; }
 
 	/** @return The iterator to the first or end element. */
-	NODISCARD FORCEINLINE      Iterator Begin()       { return      Iterator(this, Impl.Pointer);         }
-	NODISCARD FORCEINLINE ConstIterator Begin() const { return ConstIterator(this, Impl.Pointer);         }
-	NODISCARD FORCEINLINE      Iterator End()         { return      Iterator(this, Impl.Pointer + Num()); }
-	NODISCARD FORCEINLINE ConstIterator End()   const { return ConstIterator(this, Impl.Pointer + Num()); }
+	NODISCARD FORCEINLINE      FIterator Begin()       { return      FIterator(this, Impl.Pointer);         }
+	NODISCARD FORCEINLINE FConstIterator Begin() const { return FConstIterator(this, Impl.Pointer);         }
+	NODISCARD FORCEINLINE      FIterator End()         { return      FIterator(this, Impl.Pointer + Num()); }
+	NODISCARD FORCEINLINE FConstIterator End()   const { return FConstIterator(this, Impl.Pointer + Num()); }
 
 	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
-	NODISCARD FORCEINLINE ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
-	NODISCARD FORCEINLINE      ReverseIterator REnd()         { return      ReverseIterator(Begin()); }
-	NODISCARD FORCEINLINE ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE      FReverseIterator RBegin()       { return      FReverseIterator(End());   }
+	NODISCARD FORCEINLINE FConstReverseIterator RBegin() const { return FConstReverseIterator(End());   }
+	NODISCARD FORCEINLINE      FReverseIterator REnd()         { return      FReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE FConstReverseIterator REnd()   const { return FConstReverseIterator(Begin()); }
 
 	/** @return The number of elements in the container. */
 	NODISCARD FORCEINLINE size_t Num() const { return Impl.ArrayNum; }
@@ -895,17 +895,17 @@ public:
 	NODISCARD FORCEINLINE bool IsEmpty() const { return Num() == 0; }
 
 	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE bool IsValidIterator(ConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
+	NODISCARD FORCEINLINE bool IsValidIterator(FConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested element. */
-	NODISCARD FORCEINLINE       ElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
-	NODISCARD FORCEINLINE const ElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
+	NODISCARD FORCEINLINE       FElementType& operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
+	NODISCARD FORCEINLINE const FElementType& operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return Impl.Pointer[Index]; }
 
 	/** @return The reference to the first or last element. */
-	NODISCARD FORCEINLINE       ElementType& Front()       { return *Begin();     }
-	NODISCARD FORCEINLINE const ElementType& Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE       ElementType& Back()        { return *(End() - 1); }
-	NODISCARD FORCEINLINE const ElementType& Back()  const { return *(End() - 1); }
+	NODISCARD FORCEINLINE       FElementType& Front()       { return *Begin();     }
+	NODISCARD FORCEINLINE const FElementType& Front() const { return *Begin();     }
+	NODISCARD FORCEINLINE       FElementType& Back()        { return *(End() - 1); }
+	NODISCARD FORCEINLINE const FElementType& Back()  const { return *(End() - 1); }
 
 	/** Erases all elements from the container. After this call, Num() returns zero. */
 	void Reset(bool bAllowShrinking = true)
@@ -929,11 +929,11 @@ public:
 	}
 
 	/** Overloads the GetTypeHash algorithm for TArray. */
-	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TArray& A) requires (CHashable<ElementType>)
+	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TArray& A) requires (CHashable<FElementType>)
 	{
 		size_t Result = 0;
 
-		for (ConstIterator Iter = A.Begin(); Iter != A.End(); ++Iter)
+		for (FConstIterator Iter = A.Begin(); Iter != A.End(); ++Iter)
 		{
 			Result = HashCombine(Result, GetTypeHash(*Iter));
 		}
@@ -942,7 +942,7 @@ public:
 	}
 
 	/** Overloads the Swap algorithm for TArray. */
-	friend void Swap(TArray& A, TArray& B) requires (CMovable<ElementType>)
+	friend void Swap(TArray& A, TArray& B) requires (CMovable<FElementType>)
 	{
 		const bool bIsTransferable =
 			A.Impl->IsTransferable(A.Impl.Pointer) &&
@@ -966,13 +966,13 @@ public:
 
 private:
 
-	ALLOCATOR_WRAPPER_BEGIN(AllocatorType, ElementType, Impl)
+	ALLOCATOR_WRAPPER_BEGIN(FAllocatorType, FElementType, Impl)
 	{
 		size_t ArrayNum;
 		size_t ArrayMax;
-		ElementType* Pointer;
+		FElementType* Pointer;
 	}
-	ALLOCATOR_WRAPPER_END(AllocatorType, ElementType, Impl)
+	ALLOCATOR_WRAPPER_END(FAllocatorType, FElementType, Impl)
 
 private:
 
@@ -981,7 +981,7 @@ private:
 	{
 	public:
 
-		using ElementType = TRemoveCV<T>;
+		using FElementType = TRemoveCV<T>;
 
 		FORCEINLINE TIteratorImpl() = default;
 

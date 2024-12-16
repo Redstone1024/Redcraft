@@ -37,22 +37,22 @@ private:
 
 public:
 
-	using BlockType     = InBlockType;
-	using ElementType   = bool;
+	using FBlockType   = InBlockType;
+	using FElementType = bool;
 
-	class      Reference;
-	using ConstReference = bool;
+	class      FReference;
+	using FConstReference = bool;
 
-	using      Iterator = TIteratorImpl<false>;
-	using ConstIterator = TIteratorImpl<true >;
+	using      FIterator = TIteratorImpl<false>;
+	using FConstIterator = TIteratorImpl<true >;
 
-	using      ReverseIterator = TReverseIterator<     Iterator>;
-	using ConstReverseIterator = TReverseIterator<ConstIterator>;
+	using      FReverseIterator = TReverseIterator<     FIterator>;
+	using FConstReverseIterator = TReverseIterator<FConstIterator>;
 
-	static_assert(CRandomAccessIterator<     Iterator>);
-	static_assert(CRandomAccessIterator<ConstIterator>);
+	static_assert(CRandomAccessIterator<     FIterator>);
+	static_assert(CRandomAccessIterator<FConstIterator>);
 
-	static constexpr size_t BlockWidth = sizeof(BlockType) * 8;
+	static constexpr size_t BlockWidth = sizeof(FBlockType) * 8;
 
 	/** Default constructor. Constructs an empty bitset. */
 	FORCEINLINE constexpr TStaticBitset() = default;
@@ -60,38 +60,38 @@ public:
 	/** Constructs a bitset from an integer. */
 	constexpr TStaticBitset(uint64 InValue)
 	{
-		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
+		static_assert(sizeof(FBlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
 
-		if constexpr (sizeof(BlockType) == sizeof(uint8))
+		if constexpr (sizeof(FBlockType) == sizeof(uint8))
 		{
-			if constexpr (N >  0) Impl[0] = static_cast<BlockType>(InValue >>  0);
-			if constexpr (N >  8) Impl[1] = static_cast<BlockType>(InValue >>  8);
-			if constexpr (N > 16) Impl[2] = static_cast<BlockType>(InValue >> 16);
-			if constexpr (N > 24) Impl[3] = static_cast<BlockType>(InValue >> 24);
-			if constexpr (N > 32) Impl[4] = static_cast<BlockType>(InValue >> 32);
-			if constexpr (N > 40) Impl[5] = static_cast<BlockType>(InValue >> 40);
-			if constexpr (N > 48) Impl[6] = static_cast<BlockType>(InValue >> 48);
-			if constexpr (N > 56) Impl[7] = static_cast<BlockType>(InValue >> 56);
+			if constexpr (N >  0) Impl[0] = static_cast<FBlockType>(InValue >>  0);
+			if constexpr (N >  8) Impl[1] = static_cast<FBlockType>(InValue >>  8);
+			if constexpr (N > 16) Impl[2] = static_cast<FBlockType>(InValue >> 16);
+			if constexpr (N > 24) Impl[3] = static_cast<FBlockType>(InValue >> 24);
+			if constexpr (N > 32) Impl[4] = static_cast<FBlockType>(InValue >> 32);
+			if constexpr (N > 40) Impl[5] = static_cast<FBlockType>(InValue >> 40);
+			if constexpr (N > 48) Impl[6] = static_cast<FBlockType>(InValue >> 48);
+			if constexpr (N > 56) Impl[7] = static_cast<FBlockType>(InValue >> 56);
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint16))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint16))
 		{
-			if constexpr (N >  0) Impl[0] = static_cast<BlockType>(InValue >>  0);
-			if constexpr (N > 16) Impl[1] = static_cast<BlockType>(InValue >> 16);
-			if constexpr (N > 32) Impl[2] = static_cast<BlockType>(InValue >> 32);
-			if constexpr (N > 48) Impl[3] = static_cast<BlockType>(InValue >> 48);
+			if constexpr (N >  0) Impl[0] = static_cast<FBlockType>(InValue >>  0);
+			if constexpr (N > 16) Impl[1] = static_cast<FBlockType>(InValue >> 16);
+			if constexpr (N > 32) Impl[2] = static_cast<FBlockType>(InValue >> 32);
+			if constexpr (N > 48) Impl[3] = static_cast<FBlockType>(InValue >> 48);
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint32))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint32))
 		{
-			if constexpr (N >  0) Impl[0] = static_cast<BlockType>(InValue >>  0);
-			if constexpr (N > 32) Impl[1] = static_cast<BlockType>(InValue >> 32);
+			if constexpr (N >  0) Impl[0] = static_cast<FBlockType>(InValue >>  0);
+			if constexpr (N > 32) Impl[1] = static_cast<FBlockType>(InValue >> 32);
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint64))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint64))
 		{
-			if constexpr (N >  0) Impl[0] = static_cast<BlockType>(InValue >>  0);
+			if constexpr (N >  0) Impl[0] = static_cast<FBlockType>(InValue >>  0);
 		}
 		else check_no_entry();
 
-		constexpr size_t BlockInteger = sizeof(uint64) / sizeof(BlockType);
+		constexpr size_t BlockInteger = sizeof(uint64) / sizeof(FBlockType);
 
 		if constexpr ((N + BlockWidth - 1) / BlockWidth <= BlockInteger) return;
 
@@ -126,7 +126,7 @@ public:
 			if (LHS.Impl[Index] != RHS.Impl[Index]) return false;
 		}
 
-		const BlockType LastBlockBitmask = LHS.Num() % BlockWidth != 0 ? (1ull << LHS.Num() % BlockWidth) - 1 : -1;
+		const FBlockType LastBlockBitmask = LHS.Num() % BlockWidth != 0 ? (1ull << LHS.Num() % BlockWidth) - 1 : -1;
 
 		return (LHS.Impl[LHS.NumBlocks() - 1] & LastBlockBitmask) == (RHS.Impl[LHS.NumBlocks() - 1] & LastBlockBitmask);
 	}
@@ -269,7 +269,7 @@ public:
 			if (Impl[Index] != -1) return false;
 		}
 
-		const BlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
+		const FBlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
 
 		return (Impl[NumBlocks() - 1] | ~LastBlockBitmask) == -1;
 	}
@@ -284,7 +284,7 @@ public:
 			if (Impl[Index] != 0) return true;
 		}
 
-		const BlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
+		const FBlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
 
 		return (Impl[NumBlocks() - 1] & LastBlockBitmask) != 0;
 	}
@@ -299,24 +299,24 @@ public:
 
 		size_t Result = 0;
 
-		constexpr auto BlockCount = [](BlockType Block) constexpr
+		constexpr auto BlockCount = [](FBlockType Block) constexpr
 		{
-			static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
+			static_assert(sizeof(FBlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
 
-			if constexpr (sizeof(BlockType) == sizeof(uint8))
+			if constexpr (sizeof(FBlockType) == sizeof(uint8))
 			{
 				Block = (Block & 0x55ull) + ((Block >> 1) & 0x55ull);
 				Block = (Block & 0x33ull) + ((Block >> 2) & 0x33ull);
 				Block = (Block & 0x0Full) + ((Block >> 4) & 0x0Full);
 			}
-			else if constexpr (sizeof(BlockType) == sizeof(uint16))
+			else if constexpr (sizeof(FBlockType) == sizeof(uint16))
 			{
 				Block = (Block & 0x5555ull) + ((Block >>  1) & 0x5555ull);
 				Block = (Block & 0x3333ull) + ((Block >>  2) & 0x3333ull);
 				Block = (Block & 0x0F0Full) + ((Block >>  4) & 0x0F0Full);
 				Block = (Block & 0x00FFull) + ((Block >>  8) & 0x00FFull);
 			}
-			else if constexpr (sizeof(BlockType) == sizeof(uint32))
+			else if constexpr (sizeof(FBlockType) == sizeof(uint32))
 			{
 				Block = (Block & 0x55555555ull) + ((Block >>  1) & 0x55555555ull);
 				Block = (Block & 0x33333333ull) + ((Block >>  2) & 0x33333333ull);
@@ -324,7 +324,7 @@ public:
 				Block = (Block & 0x00FF00FFull) + ((Block >>  8) & 0x00FF00FFull);
 				Block = (Block & 0x0000FFFFull) + ((Block >> 16) & 0x0000FFFFull);
 			}
-			else if constexpr (sizeof(BlockType) == sizeof(uint64))
+			else if constexpr (sizeof(FBlockType) == sizeof(uint64))
 			{
 				Block = (Block & 0x5555555555555555ull) + ((Block >>  1) & 0x5555555555555555ull);
 				Block = (Block & 0x3333333333333333ull) + ((Block >>  2) & 0x3333333333333333ull);
@@ -343,7 +343,7 @@ public:
 			Result += BlockCount(Impl[Index]);
 		}
 
-		const BlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
+		const FBlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
 
 		Result += BlockCount(Impl[NumBlocks() - 1] & LastBlockBitmask);
 
@@ -355,7 +355,7 @@ public:
 	{
 		for (size_t Index = 0; Index != NumBlocks(); ++Index)
 		{
-			Impl[Index] = static_cast<BlockType>(InValue ? -1 : 0);
+			Impl[Index] = static_cast<FBlockType>(InValue ? -1 : 0);
 		}
 
 		return *this;
@@ -387,20 +387,20 @@ public:
 		{
 			for (size_t Index = 64 / BlockWidth; Index < NumBlocks() - 1; ++Index)
 			{
-				checkf(Impl.Pointer[Index] != 0, TEXT("The bitset can not be represented in uint64. Please check Num()."));
+				checkf(Impl[Index] != 0, TEXT("The bitset can not be represented in uint64. Please check Num()."));
 			}
 
-			const BlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
-			const BlockType LastBlock = Impl.Pointer[NumBlocks() - 1] & LastBlockBitmask;
+			const FBlockType LastBlockBitmask = Num() % BlockWidth != 0 ? (1ull << Num() % BlockWidth) - 1 : -1;
+			const FBlockType LastBlock = Impl[NumBlocks() - 1] & LastBlockBitmask;
 
 			checkf(LastBlock != 0, TEXT("The bitset can not be represented in uint64. Please check Num()."));
 		}
 
 		uint64 Result = 0;
 
-		static_assert(sizeof(BlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
+		static_assert(sizeof(FBlockType) <= sizeof(uint64), "The block width of TStaticBitset is unexpected");
 
-		if constexpr (sizeof(BlockType) == sizeof(uint8))
+		if constexpr (sizeof(FBlockType) == sizeof(uint8))
 		{
 			if constexpr (N >  0) Result |= static_cast<uint64>(Impl[0]) <<  0;
 			if constexpr (N >  8) Result |= static_cast<uint64>(Impl[1]) <<  8;
@@ -411,19 +411,19 @@ public:
 			if constexpr (N > 48) Result |= static_cast<uint64>(Impl[6]) << 48;
 			if constexpr (N > 56) Result |= static_cast<uint64>(Impl[7]) << 56;
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint16))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint16))
 		{
 			if constexpr (N >  0) Result |= static_cast<uint64>(Impl[0]) <<  0;
 			if constexpr (N > 16) Result |= static_cast<uint64>(Impl[1]) << 16;
 			if constexpr (N > 32) Result |= static_cast<uint64>(Impl[2]) << 32;
 			if constexpr (N > 48) Result |= static_cast<uint64>(Impl[3]) << 48;
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint32))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint32))
 		{
 			if constexpr (N >  0) Result |= static_cast<uint64>(Impl[0]) <<  0;
 			if constexpr (N > 32) Result |= static_cast<uint64>(Impl[1]) << 32;
 		}
-		else if constexpr (sizeof(BlockType) == sizeof(uint64))
+		else if constexpr (sizeof(FBlockType) == sizeof(uint64))
 		{
 			if constexpr (N >  0) Result |= static_cast<uint64>(Impl[0]) <<  0;
 		}
@@ -435,20 +435,20 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr       BlockType* GetData()       { return Impl; }
-	NODISCARD FORCEINLINE constexpr const BlockType* GetData() const { return Impl; }
+	NODISCARD FORCEINLINE constexpr       FBlockType* GetData()       { return Impl; }
+	NODISCARD FORCEINLINE constexpr const FBlockType* GetData() const { return Impl; }
 
 	/** @return The iterator to the first or end bit. */
-	NODISCARD FORCEINLINE constexpr      Iterator Begin()       { return      Iterator(this, Impl, 0);     }
-	NODISCARD FORCEINLINE constexpr ConstIterator Begin() const { return ConstIterator(this, Impl, 0);     }
-	NODISCARD FORCEINLINE constexpr      Iterator End()         { return      Iterator(this, Impl, Num()); }
-	NODISCARD FORCEINLINE constexpr ConstIterator End()   const { return ConstIterator(this, Impl, Num()); }
+	NODISCARD FORCEINLINE constexpr      FIterator Begin()       { return      FIterator(this, Impl, 0);     }
+	NODISCARD FORCEINLINE constexpr FConstIterator Begin() const { return FConstIterator(this, Impl, 0);     }
+	NODISCARD FORCEINLINE constexpr      FIterator End()         { return      FIterator(this, Impl, Num()); }
+	NODISCARD FORCEINLINE constexpr FConstIterator End()   const { return FConstIterator(this, Impl, Num()); }
 
 	/** @return The reverse iterator to the first or end bit. */
-	NODISCARD FORCEINLINE constexpr      ReverseIterator RBegin()       { return      ReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator RBegin() const { return ConstReverseIterator(End());   }
-	NODISCARD FORCEINLINE constexpr      ReverseIterator REnd()         { return      ReverseIterator(Begin()); }
-	NODISCARD FORCEINLINE constexpr ConstReverseIterator REnd()   const { return ConstReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr      FReverseIterator RBegin()       { return      FReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr FConstReverseIterator RBegin() const { return FConstReverseIterator(End());   }
+	NODISCARD FORCEINLINE constexpr      FReverseIterator REnd()         { return      FReverseIterator(Begin()); }
+	NODISCARD FORCEINLINE constexpr FConstReverseIterator REnd()   const { return FConstReverseIterator(Begin()); }
 
 	/** @return The number of bits in the bitset. */
 	NODISCARD FORCEINLINE constexpr size_t Num() const { return N; }
@@ -460,17 +460,17 @@ public:
 	NODISCARD FORCEINLINE constexpr bool IsEmpty() const { return Num() == 0; }
 
 	/** @return true if the iterator is valid, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsValidIterator(ConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
+	NODISCARD FORCEINLINE constexpr bool IsValidIterator(FConstIterator Iter) const { return Begin() <= Iter && Iter <= End(); }
 
 	/** @return The reference to the requested bit. */
-	NODISCARD FORCEINLINE constexpr      Reference operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return *(Begin() + Index); }
-	NODISCARD FORCEINLINE constexpr ConstReference operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return *(Begin() + Index); }
+	NODISCARD FORCEINLINE constexpr      FReference operator[](size_t Index)       { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return *(Begin() + Index); }
+	NODISCARD FORCEINLINE constexpr FConstReference operator[](size_t Index) const { checkf(Index < Num(), TEXT("Read access violation. Please check IsValidIterator().")); return *(Begin() + Index); }
 
 	/** @return The reference to the first or last bit. */
-	NODISCARD FORCEINLINE constexpr      Reference Front()       { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr ConstReference Front() const { return *Begin();     }
-	NODISCARD FORCEINLINE constexpr      Reference Back()        { return *(End() - 1); }
-	NODISCARD FORCEINLINE constexpr ConstReference Back()  const { return *(End() - 1); }
+	NODISCARD FORCEINLINE constexpr      FReference Front()       { return *Begin();     }
+	NODISCARD FORCEINLINE constexpr FConstReference Front() const { return *Begin();     }
+	NODISCARD FORCEINLINE constexpr      FReference Back()        { return *(End() - 1); }
+	NODISCARD FORCEINLINE constexpr FConstReference Back()  const { return *(End() - 1); }
 
 	/** Overloads the GetTypeHash algorithm for TStaticBitset. */
 	NODISCARD friend FORCEINLINE constexpr size_t GetTypeHash(const TStaticBitset& A)
@@ -484,7 +484,7 @@ public:
 			Result = HashCombine(Result, GetTypeHash(A.Impl[Index]));
 		}
 
-		const BlockType LastBlockBitmask = A.Num() % BlockWidth != 0 ? (1ull << A.Num() % BlockWidth) - 1 : -1;
+		const FBlockType LastBlockBitmask = A.Num() % BlockWidth != 0 ? (1ull << A.Num() % BlockWidth) - 1 : -1;
 
 		return HashCombine(Result, GetTypeHash(A.Impl[A.NumBlocks() - 1] & LastBlockBitmask));
 	}
@@ -496,21 +496,21 @@ public:
 
 private:
 
-	BlockType Impl[N != 0 ? (N + BlockWidth - 1) / BlockWidth : 1];
+	FBlockType Impl[N != 0 ? (N + BlockWidth - 1) / BlockWidth : 1];
 
 public:
 
-	class Reference final : private FSingleton
+	class FReference final : private FSingleton
 	{
 	public:
 
-		FORCEINLINE constexpr Reference& operator=(bool InValue) { Data = (Data & ~Mask) | (InValue ? Mask : 0); return *this; }
+		FORCEINLINE constexpr FReference& operator=(bool InValue) { Data = (Data & ~Mask) | (InValue ? Mask : 0); return *this; }
 
-		FORCEINLINE constexpr Reference& operator=(const Reference& InValue) { *this = static_cast<bool>(InValue); return *this; }
+		FORCEINLINE constexpr FReference& operator=(const FReference& InValue) { *this = static_cast<bool>(InValue); return *this; }
 
-		FORCEINLINE constexpr Reference& operator&=(bool InValue) { Data &= InValue ? -1 : ~Mask; return *this; }
-		FORCEINLINE constexpr Reference& operator|=(bool InValue) { Data |= InValue ? Mask :   0; return *this; }
-		FORCEINLINE constexpr Reference& operator^=(bool InValue) { *this = InValue ^ *this;      return *this; }
+		FORCEINLINE constexpr FReference& operator&=(bool InValue) { Data &= InValue ? -1 : ~Mask; return *this; }
+		FORCEINLINE constexpr FReference& operator|=(bool InValue) { Data |= InValue ? Mask :   0; return *this; }
+		FORCEINLINE constexpr FReference& operator^=(bool InValue) { *this = InValue ^ *this;      return *this; }
 
 		FORCEINLINE constexpr bool operator~() const { return !*this; }
 
@@ -518,14 +518,14 @@ public:
 
 	private:
 
-		FORCEINLINE constexpr Reference(BlockType& InData, BlockType InMask)
+		FORCEINLINE constexpr FReference(FBlockType& InData, FBlockType InMask)
 			: Data(InData), Mask(InMask)
 		{ }
 
-		BlockType& Data;
-		BlockType  Mask;
+		FBlockType& Data;
+		FBlockType  Mask;
 
-		friend Iterator;
+		friend FIterator;
 
 	};
 
@@ -538,7 +538,7 @@ private:
 
 	public:
 
-		using ElementType = bool;
+		using FElementType = bool;
 
 		FORCEINLINE constexpr TIteratorImpl() = default;
 
@@ -561,8 +561,8 @@ private:
 
 		NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TIteratorImpl& LHS, const TIteratorImpl& RHS) { check(LHS.Pointer == RHS.Pointer); return LHS.BitOffset <=> RHS.BitOffset; }
 
-		NODISCARD FORCEINLINE constexpr      Reference operator*() const requires (!bConst) { CheckThis(true); return Reference(*(Pointer + BitOffset / BlockWidth), 1ull << BitOffset % BlockWidth); }
-		NODISCARD FORCEINLINE constexpr ConstReference operator*() const requires ( bConst) { CheckThis(true); return       (*(Pointer + BitOffset / BlockWidth) & (1ull << BitOffset % BlockWidth)); }
+		NODISCARD FORCEINLINE constexpr      FReference operator*() const requires (!bConst) { CheckThis(true); return FReference(*(Pointer + BitOffset / BlockWidth), 1ull << BitOffset % BlockWidth);  }
+		NODISCARD FORCEINLINE constexpr FConstReference operator*() const requires ( bConst) { CheckThis(true); return         (*(Pointer + BitOffset / BlockWidth) & (1ull << BitOffset % BlockWidth)); }
 
 		NODISCARD FORCEINLINE constexpr auto operator[](ptrdiff Index) const { TIteratorImpl Temp = *this + Index; return *Temp; }
 
@@ -588,17 +588,17 @@ private:
 		const TStaticBitset* Owner = nullptr;
 #		endif
 
-		using BlockPtr = TConditional<bConst, const BlockType*, BlockType*>;
+		using FBlockPtr = TConditional<bConst, const FBlockType*, FBlockType*>;
 
-		BlockPtr Pointer   = nullptr;
-		size_t   BitOffset = 0;
+		FBlockPtr Pointer   = nullptr;
+		size_t    BitOffset = 0;
 
 #		if DO_CHECK
-		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t Offset)
+		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, FBlockPtr InPointer, size_t Offset)
 			: Owner(InContainer), Pointer(InPointer), BitOffset(Offset)
 		{ }
 #		else
-		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, BlockPtr InPointer, size_t Offset)
+		FORCEINLINE constexpr TIteratorImpl(const TStaticBitset* InContainer, FBlockPtr InPointer, size_t Offset)
 			: Pointer(InPointer), BitOffset(Offset)
 		{ }
 #		endif

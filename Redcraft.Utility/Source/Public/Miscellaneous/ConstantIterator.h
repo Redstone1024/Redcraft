@@ -17,7 +17,7 @@ class TConstantIterator final
 {
 public:
 
-	using ElementType = TRemoveCV<T>;
+	using FElementType = TRemoveCV<T>;
 
 	FORCEINLINE constexpr TConstantIterator() = default;
 
@@ -70,7 +70,7 @@ class TConstantIterator<T&> final
 {
 public:
 
-	using ElementType = TRemoveCV<T>;
+	using FElementType = TRemoveCV<T>;
 
 	FORCEINLINE constexpr TConstantIterator() = default;
 
@@ -115,14 +115,14 @@ class TCountedIterator<TConstantIterator<T>> final
 {
 public:
 
-	using IteratorType = TConstantIterator<T>;
+	using FIteratorType = TConstantIterator<T>;
 
-	using ElementType = typename TConstantIterator<T>::ElementType;
+	using FElementType = typename TConstantIterator<T>::FElementType;
 
 #	if DO_CHECK
-	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) : Length(1), MaxLength(0) { }
+	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<FIteratorType>) : Length(1), MaxLength(0) { }
 #	else
-	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<IteratorType>) = default;
+	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<FIteratorType>) = default;
 #	endif
 
 	FORCEINLINE constexpr TCountedIterator(const TCountedIterator&)            = default;
@@ -132,25 +132,25 @@ public:
 
 	FORCEINLINE constexpr ~TCountedIterator() = default;
 
-	template <typename U = IteratorType> requires (!CSameAs<TCountedIterator, TRemoveCVRef<U>> && CConstructibleFrom<IteratorType, U>)
+	template <typename U = FIteratorType> requires (!CSameAs<TCountedIterator, TRemoveCVRef<U>> && CConstructibleFrom<FIteratorType, U>)
 	FORCEINLINE constexpr explicit TCountedIterator(U&& InValue, ptrdiff N) : Current(Forward<U>(InValue)), Length(N) { check_code({ MaxLength = N; }); }
 
-	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, const J&>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, IteratorType>) TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
+	template <CInputOrOutputIterator J> requires (!CSameAs<FIteratorType, J> && CConstructibleFrom<FIteratorType, const J&>)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, FIteratorType>) TCountedIterator(const TCountedIterator<J>& InValue) : Current(InValue.Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
-	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConstructibleFrom<IteratorType, J>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, IteratorType>) TCountedIterator(TCountedIterator<J>&& InValue) : Current(MoveTemp(InValue).Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
+	template <CInputOrOutputIterator J> requires (!CSameAs<FIteratorType, J> && CConstructibleFrom<FIteratorType, J>)
+	FORCEINLINE constexpr explicit (!CConvertibleTo<J&&, FIteratorType>) TCountedIterator(TCountedIterator<J>&& InValue) : Current(MoveTemp(InValue).Current), Length(InValue.Num()) { check_code({ MaxLength = InValue.MaxLength; }); }
 
-	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<const J&, IteratorType> && CAssignableFrom<IteratorType&, const J&>)
+	template <CInputOrOutputIterator J> requires (!CSameAs<FIteratorType, J> && CConvertibleTo<const J&, FIteratorType> && CAssignableFrom<FIteratorType&, const J&>)
 	FORCEINLINE constexpr TCountedIterator& operator=(const TCountedIterator<J>& InValue) { Current = InValue.Current; Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
 
-	template <CInputOrOutputIterator J> requires (!CSameAs<IteratorType, J> && CConvertibleTo<J&&, IteratorType> && CAssignableFrom<IteratorType&, J&&>)
+	template <CInputOrOutputIterator J> requires (!CSameAs<FIteratorType, J> && CConvertibleTo<J&&, FIteratorType> && CAssignableFrom<FIteratorType&, J&&>)
 	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator<J>&& InValue) { Current = MoveTemp(InValue).Current; Length = InValue.Num(); check_code({ MaxLength = InValue.MaxLength; }); return *this; }
 
-	template <CCommonType<IteratorType> J>
+	template <CCommonType<FIteratorType> J>
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length == RHS.Length; }
 
-	template <CCommonType<IteratorType> J>
+	template <CCommonType<FIteratorType> J>
 	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length <=> RHS.Length; }
 
 	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Length == static_cast<ptrdiff>(0); }
@@ -176,20 +176,20 @@ public:
 
 	NODISCARD FORCEINLINE constexpr TCountedIterator operator-(ptrdiff Offset) const { TCountedIterator Temp = *this; Temp -= Offset; return Temp; }
 
-	template <CCommonType<IteratorType> J>
+	template <CCommonType<FIteratorType> J>
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Length - RHS.Length; }
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
 
-	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return          Current;  }
-	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return MoveTemp(Current); }
-	NODISCARD FORCEINLINE constexpr       ptrdiff           Num() const  { CheckThis(); return          Length;   }
+	NODISCARD FORCEINLINE constexpr const FIteratorType& GetBase() const& { CheckThis(); return          Current;  }
+	NODISCARD FORCEINLINE constexpr       FIteratorType  GetBase() &&     { CheckThis(); return MoveTemp(Current); }
+	NODISCARD FORCEINLINE constexpr       ptrdiff            Num() const  { CheckThis(); return          Length;   }
 
 private:
 
-	IteratorType Current;
-	ptrdiff      Length;
+	FIteratorType Current;
+	ptrdiff       Length;
 
 #	if DO_CHECK
 	ptrdiff MaxLength;

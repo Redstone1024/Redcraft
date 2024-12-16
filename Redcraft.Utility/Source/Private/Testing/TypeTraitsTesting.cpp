@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(Testing)
 
 NAMESPACE_UNNAMED_BEGIN
 
-int32 TestObject;
+int32 GTestObject;
 void TestFunction() { }
 
 struct FTestStructA { };
@@ -89,7 +89,7 @@ void TestTypeTraits()
 	always_check(!CLValueReference<int32>);
 	always_check(CLValueReference<int32&>);
 	always_check(!CLValueReference<int32&&>);
-	
+
 	always_check(!CRValueReference<int32>);
 	always_check(!CRValueReference<int32&>);
 	always_check(CRValueReference<int32&&>);
@@ -428,9 +428,9 @@ void TestTypeTraits()
 
 	always_check((CSameAs<void, TVoid<int32>>));
 	always_check((CSameAs<void, TVoid<int32, int64>>));
-	
+
 	// Invocable.h
-	
+
 	always_check((CInvocable<int32()>));
 	always_check((CInvocable<int32(int32), int32>));
 	always_check(!(CInvocable<int32(int32), FTestStructA>));
@@ -462,7 +462,7 @@ void TestTypeTraits()
 	always_check((CSameAs<int32, TCommonReference<int8, int32>>));
 	always_check((CSameAs<int64, TCommonReference<int8, int32, int64>>));
 	always_check((CSameAs<double, TCommonReference<float, double>>));
-	
+
 	always_check((CCommonType<int32, int32>));
 	always_check((CCommonType<int8, int32>));
 	always_check((CCommonType<float, double>));
@@ -493,7 +493,7 @@ void TestTypeTraits()
 	always_check((CSameAs<const volatile int32, TCopyConst<               int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyConst<const          int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyConst<const volatile int32, const volatile int32>>));
-	
+
 	always_check((CSameAs<               int32, TCopyVolatile<               int32,                int32>>));
 	always_check((CSameAs<               int32, TCopyVolatile<const          int32,                int32>>));
 	always_check((CSameAs<      volatile int32, TCopyVolatile<const volatile int32,                int32>>));
@@ -503,7 +503,7 @@ void TestTypeTraits()
 	always_check((CSameAs<const volatile int32, TCopyVolatile<               int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyVolatile<const          int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyVolatile<const volatile int32, const volatile int32>>));
-	
+
 	always_check((CSameAs<               int32, TCopyCV<               int32,                int32>>));
 	always_check((CSameAs<const          int32, TCopyCV<const          int32,                int32>>));
 	always_check((CSameAs<const volatile int32, TCopyCV<const volatile int32,                int32>>));
@@ -513,7 +513,7 @@ void TestTypeTraits()
 	always_check((CSameAs<const volatile int32, TCopyCV<               int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyCV<const          int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyCV<const volatile int32, const volatile int32>>));
-	
+
 	always_check((CSameAs<int32,   TCopyReference<int32,   int32  >>));
 	always_check((CSameAs<int32&,  TCopyReference<int32,   int32& >>));
 	always_check((CSameAs<int32&&, TCopyReference<int32,   int32&&>>));
@@ -539,7 +539,7 @@ void TestTypeTraits()
 	always_check((CSameAs<const volatile int32, TCopyCVRef<               int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyCVRef<const          int32, const volatile int32>>));
 	always_check((CSameAs<const volatile int32, TCopyCVRef<const volatile int32, const volatile int32>>));
-	
+
 	always_check((CSameAs<int32,   TCopyCVRef<int32,   int32  >>));
 	always_check((CSameAs<int32&,  TCopyCVRef<int32,   int32& >>));
 	always_check((CSameAs<int32&&, TCopyCVRef<int32,   int32&&>>));

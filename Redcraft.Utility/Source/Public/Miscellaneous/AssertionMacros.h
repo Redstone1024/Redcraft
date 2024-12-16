@@ -42,6 +42,8 @@ NAMESPACE_PRIVATE_END
 #	define DO_CHECK 0
 #endif
 
+// ReSharper disable CppInconsistentNaming
+
 #define always_check(InExpr)                        RS_CHECK_IMPL(InExpr)
 #define always_checkf(InExpr, InFormat, ...)        RS_CHECK_F_IMPL(InExpr, InFormat, ##__VA_ARGS__)
 #define always_check_no_entry()                     always_checkf(false, "Enclosing block should never be called.")
@@ -76,6 +78,8 @@ NAMESPACE_PRIVATE_END
 #	define unimplemented()                          { Unreachable(); }
 
 #endif
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

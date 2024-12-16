@@ -10,7 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_PRIVATE_BEGIN
 
-struct InvokeFunction
+struct FInvokeFunction
 {
 	template <typename F, typename... Ts>
 	static auto Invoke(F&& Object, Ts&&... Args)
@@ -20,7 +20,7 @@ struct InvokeFunction
 	}
 };
 
-struct InvokeMemberFunction
+struct FInvokeMemberFunction
 {
 	template <typename F, typename ObjectType, typename... Ts>
 	static auto Invoke(F&& Func, ObjectType&& Object, Ts&&... Args)
@@ -37,7 +37,7 @@ struct InvokeMemberFunction
 	}
 };
 
-struct InvokeMemberObject
+struct FInvokeMemberObject
 {
 	template <typename F, typename ObjectType>
 	static auto Invoke(F&& Func, ObjectType&& Object)
@@ -59,34 +59,34 @@ template <typename F,
 	typename Decayed = TDecay<F>,
 	bool IsMemberFunction = CMemberFunctionPointer<Decayed>,
 	bool IsMemberObject = CMemberObjectPointer<Decayed>>
-	struct InvokeMember;
+struct FInvokeMember;
 
 template <typename F, typename T, typename Decayed>
-struct InvokeMember<F, T, Decayed,  true, false> : InvokeMemberFunction { };
+struct FInvokeMember<F, T, Decayed,  true, false> : FInvokeMemberFunction { };
 
 template <typename F, typename T, typename Decayed>
-struct InvokeMember<F, T, Decayed, false,  true> : InvokeMemberObject { };
+struct FInvokeMember<F, T, Decayed, false,  true> : FInvokeMemberObject { };
 
 template <typename F, typename T, typename Decayed>
-struct InvokeMember<F, T, Decayed, false, false> : InvokeFunction { };
+struct FInvokeMember<F, T, Decayed, false, false> : FInvokeFunction { };
 
 template <typename F, typename... Ts>
-struct InvokeImpl;
+struct FInvokeImpl;
 
 template <typename F>
-struct InvokeImpl<F> : InvokeFunction { };
+struct FInvokeImpl<F> : FInvokeFunction { };
 
 template <typename F, typename T, typename... Ts>
-struct InvokeImpl<F, T, Ts...> : InvokeMember<F, T> { };
+struct FInvokeImpl<F, T, Ts...> : FInvokeMember<F, T> { };
 
 NAMESPACE_PRIVATE_END
 
 /** Invoke the Callable object f with the parameters args. */
 template <typename F, typename... Ts> requires (CInvocable<F, Ts...>)
 FORCEINLINE constexpr auto Invoke(F&& Func, Ts&&... Args)
-	-> decltype(NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...))
+	-> decltype(NAMESPACE_PRIVATE::FInvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...))
 {
-	return NAMESPACE_PRIVATE::InvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
+	return NAMESPACE_PRIVATE::FInvokeImpl<F, Ts...>::Invoke(Forward<F>(Func), Forward<Ts>(Args)...);
 }
 
 /** Invoke the Callable object f with the parameters args. */

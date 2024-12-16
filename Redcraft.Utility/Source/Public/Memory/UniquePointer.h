@@ -179,8 +179,8 @@ class TUniqueRef final : private FSingleton
 {
 public:
 
-	using ElementType = T;
-	using DeleterType = E;
+	using FElementType = T;
+	using FDeleterType = E;
 
 	/** TUniqueRef cannot be initialized by nullptr. */
 	TUniqueRef() = delete;
@@ -308,8 +308,8 @@ class TUniqueRef<T[], E> final : private FSingleton
 {
 public:
 
-	using ElementType = T;
-	using DeleterType = E;
+	using FElementType = T;
+	using FDeleterType = E;
 
 	/** TUniqueRef cannot be initialized by nullptr. */
 	TUniqueRef() = delete;
@@ -439,8 +439,8 @@ class TUniquePtr final : private FNoncopyable
 {
 public:
 
-	using ElementType = T;
-	using DeleterType = E;
+	using FElementType = T;
+	using FDeleterType = E;
 
 	/** Constructs a TUniquePtr that owns nothing. Value-initializes the stored pointer and the stored deleter. */
 	FORCEINLINE constexpr TUniquePtr() requires(CDefaultConstructible<E> && !CPointer<E>) : Storage(nullptr) { }
@@ -585,8 +585,8 @@ class TUniquePtr<T[], E> final : private FNoncopyable
 {
 public:
 
-	using ElementType = T;
-	using DeleterType = E;
+	using FElementType = T;
+	using FDeleterType = E;
 
 	/** Constructs a TUniquePtr that owns nothing. Value-initializes the stored pointer and the stored deleter. */
 	FORCEINLINE constexpr TUniquePtr() requires(CDefaultConstructible<E> && !CPointer<E>) : Storage(nullptr) { }

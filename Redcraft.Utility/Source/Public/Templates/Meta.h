@@ -12,7 +12,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <typename T, T... Ints>
 struct TIntegerSequence
 {
-	using ValueType = T;
+	using FValueType = T;
 	FORCEINLINE static constexpr size_t   Num()     { return sizeof...(Ints);                          }
 	FORCEINLINE static constexpr const T* GetData() { return NAMESPACE_REDCRAFT::GetData({ Ints... }); }
 };
@@ -24,7 +24,7 @@ NAMESPACE_PRIVATE_BEGIN
 template <unsigned N, typename T>
 struct TMakeIntegerSequenceImpl
 {
-	using Type = typename __make_integer_seq<TIntegerSequence, T, N>;
+	using FType = typename __make_integer_seq<TIntegerSequence, T, N>;
 };
 
 #elif __has_builtin(__make_integer_seq)
@@ -32,7 +32,7 @@ struct TMakeIntegerSequenceImpl
 template <unsigned N, typename T>
 struct TMakeIntegerSequenceImpl
 {
-	using Type = typename __make_integer_seq<TIntegerSequence, T, N>;
+	using FType = typename __make_integer_seq<TIntegerSequence, T, N>;
 };
 
 #else
@@ -40,13 +40,13 @@ struct TMakeIntegerSequenceImpl
 template <unsigned N, typename T, T... Ints>
 struct TMakeIntegerSequenceImpl
 {
-	using Type = typename TMakeIntegerSequenceImpl<N - 1, T, T(N - 1), Ints...>::Type;
+	using FType = typename TMakeIntegerSequenceImpl<N - 1, T, T(N - 1), Ints...>::FType;
 };
 
 template <typename T, T... Ints>
 struct TMakeIntegerSequenceImpl<0, T, Ints...>
 {
-	using Type = TIntegerSequence<T, Ints...>;
+	using FType = TIntegerSequence<T, Ints...>;
 };
 
 #endif
@@ -57,7 +57,7 @@ template <size_t... Ints>
 using TIndexSequence = TIntegerSequence<size_t, Ints...>;
 
 template <typename T, T N>
-using TMakeIntegerSequence = typename NAMESPACE_PRIVATE::TMakeIntegerSequenceImpl<N, T>::Type;
+using TMakeIntegerSequence = typename NAMESPACE_PRIVATE::TMakeIntegerSequenceImpl<N, T>::FType;
 
 template <size_t N>
 using TMakeIndexSequence = TMakeIntegerSequence<size_t, N>;
@@ -103,7 +103,7 @@ struct TFrontImpl;
 template <typename T, typename... Ts>
 struct TFrontImpl<TTypeSequence<T, Ts...>>
 {
-	using Type = T;
+	using FType = T;
 };
 
 template <typename TSequence>
@@ -112,7 +112,7 @@ struct TPopImpl;
 template <typename T, typename... Ts>
 struct TPopImpl<TTypeSequence<T, Ts...>>
 {
-	using Type = TTypeSequence<Ts...>;
+	using FType = TTypeSequence<Ts...>;
 };
 
 template <typename T, typename TSequence>
@@ -121,19 +121,19 @@ struct TPushImpl;
 template <typename T, typename... Ts>
 struct TPushImpl<T, TTypeSequence<Ts...>>
 {
-	using Type = TTypeSequence<T, Ts...>;
+	using FType = TTypeSequence<T, Ts...>;
 };
 
 NAMESPACE_PRIVATE_END
 
 template <CTTypeSequence TSequence>
-using TFront = typename NAMESPACE_PRIVATE::TFrontImpl<TSequence>::Type;
+using TFront = typename NAMESPACE_PRIVATE::TFrontImpl<TSequence>::FType;
 
 template <CTTypeSequence TSequence>
-using TPop = typename NAMESPACE_PRIVATE::TPopImpl<TSequence>::Type;
+using TPop = typename NAMESPACE_PRIVATE::TPopImpl<TSequence>::FType;
 
 template <typename T, typename TSequence>
-using TPush = typename NAMESPACE_PRIVATE::TPushImpl<T, TSequence>::Type;
+using TPush = typename NAMESPACE_PRIVATE::TPushImpl<T, TSequence>::FType;
 
 NAMESPACE_PRIVATE_BEGIN
 
@@ -194,19 +194,19 @@ struct TIndexAssert
 template <size_t I, typename TSequence>
 struct TTypeImpl
 {
-	using Type = typename TTypeImpl<I - 1, TPop<TSequence>>::Type;
+	using FType = typename TTypeImpl<I - 1, TPop<TSequence>>::FType;
 };
 
 template <typename TSequence>
 struct TTypeImpl<0, TSequence>
 {
-	using Type = TFront<TSequence>;
+	using FType = TFront<TSequence>;
 };
 
 template <typename TSequence>
 struct TTypeImpl<INDEX_NONE, TSequence>
 {
-	using Type = void;
+	using FType = void;
 };
 
 template <size_t I, typename TSequence>
@@ -214,7 +214,7 @@ struct TTypeAssert
 {
 	static_assert(I < TSizeImpl<TSequence>::Value, "I is invalid index in type sequence");
 	static constexpr size_t SafeIndex = I < TSizeImpl<TSequence>::Value ? I : INDEX_NONE;
-	using Type = TCopyCV<TSequence, typename TTypeImpl<SafeIndex, TSequence>::Type>;
+	using FType = TCopyCV<TSequence, typename TTypeImpl<SafeIndex, TSequence>::FType>;
 };
 
 NAMESPACE_PRIVATE_END
@@ -226,29 +226,29 @@ template <typename T, CTTypeSequence TSequence>
 inline constexpr size_t TIndex = NAMESPACE_PRIVATE::TIndexAssert<T, TSequence>::Value;
 
 template <size_t I, CTTypeSequence TSequence>
-using TType = typename NAMESPACE_PRIVATE::TTypeAssert<I, TSequence>::Type;
+using TType = typename NAMESPACE_PRIVATE::TTypeAssert<I, TSequence>::FType;
 
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename TSequence>
 struct TUniqueTypeSequenceImpl
 {
-	using FrontType = TFront<TSequence>;
-	using NextSequence = TPop<TSequence>;
-	using NextUniqueSequence = typename TUniqueTypeSequenceImpl<NextSequence>::Type;
-	using Type = TConditional<!CExistentType<FrontType, NextSequence>, TPush<FrontType, NextUniqueSequence>, NextUniqueSequence>;
+	using FFrontType = TFront<TSequence>;
+	using FNextSequence = TPop<TSequence>;
+	using FNextUniqueSequence = typename TUniqueTypeSequenceImpl<FNextSequence>::FType;
+	using FType = TConditional<!CExistentType<FFrontType, FNextSequence>, TPush<FFrontType, FNextUniqueSequence>, FNextUniqueSequence>;
 };
 
 template <>
 struct TUniqueTypeSequenceImpl<TTypeSequence<>>
 {
-	using Type = TTypeSequence<>;
+	using FType = TTypeSequence<>;
 };
 
 NAMESPACE_PRIVATE_END
 
 template <CTTypeSequence TSequence>
-using TUniqueTypeSequence = typename NAMESPACE_PRIVATE::TUniqueTypeSequenceImpl<TSequence>::Type;
+using TUniqueTypeSequence = typename NAMESPACE_PRIVATE::TUniqueTypeSequenceImpl<TSequence>::FType;
 
 NAMESPACE_PRIVATE_BEGIN
 

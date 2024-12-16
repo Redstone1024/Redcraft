@@ -12,17 +12,21 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // The result of the three-way comparison operator is the built-in type of the compiler, which is directly introduced here
 
-typedef NAMESPACE_STD::partial_ordering partial_ordering;
-typedef NAMESPACE_STD::weak_ordering    weak_ordering;
-typedef NAMESPACE_STD::strong_ordering  strong_ordering;
+// ReSharper disable CppInconsistentNaming
+
+using partial_ordering = NAMESPACE_STD::partial_ordering;
+using weak_ordering    = NAMESPACE_STD::weak_ordering;
+using strong_ordering  = NAMESPACE_STD::strong_ordering;
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_PRIVATE_BEGIN
 
-template<int32> struct TCommonComparisonCategoryBasic    {                                };
-template<>      struct TCommonComparisonCategoryBasic<0> { using Type = strong_ordering;  };
-template<>      struct TCommonComparisonCategoryBasic<2> { using Type = partial_ordering; };
-template<>      struct TCommonComparisonCategoryBasic<4> { using Type = weak_ordering;    };
-template<>      struct TCommonComparisonCategoryBasic<6> { using Type = partial_ordering; };
+template<int32> struct TCommonComparisonCategoryBasic    {                                 };
+template<>      struct TCommonComparisonCategoryBasic<0> { using FType = strong_ordering;  };
+template<>      struct TCommonComparisonCategoryBasic<2> { using FType = partial_ordering; };
+template<>      struct TCommonComparisonCategoryBasic<4> { using FType = weak_ordering;    };
+template<>      struct TCommonComparisonCategoryBasic<6> { using FType = partial_ordering; };
 
 template <typename... Ts>
 struct TCommonComparisonCategoryImpl
@@ -32,13 +36,13 @@ struct TCommonComparisonCategoryImpl
 				CSameAs<Ts, weak_ordering   > ? 4u :
 				CSameAs<Ts, partial_ordering> ? 2u : 1u
 			)
-		)> 
+		)>
 { };
 
 NAMESPACE_PRIVATE_END
 
 template <typename... Ts>
-using TCommonComparisonCategory = typename NAMESPACE_PRIVATE::TCommonComparisonCategoryImpl<Ts...>::Type;
+using TCommonComparisonCategory = typename NAMESPACE_PRIVATE::TCommonComparisonCategoryImpl<Ts...>::FType;
 
 template <typename T, typename OrderingType>
 concept CThreeWayComparesAs = CSameAs<TCommonComparisonCategory<T, OrderingType>, OrderingType>;

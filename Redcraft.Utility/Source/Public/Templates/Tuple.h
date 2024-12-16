@@ -49,7 +49,7 @@ struct TTupleElementImpl;
 template <size_t I, typename... Ts>
 struct TTupleElementImpl<I, TTuple<Ts...>>
 {
-	using Type = Meta::TType<I, TTypeSequence<Ts...>>;
+	using FType = Meta::TType<I, TTypeSequence<Ts...>>;
 };
 
 template <bool bTrue, typename... Ts>
@@ -77,12 +77,12 @@ struct TTupleBasicElement
 {
 private:
 
-	using ValueType = T;
-	ValueType Value;
+	using FValueType = T;
+	FValueType Value;
 
 public:
 
-	template <typename Type>
+	template <typename Type> requires (CConstructibleFrom<T, Type&&>)
 	FORCEINLINE constexpr TTupleBasicElement(Type&& Arg)
 		: Value(Forward<Type>(Arg))
 	{ }
@@ -110,10 +110,10 @@ public:
 	template <typename T>                                                                                                      \
 	struct TTupleBasicElement<T, Index>                                                                                        \
 	{                                                                                                                          \
-		using Name##Type = T;                                                                                                  \
-		Name##Type Name;                                                                                                       \
+		using F##Name##Type = T;                                                                                               \
+		F##Name##Type Name;                                                                                                    \
 		                                                                                                                       \
-		template <typename Type>                                                                                               \
+		template <typename Type> requires (CConstructibleFrom<T, F##Name##Type&&>)                                             \
 		FORCEINLINE constexpr TTupleBasicElement(Type&& Arg)                                                                   \
 			: Name(Forward<Type>(Arg))                                                                                         \
 		{ }                                                                                                                    \
@@ -315,15 +315,15 @@ template <typename T, CTTuple U>
 inline constexpr size_t TTupleIndex = NAMESPACE_PRIVATE::TTupleIndexImpl<T, TRemoveCV<U>>::Value;
 
 template <size_t I, CTTuple U>
-using TTupleElement = TCopyCV<U, typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TRemoveCV<U>>::Type>;
+using TTupleElement = TCopyCV<U, typename NAMESPACE_PRIVATE::TTupleElementImpl<I, TRemoveCV<U>>::FType>;
 
 template <typename... Ts>
 class TTuple final : public NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>
 {
 private:
 
-	using Super  = NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>;
-	using Helper = NAMESPACE_PRIVATE::TTupleHelper<TIndexSequenceFor<Ts...>>;
+	using FSuper  = NAMESPACE_PRIVATE::TTupleImpl<TIndexSequenceFor<Ts...>, Ts...>;
+	using FHelper = NAMESPACE_PRIVATE::TTupleHelper<TIndexSequenceFor<Ts...>>;
 
 public:
 
@@ -334,7 +334,7 @@ public:
 	template <typename... Us> requires (sizeof...(Ts) >= 1 && sizeof...(Us) == sizeof...(Ts))
 		&& (true && ... && CConstructibleFrom<Ts, Us&&>)
 	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<Us&&, Ts>)) TTuple(Us&&... Args)
-		: Super(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<Us>(Args)...)
+		: FSuper(NAMESPACE_PRIVATE::ForwardingConstructor, Forward<Us>(Args)...)
 	{ }
 
 	/** Converting copy constructor. Initializes each element of the tuple with the corresponding element of other. */
@@ -342,7 +342,7 @@ public:
 		&& (true && ... && CConstructibleFrom<Ts, const Us&>)
 		&& NAMESPACE_PRIVATE::TTupleConvertCopy<sizeof...(Ts) != 1, Ts..., Us...>::Value)
 	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<Us&&, Ts>)) TTuple(const TTuple<Us...>& InValue)
-		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, InValue)
+		: FSuper(NAMESPACE_PRIVATE::OtherTupleConstructor, InValue)
 	{ }
 
 	/** Converting move constructor. Initializes each element of the tuple with the corresponding element of other. */
@@ -350,7 +350,7 @@ public:
 		&& (true && ... && CConstructibleFrom<Ts, Us&&>)
 		&& NAMESPACE_PRIVATE::TTupleConvertMove<sizeof...(Ts) != 1, Ts..., Us...>::Value)
 	FORCEINLINE constexpr explicit (!(true && ... && CConvertibleTo<Us&&, Ts>)) TTuple(TTuple<Us...>&& InValue)
-		: Super(NAMESPACE_PRIVATE::OtherTupleConstructor, MoveTemp(InValue))
+		: FSuper(NAMESPACE_PRIVATE::OtherTupleConstructor, MoveTemp(InValue))
 	{ }
 
 	/** Copies/moves content of other into a new instance. */
@@ -362,7 +362,7 @@ public:
 		&& (true && ... && CAssignableFrom<Ts&, const Us&>))
 	FORCEINLINE constexpr TTuple& operator=(const TTuple<Us...>& InValue)
 	{
-		Helper::Assign(*this, InValue);
+		FHelper::Assign(*this, InValue);
 		return *this;
 	}
 
@@ -371,7 +371,7 @@ public:
 		&& (true && ... && CAssignableFrom<Ts&, Us&&>))
 	FORCEINLINE constexpr TTuple& operator=(TTuple<Us...>&& InValue)
 	{
-		Helper::Assign(*this, MoveTemp(InValue));
+		FHelper::Assign(*this, MoveTemp(InValue));
 		return *this;
 	}
 
@@ -396,8 +396,8 @@ public:
 	template <typename... Us> requires (sizeof...(Ts) == sizeof...(Us) && NAMESPACE_PRIVATE::CTTupleSynthThreeWayComparable<TTypeSequence<Ts...>, TTypeSequence<Us...>>)
 	NODISCARD friend FORCEINLINE constexpr TCommonComparisonCategory<TSynthThreeWayResult<Ts, Us>...> operator<=>(const TTuple& LHS, const TTuple<Us...>& RHS)
 	{
-		using R = TCommonComparisonCategory<TSynthThreeWayResult<Ts, Us>...>;
-		return NAMESPACE_PRIVATE::TTupleThreeWay<R, TMakeIndexSequence<sizeof...(Ts)>>::Do(LHS, RHS);
+		using FResult = TCommonComparisonCategory<TSynthThreeWayResult<Ts, Us>...>;
+		return NAMESPACE_PRIVATE::TTupleThreeWay<FResult, TMakeIndexSequence<sizeof...(Ts)>>::Do(LHS, RHS);
 	}
 
 	/** Extracts the Ith element from the tuple. I must be an integer value in [0, sizeof...(Ts)). */
@@ -421,14 +421,14 @@ public:
 	template <typename T> NODISCARD FORCEINLINE constexpr decltype(auto) GetValue() const volatile&& { return static_cast<const volatile TTuple&&>(*this).GetValue<TTupleIndex<T, TTuple>>(); }
 
 	/** Invoke the callable object 'Func' with a tuple of arguments. */
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)               &  { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const         &  { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)       volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const volatile&  { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)               && { return Helper::Apply(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const         && { return Helper::Apply(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)       volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
-	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const volatile&& { return Helper::Apply(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)               &  { return FHelper::Apply(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const         &  { return FHelper::Apply(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)       volatile&  { return FHelper::Apply(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const volatile&  { return FHelper::Apply(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)               && { return FHelper::Apply(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const         && { return FHelper::Apply(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func)       volatile&& { return FHelper::Apply(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
+	template <typename F> requires (CInvocable<F, Ts...>) FORCEINLINE constexpr decltype(auto) Apply(F&& Func) const volatile&& { return FHelper::Apply(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
 	/** Visits each element in a tuple in parallel and applies it as arguments to the function. */
 	template <typename F> requires (true && ... && CInvocable<F, Ts>) FORCEINLINE constexpr void Visit(F&& Func)               &  { VisitTuple(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
@@ -461,24 +461,24 @@ public:
 	template <typename Ret, typename F> requires ((sizeof...(Ts) >= 1) && ... && CInvocableResult<Ret, F, Ts>) FORCEINLINE constexpr Ret Visit(F&& Func, size_t Index) const volatile&& { return NAMESPACE_PRIVATE::TTupleVisitElementByIndex<Ret, TMakeIndexSequence<sizeof...(Ts)>>::Do(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this), Index); }
 
 	/** Transform a tuple into another tuple using the given function. */
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)               &  { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const         &  { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)       volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const volatile&  { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)               && { return Helper::Transform(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const         && { return Helper::Transform(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)       volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
-	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const volatile&& { return Helper::Transform(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)               &  { return FHelper::Transform(Forward<F>(Func), static_cast<               TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const         &  { return FHelper::Transform(Forward<F>(Func), static_cast<const          TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)       volatile&  { return FHelper::Transform(Forward<F>(Func), static_cast<      volatile TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const volatile&  { return FHelper::Transform(Forward<F>(Func), static_cast<const volatile TTuple& >(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)               && { return FHelper::Transform(Forward<F>(Func), static_cast<               TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const         && { return FHelper::Transform(Forward<F>(Func), static_cast<const          TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func)       volatile&& { return FHelper::Transform(Forward<F>(Func), static_cast<      volatile TTuple&&>(*this)); }
+	template <typename F> requires (true && ... && (CInvocable<F, Ts> && !CSameAs<void, TInvokeResult<F, Ts>>)) NODISCARD FORCEINLINE constexpr decltype(auto) Transform(F&& Func) const volatile&& { return FHelper::Transform(Forward<F>(Func), static_cast<const volatile TTuple&&>(*this)); }
 
 	/** Constructs an object of type T with a tuple as an argument. */
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()               &  { return Helper::template Construct<T>(static_cast<               TTuple& >(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const         &  { return Helper::template Construct<T>(static_cast<const          TTuple& >(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()       volatile&  { return Helper::template Construct<T>(static_cast<      volatile TTuple& >(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const volatile&  { return Helper::template Construct<T>(static_cast<const volatile TTuple& >(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()               && { return Helper::template Construct<T>(static_cast<               TTuple&&>(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const         && { return Helper::template Construct<T>(static_cast<const          TTuple&&>(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()       volatile&& { return Helper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
-	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const volatile&& { return Helper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()               &  { return FHelper::template Construct<T>(static_cast<               TTuple& >(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const         &  { return FHelper::template Construct<T>(static_cast<const          TTuple& >(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()       volatile&  { return FHelper::template Construct<T>(static_cast<      volatile TTuple& >(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const volatile&  { return FHelper::template Construct<T>(static_cast<const volatile TTuple& >(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()               && { return FHelper::template Construct<T>(static_cast<               TTuple&&>(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const         && { return FHelper::template Construct<T>(static_cast<const          TTuple&&>(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct()       volatile&& { return FHelper::template Construct<T>(static_cast<      volatile TTuple&&>(*this)); }
+	template <typename T> requires (CConstructibleFrom<T, Ts...>) NODISCARD FORCEINLINE constexpr T Construct() const volatile&& { return FHelper::template Construct<T>(static_cast<const volatile TTuple&&>(*this)); }
 
 	/** @return The number of elements in the tuple. */
 	NODISCARD static FORCEINLINE constexpr size_t Num() { return sizeof...(Ts); }
@@ -555,13 +555,13 @@ struct TTupleCatResultImpl;
 template <typename... Ts, typename... TTupleTypes>
 struct TTupleCatResultImpl<TTuple<Ts...>, TTupleTypes...>
 {
-	using Type = typename TTupleCatResultImpl<TTupleTypes..., Ts...>::Type;
+	using FType = typename TTupleCatResultImpl<TTupleTypes..., Ts...>::FType;
 };
 
 template <typename... Ts>
 struct TTupleCatResultImpl<FTupleEndFlag, Ts...>
 {
-	using Type = TTuple<Ts...>;
+	using FType = TTuple<Ts...>;
 };
 
 template <typename R, typename Indices>
@@ -571,14 +571,14 @@ template <typename... RTypes, size_t... Indices>
 struct TTupleCatMake<TTuple<RTypes...>, TIndexSequence<Indices...>>
 {
 	template <typename T, typename U>
-	struct ForwardType { using Type = TConditional<CRValueReference<T>, TRemoveReference<U>&&, U>; };
+	struct FForwardType { using FType = TConditional<CRValueReference<T>, TRemoveReference<U>&&, U>; };
 
 	template <typename TTupleType>
 	FORCEINLINE static constexpr TTuple<RTypes...> Do(TTupleType&& InValue)
 	{
 		return TTuple<RTypes...>
 			(
-				static_cast<typename ForwardType<RTypes, decltype(Forward<TTupleType>(InValue).template GetValue<Indices>())>::Type>
+				static_cast<typename FForwardType<RTypes, decltype(Forward<TTupleType>(InValue).template GetValue<Indices>())>::FType>
 					(
 						Forward<TTupleType>(InValue).template GetValue<Indices>()
 					)...
@@ -642,15 +642,15 @@ struct TTupleVisitImpl<TIndexSequence<>>
 NAMESPACE_PRIVATE_END
 
 template <typename... TTupleTypes> requires (true && ... && CTTuple<TRemoveCVRef<TTupleTypes>>)
-using TTupleCatResult = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<TRemoveReference<TTupleTypes>..., NAMESPACE_PRIVATE::FTupleEndFlag>::Type;;
+using TTupleCatResult = typename NAMESPACE_PRIVATE::TTupleCatResultImpl<TRemoveReference<TTupleTypes>..., NAMESPACE_PRIVATE::FTupleEndFlag>::FType;
 
 /** Creates a tuple by concatenating any number of tuples. */
 template <typename... TTupleTypes> requires (true && ... && CTTuple<TRemoveCVRef<TTupleTypes>>)
 FORCEINLINE constexpr decltype(auto) TupleCat(TTupleTypes&&... Args)
 {
-	using R = TTupleCatResult<TTupleTypes...>;
-	if constexpr (sizeof...(Args) == 0) return R();
-	else return NAMESPACE_PRIVATE::TTupleCatImpl<R>::Do(Forward<TTupleTypes>(Args)...);
+	using FResult = TTupleCatResult<TTupleTypes...>;
+	if constexpr (sizeof...(Args) == 0) return FResult();
+	else return NAMESPACE_PRIVATE::TTupleCatImpl<FResult>::Do(Forward<TTupleTypes>(Args)...);
 }
 
 /**
@@ -679,19 +679,21 @@ FORCEINLINE constexpr void VisitTuple(F&& Func, FirstTupleType&& FirstTuple, Tup
 template <typename... Ts, typename... Us> requires (requires { typename TTuple<TCommonType<Ts, Us>...>; })
 struct TBasicCommonType<TTuple<Ts...>, TTuple<Us...>>
 {
-	using Type = TTuple<TCommonType<Ts, Us>...>;
+	using FType = TTuple<TCommonType<Ts, Us>...>;
 };
 
 template <typename... Ts, typename... Us, template<typename> typename TQualifiers, template<typename> typename UQualifiers>
 	requires (requires { typename TTuple<TCommonReference<TQualifiers<Ts>, UQualifiers<Us>>...>; })
 struct TBasicCommonReference<TTuple<Ts...>, TTuple<Us...>, TQualifiers, UQualifiers>
 {
-	using Type = TTuple<TCommonReference<TQualifiers<Ts>, UQualifiers<Us>>...>;
+	using FType = TTuple<TCommonReference<TQualifiers<Ts>, UQualifiers<Us>>...>;
 };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
+
+// ReSharper disable CppInconsistentNaming
 
 NAMESPACE_STD_BEGIN
 
@@ -718,3 +720,5 @@ template <size_t Index, typename ...Ts> FORCEINLINE constexpr decltype(auto) get
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
+
+// ReSharper restore CppInconsistentNaming

@@ -15,9 +15,9 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 // NOTE: In the STL, the assignment operation of the std::any type uses the copy-and-swap idiom
 // instead of directly calling the assignment operation of the contained value.
-// The purpose of this is as follows: 
-//	1) the copy assignment might not exist. 
-//	2) the typical case is that the objects are different. 
+// The purpose of this is as follows:
+//	1) the copy assignment might not exist.
+//	2) the typical case is that the objects are different.
 //	3) it is less exception-safe
 // But we don't follow the the copy-and-swap idiom, because we assume that no function throws an exception.
 
@@ -107,7 +107,7 @@ public:
 	{
 		EmplaceImpl<T>(Forward<Ts>(Args)...);
 	}
-	
+
 	/** Constructs an object with initial content an object of type TDecay<T>, direct-non-list-initialized from IL, Forward<Ts>(Args).... */
 	template <typename T, typename U, typename... Ts> requires (NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, initializer_list<U>, Ts&&...>)
 	FORCEINLINE explicit FAny(TInPlaceType<T>, initializer_list<U> IL, Ts&&... Args)
@@ -244,23 +244,23 @@ public:
 		&& NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CConstructibleFrom<TDecay<T>, T&&>)
 	FORCEINLINE FAny& operator=(T&& InValue)
 	{
-		using DecayedType = TDecay<T>;
+		using FDecayedType = TDecay<T>;
 
-		if constexpr (CAssignableFrom<DecayedType, T&&>)
+		if constexpr (CAssignableFrom<FDecayedType, T&&>)
 		{
-			if (HoldsAlternative<DecayedType>())
+			if (HoldsAlternative<FDecayedType>())
 			{
-				GetValue<DecayedType>() = Forward<T>(InValue);
+				GetValue<FDecayedType>() = Forward<T>(InValue);
 				return *this;
 			}
 		}
 
 		Destroy();
-		EmplaceImpl<DecayedType>(Forward<T>(InValue));
+		EmplaceImpl<FDecayedType>(Forward<T>(InValue));
 
 		return *this;
 	}
-	
+
 	/** Check if the contained value is equivalent to 'InValue'. */
 	template <typename T> requires (!CSameAs<FAny, TRemoveCVRef<T>> && NAMESPACE_PRIVATE::CFAnyPlaceable<T> && CEqualityComparable<T>)
 	NODISCARD FORCEINLINE constexpr bool operator==(const T& InValue) const&
@@ -352,12 +352,12 @@ public:
 		Destroy();
 		Invalidate();
 	}
-	
+
 	/** Overloads the Swap algorithm for FAny. */
 	friend void Swap(FAny& A, FAny& B)
 	{
 		if (!A.IsValid() && !B.IsValid()) return;
-		
+
 		if (A.IsValid() && !B.IsValid())
 		{
 			B = MoveTemp(A);
@@ -524,7 +524,7 @@ private:
 		default: check_no_entry();     return nullptr;
 		}
 	}
-	
+
 	FORCEINLINE const void* GetStorage() const
 	{
 		switch (GetRepresentation())
@@ -536,36 +536,36 @@ private:
 		default: check_no_entry();     return nullptr;
 		}
 	}
-	
+
 	template <typename T, typename... Ts>
 	void EmplaceImpl(Ts&&... Args)
 	{
-		using DecayedType = TDecay<T>;
+		using FDecayedType = TDecay<T>;
 
-		TypeInfo = reinterpret_cast<uintptr>(&typeid(DecayedType));
+		TypeInfo = reinterpret_cast<uintptr>(&typeid(FDecayedType));
 
-		if constexpr (CEmpty<DecayedType> && CTrivial<DecayedType>) return; // ERepresentation::Empty
+		if constexpr (CEmpty<FDecayedType> && CTrivial<FDecayedType>) return; // ERepresentation::Empty
 
-		constexpr bool bIsTriviallyStorable = sizeof(DecayedType) <= sizeof(TrivialStorage.Internal) && alignof(DecayedType) <= alignof(FAny) && CTriviallyCopyable<DecayedType>;
-		constexpr bool bIsSmallStorable     = sizeof(DecayedType) <= sizeof(  SmallStorage.Internal) && alignof(DecayedType) <= alignof(FAny);
+		constexpr bool bIsTriviallyStorable = sizeof(FDecayedType) <= sizeof(TrivialStorage.Internal) && alignof(FDecayedType) <= alignof(FAny) && CTriviallyCopyable<FDecayedType>;
+		constexpr bool bIsSmallStorable     = sizeof(FDecayedType) <= sizeof(  SmallStorage.Internal) && alignof(FDecayedType) <= alignof(FAny);
 
-		static constexpr const FRTTI SelectedRTTI(InPlaceType<DecayedType>);
+		static constexpr const FRTTI SelectedRTTI(InPlaceType<FDecayedType>);
 
 		if constexpr (bIsTriviallyStorable)
 		{
-			new (&TrivialStorage.Internal) DecayedType(Forward<Ts>(Args)...);
+			new (&TrivialStorage.Internal) FDecayedType(Forward<Ts>(Args)...);
 			TypeInfo |= static_cast<uintptr>(ERepresentation::Trivial);
 		}
 		else if constexpr (bIsSmallStorable)
 		{
-			new (&SmallStorage.Internal) DecayedType(Forward<Ts>(Args)...);
+			new (&SmallStorage.Internal) FDecayedType(Forward<Ts>(Args)...);
 			SmallStorage.RTTI = &SelectedRTTI;
 			TypeInfo |= static_cast<uintptr>(ERepresentation::Small);
 		}
 		else
 		{
-			BigStorage.External = Memory::Malloc(sizeof(DecayedType), alignof(DecayedType));
-			new (BigStorage.External) DecayedType(Forward<Ts>(Args)...);
+			BigStorage.External = Memory::Malloc(sizeof(FDecayedType), alignof(FDecayedType));
+			new (BigStorage.External) FDecayedType(Forward<Ts>(Args)...);
 			BigStorage.RTTI = &SelectedRTTI;
 			TypeInfo |= static_cast<uintptr>(ERepresentation::Big);
 		}

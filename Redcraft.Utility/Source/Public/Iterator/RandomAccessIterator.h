@@ -37,7 +37,7 @@ struct IRandomAccessIterator /* : IBidirectionalIterator<T>, ISizedSentinelFor<I
 {
 	// ~Begin CBidirectionalIterator.
 
-	using ElementType = TRemoveCVRef<T>;
+	using FElementType = TRemoveCVRef<T>;
 
 	// ~End CBidirectionalIterator.
 

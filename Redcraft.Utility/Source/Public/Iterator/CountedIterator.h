@@ -18,8 +18,8 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_PRIVATE_BEGIN
 
-template <typename            T> class TCountedIteratorImpl    {                                                  };
-template <CIndirectlyReadable T> class TCountedIteratorImpl<T> { public: using ElementType = TIteratorElement<T>; };
+template <typename            T> class TCountedIteratorImpl    {                                                   };
+template <CIndirectlyReadable T> class TCountedIteratorImpl<T> { public: using FElementType = TIteratorElement<T>; };
 
 NAMESPACE_PRIVATE_END
 
@@ -34,7 +34,7 @@ class TCountedIterator final : public NAMESPACE_PRIVATE::TCountedIteratorImpl<I>
 {
 public:
 
-	using IteratorType = I;
+	using FIteratorType = I;
 
 #	if DO_CHECK
 	FORCEINLINE constexpr TCountedIterator() requires (CDefaultConstructible<I>) : Length(1), MaxLength(0) { }
@@ -48,7 +48,7 @@ public:
 	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator&&)      = default;
 	FORCEINLINE constexpr ~TCountedIterator()                                  = default;
 
-	FORCEINLINE constexpr explicit TCountedIterator(IteratorType InValue, ptrdiff N) : Current(MoveTemp(InValue)) { check_code({ MaxLength = N; }); }
+	FORCEINLINE constexpr explicit TCountedIterator(FIteratorType InValue, ptrdiff N) : Current(MoveTemp(InValue)) { check_code({ MaxLength = N; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<I, J> && CConstructibleFrom<I, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TCountedIterator(const TCountedIterator<J>& InValue)
@@ -106,14 +106,14 @@ public:
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
 
-	NODISCARD FORCEINLINE constexpr const IteratorType& GetBase() const& { CheckThis(); return          Current;  }
-	NODISCARD FORCEINLINE constexpr       IteratorType  GetBase() &&     { CheckThis(); return MoveTemp(Current); }
-	NODISCARD FORCEINLINE constexpr       ptrdiff           Num() const  { CheckThis(); return          Length;   }
+	NODISCARD FORCEINLINE constexpr const FIteratorType& GetBase() const& { CheckThis(); return          Current;  }
+	NODISCARD FORCEINLINE constexpr       FIteratorType  GetBase() &&     { CheckThis(); return MoveTemp(Current); }
+	NODISCARD FORCEINLINE constexpr       ptrdiff            Num() const  { CheckThis(); return          Length;   }
 
 private:
 
-	IteratorType Current;
-	ptrdiff      Length;
+	FIteratorType Current;
+	ptrdiff       Length;
 
 #	if DO_CHECK
 	ptrdiff MaxLength;

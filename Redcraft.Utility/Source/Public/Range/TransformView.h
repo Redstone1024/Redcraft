@@ -89,7 +89,7 @@ private:
 
 	public:
 
-		using ElementType = TRemoveCVRef<TInvokeResult<FFunc&, TRangeReference<FBase>>>;
+		using FElementType = TRemoveCVRef<TInvokeResult<FFunc&, TRangeReference<FBase>>>;
 
 		FORCEINLINE constexpr FIteratorImpl() requires (CDefaultConstructible<TRangeIterator<FBase>>) = default;
 

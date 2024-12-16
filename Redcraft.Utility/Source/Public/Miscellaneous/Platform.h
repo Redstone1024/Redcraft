@@ -14,6 +14,8 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+// ReSharper disable CppInconsistentNaming
+
 // Platform information macro
 
 #ifndef PLATFORM_NAME
@@ -526,6 +528,8 @@ NAMESPACE_PRIVATE_END
 #define U16TEXT(X)     U16TEXT_PASTE(X)
 #define U32TEXT(X)     U32TEXT_PASTE(X)
 #define UNICODETEXT(X) U32TEXT_PASTE(X)
+
+// ReSharper restore CppInconsistentNaming
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

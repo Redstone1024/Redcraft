@@ -17,7 +17,7 @@ concept CAllocatableObject = CObject<T> && !CConst<T> && !CVolatile<T> && CDestr
 
 template <typename A, typename T = int>
 concept CAllocator = !CSameAs<A, FAllocatorInterface> && CAllocatableObject<T>
-	&& requires (typename A::template ForElementType<T>& Allocator, T* InPtr, size_t Num, size_t NumAllocated)
+	&& requires (typename A::template TForElementType<T>& Allocator, T* InPtr, size_t Num, size_t NumAllocated)
 	{
 		{         Allocator.Allocate(Num)          } -> CSameAs<T*>;
 		{         Allocator.Deallocate(InPtr)      } -> CSameAs<void>;
@@ -47,15 +47,15 @@ struct FAllocatorInterface
 	static constexpr bool bSupportsMultipleAllocation = true;
 
 	template <CAllocatableObject T>
-	class ForElementType /*: private FSingleton*/
+	class TForElementType /*: private FSingleton*/
 	{
 	public:
 
-		ForElementType()                                 = default;
-		ForElementType(const ForElementType&)            = delete;
-		ForElementType(ForElementType&&)                 = delete;
-		ForElementType& operator=(const ForElementType&) = delete;
-		ForElementType& operator=(ForElementType&&)      = delete;
+		TForElementType()                                  = default;
+		TForElementType(const TForElementType&)            = delete;
+		TForElementType(TForElementType&&)                 = delete;
+		TForElementType& operator=(const TForElementType&) = delete;
+		TForElementType& operator=(TForElementType&&)      = delete;
 
 		/** Allocates uninitialized storage. If 'InNum' is zero, return nullptr. */
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum) = delete;
@@ -110,7 +110,7 @@ struct FAllocatorInterface
 		                                                                                           \
 	};                                                                                             \
 	                                                                                               \
-	PREPROCESSOR_JOIN(T, Name)<typename Allocator::template ForElementType<Type>> Name;
+	PREPROCESSOR_JOIN(T, Name)<typename Allocator::template TForElementType<Type>> Name;
 
 /** This is heap allocator that calls Memory::Malloc() directly for memory allocation. */
 struct FHeapAllocator
@@ -118,15 +118,15 @@ struct FHeapAllocator
 	static constexpr bool bSupportsMultipleAllocation = true;
 
 	template <CAllocatableObject T>
-	class ForElementType /*: private FSingleton*/
+	class TForElementType /*: private FSingleton*/
 	{
 	public:
 
-		ForElementType()                                 = default;
-		ForElementType(const ForElementType&)            = delete;
-		ForElementType(ForElementType&&)                 = delete;
-		ForElementType& operator=(const ForElementType&) = delete;
-		ForElementType& operator=(ForElementType&&)      = delete;
+		TForElementType()                                  = default;
+		TForElementType(const TForElementType&)            = delete;
+		TForElementType(TForElementType&&)                 = delete;
+		TForElementType& operator=(const TForElementType&) = delete;
+		TForElementType& operator=(TForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
 		{
@@ -197,15 +197,15 @@ struct TInlineAllocator
 	static constexpr bool bSupportsMultipleAllocation = false;
 
 	template <CAllocatableObject T>
-	class ForElementType /*: private FSingleton*/
+	class TForElementType /*: private FSingleton*/
 	{
 	public:
 
-		ForElementType()                                 = default;
-		ForElementType(const ForElementType&)            = delete;
-		ForElementType(ForElementType&&)                 = delete;
-		ForElementType& operator=(const ForElementType&) = delete;
-		ForElementType& operator=(ForElementType&&)      = delete;
+		TForElementType()                                  = default;
+		TForElementType(const TForElementType&)            = delete;
+		TForElementType(TForElementType&&)                 = delete;
+		TForElementType& operator=(const TForElementType&) = delete;
+		TForElementType& operator=(TForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum)
 		{
@@ -279,15 +279,15 @@ struct FNullAllocator
 	static constexpr bool bSupportsMultipleAllocation = true;
 
 	template <CAllocatableObject T>
-	class ForElementType /*: private FSingleton*/
+	class TForElementType /*: private FSingleton*/
 	{
 	public:
 
-		ForElementType()                                 = default;
-		ForElementType(const ForElementType&)            = delete;
-		ForElementType(ForElementType&&)                 = delete;
-		ForElementType& operator=(const ForElementType&) = delete;
-		ForElementType& operator=(ForElementType&&)      = delete;
+		TForElementType()                                  = default;
+		TForElementType(const TForElementType&)            = delete;
+		TForElementType(TForElementType&&)                 = delete;
+		TForElementType& operator=(const TForElementType&) = delete;
+		TForElementType& operator=(TForElementType&&)      = delete;
 
 		NODISCARD FORCEINLINE T* Allocate(size_t InNum) { check_no_entry(); return nullptr; }
 

@@ -22,7 +22,7 @@ class TReferenceWrapper final
 {
 public:
 
-	using Type = ReferencedType;
+	using FType = ReferencedType;
 
 	/** Constructs a new reference wrapper. */
 	template <typename T = ReferencedType&> requires (CConvertibleTo<T&&, ReferencedType&> && !CSameAs<TReferenceWrapper, TRemoveCVRef<T>>)
@@ -111,10 +111,10 @@ NAMESPACE_PRIVATE_BEGIN
 template <typename T> struct TIsTReferenceWrapperImpl                       : FFalse { };
 template <typename T> struct TIsTReferenceWrapperImpl<TReferenceWrapper<T>> : FTrue  { };
 
-template <typename T> struct TUnwrapReferenceImpl                       { using Type = T;  };
-template <typename T> struct TUnwrapReferenceImpl<TReferenceWrapper<T>> { using Type = T&; };
+template <typename T> struct TUnwrapReferenceImpl                       { using FType = T;  };
+template <typename T> struct TUnwrapReferenceImpl<TReferenceWrapper<T>> { using FType = T&; };
 
-template <typename T> struct TUnwrapRefDecayImpl { using Type = typename TUnwrapReferenceImpl<TDecay<T>>::Type; };
+template <typename T> struct TUnwrapRefDecayImpl { using FType = typename TUnwrapReferenceImpl<TDecay<T>>::FType; };
 
 NAMESPACE_PRIVATE_END
 
@@ -122,10 +122,10 @@ template <typename T>
 concept CTReferenceWrapper = NAMESPACE_PRIVATE::TIsTReferenceWrapperImpl<TRemoveCV<T>>::Value;
 
 template <typename T>
-using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::Type;
+using TUnwrapReference = typename NAMESPACE_PRIVATE::TUnwrapReferenceImpl<T>::FType;
 
 template <typename T>
-using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::Type;
+using TUnwrapRefDecay = typename NAMESPACE_PRIVATE::TUnwrapRefDecayImpl<T>::FType;
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
