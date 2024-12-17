@@ -212,7 +212,7 @@ NAMESPACE_END(Range)
 NAMESPACE_BEGIN(Range)
 
 /** Creates A view adapter of a sequence that applies a transformation function to each element. */
-template <CViewableRange R, typename F> requires (requires { TTransformView(DeclVal<R&&>(), DeclVal<F&&>()); })
+template <CViewableRange R, typename F> requires (requires { TTransformView(DeclVal<R>(), DeclVal<F>()); })
 NODISCARD FORCEINLINE constexpr auto Transform(R&& Base, F&& Func)
 {
 	return TTransformView(Forward<R>(Base), Forward<F>(Func));
@@ -222,7 +222,7 @@ NODISCARD FORCEINLINE constexpr auto Transform(R&& Base, F&& Func)
 template <typename F>
 NODISCARD FORCEINLINE constexpr auto Transform(F&& Func)
 {
-	return TAdaptorClosure([&Func]<CViewableRange R> requires (requires { Range::Transform(DeclVal<R&&>(), DeclVal<F&&>()); }) (R&& Base)
+	return TAdaptorClosure([&Func]<CViewableRange R> requires (requires { Range::Transform(DeclVal<R>(), DeclVal<F>()); }) (R&& Base)
 	{
 		return Range::Transform(Forward<R>(Base), Forward<F>(Func));
 	});

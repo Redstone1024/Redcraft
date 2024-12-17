@@ -165,7 +165,7 @@ NAMESPACE_END(Range)
 NAMESPACE_BEGIN(Range)
 
 /** Creates A view adapter that consists of the elements of a range that satisfies a predicate. */
-template <CViewableRange R, typename Pred> requires (requires { TFilterView(DeclVal<R&&>(), DeclVal<Pred&&>()); })
+template <CViewableRange R, typename Pred> requires (requires { TFilterView(DeclVal<R>(), DeclVal<Pred>()); })
 NODISCARD FORCEINLINE constexpr auto Filter(R&& Base, Pred&& Predicate)
 {
 	return TFilterView(Forward<R>(Base), Forward<Pred>(Predicate));
@@ -175,7 +175,7 @@ NODISCARD FORCEINLINE constexpr auto Filter(R&& Base, Pred&& Predicate)
 template <typename Pred>
 NODISCARD FORCEINLINE constexpr auto Filter(Pred&& Predicate)
 {
-	return TAdaptorClosure([&Predicate]<CViewableRange R> requires (requires { Range::Filter(DeclVal<R&&>(), DeclVal<Pred&&>()); }) (R&& Base)
+	return TAdaptorClosure([&Predicate]<CViewableRange R> requires (requires { Range::Filter(DeclVal<R>(), DeclVal<Pred>()); }) (R&& Base)
 	{
 		return Range::Filter(Forward<R>(Base), Forward<Pred>(Predicate));
 	});

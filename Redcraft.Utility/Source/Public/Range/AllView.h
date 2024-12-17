@@ -152,7 +152,7 @@ NODISCARD FORCEINLINE constexpr auto All(R&& InRange)
 /** Creates A view adapter that includes all elements of a range. */
 NODISCARD FORCEINLINE constexpr auto All()
 {
-	return TAdaptorClosure([]<CViewableRange R> requires (requires { All(DeclVal<R&&>()); }) (R && Base)
+	return TAdaptorClosure([]<CViewableRange R> requires (requires { All(DeclVal<R>()); }) (R&& Base)
 	{
 		return All(Forward<R>(Base));
 	});
