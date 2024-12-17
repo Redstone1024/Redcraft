@@ -1,15 +1,15 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "String/Char.h"
 #include "Containers/Array.h"
 #include "String/StringView.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/Optional.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/Noncopyable.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -80,8 +80,13 @@ public:
 	FORCEINLINE TString(TStringView<FElementType> View) : TString(View.Begin(), View.End()) { }
 
 	/** Constructs the string with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	FORCEINLINE TString(I First, S Last) : FSuper(MoveTemp(First), MoveTemp(Last)) { }
+
+	/** Constructs the string with the contents of the range. */
+	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TString>
+		&& !CSameAs<TRemoveCVRef<R>, TStringView<FElementType>> && CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE explicit TString(R&& Range) : TString(Range::Begin(Range), Range::End(Range)) { }
 
 	/** Copy constructor. Constructs the string with the copy of the contents of 'InValue'. */
 	FORCEINLINE TString(const TString&) = default;
@@ -90,7 +95,7 @@ public:
 	FORCEINLINE TString(TString&&) = default;
 
 	/** Constructs the string with the contents of the initializer list. */
-	FORCEINLINE TString(initializer_list<FElementType> IL) : TString(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TString(initializer_list<FElementType> IL) : TString(Range::Begin(IL), Range::End(IL)) { }
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
 	FORCEINLINE TString& operator=(const TString&) = default;
@@ -167,7 +172,7 @@ public:
 	}
 
 	/** Inserts characters from the range ['First', 'Last') before 'Index' in the string. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	FORCEINLINE FIterator Insert(size_t Index, I First, S Last)
 	{
 		checkf(Index <= this->Num(), TEXT("Illegal index. Please check Index <= Num()."));
@@ -176,7 +181,7 @@ public:
 	}
 
 	/** Inserts characters from the range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	FORCEINLINE FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		checkf(this->IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
@@ -237,20 +242,33 @@ public:
 	void StableErase(...) = delete;
 
 	/** Appends 'Count' copies of the 'InValue' to the end of the string. */
-	TString& Append(size_t Count, FElementType InChar) { return Append(MakeCountedConstantIterator(InChar, Count), DefaultSentinel); }
+	TString& Append(size_t Count, FElementType InChar) { return Append(Range::Repeat(InChar, Count)); }
 
-	/** Appends the contents of the 'View' to the end of the string. */
-	FORCEINLINE TString& Append(TStringView<FElementType> View) { return Append(View.Begin(), View.End()); }
+	/** Appends the contents of the range ['InPtr', 'InPtr' + 'Count') to the end of the string. */
+	FORCEINLINE TString& Append(const FElementType* InPtr, size_t Count) { return Append(TStringView<FElementType>(InPtr, Count)); }
+
+	FORCEINLINE TString& Append(nullptr_t, size_t) = delete;
+
+	/** Constructs a string with the contents of the range ['InPtr', '\0'). */
+	FORCEINLINE TString& Append(const FElementType* InPtr) { return Append(TStringView<FElementType>(InPtr)); }
+
+	FORCEINLINE TString& Append(nullptr_t) = delete;
 
 	/** Appends the contents of the range ['First', 'Last') to the end of the string. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	TString& Append(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last.")); }
+			size_t Count = 0;
 
-			const size_t Count = Iteration::Distance(First, Last);
+			if constexpr (CSizedSentinelFor<S, I>)
+			{
+				checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last."));
+
+				Count = Last - First;
+			}
+			else for (I Iter = First; Iter != Last; ++Iter) ++Count;
 
 			const size_t CurrentNum = this->Num();
 
@@ -269,14 +287,24 @@ public:
 		return *this;
 	}
 
+	/** Appends the contents of the range to the end of the string. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE TString& Append(R&& Range) { return Append(Range::Begin(Range), Range::End(Range)); }
+
 	/** Appends the contents of the initializer list to the end of the string. */
-	FORCEINLINE TString& Append(initializer_list<FElementType> IL) { return Append(Iteration::Begin(IL), Iteration::End(IL)); }
+	FORCEINLINE TString& Append(initializer_list<FElementType> IL) { return Append(Range::Begin(IL), Range::End(IL)); }
 
 	/** Appends the given character value to the end of the string. */
 	FORCEINLINE TString& operator+=(FElementType InChar) { return Append(1, InChar); }
 
-	/** Appends the contents of the 'View' to the end of the string. */
-	FORCEINLINE TString& operator+=(TStringView<FElementType> View) { return Append(View); }
+	/** Appends the contents of the range ['InPtr', '\0') to the end of the string. */
+	FORCEINLINE TString& operator+=(const FElementType* InPtr) { return Append(InPtr); }
+
+	FORCEINLINE TString& operator+=(nullptr_t) = delete;
+
+	/** Appends the contents of the range to the end of the string. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE TString& operator+=(R&& Range) { return Append(Range); }
 
 	/** Appends the contents of the range ['First', 'Last') to the end of the string. */
 	FORCEINLINE TString& operator+=(initializer_list<FElementType> IL) { return Append(IL); }
@@ -435,27 +463,49 @@ public:
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, MakeCountedConstantIterator(InChar, Count), DefaultSentinel);
+		return Replace(First, Last, Range::Repeat(InChar, Count));
 	}
 
-	/** Replace the substring [Index, Index + CountToReplace) with the contents of the 'View'. */
-	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, TStringView<FElementType> View)
+	/** Replace the substring [Index, Index + CountToReplace) with the contents of the ['InPtr', 'InPtr' + 'Count'). */
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, const FElementType* InPtr, size_t Count)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
 
-		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, View);
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, InPtr, InPtr + Count);
 	}
 
-	/** Replace the substring ['First', 'Last') with the contents of the 'View'. */
-	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, TStringView<FElementType> View)
+	FORCEINLINE TString& Replace(size_t, size_t, nullptr_t, size_t) = delete;
+
+	/** Replace the substring ['First', 'Last') with the contents of the ['InPtr', 'InPtr' + 'Count'). */
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, const FElementType* InPtr, size_t Count)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, View.Begin(), View.End());
+		return Replace(First, Last, TStringView<FElementType>(InPtr, Count));
+	}
+
+	FORCEINLINE TString& Replace(FConstIterator, FConstIterator, nullptr_t, size_t) = delete;
+
+	/** Replace the substring [Index, Index + CountToReplace) with the contents of the ['InPtr', '\0'). */
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, const FElementType* InPtr)
+	{
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, InPtr);
+	}
+
+	FORCEINLINE TString& Replace(size_t, size_t, nullptr_t) = delete;
+
+	/** Replace the substring ['First', 'Last') with the contents of the ['InPtr', '\0'). */
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, const FElementType* InPtr)
+	{
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+
+		return Replace(First, Last, TStringView<FElementType>(InPtr));
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, I InString, S Sentinel)
 	{
 		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
@@ -464,19 +514,27 @@ public:
 	}
 
 	/** Replace the substring ['First', 'Last') with the contents of the range ['InString', 'Sentinel'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	TString& Replace(FConstIterator First, FConstIterator Last, I InString, S Sentinel)
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last.")); }
+			checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last."));
 
 			const size_t InsertIndex = First - this->Begin();
+			const size_t RemoveCount = Last - First;
 
-			const size_t RemoveCount = Iteration::Distance(First, Last);
-			const size_t InsertCount = Iteration::Distance(InString, Sentinel);
+			size_t InsertCount = 0;
+
+			if constexpr (CSizedSentinelFor<S, I>)
+			{
+				checkf(InString - Sentinel <= 0, TEXT("Illegal range iterator. Please check InString <= Sentinel."));
+
+				InsertCount = Sentinel - InString;
+			}
+			else for (I Iter = InString; Iter != Sentinel; ++Iter) ++InsertCount;
 
 			const size_t NumToReset = this->Num() - RemoveCount + InsertCount;
 
@@ -519,6 +577,24 @@ public:
 		return *this;
 	}
 
+	/** Replace the substring [Index, Index + CountToReplace) with the contents of the range. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, R&& Range)
+	{
+		checkf(Index <= this->Num() && Index + CountToReplace <= this->Num(), TEXT("Illegal substring range. Please check Index and CountToReplace."));
+
+		return Replace(this->Begin() + Index, this->Begin() + Index + CountToReplace, Forward<R>(Range));
+	}
+
+	/** Replace the substring ['First', 'Last') with the contents of the range. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE TString& Replace(FConstIterator First, FConstIterator Last, R&& Range)
+	{
+		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
+
+		return Replace(First, Last, Range::Begin(Range), Range::End(Range));
+	}
+
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the initializer list. */
 	FORCEINLINE TString& Replace(size_t Index, size_t CountToReplace, initializer_list<FElementType> IL)
 	{
@@ -532,7 +608,7 @@ public:
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, Iteration::Begin(IL), Iteration::End(IL));
+		return Replace(First, Last, Range::Begin(IL), Range::End(IL));
 	}
 
 	/** Obtains a string that is a view over the 'Count' characters of this string view starting at 'Offset'.  */
@@ -540,7 +616,7 @@ public:
 	{
 		checkf(Offset <= this->Num() && Offset + Count <= this->Num(), TEXT("Illegal substring range. Please check Offset and Count."));
 
-		return TStringView<FElementType>(*this).Substr(Offset, Count);
+		return TString(TStringView<FElementType>(*this).Substr(Offset, Count));
 	}
 
 	/** Copies the characters of this string to the destination buffer without null-termination. */
@@ -725,7 +801,7 @@ public:
 
 				do
 				{
-					const auto Result = Facet.in(State, BeginFrom, EndFrom, NextFrom, Iteration::Begin(Buffer), Iteration::End(Buffer), NextTo);
+					const auto Result = Facet.in(State, BeginFrom, EndFrom, NextFrom, Range::Begin(Buffer), Range::End(Buffer), NextTo);
 
 					if (BeginFrom == NextFrom) return false;
 
@@ -773,7 +849,7 @@ public:
 
 				do
 				{
-					const auto Result = Facet.out(State, BeginFrom, EndFrom, NextFrom, Iteration::Begin(Buffer), Iteration::End(Buffer), NextTo);
+					const auto Result = Facet.out(State, BeginFrom, EndFrom, NextFrom, Range::Begin(Buffer), Range::End(Buffer), NextTo);
 
 					if (BeginFrom == NextFrom) return false;
 
@@ -1360,8 +1436,11 @@ TString(const T*) -> TString<T>;
 template<typename T>
 TString(TStringView<T>) -> TString<T>;
 
-template<CForwardIterator I, typename S>
-TString(I, S) -> TString<TIteratorElementType<I>>;
+template<typename I, typename S>
+TString(I, S) -> TString<TIteratorElement<I>>;
+
+template<typename R>
+TString(R) -> TString<TRangeElement<R>>;
 
 template <typename T>
 TString(initializer_list<T>) -> TString<T>;

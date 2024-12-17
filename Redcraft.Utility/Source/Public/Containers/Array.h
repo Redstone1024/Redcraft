@@ -1,16 +1,15 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "Memory/Allocator.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
-#include "Miscellaneous/ConstantIterator.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -57,18 +56,24 @@ public:
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TArray(size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
-		: TArray(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
+		: TArray(Range::Repeat(InValue, Count))
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>> && CMovable<FElementType>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>> && CMovable<FElementType>)
 	TArray(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last.")); }
+			size_t Count = 0;
 
-			const size_t Count = Iteration::Distance(First, Last);
+			if constexpr (CSizedSentinelFor<S, I>)
+			{
+				checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last."));
+
+				Count = Last - First;
+			}
+			else for (I Iter = First; Iter != Last; ++Iter) ++Count;
 
 			Impl.ArrayNum = Count;
 			Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
@@ -92,6 +97,10 @@ public:
 			}
 		}
 	}
+
+	/** Constructs the container with the contents of the range. */
+	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TArray> && CConstructibleFrom<FElementType, TRangeReference<R>> && CMovable<FElementType>)
+	FORCEINLINE explicit TArray(R&& Range) : TArray(Range::Begin(Range), Range::End(Range)) { }
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
 	TArray(const TArray& InValue) requires (CCopyConstructible<FElementType>)
@@ -129,7 +138,7 @@ public:
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TArray(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TArray(Range::Begin(IL), Range::End(IL)) { }
 
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	~TArray()
@@ -243,38 +252,38 @@ public:
 	/** Replaces the contents with those identified by initializer list. */
 	TArray& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
-		size_t NumToAllocate = GetNum(IL);
+		size_t NumToAllocate = Range::Num(IL);
 
-		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow(GetNum(IL), Max())   : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(GetNum(IL), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow  (Range::Num(IL), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(Range::Num(IL), Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
 
-			Impl.ArrayNum = GetNum(IL);
+			Impl.ArrayNum = Range::Num(IL);
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<FElementType>(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer, Range::GetData(IL), Num());
 
 			return *this;
 		}
 
-		if (GetNum(IL) <= Num())
+		if (Range::Num(IL) <= Num())
 		{
-			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), GetNum(IL));
-			Memory::Destruct(Impl.Pointer + GetNum(IL), Num() - GetNum(IL));
+			Memory::CopyAssign(Impl.Pointer, Range::GetData(IL), Range::Num(IL));
+			Memory::Destruct(Impl.Pointer + Range::Num(IL), Num() - Range::Num(IL));
 		}
-		else if (GetNum(IL) <= Max())
+		else if (Range::Num(IL) <= Max())
 		{
-			Memory::CopyAssign(Impl.Pointer, NAMESPACE_REDCRAFT::GetData(IL), Num());
-			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), NAMESPACE_REDCRAFT::GetData(IL) + Num(), GetNum(IL) - Num());
+			Memory::CopyAssign(Impl.Pointer, Range::GetData(IL), Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), Range::GetData(IL) + Num(), Range::Num(IL) - Num());
 		}
 		else check_no_entry();
 
-		Impl.ArrayNum = GetNum(IL);
+		Impl.ArrayNum = Range::Num(IL);
 
 		return *this;
 	}
@@ -406,22 +415,29 @@ public:
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Insert(Iter, MakeCountedConstantIterator(InValue, Count), DefaultSentinel);
+		return Insert(Iter, Range::Repeat(InValue, Count));
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>
-		&& CAssignableFrom<FElementType&, TIteratorReferenceType<I>> && CMovable<FElementType>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>
+		&& CAssignableFrom<FElementType&, TIteratorReference<I>> && CMovable<FElementType>)
 	FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last.")); }
-
 			const size_t InsertIndex = Iter - Begin();
-			const size_t Count = Iteration::Distance(First, Last);
+
+			size_t Count = 0;
+
+			if constexpr (CSizedSentinelFor<S, I>)
+			{
+				checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last."));
+
+				Count = Last - First;
+			}
+			else for (I Jter = First; Jter != Last; ++Jter) ++Count;
 
 			if (Count == 0) return FIterator(this, Impl.Pointer + InsertIndex);
 
@@ -523,10 +539,18 @@ public:
 		}
 	}
 
+	/** Inserts elements from range before 'Iter'. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>
+		&& CAssignableFrom<FElementType&, TRangeReference<R>> && CMovable<FElementType>)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range)
+	{
+		return Insert(Iter, Range::Begin(Range), Range::End(Range));
+	}
+
 	/** Inserts elements from initializer list before 'Iter' in the container. */
 	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
-		return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL));
+		return Insert(Iter, Range::Begin(IL), Range::End(IL));
 	}
 
 	/** Inserts a new element into the container directly before 'Iter'. */
@@ -1058,7 +1082,10 @@ private:
 };
 
 template <typename I, typename S>
-TArray(I, S) -> TArray<TIteratorElementType<I>>;
+TArray(I, S) -> TArray<TIteratorElement<I>>;
+
+template <typename R>
+TArray(R) -> TArray<TRangeElement<R>>;
 
 template <typename T>
 TArray(initializer_list<T>) -> TArray<T>;

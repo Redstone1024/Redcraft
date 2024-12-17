@@ -1,13 +1,13 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "Templates/Meta.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN

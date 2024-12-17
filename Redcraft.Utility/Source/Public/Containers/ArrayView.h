@@ -1,16 +1,16 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "Memory/Address.h"
 #include "Memory/Allocator.h"
 #include "Containers/Array.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Containers/StaticArray.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -29,7 +29,7 @@ class TArrayView
 {
 public:
 
-	using FElementType = T;
+	using FElementType = TRemoveCV<T>;
 
 	using FReference = T&;
 
@@ -53,7 +53,7 @@ public:
 	}
 
 	/** Constructs an array view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
-	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], FElementType(*)[]>)
+	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorReference<I>, T> && CSameAs<TRemoveCVRef<TIteratorReference<I>>, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, size_t InCount)
 	{
 		checkf(Extent == DynamicExtent || Extent == InCount, TEXT("Illegal range count. Please check InCount."));
@@ -67,7 +67,7 @@ public:
 	}
 
 	/** Constructs an array view that is a view over the range ['InFirst', 'InLast'). */
-	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], FElementType(*)[]>)
+	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorReference<I>, T> && CSameAs<TRemoveCVRef<TIteratorReference<I>>, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr explicit (Extent != DynamicExtent) TArrayView(I InFirst, S InLast)
 	{
 		checkf(Extent == DynamicExtent || Extent == InLast - InFirst, TEXT("Illegal range iterator. Please check InLast - InFirst."));
@@ -156,36 +156,36 @@ public:
 
 	/** Obtains an array view that is a view over the first 'Count' elements of this array view. */
 	template <size_t Count> requires (Extent == DynamicExtent || Extent >= Count)
-	NODISCARD FORCEINLINE constexpr TArrayView<FElementType, Count> First() const
+	NODISCARD FORCEINLINE constexpr TArrayView<T, Count> First() const
 	{
 		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
 
-		return TArrayView<FElementType, Count>(Begin(), Count);
+		return TArrayView<T, Count>(Begin(), Count);
 	}
 
 	/** Obtains an array view that is a view over the first 'Count' elements of this array view. */
-	NODISCARD FORCEINLINE constexpr TArrayView<FElementType, DynamicExtent> First(size_t Count) const
+	NODISCARD FORCEINLINE constexpr TArrayView<T, DynamicExtent> First(size_t Count) const
 	{
 		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
 
-		return TArrayView<FElementType, DynamicExtent>(Begin(), Count);
+		return TArrayView<T, DynamicExtent>(Begin(), Count);
 	}
 
 	/** Obtains an array view that is a view over the last 'Count' elements of this array view. */
 	template <size_t Count> requires (Extent == DynamicExtent || Extent >= Count)
-	NODISCARD FORCEINLINE constexpr TArrayView<FElementType, Count> Last() const
+	NODISCARD FORCEINLINE constexpr TArrayView<T, Count> Last() const
 	{
 		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
 
-		return TArrayView<FElementType, Count>(End() - Count, Count);
+		return TArrayView<T, Count>(End() - Count, Count);
 	}
 
 	/** Obtains an array view that is a view over the last 'Count' elements of this array view. */
-	NODISCARD FORCEINLINE constexpr TArrayView<FElementType, DynamicExtent> Last(size_t Count) const
+	NODISCARD FORCEINLINE constexpr TArrayView<T, DynamicExtent> Last(size_t Count) const
 	{
 		checkf(Count <= Num(), TEXT("Illegal subview range. Please check Count."));
 
-		return TArrayView<FElementType, DynamicExtent>(End() - Count, Count);
+		return TArrayView<T, DynamicExtent>(End() - Count, Count);
 	}
 
 	/** Obtains an array view that is a view over the 'Count' elements of this array view starting at 'Offset'.  */
@@ -198,11 +198,11 @@ public:
 
 		if constexpr (Count != DynamicExtent)
 		{
-			return TArrayView<FElementType, SubviewExtent>(Begin() + Offset, Count);
+			return TArrayView<T, SubviewExtent>(Begin() + Offset, Count);
 		}
 		else
 		{
-			return TArrayView<FElementType, SubviewExtent>(Begin() + Offset, Num() - Offset);
+			return TArrayView<T, SubviewExtent>(Begin() + Offset, Num() - Offset);
 		}
 	}
 
@@ -213,11 +213,11 @@ public:
 
 		if (Count != DynamicExtent)
 		{
-			return TArrayView<FElementType, DynamicExtent>(Begin() + Offset, Count);
+			return TArrayView<T, DynamicExtent>(Begin() + Offset, Count);
 		}
 		else
 		{
-			return TArrayView<FElementType, DynamicExtent>(Begin() + Offset, Num() - Offset);
+			return TArrayView<T, DynamicExtent>(Begin() + Offset, Num() - Offset);
 		}
 	}
 
@@ -245,7 +245,7 @@ public:
 	}
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr FElementType* GetData() const { return Impl.Pointer; }
+	NODISCARD FORCEINLINE constexpr T* GetData() const { return Impl.Pointer; }
 
 	/** @return The iterator to the first or end element. */
 	NODISCARD FORCEINLINE constexpr FIterator Begin() const { return FIterator(this, Impl.Pointer);         }
@@ -291,7 +291,7 @@ public:
 
 private:
 
-	struct FImplWithoutNum { FElementType* Pointer; };
+	struct FImplWithoutNum { T* Pointer; };
 
 	struct FImplWithNum : FImplWithoutNum { size_t ArrayNum; };
 
@@ -367,7 +367,7 @@ public:
 };
 
 template <typename I, typename S>
-TArrayView(I, S) -> TArrayView<TRemoveReference<TIteratorReferenceType<I>>>;
+TArrayView(I, S) -> TArrayView<TRemoveReference<TIteratorReference<I>>>;
 
 template <typename T, size_t N>
 TArrayView(T(&)[N]) -> TArrayView<T, N>;

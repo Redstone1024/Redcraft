@@ -3,7 +3,6 @@
 #include "CoreTypes.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Miscellaneous/Container.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -13,8 +12,7 @@ template <typename T, T... Ints>
 struct TIntegerSequence
 {
 	using FValueType = T;
-	FORCEINLINE static constexpr size_t   Num()     { return sizeof...(Ints);                          }
-	FORCEINLINE static constexpr const T* GetData() { return NAMESPACE_REDCRAFT::GetData({ Ints... }); }
+	FORCEINLINE static constexpr size_t Num() { return sizeof...(Ints); }
 };
 
 NAMESPACE_PRIVATE_BEGIN

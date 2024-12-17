@@ -1,16 +1,15 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "Memory/Allocator.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
-#include "Miscellaneous/ConstantIterator.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -76,11 +75,11 @@ public:
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TList(size_t Count, const FElementType& InValue) requires (CCopyable<FElementType>)
-		: TList(MakeCountedConstantIterator(InValue, Count), DefaultSentinel)
+		: TList(Range::Repeat(InValue, Count))
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	TList(I First, S Last) : TList()
 	{
 		FNode* EndNode = Impl.HeadNode->PrevNode;
@@ -101,6 +100,10 @@ public:
 		Impl.HeadNode->PrevNode = EndNode;
 	}
 
+	/** Constructs the container with the contents of the range. */
+	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TList> && CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE explicit TList(R&& Range) : TList(Range::Begin(Range), Range::End(Range)) { }
+
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
 	FORCEINLINE TList(const TList& InValue) requires (CCopyConstructible<FElementType>) : TList(InValue.Begin(), InValue.End()) { }
 
@@ -108,7 +111,7 @@ public:
 	FORCEINLINE TList(TList&& InValue) : TList() { Swap(*this, InValue); }
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TList(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TList(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TList(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TList(Range::Begin(IL), Range::End(IL)) { }
 
 	/** Destructs the list. The destructors of the elements are called and the used storage is deallocated. */
 	~TList()
@@ -168,10 +171,10 @@ public:
 	/** Replaces the contents with those identified by initializer list. */
 	TList& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
-		      FIterator     ThisIter  =            Begin();
-		const FElementType* OtherIter = Iteration::Begin(IL);
+		      FIterator     ThisIter  =        Begin();
+		const FElementType* OtherIter = Range::Begin(IL);
 
-		while (ThisIter != End() && OtherIter != Iteration::End(IL))
+		while (ThisIter != End() && OtherIter != Range::End(IL))
 		{
 			*ThisIter = *OtherIter;
 
@@ -181,18 +184,18 @@ public:
 
 		if (ThisIter == End())
 		{
-			while (OtherIter != Iteration::End(IL))
+			while (OtherIter != Range::End(IL))
 			{
 				EmplaceBack(*OtherIter);
 				++OtherIter;
 			}
 		}
-		else if (OtherIter == Iteration::End(IL))
+		else if (OtherIter == Range::End(IL))
 		{
 			Erase(ThisIter, End());
 		}
 
-		Impl.ListNum = GetNum(IL);
+		Impl.ListNum = Range::Num(IL);
 
 		return *this;
 	}
@@ -244,11 +247,11 @@ public:
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
 	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
 	{
-		return Insert(Iter, MakeCountedConstantIterator(InValue, Count), DefaultSentinel);
+		return Insert(Iter, Range::Repeat(InValue, Count));
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>)
 	FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		if (First == Last) return FIterator(Iter.Pointer);
@@ -282,8 +285,12 @@ public:
 		return FIterator(FirstNode);
 	}
 
+	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
+	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range) { return Insert(Iter, Range::Begin(Range), Range::End(Range)); }
+
 	/** Inserts elements from initializer list before 'Iter' in the container. */
-	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) { return Insert(Iter, Iteration::Begin(IL), Iteration::End(IL)); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) { return Insert(Iter, Range::Begin(IL), Range::End(IL)); }
 
 	/** Inserts a new element into the container directly before 'Iter'. */
 	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...>)
@@ -381,7 +388,7 @@ public:
 		{
 			FIterator First = End();
 
-			Iteration::Advance(First, Count - Impl.ListNum);
+			for (size_t Index = 0; Index != Impl.ListNum - Count; ++Index) --First;
 
 			Erase(First, End());
 
@@ -417,7 +424,7 @@ public:
 		{
 			FIterator First = End();
 
-			Iteration::Advance(First, Count - Impl.ListNum);
+			for (size_t Index = 0; Index != Impl.ListNum - Count; ++Index) --First;
 
 			Erase(First, End());
 
@@ -598,7 +605,10 @@ private:
 };
 
 template <typename I, typename S>
-TList(I, S) -> TList<TIteratorElementType<I>>;
+TList(I, S) -> TList<TIteratorElement<I>>;
+
+template <typename R>
+TList(R) -> TList<TRangeElement<R>>;
 
 template <typename T>
 TList(initializer_list<T>) -> TList<T>;

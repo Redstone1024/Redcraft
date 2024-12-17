@@ -1,17 +1,16 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "String/Char.h"
 #include "Memory/Allocator.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Containers/ArrayView.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Memory/MemoryOperator.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
-#include "Miscellaneous/ConstantIterator.h"
 
 #include <cstring>
 #include <cwchar>
@@ -86,7 +85,7 @@ private:
 
 public:
 
-	using FElementType = T;
+	using FElementType = TRemoveCV<T>;
 
 	using FReference = typename FSuper::FReference;
 
@@ -99,11 +98,11 @@ public:
 	FORCEINLINE constexpr TStringView() = default;
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InFirst' + 'Count'). */
-	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const FElementType(*)[]>)
+	template <CContiguousIterator I> requires (CConvertibleTo<TIteratorReference<I>, T> && CSameAs<TRemoveCVRef<TIteratorReference<I>>, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TStringView(I InFirst, size_t InCount) : FSuper(InFirst, InCount) { }
 
 	/** Constructs a string view that is a view over the range ['InFirst', 'InLast'). */
-	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorElementType<I>(*)[], const FElementType(*)[]>)
+	template <CContiguousIterator I, CSizedSentinelFor<I> S> requires (CConvertibleTo<TIteratorReference<I>, T> && CSameAs<TRemoveCVRef<TIteratorReference<I>>, TRemoveCVRef<T>>)
 	FORCEINLINE constexpr TStringView(I InFirst, S InLast) : FSuper(InFirst, InLast) { }
 
 	/** Constructs a string view that is a view over the string 'InString'. */
@@ -663,8 +662,11 @@ public:
 
 };
 
+template <CPointer I>
+TStringView(I) -> TStringView<TIteratorElement<I>>;
+
 template <typename I, typename S>
-TStringView(I, S) -> TStringView<TIteratorElementType<I>>;
+TStringView(I, S) -> TStringView<TIteratorElement<I>>;
 
 template<typename T, typename Allocator>
 TStringView(TString<T, Allocator>) -> TStringView<T>;

@@ -37,7 +37,7 @@ NODISCARD FORCEINLINE constexpr auto Begin(T&& Container)
 
 /** Overloads the Begin algorithm for initializer_list. */
 template <typename T>
-NODISCARD FORCEINLINE constexpr auto Begin(initializer_list<T>& Container)
+NODISCARD FORCEINLINE constexpr const T* Begin(initializer_list<T>& Container)
 {
 	return Container.begin();
 }
@@ -67,7 +67,7 @@ NODISCARD FORCEINLINE constexpr auto End(T&& Container)
 
 /** Overloads the End algorithm for initializer_list. */
 template <typename T>
-NODISCARD FORCEINLINE constexpr auto End(initializer_list<T>& Container)
+NODISCARD FORCEINLINE constexpr const T* End(initializer_list<T>& Container)
 {
 	return Container.end();
 }
@@ -178,6 +178,13 @@ template <typename T> requires (!bDisableSizedRange<TRemoveCVRef<T>>
 NODISCARD FORCEINLINE constexpr size_t Num(T&& Container)
 {
 	return Range::End(Forward<T>(Container)) - Range::Begin(Forward<T>(Container));
+}
+
+/** Overloads the Num algorithm for initializer_list. */
+template <typename T>
+NODISCARD FORCEINLINE constexpr size_t Num(initializer_list<T>& Container)
+{
+	return Container.size();
 }
 
 /** @return true if the container is empty, false otherwise. */

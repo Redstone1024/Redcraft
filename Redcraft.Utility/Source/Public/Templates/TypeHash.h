@@ -94,6 +94,20 @@ FORCEINLINE constexpr size_t GetTypeHash(const T& A)
 	return GetTypeHash(A.hash_code());
 }
 
+/** Overloads the GetTypeHash algorithm for arrays. */
+template <typename T, size_t N> requires (requires(const T& A) { { GetTypeHash(A) } -> CSameAs<size_t>; })
+FORCEINLINE constexpr size_t GetTypeHash(T(&A)[N])
+{
+	size_t Result = 3516520171;
+
+	for (size_t Index = 0; Index < N; ++Index)
+	{
+		Result = HashCombine(Result, GetTypeHash(A[Index]));
+	}
+
+	return Result;
+}
+
 template <typename T>
 concept CHashable = requires(const T& A) { { GetTypeHash(A) } -> CSameAs<size_t>; };
 

@@ -56,8 +56,8 @@ public:
 	FORCEINLINE constexpr TOptional(FInvalid) : TOptional() { }
 
 	/** Constructs an object with initial content an object, direct-initialized from Forward<U>(InValue). */
-	template <typename U = T> requires (CConstructibleFrom<T, U&&>)
-		&& (!CSameAs<TRemoveCVRef<U>, FInPlace>) && (!CSameAs<TOptional, TRemoveCVRef<U>>)
+	template <typename U = T> requires (CConstructibleFrom<T, U&&>
+		&& !CSameAs<TRemoveCVRef<U>, FInPlace> && !CSameAs<TOptional, TRemoveCVRef<U>>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<U&&, T>) TOptional(U&& InValue)
 		: TOptional(InPlace, Forward<U>(InValue))
 	{ }

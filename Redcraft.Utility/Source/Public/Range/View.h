@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Range/Utility.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 
@@ -100,7 +101,7 @@ class TRangeView : public IBasicViewInterface<TRangeView<I, S>>
 {
 public:
 
-	using FElementType = TIteratorElementType<I>;
+	using FElementType = TIteratorElement<I>;
 
 	FORCEINLINE constexpr TRangeView() requires (CDefaultConstructible<I>) = default;
 

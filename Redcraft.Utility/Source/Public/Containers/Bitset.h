@@ -1,16 +1,16 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Range.h"
 #include "Memory/Memory.h"
 #include "Memory/Allocator.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Noncopyable.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Miscellaneous/Compare.h"
 #include "Memory/MemoryOperator.h"
-#include "Miscellaneous/Iterator.h"
-#include "Miscellaneous/Container.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -101,16 +101,22 @@ public:
 	}
 
 	/** Constructs the bitset with the bits of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<bool, TIteratorReferenceType<I>>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<bool, TIteratorReference<I>>)
 	TBitset(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
 		{
-			if constexpr (CSizedSentinelFor<S, I>) { checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last.")); }
+			size_t Count = 0;
 
-			const size_t InCount = Iteration::Distance(First, Last);
+			if constexpr (CSizedSentinelFor<S, I>)
+			{
+				checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last."));
 
-			new (this) TBitset(InCount);
+				Count = Last - First;
+			}
+			else for (I Iter = First; Iter != Last; ++Iter) ++Count;
+
+			new (this) TBitset(Count);
 
 			for (FReference Ref: *this) Ref = *First++;
 		}
@@ -125,6 +131,10 @@ public:
 			}
 		}
 	}
+
+	/** Constructs the bitset with the bits of the range. */
+	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TBitset> && CConstructibleFrom<bool, TRangeReference<R>>)
+	FORCEINLINE explicit TBitset(R&& Range) : TBitset(Range::Begin(Range), Range::End(Range)) { }
 
 	/** Copy constructor. Constructs the bitset with the copy of the bits of 'InValue'. */
 	FORCEINLINE TBitset(const TBitset& InValue)
@@ -160,7 +170,7 @@ public:
 	}
 
 	/** Constructs the bitset with the bits of the initializer list. */
-	FORCEINLINE TBitset(initializer_list<bool> IL) : TBitset(Iteration::Begin(IL), Iteration::End(IL)) { }
+	FORCEINLINE TBitset(initializer_list<bool> IL) : TBitset(Range::Begin(IL), Range::End(IL)) { }
 
 	/** Destructs the bitset. The storage is deallocated. */
 	~TBitset()
@@ -228,9 +238,9 @@ public:
 	/** Replaces the bits with those identified by initializer list. */
 	TBitset& operator=(initializer_list<bool> IL)
 	{
-		auto First = Iteration::Begin(IL);
+		auto First = Range::Begin(IL);
 
-		const size_t BlocksCount = (GetNum(IL) + BlockWidth - 1) / BlockWidth;
+		const size_t BlocksCount = (Range::Num(IL) + BlockWidth - 1) / BlockWidth;
 
 		size_t NumToAllocate = BlocksCount;
 
@@ -241,7 +251,7 @@ public:
 		{
 			Impl->Deallocate(Impl.Pointer);
 
-			Impl.BitsetNum = GetNum(IL);
+			Impl.BitsetNum = Range::Num(IL);
 			Impl.BlocksMax = NumToAllocate;
 			Impl.Pointer   = Impl->Allocate(MaxBlocks());
 
@@ -250,7 +260,7 @@ public:
 			return *this;
 		}
 
-		Impl.BitsetNum = GetNum(IL);
+		Impl.BitsetNum = Range::Num(IL);
 
 		for (FReference Ref : *this) Ref = *First++;
 

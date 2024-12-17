@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreTypes.h"
+#include "Range/Utility.h"
 #include "Templates/Meta.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
@@ -478,7 +479,7 @@ struct TVariantVisitImpl
 			for (size_t Index = 0; Index < sizeof...(VariantTypes); ++Index)
 			{
 				Result *= VariantNums[Index];
-				Result += GetData(Indices)[Index];
+				Result += Range::Begin(Indices)[Index];
 			}
 
 			return Result;

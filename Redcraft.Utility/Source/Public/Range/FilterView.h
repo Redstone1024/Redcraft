@@ -7,6 +7,7 @@
 #include "Range/AllView.h"
 #include "Memory/Address.h"
 #include "Templates/Invoke.h"
+#include "Iterator/Iterator.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
 
@@ -79,7 +80,7 @@ private:
 
 	public:
 
-		using FElementType = TIteratorElementType<TRangeIterator<V>>;
+		using FElementType = TIteratorElement<TRangeIterator<V>>;
 
 		FORCEINLINE constexpr FIteratorImpl() requires (CDefaultConstructible<TRangeIterator<V>>) { } // Use '{ }' instead of '= default;' to avoid MSVC bug.
 

@@ -12,6 +12,20 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
+// NOTE: In the STL, use std::from_range_t as a disambiguation tag that resolves ambiguity
+// introduced by the list-initialization. For example, for the following code:
+//
+//	R RangeOfInts = /* ... */;
+//	static_assert(CRange<R> and CSameAs<TRangeElement<R>, int>);
+//
+//	TArray Arr(RangeOfInts);
+//	TArray Brr{RangeOfInts};
+//
+// If R is TArray<int> than decltype(Arr) is TArray<int> and decltype(Brr) is TArray<int>,
+// otherwise,               decltype(Arr) is TArray<int> and decltype(Brr) is TArray<R>.
+//
+// But Redcraft can't use the std::from_range_t tag because list-initialization is discouraged.
+
 /** A concept specifies a container that can reserve size. */
 template <typename C>
 concept CReservableContainer = CSizedRange<C>
