@@ -106,9 +106,9 @@ private:
 			return *this;
 		}
 
-		FORCEINLINE constexpr void          operator++(int)                                                      {                             Current++;  }
-		FORCEINLINE constexpr FIteratorImpl operator++(int) requires       (CForwardIterator<TRangeIterator<V>>) { return FIteratorImpl(Owner, Current++); }
-		FORCEINLINE constexpr FIteratorImpl operator--(int) requires (CBidirectionalIterator<TRangeIterator<V>>) { return FIteratorImpl(Owner, Current--); }
+		FORCEINLINE constexpr void          operator++(int)                                                      {                             ++*this;              }
+		FORCEINLINE constexpr FIteratorImpl operator++(int) requires       (CForwardIterator<TRangeIterator<V>>) { FIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE constexpr FIteratorImpl operator--(int) requires (CBidirectionalIterator<TRangeIterator<V>>) { FIteratorImpl Temp = *this; --*this; return Temp; }
 
 		NODISCARD FORCEINLINE constexpr const TRangeIterator<V>& GetBase() const& { return          Current;  }
 		NODISCARD FORCEINLINE constexpr       TRangeIterator<V>  GetBase() &&     { return MoveTemp(Current); }

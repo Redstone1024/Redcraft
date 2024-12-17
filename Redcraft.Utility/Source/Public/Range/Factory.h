@@ -154,7 +154,7 @@ private:
 
 		FORCEINLINE constexpr FIteratorImpl& operator++() { ++Value; return *this; }
 
-		FORCEINLINE constexpr FIteratorImpl operator++(int) { FIteratorImpl Temp = *this; ++Value; return Temp; }
+		FORCEINLINE constexpr FIteratorImpl operator++(int) { FIteratorImpl Temp = *this; ++*this; return Temp; }
 
 	private:
 
@@ -270,18 +270,18 @@ private:
 		FORCEINLINE constexpr FIteratorImpl& operator++() { ++Current; return *this; }
 		FORCEINLINE constexpr FIteratorImpl& operator--() { --Current; return *this; }
 
-		FORCEINLINE constexpr FIteratorImpl operator++(int) { FIteratorImpl Temp = *this; --Current; return Temp; }
-		FORCEINLINE constexpr FIteratorImpl operator--(int) { FIteratorImpl Temp = *this; ++Current; return Temp; }
+		FORCEINLINE constexpr FIteratorImpl operator++(int) { FIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE constexpr FIteratorImpl operator--(int) { FIteratorImpl Temp = *this; --*this; return Temp; }
 
-		FORCEINLINE constexpr FIteratorImpl& operator+=(ptrdiff Offset) { Current -= Offset; return *this; }
-		FORCEINLINE constexpr FIteratorImpl& operator-=(ptrdiff Offset) { Current += Offset; return *this; }
+		FORCEINLINE constexpr FIteratorImpl& operator+=(ptrdiff Offset) { Current += Offset; return *this; }
+		FORCEINLINE constexpr FIteratorImpl& operator-=(ptrdiff Offset) { Current -= Offset; return *this; }
 
-		NODISCARD friend FORCEINLINE constexpr FIteratorImpl operator+(FIteratorImpl Iter, ptrdiff Offset) { FIteratorImpl Temp = Iter; Temp -= Offset; return Temp; }
-		NODISCARD friend FORCEINLINE constexpr FIteratorImpl operator+(ptrdiff Offset, FIteratorImpl Iter) { FIteratorImpl Temp = Iter; Temp -= Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr FIteratorImpl operator+(FIteratorImpl Iter, ptrdiff Offset) { FIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
+		NODISCARD friend FORCEINLINE constexpr FIteratorImpl operator+(ptrdiff Offset, FIteratorImpl Iter) { FIteratorImpl Temp = Iter; Temp += Offset; return Temp; }
 
-		NODISCARD FORCEINLINE constexpr FIteratorImpl operator-(ptrdiff Offset) const { FIteratorImpl Temp = *this; Temp += Offset; return Temp; }
+		NODISCARD FORCEINLINE constexpr FIteratorImpl operator-(ptrdiff Offset) const { FIteratorImpl Temp = *this; Temp -= Offset; return Temp; }
 
-		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const FIteratorImpl& LHS, const FIteratorImpl& RHS) { return RHS.Current - LHS.Current; }
+		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const FIteratorImpl& LHS, const FIteratorImpl& RHS) { return LHS.Current - RHS.Current; }
 
 	private:
 

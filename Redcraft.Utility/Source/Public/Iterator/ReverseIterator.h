@@ -59,8 +59,8 @@ public:
 	FORCEINLINE constexpr TReverseIterator& operator++() { --Current; return *this; }
 	FORCEINLINE constexpr TReverseIterator& operator--() { ++Current; return *this; }
 
-	FORCEINLINE constexpr TReverseIterator operator++(int) { TReverseIterator Temp = *this; --Current; return Temp; }
-	FORCEINLINE constexpr TReverseIterator operator--(int) { TReverseIterator Temp = *this; ++Current; return Temp; }
+	FORCEINLINE constexpr TReverseIterator operator++(int) { TReverseIterator Temp = *this; ++*this; return Temp; }
+	FORCEINLINE constexpr TReverseIterator operator--(int) { TReverseIterator Temp = *this; --*this; return Temp; }
 
 	FORCEINLINE constexpr TReverseIterator& operator+=(ptrdiff Offset) requires (CRandomAccessIterator<I>) { Current -= Offset; return *this; }
 	FORCEINLINE constexpr TReverseIterator& operator-=(ptrdiff Offset) requires (CRandomAccessIterator<I>) { Current += Offset; return *this; }

@@ -41,7 +41,7 @@ public:
 	FORCEINLINE constexpr explicit TMoveIterator(FIteratorType InValue) : Current(MoveTemp(InValue)) { }
 
 	template <CInputIterator J> requires (!CSameAs<I, J> && CConstructibleFrom<I, const J&>)
-	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TMoveIterator(const TReverseIterator<J>& InValue) : Current(InValue.GetBase()) { }
+	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TMoveIterator(const TMoveIterator<J>& InValue) : Current(InValue.GetBase()) { }
 
 	template <CInputIterator J> requires (!CSameAs<I, J> && CConvertibleTo<const J&, I> && CAssignableFrom<I&, const J&>)
 	FORCEINLINE constexpr TMoveIterator& operator=(const TMoveIterator<J>& InValue) { Current = InValue.GetBase(); return *this; }

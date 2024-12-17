@@ -114,9 +114,9 @@ private:
 		FORCEINLINE constexpr FIteratorImpl& operator++()                                       { ++Current; return *this; }
 		FORCEINLINE constexpr FIteratorImpl& operator--() requires (CBidirectionalRange<FBase>) { --Current; return *this; }
 
-		FORCEINLINE constexpr void          operator++(int)                                       {                      Current++;  }
-		FORCEINLINE constexpr FIteratorImpl operator++(int) requires       (CForwardRange<FBase>) { return FIteratorImpl(Current++); }
-		FORCEINLINE constexpr FIteratorImpl operator--(int) requires (CBidirectionalRange<FBase>) { return FIteratorImpl(Current--); }
+		FORCEINLINE constexpr void          operator++(int)                                       {                             ++*this;              }
+		FORCEINLINE constexpr FIteratorImpl operator++(int) requires       (CForwardRange<FBase>) { FIteratorImpl Temp = *this; ++*this; return Temp; }
+		FORCEINLINE constexpr FIteratorImpl operator--(int) requires (CBidirectionalRange<FBase>) { FIteratorImpl Temp = *this; --*this; return Temp; }
 
 		FORCEINLINE constexpr FIteratorImpl& operator+=(ptrdiff Offset) requires (CRandomAccessRange<FBase>) { Current += Offset; return *this; }
 		FORCEINLINE constexpr FIteratorImpl& operator-=(ptrdiff Offset) requires (CRandomAccessRange<FBase>) { Current -= Offset; return *this; }
