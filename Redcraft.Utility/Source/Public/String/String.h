@@ -471,7 +471,7 @@ public:
 
 		if constexpr (CForwardIterator<I>)
 		{
-			if (CSizedSentinelFor<S, I>) { checkf(First <= Last, TEXT("Illegal range iterator. Please check First <= Last.")); }
+			if constexpr (CSizedSentinelFor<S, I>) { checkf(First - Last <= 0, TEXT("Illegal range iterator. Please check First <= Last.")); }
 
 			const size_t InsertIndex = First - this->Begin();
 
