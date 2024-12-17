@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "CoreTypes.h"
-#include "TypeTraits/Common.h"
 #include "TypeTraits/Miscellaneous.h"
 #include "TypeTraits/SupportedOperations.h"
 
@@ -74,11 +73,10 @@ FORCEINLINE constexpr void Swap(T& A, T& B)
 }
 
 /** Overloads the Swap algorithm for arrays. */
-template <typename T, typename U, size_t N> requires (CCommonReference<T, U>
-	&& requires(T& A, U& B) { Swap(A, A); Swap(B, B); Swap(A, B); Swap(B, A); })
-FORCEINLINE constexpr void Swap(T(&A)[N], U(&B)[N])
+template <typename T, size_t N> requires (requires(T& A, T& B) { Swap(A, B); })
+FORCEINLINE constexpr void Swap(T(&A)[N], T(&B)[N])
 {
-	for (size_t Index = 0; Index < N; ++Index)
+	for (size_t Index = 0; Index != N; ++Index)
 	{
 		Swap(A[Index], B[Index]);
 	}
