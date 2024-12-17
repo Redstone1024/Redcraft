@@ -222,10 +222,12 @@ NODISCARD FORCEINLINE constexpr auto Transform(R&& Base, F&& Func)
 template <typename F>
 NODISCARD FORCEINLINE constexpr auto Transform(F&& Func)
 {
-	return TAdaptorClosure([&Func]<CViewableRange R> requires (requires { Range::Transform(DeclVal<R>(), DeclVal<F>()); }) (R&& Base)
+	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Range::Transform(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Func)
 	{
-		return Range::Transform(Forward<R>(Base), Forward<F>(Func));
+		return Range::Transform(Forward<R>(Base), Forward<T>(Func));
 	});
+
+	return TAdaptorClosure<FClosure, TDecay<F>>(Forward<F>(Func));
 }
 
 NAMESPACE_END(Range)

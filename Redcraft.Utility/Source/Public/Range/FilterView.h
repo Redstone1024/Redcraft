@@ -175,10 +175,12 @@ NODISCARD FORCEINLINE constexpr auto Filter(R&& Base, Pred&& Predicate)
 template <typename Pred>
 NODISCARD FORCEINLINE constexpr auto Filter(Pred&& Predicate)
 {
-	return TAdaptorClosure([&Predicate]<CViewableRange R> requires (requires { Range::Filter(DeclVal<R>(), DeclVal<Pred>()); }) (R&& Base)
+	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Range::Filter(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Predicate)
 	{
-		return Range::Filter(Forward<R>(Base), Forward<Pred>(Predicate));
+		return Range::Filter(Forward<R>(Base), Forward<T>(Predicate));
 	});
+
+	return TAdaptorClosure<FClosure, TDecay<Pred>>(Forward<Pred>(Predicate));
 }
 
 NAMESPACE_END(Range)

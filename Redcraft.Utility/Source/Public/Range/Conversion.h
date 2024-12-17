@@ -88,7 +88,7 @@ NODISCARD FORCEINLINE constexpr auto To(R&& Range, Ts&&... Args)
 			return Result;
 		}
 
-		else static_assert(sizeof(C) == -1, "The container type is not constructible from a range");
+		else static_assert(sizeof(R) == -1, "The container type is not constructible from a range");
 	}
 	else
 	{
@@ -97,7 +97,7 @@ NODISCARD FORCEINLINE constexpr auto To(R&& Range, Ts&&... Args)
 			return Range::To<C>(Range::All(Range) | Range::Transform([]<typename T>(T&& Element) { return Range::To<TRangeElement<C>>(Forward<T>(Element)); }), Forward<Args>(Args)...);
 		}
 
-		else static_assert(sizeof(C) == -1, "The container type is not constructible from a range");
+		else static_assert(sizeof(R) == -1, "The container type is not constructible from a range");
 	}
 }
 
@@ -115,27 +115,31 @@ NODISCARD FORCEINLINE constexpr auto To(R&& Range, Ts&&... Args)
 		return Range::To<decltype(C(DeclVal<TRangeIterator<R>>(), DeclVal<TRangeSentinel<R>>(), DeclVal<Args>()...))>(Forward<R>(Range), Forward<Ts>(Args)...);
 	}
 
-	else static_assert(sizeof(C) == -1, "The container type is not constructible from a range");
+	else static_assert(sizeof(R) == -1, "The container type is not constructible from a range");
 }
 
 /** Constructs a non-view object from the elements of the range. */
 template <typename C, typename... Ts> requires (!CView<C>)
 NODISCARD FORCEINLINE constexpr auto To(Ts&&... Args)
 {
-	return TAdaptorClosure([&Args...]<CInputRange R> requires (requires { Range::To<C>(DeclVal<R>(), DeclVal<Ts>()...); }) (R&& Range)
+	using FClosure = decltype([]<CInputRange R, typename... Us> requires (requires { Range::To<C>(DeclVal<R>(), DeclVal<Us>()...); }) (R&& Range, Us&&... Args)
 	{
-		return Range::To<C>(Forward<R>(Range), Forward<Ts>(Args)...);
+		return Range::To<C>(Forward<R>(Range), Forward<Us>(Args)...);
 	});
+
+	return TAdaptorClosure<FClosure, TDecay<Ts>...>(Forward<Ts>(Args)...);
 }
 
 /** Constructs a non-view object from the elements of the range. */
 template <template <typename...> typename C, typename... Ts>
 NODISCARD FORCEINLINE constexpr auto To(Ts&&... Args)
 {
-	return TAdaptorClosure([&Args...]<CInputRange R> requires (requires { Range::To<C>(DeclVal<R>(), DeclVal<Ts>()...); }) (R&& Range)
+	using FClosure = decltype([]<CInputRange R, typename... Us> requires (requires { Range::To<C>(DeclVal<R>(), DeclVal<Us>()...); }) (R&& Range, Us&&... Args)
 	{
-		return Range::To<C>(Forward<R>(Range), Forward<Ts>(Args)...);
+		return Range::To<C>(Forward<R>(Range), Forward<Us>(Args)...);
 	});
+
+	return TAdaptorClosure<FClosure, TDecay<Ts>...>(Forward<Ts>(Args)...);
 }
 
 NAMESPACE_END(Range)

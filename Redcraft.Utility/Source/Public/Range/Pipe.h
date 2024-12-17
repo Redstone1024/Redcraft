@@ -2,6 +2,7 @@
 
 #include "CoreTypes.h"
 #include "Range/Utility.h"
+#include "Templates/Tuple.h"
 #include "Templates/Invoke.h"
 #include "Templates/Utility.h"
 #include "TypeTraits/TypeTraits.h"
@@ -23,50 +24,74 @@ template <CObject D> requires (CSameAs<D, TRemoveCV<D>>)
 class IAdaptorClosure { };
 
 /** An adaptor closure helper that wraps a callable object. */
-template <CMoveConstructible F>
-class TAdaptorClosure : public IAdaptorClosure<TAdaptorClosure<F>>
+template <CDefaultConstructible F, CMoveConstructible... Ts> requires (CEmpty<F> && ... && CSameAs<TDecay<Ts>, Ts>)
+class TAdaptorClosure : public IAdaptorClosure<TAdaptorClosure<F, Ts...>>
 {
 public:
 
-	FORCEINLINE constexpr explicit TAdaptorClosure(F InClosure) : Closure(MoveTemp(InClosure)) { }
+	template <typename... Us> requires (CConstructibleFrom<TTuple<Ts...>, Us...> && ... && CSameAs<TDecay<Us>, Ts>)
+	FORCEINLINE constexpr explicit TAdaptorClosure(Us&&... InArgs) : Args(Forward<Us>(InArgs)...) { }
 
-	template <typename R> requires (CInvocable<F&, R>)
+	template <typename R> requires (CInvocable<F, R, Ts&...>)
 	NODISCARD FORCEINLINE constexpr auto operator()(R&& Range) &
 	{
-		return Invoke(Closure, Forward<R>(Range));
+		return [this, &Range]<size_t... Indices>(TIndexSequence<Indices...>)
+		{
+			return Invoke(F(), Forward<R>(Range), Args.template GetValue<Indices>()...);
+		}
+		(TMakeIndexSequence<sizeof...(Ts)>());
 	}
 
-	template <typename R> requires (CInvocable<const F&, R>)
+	template <typename R> requires (CInvocable<F, R, const Ts&...>)
 	NODISCARD FORCEINLINE constexpr auto operator()(R&& Range) const&
 	{
-		return Invoke(Closure, Forward<R>(Range));
+		return [this, &Range]<size_t... Indices>(TIndexSequence<Indices...>)
+		{
+			return Invoke(F(), Forward<R>(Range), Args.template GetValue<Indices>()...);
+		}
+		(TMakeIndexSequence<sizeof...(Ts)>());
 	}
 
-	template <typename R> requires (CInvocable<F&&, R>)
+	template <typename R> requires (CInvocable<F, R, Ts&&...>)
 	NODISCARD FORCEINLINE constexpr auto operator()(R&& Range) &&
 	{
-		return Invoke(MoveTemp(Closure), Forward<R>(Range));
+		return [this, &Range]<size_t... Indices>(TIndexSequence<Indices...>)
+		{
+			return Invoke(F(), Forward<R>(Range), MoveTemp(Args).template GetValue<Indices>()...);
+		}
+		(TMakeIndexSequence<sizeof...(Ts)>());
 	}
 
-	template <typename R> requires (CInvocable<const F&&, R>)
+	template <typename R> requires (CInvocable<F, R, const Ts&&...>)
 	NODISCARD FORCEINLINE constexpr auto operator()(R&& Range) const&&
 	{
-		return Invoke(MoveTemp(Closure), Forward<R>(Range));
+		return [this, &Range]<size_t... Indices>(TIndexSequence<Indices...>)
+		{
+			return Invoke(F(), Forward<R>(Range), MoveTemp(Args).template GetValue<Indices>()...);
+		}
+		(TMakeIndexSequence<sizeof...(Ts)>());
 	}
 
 private:
 
-	NO_UNIQUE_ADDRESS F Closure;
+	NO_UNIQUE_ADDRESS TTuple<Ts...> Args;
 
 };
 
 /** A pipe closure that wraps two adaptor closures. */
-template <CMoveConstructible T, CMoveConstructible U> requires (CDerivedFrom<T, IAdaptorClosure<T>> && CDerivedFrom<U, IAdaptorClosure<U>>)
+template <CMoveConstructible T, CMoveConstructible U>
+	requires (CSameAs<TRemoveCVRef<T>, T> && CDerivedFrom<T, IAdaptorClosure<T>>
+	       && CSameAs<TRemoveCVRef<U>, U> && CDerivedFrom<U, IAdaptorClosure<U>>)
 class TPipeClosure final : public IAdaptorClosure<TPipeClosure<T, U>>
 {
 public:
 
-	FORCEINLINE constexpr explicit TPipeClosure(T InLHS, U InRHS) : LHS(MoveTemp(InLHS)), RHS(MoveTemp(InRHS)) { }
+	template <typename V, typename W>
+		requires (CSameAs<TRemoveCVRef<V>, T> && CConstructibleFrom<T, V>
+		       && CSameAs<TRemoveCVRef<W>, U> && CConstructibleFrom<U, W>)
+	FORCEINLINE constexpr explicit TPipeClosure(V InLHS, W InRHS)
+		: LHS(Forward<V>(InLHS)), RHS(Forward<W>(InRHS))
+	{ }
 
 	template <typename R> requires (CInvocable<T&, R> && CInvocable<U&, TInvokeResult<T&, R>>)
 	NODISCARD FORCEINLINE constexpr auto operator()(R&& Range) &
@@ -106,10 +131,12 @@ NODISCARD FORCEINLINE constexpr auto operator|(R&& Range, T&& Closure)
 }
 
 /** Create a pipe closure that wraps two adaptor closures. */
-template <CMoveConstructible T, CMoveConstructible U> requires (CDerivedFrom<T, IAdaptorClosure<T>> && CDerivedFrom<U, IAdaptorClosure<U>>)
-NODISCARD FORCEINLINE constexpr auto operator|(T LHS, U RHS)
+template <CMoveConstructible T, CMoveConstructible U>
+	requires (CDerivedFrom<TRemoveCVRef<T>, IAdaptorClosure<TRemoveCVRef<T>>>
+	       && CDerivedFrom<TRemoveCVRef<U>, IAdaptorClosure<TRemoveCVRef<U>>>)
+NODISCARD FORCEINLINE constexpr auto operator|(T&& LHS, U&& RHS)
 {
-	return TPipeClosure(MoveTemp(LHS), MoveTemp(RHS));
+	return TPipeClosure<TRemoveCVRef<T>, TRemoveCVRef<U>>(Forward<T>(LHS), Forward<U>(RHS));
 }
 
 NAMESPACE_END(Range)
