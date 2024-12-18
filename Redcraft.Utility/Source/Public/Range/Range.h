@@ -7,5 +7,6 @@
 #include "Range/Factory.h"
 #include "Range/Pipe.h"
 #include "Range/AllView.h"
+#include "Range/MoveView.h"
 #include "Range/FilterView.h"
 #include "Range/TransformView.h"
