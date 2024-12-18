@@ -46,7 +46,7 @@ public:
 	FORCEINLINE constexpr TCountedIterator& operator=(TCountedIterator&&)      = default;
 	FORCEINLINE constexpr ~TCountedIterator()                                  = default;
 
-	FORCEINLINE constexpr explicit TCountedIterator(FIteratorType InValue, ptrdiff N) : Current(MoveTemp(InValue)) { check_code({ MaxLength = N; }); }
+	FORCEINLINE constexpr explicit TCountedIterator(FIteratorType InValue, ptrdiff N) : Current(MoveTemp(InValue)), Length(N) { check_code({ MaxLength = N; }); }
 
 	template <CInputOrOutputIterator J> requires (!CSameAs<I, J> && CConstructibleFrom<I, const J&>)
 	FORCEINLINE constexpr explicit (!CConvertibleTo<const J&, I>) TCountedIterator(const TCountedIterator<J>& InValue)
