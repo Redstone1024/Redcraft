@@ -126,8 +126,7 @@ private:
 			return InValue.Num() == 0 || InValue.GetBase() == Current;
 		}
 
-		NODISCARD FORCEINLINE constexpr const TRangeIterator<FBase>& GetBase() const& { return          Current;  }
-		NODISCARD FORCEINLINE constexpr       TRangeIterator<FBase>  GetBase() &&     { return MoveTemp(Current); }
+		NODISCARD FORCEINLINE constexpr TRangeSentinel<FBase> GetBase() const { return Current; }
 
 	private:
 

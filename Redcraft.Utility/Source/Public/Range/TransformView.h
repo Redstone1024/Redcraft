@@ -178,8 +178,7 @@ private:
 			return RHS.GetBase() - LHS.GetBase();
 		}
 
-		NODISCARD FORCEINLINE constexpr const TRangeIterator<FBase>& GetBase() const& { return          Current;  }
-		NODISCARD FORCEINLINE constexpr       TRangeIterator<FBase>  GetBase() &&     { return MoveTemp(Current); }
+		NODISCARD FORCEINLINE constexpr TRangeSentinel<FBase> GetBase() const { return Current; }
 
 	private:
 

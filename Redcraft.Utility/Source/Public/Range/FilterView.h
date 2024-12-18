@@ -136,8 +136,7 @@ private:
 
 		NODISCARD FORCEINLINE constexpr bool operator==(const FIteratorImpl& InValue) const& { return Current == InValue.Current; }
 
-		NODISCARD FORCEINLINE constexpr const TRangeSentinel<V>& GetBase() const& { return          Current;  }
-		NODISCARD FORCEINLINE constexpr       TRangeSentinel<V>  GetBase() &&     { return MoveTemp(Current); }
+		NODISCARD FORCEINLINE constexpr TRangeSentinel<V> GetBase() const { return Current; }
 
 	private:
 
