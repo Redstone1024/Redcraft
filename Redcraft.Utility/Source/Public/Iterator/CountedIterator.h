@@ -134,7 +134,7 @@ static_assert(CBidirectionalIterator<TCountedIterator<IBidirectionalIterator<int
 static_assert( CRandomAccessIterator<TCountedIterator< IRandomAccessIterator<int&>>>);
 static_assert(   CContiguousIterator<TCountedIterator<   IContiguousIterator<int&>>>);
 
-//static_assert(COutputIterator<TCountedIterator<IOutputIterator<int&>>, int>);
+static_assert(COutputIterator<TCountedIterator<IOutputIterator<int&>>, int>);
 
 static_assert(CSizedSentinelFor<TCountedIterator<IForwardIterator<int>>, TCountedIterator<IForwardIterator<int>>>);
 

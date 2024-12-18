@@ -277,12 +277,12 @@ concept CSizedRange = CRange<R>
 template <CInputOrOutputIterator I, CSizedSentinelFor<I> S = ISizedSentinelFor<I>>
 struct ISizedRange /* : IRange<I, S> */
 {
-	// ~Begin CRange
+	// ~Begin CRange.
 
 	I Begin() /* const */;
 	S End()   /* const */;
 
-	// ~End CRange
+	// ~End CRange.
 
 	/**
 	 * Get the number of elements in the range.
@@ -344,12 +344,12 @@ concept CContiguousRange = CRandomAccessRange<R> && CContiguousIterator<TRangeIt
 template <CContiguousIterator I, CSentinelFor<I> S = ISentinelFor<I>>
 struct IContiguousRange /* : IRange<I, S> */
 {
-	// ~Begin CRange
+	// ~Begin CRange.
 
 	I Begin() /* const */;
 	S End()   /* const */;
 
-	// ~End CRange
+	// ~End CRange.
 
 	/**
 	 * Get the pointer to the container element storage.
