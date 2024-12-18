@@ -19,8 +19,8 @@ NAMESPACE_BEGIN(Range)
 
 /**
  * A view adapter which dereferences to a rvalue reference.
- * When based on an input view, the filter view satisfies at least an input view up to a random access view.
- * When based on a common view, the counted iterator satisfies a common view.
+ * When based on an input view, the move view satisfies at least an input view up to a random access view.
+ * When based on a common view, the move view satisfies a common view.
  */
 template <CInputRange V> requires (CView<V>)
 class TMoveView : public IBasicViewInterface<TMoveView<V>>

@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(Range)
 /**
  * A view adapter that consists of the elements of a range that satisfies a predicate.
  * When based on an input view, the filter view satisfies at least an input view up to a bidirectional view.
- * When based on a common view, the counted iterator satisfies a common view.
+ * When based on a common view, the filter view satisfies a common view.
  */
 template <CInputRange V, CPredicate<TRangeReference<V>> Pred> requires (CView<V> && CObject<Pred> && CMoveConstructible<Pred>)
 class TFilterView : public IBasicViewInterface<TFilterView<V, Pred>>

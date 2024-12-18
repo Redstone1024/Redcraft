@@ -18,8 +18,8 @@ NAMESPACE_BEGIN(Range)
 /**
  * A view adapter of a sequence that applies a transformation function to each element.
  * When based on an input view, the transform view satisfies at least an input view up to a random access view.
- * When based on a common view, the counted iterator satisfies a common view. When based on a sized view,
- * the counted iterator satisfies a sized view. When based on a forward view and the function return
+ * When based on a common view, the transform view satisfies a common view. When based on a sized view,
+ * the transform view satisfies a sized view. When based on a forward view and the function return
  * an assignable value, the transform view satisfies an output view.
  */
 template <CInputRange V, CMoveConstructible F> requires (CView<V> && CObject<F>
