@@ -5,6 +5,9 @@
 #include "Templates/Utility.h"
 #include "Iterator/Utility.h"
 #include "Iterator/Sentinel.h"
+#include "Iterator/BasicIterator.h"
+#include "Iterator/ReverseIterator.h"
+#include "Memory/Address.h"
 #include "Range/Utility.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -20,32 +23,26 @@ class IBasicViewInterface
 public:
 
 	/** @return The pointer to the underlying element storage. */
-	NODISCARD FORCEINLINE constexpr auto GetData()       requires (CContiguousRange<      T>) { return Range::GetData(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto GetData() const requires (CContiguousRange<const T>) { return Range::GetData(static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr auto GetData()       requires (CContiguousIterator<TRangeIterator<      T>>) { return ToAddress(Range::Begin(static_cast<      T&>(*this))); }
+	NODISCARD FORCEINLINE constexpr auto GetData() const requires (CContiguousIterator<TRangeIterator<const T>>) { return ToAddress(Range::Begin(static_cast<const T&>(*this))); }
 
 	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr auto Begin()       requires (CRange<      T>) { return Range::Begin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto End()         requires (CRange<      T>) { return Range::End  (static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const T>) { return Range::Begin(static_cast<const T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto End()   const requires (CRange<const T>) { return Range::End  (static_cast<const T&>(*this)); }
-
-	/** @return The reverse iterator to the first or end element. */
-	NODISCARD FORCEINLINE constexpr auto RBegin()       requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return Range::RBegin(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto REnd()         requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return Range::REnd  (static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto RBegin() const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return Range::RBegin(static_cast<const T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr auto REnd()   const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return Range::REnd  (static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr auto RBegin()       requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return MakeReverseIterator(Range::End  (static_cast<      T&>(*this))); }
+	NODISCARD FORCEINLINE constexpr auto REnd()         requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return MakeReverseIterator(Range::Begin(static_cast<      T&>(*this))); }
+	NODISCARD FORCEINLINE constexpr auto RBegin() const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return MakeReverseIterator(Range::End  (static_cast<const T&>(*this))); }
+	NODISCARD FORCEINLINE constexpr auto REnd()   const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return MakeReverseIterator(Range::Begin(static_cast<const T&>(*this))); }
 
 	/** @return The number of elements in the container. */
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      T>) { return Range::Num(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const T>) { return Range::Num(static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CForwardRange<      T> && CSizedSentinelFor<TRangeSentinel<      T>, TRangeIterator<      T>>) {       T& Derived = static_cast<      T&>(*this); return Range::End(Derived) - Range::Begin(Derived); }
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CForwardRange<const T> && CSizedSentinelFor<TRangeSentinel<const T>, TRangeIterator<const T>>) { const T& Derived = static_cast<const T&>(*this); return Range::End(Derived) - Range::Begin(Derived); }
 
 	/** @return true if the container is empty, false otherwise. */
-	NODISCARD FORCEINLINE constexpr bool IsEmpty()       requires (CSizedRange<      T> || CForwardRange<      T>) { return Range::IsEmpty(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr bool IsEmpty() const requires (CSizedRange<const T> || CForwardRange<const T>) { return Range::IsEmpty(static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr bool IsEmpty()       requires (CSizedRange<      T> || CForwardRange<      T>) {       T& Derived = static_cast<      T&>(*this); if constexpr (CSizedRange<      T>) return Range::Num(Derived) == 0; else return Range::Begin(Derived) == Range::End(Derived); }
+	NODISCARD FORCEINLINE constexpr bool IsEmpty() const requires (CSizedRange<const T> || CForwardRange<const T>) { const T& Derived = static_cast<const T&>(*this); if constexpr (CSizedRange<const T>) return Range::Num(Derived) == 0; else return Range::Begin(Derived) == Range::End(Derived); }
 
 	/** @return true if the container is empty, false otherwise. */
-	NODISCARD FORCEINLINE constexpr explicit operator bool()       requires (CSizedRange<      T> || CForwardRange<      T>) { return !Range::IsEmpty(static_cast<      T&>(*this)); }
-	NODISCARD FORCEINLINE constexpr explicit operator bool() const requires (CSizedRange<const T> || CForwardRange<const T>) { return !Range::IsEmpty(static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr explicit operator bool()       requires (requires { Range::IsEmpty(DeclVal<      T&>()); }) { return !Range::IsEmpty(static_cast<      T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr explicit operator bool() const requires (requires { Range::IsEmpty(DeclVal<const T&>()); }) { return !Range::IsEmpty(static_cast<const T&>(*this)); }
 
 	/** @return The reference to the requested element. */
 	NODISCARD FORCEINLINE constexpr decltype(auto) operator[](size_t Index)       requires (CRandomAccessRange<      T>) { return Range::Begin(static_cast<      T&>(*this))[Index]; }
@@ -57,7 +54,14 @@ public:
 	NODISCARD FORCEINLINE constexpr decltype(auto) Back()        requires (CBidirectionalRange<      T> && CCommonRange<      T>) { return *Range::RBegin(static_cast<      T&>(*this)); }
 	NODISCARD FORCEINLINE constexpr decltype(auto) Back()  const requires (CBidirectionalRange<const T> && CCommonRange<const T>) { return *Range::RBegin(static_cast<const T&>(*this)); }
 
-	ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT
+	// ~Begin ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT.
+
+	NODISCARD FORCEINLINE constexpr auto begin()       requires (CRange<      T>) { return Range::Begin(static_cast<      T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr auto end()         requires (CRange<      T>) { return Range::End  (static_cast<      T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr auto begin() const requires (CRange<const T>) { return Range::Begin(static_cast<const T&>(*this)); }
+	NODISCARD FORCEINLINE constexpr auto end()   const requires (CRange<const T>) { return Range::End  (static_cast<const T&>(*this)); }
+
+	// ~End ENABLE_RANGE_BASED_FOR_LOOP_SUPPORT.
 
 private:
 
