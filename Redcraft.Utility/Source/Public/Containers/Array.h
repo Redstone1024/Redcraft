@@ -45,7 +45,7 @@ public:
 	FORCEINLINE TArray() : TArray(0) { }
 
 	/** Constructs the container with 'Count' default instances of T. */
-	explicit TArray(size_t Count) requires (CDefaultConstructible<FElementType>)
+	explicit TArray(size_t Count) requires (CDefaultConstructible<T>)
 	{
 		Impl.ArrayNum = Count;
 		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
@@ -55,13 +55,13 @@ public:
 	}
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
-	TArray(size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
+	FORCEINLINE explicit TArray(size_t Count, const FElementType& InValue) requires (CCopyConstructible<T>)
 		: TArray(Range::Repeat(InValue, Count))
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>> && CMovable<FElementType>)
-	TArray(I First, S Last)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<T, TIteratorReference<I>> && CMovable<T>)
+	explicit TArray(I First, S Last)
 	{
 		if constexpr (CForwardIterator<I>)
 		{
@@ -99,11 +99,11 @@ public:
 	}
 
 	/** Constructs the container with the contents of the range. */
-	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TArray> && CConstructibleFrom<FElementType, TRangeReference<R>> && CMovable<FElementType>)
+	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TArray> && CConstructibleFrom<T, TRangeReference<R>> && CMovable<T>)
 	FORCEINLINE explicit TArray(R&& Range) : TArray(Range::Begin(Range), Range::End(Range)) { }
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
-	TArray(const TArray& InValue) requires (CCopyConstructible<FElementType>)
+	TArray(const TArray& InValue) requires (CCopyConstructible<T>)
 	{
 		Impl.ArrayNum = InValue.Num();
 		Impl.ArrayMax = Impl->CalculateSlackReserve(Num());
@@ -113,7 +113,7 @@ public:
 	}
 
 	/** Move constructor. After the move, 'InValue' is guaranteed to be empty. */
-	TArray(TArray&& InValue) requires (CMoveConstructible<FElementType>)
+	TArray(TArray&& InValue) requires (CMoveConstructible<T>)
 	{
 		Impl.ArrayNum = InValue.Num();
 
@@ -138,7 +138,7 @@ public:
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TArray(Range::Begin(IL), Range::End(IL)) { }
+	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<T>) : TArray(Range::Begin(IL), Range::End(IL)) { }
 
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	~TArray()
@@ -148,7 +148,7 @@ public:
 	}
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
-	TArray& operator=(const TArray& InValue) requires (CCopyable<FElementType>)
+	TArray& operator=(const TArray& InValue) requires (CCopyable<T>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -189,7 +189,7 @@ public:
 	}
 
 	/** Move assignment operator. After the move, 'InValue' is guaranteed to be empty. */
-	TArray& operator=(TArray&& InValue) requires (CMovable<FElementType>)
+	TArray& operator=(TArray&& InValue) requires (CMovable<T>)
 	{
 		if (&InValue == this) UNLIKELY return *this;
 
@@ -250,7 +250,7 @@ public:
 	}
 
 	/** Replaces the contents with those identified by initializer list. */
-	TArray& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
+	TArray& operator=(initializer_list<FElementType> IL) requires (CCopyable<T>)
 	{
 		size_t NumToAllocate = Range::Num(IL);
 
@@ -289,7 +289,7 @@ public:
 	}
 
 	/** Compares the contents of two arrays. */
-	NODISCARD friend bool operator==(const TArray& LHS, const TArray& RHS) requires (CWeaklyEqualityComparable<FElementType>)
+	NODISCARD friend bool operator==(const TArray& LHS, const TArray& RHS) requires (CWeaklyEqualityComparable<T>)
 	{
 		if (LHS.Num() != RHS.Num()) return false;
 
@@ -302,7 +302,7 @@ public:
 	}
 
 	/** Compares the contents of 'LHS' and 'RHS' lexicographically. */
-	NODISCARD friend auto operator<=>(const TArray& LHS, const TArray& RHS) requires (CSynthThreeWayComparable<FElementType>)
+	NODISCARD friend auto operator<=>(const TArray& LHS, const TArray& RHS) requires (CSynthThreeWayComparable<T>)
 	{
 		const size_t NumToCompare = LHS.Num() < RHS.Num() ? LHS.Num() : RHS.Num();
 
@@ -315,7 +315,7 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	FIterator Insert(FConstIterator Iter, const FElementType& InValue) requires (CCopyable<FElementType>)
+	FIterator Insert(FConstIterator Iter, const FElementType& InValue) requires (CCopyable<T>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -363,7 +363,7 @@ public:
 	}
 
 	/** Inserts 'InValue' before 'Iter' in the container. */
-	FIterator Insert(FConstIterator Iter, FElementType&& InValue) requires (CMovable<FElementType>)
+	FIterator Insert(FConstIterator Iter, FElementType&& InValue) requires (CMovable<T>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -411,7 +411,7 @@ public:
 	}
 
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
-	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyable<FElementType>)
+	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyable<T>)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -419,8 +419,7 @@ public:
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
-	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<FElementType, TIteratorReference<I>>
-		&& CAssignableFrom<FElementType&, TIteratorReference<I>> && CMovable<FElementType>)
+	template <CInputIterator I, CSentinelFor<I> S> requires (CConstructibleFrom<T, TIteratorReference<I>> && CAssignableFrom<T&, TIteratorReference<I>> && CMovable<T>)
 	FIterator Insert(FConstIterator Iter, I First, S Last)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
@@ -540,21 +539,20 @@ public:
 	}
 
 	/** Inserts elements from range before 'Iter'. */
-	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>
-		&& CAssignableFrom<FElementType&, TRangeReference<R>> && CMovable<FElementType>)
+	template <CInputRange R> requires (CConstructibleFrom<T, TRangeReference<R>> && CAssignableFrom<T&, TRangeReference<R>> && CMovable<T>)
 	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range)
 	{
 		return Insert(Iter, Range::Begin(Range), Range::End(Range));
 	}
 
 	/** Inserts elements from initializer list before 'Iter' in the container. */
-	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyable<T>)
 	{
 		return Insert(Iter, Range::Begin(IL), Range::End(IL));
 	}
 
 	/** Inserts a new element into the container directly before 'Iter'. */
-	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...> && CMovable<FElementType>)
+	template <typename... Ts> requires (CConstructibleFrom<T, Ts...> && CMovable<T>)
 	FIterator Emplace(FConstIterator Iter, Ts&&... Args)
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
@@ -603,7 +601,7 @@ public:
 	}
 
 	/** Removes the element at 'Iter' in the container. Without changing the order of elements. */
-	FORCEINLINE FIterator StableErase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<FElementType>)
+	FORCEINLINE FIterator StableErase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<T>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -611,7 +609,7 @@ public:
 	}
 
 	/** Removes the elements in the range ['First', 'Last') in the container. Without changing the order of elements. */
-	FIterator StableErase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<FElementType>)
+	FIterator StableErase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<T>)
 	{
 		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -653,7 +651,7 @@ public:
 	}
 
 	/** Removes the element at 'Iter' in the container. But it may change the order of elements. */
-	FORCEINLINE FIterator Erase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<FElementType>)
+	FORCEINLINE FIterator Erase(FConstIterator Iter, bool bAllowShrinking = true) requires (CMovable<T>)
 	{
 		checkf(IsValidIterator(Iter) && Iter != End(), TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -661,7 +659,7 @@ public:
 	}
 
 	/** Removes the elements in the range ['First', 'Last') in the container. But it may change the order of elements. */
-	FIterator Erase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<FElementType>)
+	FIterator Erase(FConstIterator First, FConstIterator Last, bool bAllowShrinking = true) requires (CMovable<T>)
 	{
 		checkf(IsValidIterator(First) && IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
@@ -705,19 +703,19 @@ public:
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(const FElementType& InValue) requires (CCopyable<FElementType>)
+	FORCEINLINE void PushBack(const FElementType& InValue) requires (CCopyable<T>)
 	{
 		EmplaceBack(InValue);
 	}
 
 	/** Appends the given element value to the end of the container. */
-	FORCEINLINE void PushBack(FElementType&& InValue) requires (CMovable<FElementType>)
+	FORCEINLINE void PushBack(FElementType&& InValue) requires (CMovable<T>)
 	{
 		EmplaceBack(MoveTemp(InValue));
 	}
 
 	/** Appends a new element to the end of the container. */
-	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...> && CMovable<FElementType>)
+	template <typename... Ts> requires (CConstructibleFrom<T, Ts...> && CMovable<T>)
 	FElementType& EmplaceBack(Ts&&... Args)
 	{
 		const size_t NumToAllocate = Num() + 1 > Max() ? Impl->CalculateSlackGrow(Num() + 1, Max()) : Max();
@@ -750,13 +748,13 @@ public:
 	}
 
 	/** Removes the last element of the container. The array cannot be empty. */
-	FORCEINLINE void PopBack(bool bAllowShrinking = true) requires (CMovable<FElementType>)
+	FORCEINLINE void PopBack(bool bAllowShrinking = true) requires (CMovable<T>)
 	{
 		Erase(End() - 1, bAllowShrinking);
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional default elements are appended. */
-	void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<FElementType> && CMovable<FElementType>)
+	void SetNum(size_t Count, bool bAllowShrinking = true) requires (CDefaultConstructible<T> && CMovable<T>)
 	{
 		size_t NumToAllocate = Count;
 
@@ -802,7 +800,7 @@ public:
 	}
 
 	/** Resizes the container to contain 'Count' elements. Additional copies of 'InValue' are appended. */
-	void SetNum(size_t Count, const FElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<FElementType> && CMovable<FElementType>)
+	void SetNum(size_t Count, const FElementType& InValue, bool bAllowShrinking = true) requires (CCopyConstructible<T> && CMovable<T>)
 	{
 		size_t NumToAllocate = Count;
 
@@ -855,7 +853,7 @@ public:
 	}
 
 	/** Increase the max capacity of the array to a value that's greater or equal to 'Count'. */
-	void Reserve(size_t Count) requires (CMovable<FElementType>)
+	void Reserve(size_t Count) requires (CMovable<T>)
 	{
 		if (Count <= Max()) return;
 
@@ -953,7 +951,7 @@ public:
 	}
 
 	/** Overloads the GetTypeHash algorithm for TArray. */
-	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TArray& A) requires (CHashable<FElementType>)
+	NODISCARD friend FORCEINLINE size_t GetTypeHash(const TArray& A) requires (CHashable<T>)
 	{
 		size_t Result = 0;
 
@@ -966,7 +964,7 @@ public:
 	}
 
 	/** Overloads the Swap algorithm for TArray. */
-	friend void Swap(TArray& A, TArray& B) requires (CMovable<FElementType>)
+	friend void Swap(TArray& A, TArray& B) requires (CMovable<T>)
 	{
 		const bool bIsTransferable =
 			A.Impl->IsTransferable(A.Impl.Pointer) &&
@@ -1005,7 +1003,7 @@ private:
 	{
 	public:
 
-		using FElementType = TRemoveCV<T>;
+		using FElementType = T;
 
 		FORCEINLINE TIteratorImpl() = default;
 
