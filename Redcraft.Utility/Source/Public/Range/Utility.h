@@ -1,9 +1,12 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Templates/Utility.h"
-#include "Iterator/Iterator.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Templates/Utility.h"
+#include "Iterator/Utility.h"
+#include "Iterator/BasicIterator.h"
+#include "Iterator/Sentinel.h"
+#include "Iterator/ReverseIterator.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)

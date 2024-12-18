@@ -1,16 +1,23 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Range/Range.h"
-#include "String/Char.h"
-#include "Containers/Array.h"
-#include "String/StringView.h"
-#include "Iterator/Iterator.h"
-#include "Templates/Utility.h"
-#include "Templates/Optional.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Templates/Noncopyable.h"
+#include "Templates/Utility.h"
+#include "Templates/TypeHash.h"
+#include "Templates/Optional.h"
+#include "Memory/Allocator.h"
+#include "Containers/Array.h"
+#include "Containers/ArrayView.h"
+#include "Iterator/Utility.h"
+#include "Iterator/BasicIterator.h"
+#include "Iterator/Sentinel.h"
+#include "Range/Utility.h"
+#include "Range/Factory.h"
+#include "String/Char.h"
+#include "String/StringView.h"
 #include "Miscellaneous/AssertionMacros.h"
+
+#include <locale>
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)

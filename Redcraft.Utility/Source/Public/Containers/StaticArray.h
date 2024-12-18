@@ -1,12 +1,13 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Range/Range.h"
-#include "Templates/Meta.h"
-#include "Iterator/Iterator.h"
-#include "Templates/Utility.h"
-#include "Templates/TypeHash.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Templates/Utility.h"
+#include "Templates/Meta.h"
+#include "Templates/TypeHash.h"
+#include "Iterator/Utility.h"
+#include "Iterator/BasicIterator.h"
+#include "Iterator/ReverseIterator.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
 

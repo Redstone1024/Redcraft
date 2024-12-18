@@ -1,15 +1,17 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Range/Range.h"
-#include "String/Char.h"
-#include "Memory/Allocator.h"
-#include "Iterator/Iterator.h"
+#include "TypeTraits/TypeTraits.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Containers/ArrayView.h"
-#include "TypeTraits/TypeTraits.h"
+#include "Templates/Noncopyable.h"
+#include "Memory/Allocator.h"
 #include "Memory/MemoryOperator.h"
+#include "Containers/ArrayView.h"
+#include "Iterator/Utility.h"
+#include "Iterator/BasicIterator.h"
+#include "Iterator/Sentinel.h"
+#include "String/Char.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 #include <cstring>
