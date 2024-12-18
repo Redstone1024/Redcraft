@@ -85,7 +85,7 @@ private:
 
 public:
 
-	using FElementType = TRemoveCV<T>;
+	using FElementType = T;
 
 	using FReference = typename FSuper::FReference;
 

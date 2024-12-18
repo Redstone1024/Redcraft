@@ -25,9 +25,7 @@ using TDefaultBitsetBlockType =
 
 NAMESPACE_PRIVATE_END
 
-#if 1
-
-template <size_t N, CUnsignedIntegral InBlockType = NAMESPACE_PRIVATE::TDefaultBitsetBlockType<N>> requires (!CSameAs<InBlockType, bool>)
+template <size_t N, CUnsignedIntegral InBlockType = NAMESPACE_PRIVATE::TDefaultBitsetBlockType<N>> requires (!CConst<InBlockType> && !CVolatile<InBlockType> && !CSameAs<InBlockType, bool>)
 class TStaticBitset
 {
 private:
@@ -616,8 +614,6 @@ private:
 	};
 
 };
-
-#endif
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

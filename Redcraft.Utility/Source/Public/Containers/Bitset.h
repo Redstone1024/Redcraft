@@ -20,7 +20,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <CUnsignedIntegral InBlockType> requires (!CSameAs<InBlockType, bool>)
 using TDefaultBitsetAllocator = TInlineAllocator<(40 - 3 * sizeof(size_t)) / sizeof(InBlockType)>;
 
-template <CUnsignedIntegral InBlockType, CAllocator<InBlockType> Allocator = TDefaultBitsetAllocator<InBlockType>> requires (!CSameAs<InBlockType, bool>)
+template <CUnsignedIntegral InBlockType, CAllocator<InBlockType> Allocator = TDefaultBitsetAllocator<InBlockType>> requires (CAllocatableObject<InBlockType> && !CSameAs<InBlockType, bool>)
 class TBitset
 {
 private:
