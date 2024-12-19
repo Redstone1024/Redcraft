@@ -1,4 +1,4 @@
-#include "Testing/ContainersTesting.h"
+#include "Testing/Testing.h"
 
 #include "Containers/Containers.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -11,15 +11,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestContainers()
-{
-	TestArray();
-	TestStaticArray();
-	TestArrayView();
-	TestBitset();
-	TestStaticBitset();
-	TestList();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 NAMESPACE_UNNAMED_BEGIN
 
@@ -601,6 +593,18 @@ void TestList()
 		List.SetNum(4);
 		always_check((List == TList<int32>({ 1, 2, 3, 4 })));
 	}
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestContainers()
+{
+	NAMESPACE_PRIVATE::TestArray();
+	NAMESPACE_PRIVATE::TestStaticArray();
+	NAMESPACE_PRIVATE::TestArrayView();
+	NAMESPACE_PRIVATE::TestBitset();
+	NAMESPACE_PRIVATE::TestStaticBitset();
+	NAMESPACE_PRIVATE::TestList();
 }
 
 NAMESPACE_END(Testing)

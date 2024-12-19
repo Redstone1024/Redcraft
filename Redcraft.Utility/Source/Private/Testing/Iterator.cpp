@@ -1,4 +1,4 @@
-#include "Testing/IteratorTesting.h"
+#include "Testing/Testing.h"
 
 #include "Iterator/Iterator.h"
 #include "Containers/List.h"
@@ -10,13 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestIterator()
-{
-	TestMoveIterator();
-	TestReverseIterator();
-	TestCountedIterator();
-	TestInsertIterator();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 void TestMoveIterator()
 {
@@ -217,6 +211,16 @@ void TestInsertIterator()
 
 		always_check(List == TList<int>({ 1, 2, 1, 2, 3, 3 }));
 	}
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestIterator()
+{
+	NAMESPACE_PRIVATE::TestMoveIterator();
+	NAMESPACE_PRIVATE::TestReverseIterator();
+	NAMESPACE_PRIVATE::TestCountedIterator();
+	NAMESPACE_PRIVATE::TestInsertIterator();
 }
 
 NAMESPACE_END(Testing)

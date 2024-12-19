@@ -8,11 +8,14 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
+REDCRAFTUTILITY_API void TestTypeTraits();
+REDCRAFTUTILITY_API void TestTemplates();
+REDCRAFTUTILITY_API void TestNumeric();
+REDCRAFTUTILITY_API void TestIterator();
+REDCRAFTUTILITY_API void TestMemory();
+REDCRAFTUTILITY_API void TestContainers();
 REDCRAFTUTILITY_API void TestString();
-REDCRAFTUTILITY_API void TestChar();
-REDCRAFTUTILITY_API void TestStringView();
-REDCRAFTUTILITY_API void TestTemplateString();
-REDCRAFTUTILITY_API void TestStringConversion();
+REDCRAFTUTILITY_API void TestMiscellaneous();
 
 NAMESPACE_END(Testing)
 

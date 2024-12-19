@@ -1,4 +1,4 @@
-#include "Testing/TemplatesTesting.h"
+#include "Testing/Testing.h"
 
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/Compare.h"
@@ -14,20 +14,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestTemplates()
-{
-	TestInvoke();
-	TestReferenceWrapper();
-	TestOptional();
-	TestVariant();
-	TestAny();
-	TestTuple();
-	TestFunction();
-	TestAtomic();
-	TestScopeHelper();
-	TestPropagateConst();
-	TestMiscTemplates();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 NAMESPACE_UNNAMED_BEGIN
 
@@ -1619,6 +1606,23 @@ void TestMiscTemplates()
 	FTestRetainedRef TempA(IntA);
 //	FTestRetainedRef TempB(114514);
 
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestTemplates()
+{
+	NAMESPACE_PRIVATE::TestInvoke();
+	NAMESPACE_PRIVATE::TestReferenceWrapper();
+	NAMESPACE_PRIVATE::TestOptional();
+	NAMESPACE_PRIVATE::TestVariant();
+	NAMESPACE_PRIVATE::TestAny();
+	NAMESPACE_PRIVATE::TestTuple();
+	NAMESPACE_PRIVATE::TestFunction();
+	NAMESPACE_PRIVATE::TestAtomic();
+	NAMESPACE_PRIVATE::TestScopeHelper();
+	NAMESPACE_PRIVATE::TestPropagateConst();
+	NAMESPACE_PRIVATE::TestMiscTemplates();
 }
 
 NAMESPACE_END(Testing)

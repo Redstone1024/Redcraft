@@ -1,4 +1,4 @@
-#include "Testing/MemoryTesting.h"
+#include "Testing/Testing.h"
 
 #include "Memory/Memory.h"
 #include "Memory/Alignment.h"
@@ -15,18 +15,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestMemory()
-{
-	TestAddress();
-	TestAlignment();
-	TestMemoryBuffer();
-	TestMemoryMalloc();
-	TestMemoryOperator();
-	TestPointerTraits();
-	TestUniquePointer();
-	TestSharedPointer();
-	TestInOutPointer();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 NAMESPACE_UNNAMED_BEGIN
 
@@ -1070,6 +1059,21 @@ void TestInOutPointer()
 		[](int64** InPtr) { always_check(**InPtr == 2821859274); delete* InPtr; *InPtr = new int64; } (InOutPtr(Temp, TDefaultDelete<int64>()));
 		always_check(Temp.IsValid());
 	}
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestMemory()
+{
+	NAMESPACE_PRIVATE::TestAddress();
+	NAMESPACE_PRIVATE::TestAlignment();
+	NAMESPACE_PRIVATE::TestMemoryBuffer();
+	NAMESPACE_PRIVATE::TestMemoryMalloc();
+	NAMESPACE_PRIVATE::TestMemoryOperator();
+	NAMESPACE_PRIVATE::TestPointerTraits();
+	NAMESPACE_PRIVATE::TestUniquePointer();
+	NAMESPACE_PRIVATE::TestSharedPointer();
+	NAMESPACE_PRIVATE::TestInOutPointer();
 }
 
 NAMESPACE_END(Testing)

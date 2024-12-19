@@ -1,4 +1,4 @@
-#include "Testing/StringTesting.h"
+#include "Testing/Testing.h"
 
 #include "String/Char.h"
 #include "Memory/Memory.h"
@@ -13,13 +13,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestString()
-{
-	TestChar();
-	TestStringView();
-	TestTemplateString();
-	TestStringConversion();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 void TestChar()
 {
@@ -32,6 +26,7 @@ void TestChar()
 		always_check(CCharType<u32char>);
 		always_check(CCharType<unicodechar>);
 	}
+
 	auto Test = []<typename T>(TInPlaceType<T>)
 	{
 		always_check(TChar<T>::IsASCII(LITERAL(T, '0')));
@@ -623,6 +618,16 @@ void TestStringConversion()
 	Test(InPlaceType<u16char>);
 	Test(InPlaceType<u32char>);
 	Test(InPlaceType<unicodechar>);
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestString()
+{
+	NAMESPACE_PRIVATE::TestChar();
+	NAMESPACE_PRIVATE::TestStringView();
+	NAMESPACE_PRIVATE::TestTemplateString();
+	NAMESPACE_PRIVATE::TestStringConversion();
 }
 
 NAMESPACE_END(Testing)

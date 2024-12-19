@@ -1,4 +1,4 @@
-#include "Testing/MiscellaneousTesting.h"
+#include "Testing/Testing.h"
 
 #include "Miscellaneous/AssertionMacros.h"
 #include "Miscellaneous/Compare.h"
@@ -10,12 +10,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestMiscellaneous()
-{
-	TestAssertionMacros();
-	TestCompare();
-	TestVarArgs();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 NAMESPACE_UNNAMED_BEGIN
 
@@ -127,7 +122,7 @@ void TestCompare()
 	always_check(( 0 <=>  0) == strong_ordering::equivalent);
 	always_check(( 0 <=>  0) == strong_ordering::equal);
 	always_check(( 0 <=> -1) == strong_ordering::greater);
-	
+
 	always_check((-1 <=>  0) <  0);
 	always_check((-1 <=>  0) <= 0);
 	always_check(( 0 <=>  0) <= 0);
@@ -148,12 +143,12 @@ void TestCompare()
 	always_check((-1.0 <=>  0.0) == weak_ordering::less);
 	always_check(( 0.0 <=>  0.0) == weak_ordering::equivalent);
 	always_check(( 0.0 <=> -1.0) == weak_ordering::greater);
-	
+
 	always_check((-1.0 <=>  0.0) == strong_ordering::less);
 	always_check(( 0.0 <=>  0.0) == strong_ordering::equivalent);
 	always_check(( 0.0 <=>  0.0) == strong_ordering::equal);
 	always_check(( 0.0 <=> -1.0) == strong_ordering::greater);
-	
+
 	always_check((-1.0 <=>  0.0) <  0);
 	always_check((-1.0 <=>  0.0) <= 0);
 	always_check(( 0.0 <=>  0.0) <= 0);
@@ -162,26 +157,26 @@ void TestCompare()
 	always_check(( 0.0 <=> -1.0) >= 0);
 	always_check(( 0.0 <=> -1.0) >  0);
 	always_check((-1.0 <=>  1.0) != 0);
-	
+
 	always_check((FTestPartialOrdering(-1) <=> FTestPartialOrdering( 0)) == partial_ordering::less);
 	always_check((FTestPartialOrdering( 0) <=> FTestPartialOrdering( 0)) == partial_ordering::equivalent);
 	always_check((FTestPartialOrdering( 0) <=> FTestPartialOrdering(-1)) == partial_ordering::greater);
 
 	always_check((FTestPartialOrdering( 0, true) <=> FTestPartialOrdering( 0, false)) == partial_ordering::unordered);
-	
+
 	always_check((FTestWeakOrdering(-1) <=> FTestWeakOrdering( 0)) == weak_ordering::less);
 	always_check((FTestWeakOrdering( 0) <=> FTestWeakOrdering( 0)) == weak_ordering::equivalent);
 	always_check((FTestWeakOrdering( 0) <=> FTestWeakOrdering(-1)) == weak_ordering::greater);
-	
+
 	always_check((FTestStrongOrdering(-1) <=> FTestStrongOrdering( 0)) == strong_ordering::less);
 	always_check((FTestStrongOrdering( 0) <=> FTestStrongOrdering( 0)) == strong_ordering::equivalent);
 	always_check((FTestStrongOrdering( 0) <=> FTestStrongOrdering( 0)) == strong_ordering::equal);
 	always_check((FTestStrongOrdering( 0) <=> FTestStrongOrdering(-1)) == strong_ordering::greater);
-	
+
 	always_check((FTestPartialOrdering(-1) <  FTestPartialOrdering( 0)));
 	always_check((FTestPartialOrdering( 0) == FTestPartialOrdering( 0)));
 	always_check((FTestPartialOrdering( 0) >  FTestPartialOrdering(-1)));
-	
+
 	always_check((FTestWeakOrdering(-1) <  FTestWeakOrdering( 0)));
 	always_check((FTestWeakOrdering( 0) == FTestWeakOrdering( 0)));
 	always_check((FTestWeakOrdering( 0) >  FTestWeakOrdering(-1)));
@@ -216,7 +211,7 @@ void TestCompare()
 	always_check(SynthThreeWayCompare(FTestPartialOrdering( 0), FTestPartialOrdering(-1)) == partial_ordering::greater);
 
 	always_check(SynthThreeWayCompare(FTestPartialOrdering( 0, true), FTestPartialOrdering( 0, false)) == partial_ordering::unordered);
-	
+
 	always_check(SynthThreeWayCompare(FTestSynth(-1), FTestSynth( 0)) == weak_ordering::less);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth( 0)) == weak_ordering::equivalent);
 	always_check(SynthThreeWayCompare(FTestSynth( 0), FTestSynth(-1)) == weak_ordering::greater);
@@ -283,6 +278,15 @@ void TestVarArgs()
 		ETestVarArgs::B,
 		FTestVarArgs({ 404, 5.0f })
 	);
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestMiscellaneous()
+{
+	NAMESPACE_PRIVATE::TestAssertionMacros();
+	NAMESPACE_PRIVATE::TestCompare();
+	NAMESPACE_PRIVATE::TestVarArgs();
 }
 
 NAMESPACE_END(Testing)

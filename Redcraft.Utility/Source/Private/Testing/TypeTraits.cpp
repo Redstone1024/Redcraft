@@ -1,4 +1,4 @@
-#include "Testing/TypeTraitsTesting.h"
+#include "Testing/Testing.h"
 
 #include "Miscellaneous/AssertionMacros.h"
 #include "TypeTraits/TypeTraits.h"

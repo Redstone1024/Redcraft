@@ -1,4 +1,4 @@
-#include "Testing/NumericTesting.h"
+#include "Testing/Testing.h"
 
 #include "Numeric/Numeric.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -9,12 +9,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(Testing)
 
-void TestNumeric()
-{
-	TestLiteral();
-	TestBit();
-	TestMath();
-}
+NAMESPACE_PRIVATE_BEGIN
 
 void TestLiteral()
 {
@@ -604,6 +599,15 @@ void TestMath()
 	always_check(static_cast<uint8>(Math::LerpStable(0, 255, 0.0)) ==   0);
 	always_check(static_cast<uint8>(Math::LerpStable(0, 255, 0.5)) == 127);
 	always_check(static_cast<uint8>(Math::LerpStable(0, 255, 1.0)) == 255);
+}
+
+NAMESPACE_PRIVATE_END
+
+void TestNumeric()
+{
+	NAMESPACE_PRIVATE::TestLiteral();
+	NAMESPACE_PRIVATE::TestBit();
+	NAMESPACE_PRIVATE::TestMath();
 }
 
 NAMESPACE_END(Testing)
