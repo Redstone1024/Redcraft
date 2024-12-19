@@ -11,3 +11,4 @@
 #include "Range/FilterView.h"
 #include "Range/TransformView.h"
 #include "Range/TakeView.h"
+#include "Range/TakeWhileView.h"
