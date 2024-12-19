@@ -175,7 +175,7 @@ private:
 		NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const FSentinelImpl& LHS, const FIteratorImpl<bConst>& RHS)
 			requires CSizedSentinelFor<TRangeSentinel<FBase>, TRangeIterator<FBase>>
 		{
-			return RHS.GetBase() - LHS.GetBase();
+			return LHS.GetBase() - RHS.GetBase();
 		}
 
 		NODISCARD FORCEINLINE constexpr TRangeSentinel<FBase> GetBase() const { return Current; }

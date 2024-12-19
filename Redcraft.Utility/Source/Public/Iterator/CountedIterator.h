@@ -74,8 +74,6 @@ public:
 
 	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Length == static_cast<ptrdiff>(0); }
 
-	NODISCARD FORCEINLINE constexpr strong_ordering operator<=>(FDefaultSentinel) const& { return static_cast<ptrdiff>(0) <=> Length; }
-
 	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*()                                             { CheckThis(true); return *GetBase();  }
 	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*()  const requires (CDereferenceable<const I>) { CheckThis(true); return *GetBase();  }
 

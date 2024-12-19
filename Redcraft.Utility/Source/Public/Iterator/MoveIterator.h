@@ -47,7 +47,7 @@ public:
 	NODISCARD friend FORCEINLINE constexpr bool operator==(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() == RHS.GetBase(); }
 
 	template <CInputIterator J> requires (CThreeWayComparable<I, J>)
-	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<I, J> operator<=>(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return RHS.GetBase() <=> LHS.GetBase(); }
+	NODISCARD friend FORCEINLINE constexpr TCompareThreeWayResult<I, J> operator<=>(const TMoveIterator& LHS, const TMoveIterator<J>& RHS) { return LHS.GetBase() <=> RHS.GetBase(); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorRValueReference<I> operator*() const { return MoveTemp(*GetBase()); }
 

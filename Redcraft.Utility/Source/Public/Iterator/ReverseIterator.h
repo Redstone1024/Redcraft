@@ -63,8 +63,8 @@ public:
 	FORCEINLINE constexpr TReverseIterator& operator+=(ptrdiff Offset) requires (CRandomAccessIterator<I>) { Current -= Offset; return *this; }
 	FORCEINLINE constexpr TReverseIterator& operator-=(ptrdiff Offset) requires (CRandomAccessIterator<I>) { Current += Offset; return *this; }
 
-	NODISCARD FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset) const requires (CRandomAccessIterator<I>) { TReverseIterator Temp = *this; Temp -= Offset; return Temp; }
-	NODISCARD FORCEINLINE constexpr TReverseIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<I>) { TReverseIterator Temp = *this; Temp += Offset; return Temp; }
+	NODISCARD FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset) const requires (CRandomAccessIterator<I>) { TReverseIterator Temp = *this; Temp += Offset; return Temp; }
+	NODISCARD FORCEINLINE constexpr TReverseIterator operator-(ptrdiff Offset) const requires (CRandomAccessIterator<I>) { TReverseIterator Temp = *this; Temp -= Offset; return Temp; }
 
 	NODISCARD friend FORCEINLINE constexpr TReverseIterator operator+(ptrdiff Offset, const TReverseIterator& Iter) requires (CRandomAccessIterator<I>) { return Iter + Offset; }
 
