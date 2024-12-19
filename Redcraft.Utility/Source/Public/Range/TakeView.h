@@ -36,7 +36,7 @@ public:
 
 	FORCEINLINE constexpr TTakeView(V InBase, size_t InCount) : Base(MoveTemp(InBase)), Count(InCount) { }
 
-	NODISCARD FORCEINLINE constexpr auto Begin()
+	NODISCARD FORCEINLINE constexpr auto Begin() requires (!CSimpleView<V>)
 	{
 		if constexpr (CSizedRange<V>)
 		{
@@ -62,7 +62,7 @@ public:
 		else return MakeCountedIterator(Range::Begin(Base), Count);
 	}
 
-	NODISCARD FORCEINLINE constexpr auto End()
+	NODISCARD FORCEINLINE constexpr auto End() requires (!CSimpleView<V>)
 	{
 		if constexpr (CSizedRange<V>)
 		{

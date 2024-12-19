@@ -98,6 +98,12 @@ concept CViewableRange = CRange<R>
 	|| (!CView<TRemoveCVRef<R>> && (CLValueReference<R> || (CMovable<TRemoveReference<R>>
 	&& !NAMESPACE_PRIVATE::TIsInitializerList<TRemoveCVRef<R>>::Value))));
 
+/** A concept specifies that a view uses the same iterator and sentinel type for both const and non-const views. */
+template <typename V>
+concept CSimpleView = CView<V> && CRange<const V>
+	&& CSameAs<TRangeIterator<V>, TRangeIterator<const V>>
+	&& CSameAs<TRangeSentinel<V>, TRangeSentinel<const V>>;
+
 NAMESPACE_BEGIN(Range)
 
 /** A simple view that combines an iterator-sentinel pair into a view. */

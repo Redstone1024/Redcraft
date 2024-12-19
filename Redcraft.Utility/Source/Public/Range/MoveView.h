@@ -34,9 +34,17 @@ public:
 
 	FORCEINLINE constexpr explicit TMoveView(V InBase) : Base(MoveTemp(InBase)) { }
 
-	NODISCARD FORCEINLINE constexpr auto Begin() { return MakeMoveIterator(Range::Begin(Base)); }
+	NODISCARD FORCEINLINE constexpr auto Begin() requires (!CSimpleView<V>)
+	{
+		return MakeMoveIterator(Range::Begin(Base));
+	}
 
-	NODISCARD FORCEINLINE constexpr auto End()
+	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V>)
+	{
+		return MakeMoveIterator(Range::Begin(Base));
+	}
+
+	NODISCARD FORCEINLINE constexpr auto End() requires (!CSimpleView<V>)
 	{
 		if constexpr (CCommonRange<V>)
 		{
@@ -45,9 +53,7 @@ public:
 		else return MakeMoveSentinel(Range::End(Base));
 	}
 
-	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V>) { return MakeMoveIterator(Range::Begin(Base)); }
-
-	NODISCARD FORCEINLINE constexpr auto End()   const requires (CRange<const V>)
+	NODISCARD FORCEINLINE constexpr auto End() const requires (CRange<const V>)
 	{
 		if constexpr (CCommonRange<V>)
 		{
