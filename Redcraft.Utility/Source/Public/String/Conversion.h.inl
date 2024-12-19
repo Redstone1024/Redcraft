@@ -17,7 +17,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-// @TODO: Refactor the conversion tool by more elegant way.
+// TODO: Refactor the conversion tool by more elegant way.
 
 // The conversion tool uses a string to describe the object format.
 //

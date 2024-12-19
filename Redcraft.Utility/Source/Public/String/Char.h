@@ -57,7 +57,7 @@ struct TLiteral<u32char>
 NAMESPACE_PRIVATE_END
 
 /** Templated literal struct to allow selection of string literals based on the character type provided, and not on compiler switches. */
-#define LITERAL(CharType, StringLiteral) NAMESPACE_PRIVATE::TLiteral<CharType>::Select(TEXT(StringLiteral), WTEXT(StringLiteral), U8TEXT(StringLiteral), U16TEXT(StringLiteral), U32TEXT(StringLiteral))
+#define LITERAL(CharType, StringLiteral) NAMESPACE_REDCRAFT::NAMESPACE_PRIVATE::TLiteral<CharType>::Select(TEXT(StringLiteral), WTEXT(StringLiteral), U8TEXT(StringLiteral), U16TEXT(StringLiteral), U32TEXT(StringLiteral))
 
 static_assert(CUnsigned<u8char>,      "TChar assumes u8char is an unsigned integer");
 static_assert(CUnsigned<u16char>,     "TChar assumes u16char is an unsigned integer");

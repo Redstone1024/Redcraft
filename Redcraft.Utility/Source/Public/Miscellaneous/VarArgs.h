@@ -36,7 +36,7 @@ NAMESPACE_PRIVATE_END
 #define VARARGS_ACCESS_COPY(ContextName, ContextSource) NAMESPACE_STD::va_list ContextName; va_copy(ContextName, ContextSource)
 
 /** Accesses the next variadic function argument. */
-#define VARARGS_ACCESS(ContextName, Type) (NAMESPACE_PRIVATE::VarArgsAssert<Type>, va_arg(ContextName, Type))
+#define VARARGS_ACCESS(ContextName, Type) (NAMESPACE_REDCRAFT::NAMESPACE_PRIVATE::VarArgsAssert<Type>, va_arg(ContextName, Type))
 
 /** Ends traversal of the variadic function arguments. */
 #define VARARGS_ACCESS_END(ContextName) va_end(ContextName)
