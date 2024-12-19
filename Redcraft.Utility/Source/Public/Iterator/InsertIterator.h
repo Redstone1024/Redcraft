@@ -1,10 +1,12 @@
 #pragma once
 
 #include "CoreTypes.h"
-#include "Iterator/Utility.h"
 #include "TypeTraits/TypeTraits.h"
-#include "Templates/Noncopyable.h"
+#include "Iterator/Utility.h"
 #include "Templates/Utility.h"
+#include "Templates/Noncopyable.h"
+#include "Templates/Invoke.h"
+#include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -142,7 +144,7 @@ NODISCARD FORCEINLINE constexpr auto MakeBackInserter(C& Container)
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::FConstIterator& InIter)
 {
-	return NAMESPACE_PRIVATE::TInsertIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TInsertIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); ++Iter; });
 }
 
 NAMESPACE_MODULE_END(Utility)

@@ -67,12 +67,12 @@ public:
 	}
 
 	template <CInputOrOutputIterator J> requires (CCommonType<I, J>)
-	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length == RHS.Length; }
+	NODISCARD friend FORCEINLINE constexpr bool operator==(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Num() == RHS.Num(); }
 
 	template <CInputOrOutputIterator J> requires (CCommonType<I, J>)
-	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Length <=> RHS.Length; }
+	NODISCARD friend FORCEINLINE constexpr strong_ordering operator<=>(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return LHS.Num() <=> RHS.Num(); }
 
-	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Length == static_cast<ptrdiff>(0); }
+	NODISCARD FORCEINLINE constexpr bool operator==(FDefaultSentinel) const& { return Num() == static_cast<ptrdiff>(0); }
 
 	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*()                                             { CheckThis(true); return *GetBase();  }
 	NODISCARD FORCEINLINE constexpr TIteratorReference<I> operator*()  const requires (CDereferenceable<const I>) { CheckThis(true); return *GetBase();  }
@@ -97,7 +97,7 @@ public:
 	NODISCARD friend FORCEINLINE constexpr TCountedIterator operator+(ptrdiff Offset, TCountedIterator Iter) requires (CRandomAccessIterator<I>) { return Iter + Offset; }
 
 	template <CInputOrOutputIterator J> requires (CCommonType<I, J>)
-	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { LHS.CheckThis(); RHS.CheckThis(); return LHS.Length - RHS.Length; }
+	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, const TCountedIterator<J>& RHS) { return RHS.Num() - LHS.Num(); }
 
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(const TCountedIterator& LHS, FDefaultSentinel) { LHS.CheckThis(); return -LHS.Num(); }
 	NODISCARD friend FORCEINLINE constexpr ptrdiff operator-(FDefaultSentinel, const TCountedIterator& RHS) { RHS.CheckThis(); return  RHS.Num(); }
@@ -120,9 +120,6 @@ private:
 		checkf(static_cast<ptrdiff>(0) <= Length && Length <= MaxLength, TEXT("Read access violation. Please check Num()."));
 		checkf(!(bExceptEnd && Length == static_cast<ptrdiff>(0)),       TEXT("Read access violation. Please check Num()."));
 	}
-
-	template <CInputOrOutputIterator J>
-	friend class TCountedIterator;
 
 };
 
