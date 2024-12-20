@@ -5,9 +5,9 @@
 #include "Templates/Utility.h"
 #include "Templates/Meta.h"
 #include "Templates/TypeHash.h"
-#include "Iterator/Utility.h"
-#include "Iterator/BasicIterator.h"
-#include "Iterator/ReverseIterator.h"
+#include "Iterators/Utility.h"
+#include "Iterators/BasicIterator.h"
+#include "Iterators/ReverseIterator.h"
 #include "Miscellaneous/Compare.h"
 #include "Miscellaneous/AssertionMacros.h"
 
