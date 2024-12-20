@@ -4,7 +4,7 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Memory/Allocator.h"
+#include "Memory/Allocators.h"
 #include "Memory/MemoryOperator.h"
 #include "Iterators/Utility.h"
 #include "Iterators/BasicIterator.h"
@@ -79,7 +79,7 @@ public:
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	TList(size_t Count, const FElementType& InValue) requires (CCopyable<FElementType>)
-		: TList(Range::Repeat(InValue, Count))
+		: TList(Ranges::Repeat(InValue, Count))
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
@@ -106,7 +106,7 @@ public:
 
 	/** Constructs the container with the contents of the range. */
 	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TList> && CConstructibleFrom<FElementType, TRangeReference<R>>)
-	FORCEINLINE explicit TList(R&& Range) : TList(Range::Begin(Range), Range::End(Range)) { }
+	FORCEINLINE explicit TList(R&& Range) : TList(Ranges::Begin(Range), Ranges::End(Range)) { }
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
 	FORCEINLINE TList(const TList& InValue) requires (CCopyConstructible<FElementType>) : TList(InValue.Begin(), InValue.End()) { }
@@ -115,7 +115,7 @@ public:
 	FORCEINLINE TList(TList&& InValue) : TList() { Swap(*this, InValue); }
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TList(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TList(Range::Begin(IL), Range::End(IL)) { }
+	FORCEINLINE TList(initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) : TList(Ranges::Begin(IL), Ranges::End(IL)) { }
 
 	/** Destructs the list. The destructors of the elements are called and the used storage is deallocated. */
 	~TList()
@@ -176,9 +176,9 @@ public:
 	TList& operator=(initializer_list<FElementType> IL) requires (CCopyable<FElementType>)
 	{
 		      FIterator     ThisIter  =        Begin();
-		const FElementType* OtherIter = Range::Begin(IL);
+		const FElementType* OtherIter = Ranges::Begin(IL);
 
-		while (ThisIter != End() && OtherIter != Range::End(IL))
+		while (ThisIter != End() && OtherIter != Ranges::End(IL))
 		{
 			*ThisIter = *OtherIter;
 
@@ -188,18 +188,18 @@ public:
 
 		if (ThisIter == End())
 		{
-			while (OtherIter != Range::End(IL))
+			while (OtherIter != Ranges::End(IL))
 			{
 				EmplaceBack(*OtherIter);
 				++OtherIter;
 			}
 		}
-		else if (OtherIter == Range::End(IL))
+		else if (OtherIter == Ranges::End(IL))
 		{
 			Erase(ThisIter, End());
 		}
 
-		Impl.ListNum = Range::Num(IL);
+		Impl.ListNum = Ranges::Num(IL);
 
 		return *this;
 	}
@@ -251,7 +251,7 @@ public:
 	/** Inserts 'Count' copies of the 'InValue' before 'Iter' in the container. */
 	FIterator Insert(FConstIterator Iter, size_t Count, const FElementType& InValue) requires (CCopyConstructible<FElementType>)
 	{
-		return Insert(Iter, Range::Repeat(InValue, Count));
+		return Insert(Iter, Ranges::Repeat(InValue, Count));
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
@@ -291,10 +291,10 @@ public:
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
 	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
-	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range) { return Insert(Iter, Range::Begin(Range), Range::End(Range)); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range) { return Insert(Iter, Ranges::Begin(Range), Ranges::End(Range)); }
 
 	/** Inserts elements from initializer list before 'Iter' in the container. */
-	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) { return Insert(Iter, Range::Begin(IL), Range::End(IL)); }
+	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyConstructible<FElementType>) { return Insert(Iter, Ranges::Begin(IL), Ranges::End(IL)); }
 
 	/** Inserts a new element into the container directly before 'Iter'. */
 	template <typename... Ts> requires (CConstructibleFrom<FElementType, Ts...>)

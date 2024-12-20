@@ -3,6 +3,7 @@
 #include "CoreTypes.h"
 #include "TypeTraits/TypeTraits.h"
 #include "Iterators/Utility.h"
+#include "Iterators/Sentinel.h"
 #include "Iterators/BasicIterator.h"
 #include "Ranges/Utility.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -11,7 +12,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Algorithm)
+NAMESPACE_BEGIN(Algorithms)
 
 /** Increments given iterator 'Iter' by 'N' elements. */
 template <CInputIterator I>
@@ -57,16 +58,16 @@ NODISCARD FORCEINLINE constexpr ptrdiff Distance(R&& Range)
 {
 	if constexpr (CSizedRange<R>)
 	{
-		return static_cast<ptrdiff>(Range::Num(Range));
+		return static_cast<ptrdiff>(Ranges::Num(Range));
 	}
-	else return Algorithm::Distance(Range::Begin(Range), Range::End(Range));
+	else return Algorithms::Distance(Ranges::Begin(Range), Ranges::End(Range));
 }
 
 /** @return The 'N'-th successor of iterator 'Iter'. */
 template <CInputIterator I>
 NODISCARD FORCEINLINE constexpr I Next(I Iter, ptrdiff N = 1)
 {
-	Algorithm::Advance(Iter, N);
+	Algorithms::Advance(Iter, N);
 	return Iter;
 }
 
@@ -74,11 +75,11 @@ NODISCARD FORCEINLINE constexpr I Next(I Iter, ptrdiff N = 1)
 template <CBidirectionalIterator I>
 NODISCARD FORCEINLINE constexpr I Prev(I Iter, ptrdiff N = 1)
 {
-	Algorithm::Advance(Iter, -N);
+	Algorithms::Advance(Iter, -N);
 	return Iter;
 }
 
-NAMESPACE_END(Algorithm)
+NAMESPACE_END(Algorithms)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

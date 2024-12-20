@@ -19,16 +19,16 @@ void TestBasic()
 
 	auto Iter = Arr.Begin();
 
-	Algorithm::Advance(Iter, 5);
+	Algorithms::Advance(Iter, 5);
 
 	always_check(*Iter == 5);
 
-	always_check(Algorithm::Distance(Arr.Begin(), Iter) == 5);
+	always_check(Algorithms::Distance(Arr.Begin(), Iter) == 5);
 
-	always_check(Algorithm::Distance(Arr) == 10);
+	always_check(Algorithms::Distance(Arr) == 10);
 
-	always_check(*Algorithm::Next(Iter, 2) == 7);
-	always_check(*Algorithm::Prev(Iter, 2) == 3);
+	always_check(*Algorithms::Next(Iter, 2) == 7);
+	always_check(*Algorithms::Prev(Iter, 2) == 3);
 }
 
 NAMESPACE_PRIVATE_END

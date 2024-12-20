@@ -900,7 +900,7 @@ struct TStringObjectFormatter
 			}
 
 			// Format the container value by format string.
-			else if constexpr (requires { Range::Begin(Object); Range::End(Object); })
+			else if constexpr (requires { Ranges::Begin(Object); Ranges::End(Object); })
 			{
 				auto FillAndAlign = ParseFillAndAlign();
 
@@ -951,7 +951,7 @@ struct TStringObjectFormatter
 					return false;
 				}
 
-				if (Range::Begin(Object) == Range::End(Object))
+				if (Ranges::Begin(Object) == Ranges::End(Object))
 				{
 					Result += Begin;
 					Result += End;
@@ -966,7 +966,7 @@ struct TStringObjectFormatter
 				struct { TStringView<T> Fmt; } ElementParam = { Subfmt };
 
 				// It is assumed that if the first element is successfully formatted, all elements will succeed.
-				bool bIsSuccessful = TStringObjectFormatter::Do(Buffer, *Range::Begin(Object), ElementParam);
+				bool bIsSuccessful = TStringObjectFormatter::Do(Buffer, *Ranges::Begin(Object), ElementParam);
 
 				if (!bIsSuccessful)
 				{
@@ -977,9 +977,9 @@ struct TStringObjectFormatter
 				Result += Begin;
 				Result += Buffer;
 
-				auto Sentinel = Range::End(Object);
+				auto Sentinel = Ranges::End(Object);
 
-				for (auto Iter = ++Range::Begin(Object); Iter != Sentinel; ++Iter)
+				for (auto Iter = ++Ranges::Begin(Object); Iter != Sentinel; ++Iter)
 				{
 					Result += Separator;
 

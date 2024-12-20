@@ -11,7 +11,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter that references other range.
@@ -31,12 +31,12 @@ public:
 	template <typename T> requires (!CSameAs<TRemoveCVRef<T>, TRefView> && CConvertibleTo<T, R&> && requires { Func(DeclVal<T>()); })
 	FORCEINLINE constexpr TRefView(T&& InRange) : Ptr(AddressOf(static_cast<R&>(Forward<T>(InRange)))) { }
 
-	NODISCARD FORCEINLINE constexpr TRangeIterator<R> Begin() const { return Range::Begin(*Ptr); }
-	NODISCARD FORCEINLINE constexpr TRangeSentinel<R> End()   const { return Range::End  (*Ptr); }
+	NODISCARD FORCEINLINE constexpr TRangeIterator<R> Begin() const { return Ranges::Begin(*Ptr); }
+	NODISCARD FORCEINLINE constexpr TRangeSentinel<R> End()   const { return Ranges::End  (*Ptr); }
 
-	NODISCARD FORCEINLINE constexpr auto   GetData() const requires (CContiguousRange<R>)                          { return Range::GetData(*Ptr); }
-	NODISCARD FORCEINLINE constexpr size_t Num()     const requires (CSizedRange<R>)                               { return Range::Num    (*Ptr); }
-	NODISCARD FORCEINLINE constexpr bool   IsEmpty() const requires (requires(R Range) { Range::IsEmpty(Range); }) { return Range::IsEmpty(*Ptr); }
+	NODISCARD FORCEINLINE constexpr auto   GetData() const requires (CContiguousRange<R>)                          { return Ranges::GetData(*Ptr); }
+	NODISCARD FORCEINLINE constexpr size_t Num()     const requires (CSizedRange<R>)                               { return Ranges::Num    (*Ptr); }
+	NODISCARD FORCEINLINE constexpr bool   IsEmpty() const requires (requires(R Range) { Ranges::IsEmpty(Range); }) { return Ranges::IsEmpty(*Ptr); }
 
 	NODISCARD FORCEINLINE constexpr R& GetBase() const { return *Ptr; }
 
@@ -61,12 +61,12 @@ static_assert(       CView<TRefView<      IRange<IInputOrOutputIterator<int>>>>)
 
 static_assert(COutputRange<TRefView<IRange<IOutputIterator<int&>>>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T>
-constexpr bool bEnableBorrowedRange<Range::TRefView<T>> = true;
+constexpr bool bEnableBorrowedRange<Ranges::TRefView<T>> = true;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter that has unique ownership of a range.
@@ -88,19 +88,19 @@ public:
 	FORCEINLINE constexpr TOwningView& operator=(const TOwningView&) = delete;
 	FORCEINLINE constexpr TOwningView& operator=(TOwningView&&)      = default;
 
-	NODISCARD FORCEINLINE constexpr auto Begin()                                  { return Range::Begin(Base); }
-	NODISCARD FORCEINLINE constexpr auto End()                                    { return Range::End  (Base); }
-	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const R>) { return Range::Begin(Base); }
-	NODISCARD FORCEINLINE constexpr auto End()   const requires (CRange<const R>) { return Range::End  (Base); }
+	NODISCARD FORCEINLINE constexpr auto Begin()                                  { return Ranges::Begin(Base); }
+	NODISCARD FORCEINLINE constexpr auto End()                                    { return Ranges::End  (Base); }
+	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const R>) { return Ranges::Begin(Base); }
+	NODISCARD FORCEINLINE constexpr auto End()   const requires (CRange<const R>) { return Ranges::End  (Base); }
 
-	NODISCARD FORCEINLINE constexpr auto GetData()       requires (CContiguousRange<      R>) { return Range::GetData(Base); }
-	NODISCARD FORCEINLINE constexpr auto GetData() const requires (CContiguousRange<const R>) { return Range::GetData(Base); }
+	NODISCARD FORCEINLINE constexpr auto GetData()       requires (CContiguousRange<      R>) { return Ranges::GetData(Base); }
+	NODISCARD FORCEINLINE constexpr auto GetData() const requires (CContiguousRange<const R>) { return Ranges::GetData(Base); }
 
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      R>) { return Range::Num(Base); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const R>) { return Range::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      R>) { return Ranges::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const R>) { return Ranges::Num(Base); }
 
-	NODISCARD FORCEINLINE constexpr bool IsEmpty()       requires (requires(      R Base) { Range::IsEmpty(Base); }) { return Range::IsEmpty(Base); }
-	NODISCARD FORCEINLINE constexpr bool IsEmpty() const requires (requires(const R Base) { Range::IsEmpty(Base); }) { return Range::IsEmpty(Base); }
+	NODISCARD FORCEINLINE constexpr bool IsEmpty()       requires (requires(      R Base) { Ranges::IsEmpty(Base); }) { return Ranges::IsEmpty(Base); }
+	NODISCARD FORCEINLINE constexpr bool IsEmpty() const requires (requires(const R Base) { Ranges::IsEmpty(Base); }) { return Ranges::IsEmpty(Base); }
 
 	NODISCARD FORCEINLINE constexpr       R&  GetBase() &       { return                  Base;   }
 	NODISCARD FORCEINLINE constexpr       R&& GetBase() &&      { return         MoveTemp(Base);  }
@@ -125,12 +125,12 @@ static_assert(       CView<TOwningView<      IRange<IInputOrOutputIterator<int>>
 
 static_assert(COutputRange<TOwningView<IRange<IOutputIterator<int&>>>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T>
-constexpr bool bEnableBorrowedRange<Range::TOwningView<T>> = bEnableBorrowedRange<T>;
+constexpr bool bEnableBorrowedRange<Ranges::TOwningView<T>> = bEnableBorrowedRange<T>;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter that includes all elements of a range. */
 template <CViewableRange R>
@@ -152,9 +152,9 @@ NODISCARD FORCEINLINE constexpr auto All(R&& InRange)
 /** Creates A view adapter that includes all elements of a range. */
 NODISCARD FORCEINLINE constexpr auto All()
 {
-	using FClosure = decltype([]<CViewableRange R> requires (requires { Range::All(DeclVal<R>()); }) (R&& Base)
+	using FClosure = decltype([]<CViewableRange R> requires (requires { Ranges::All(DeclVal<R>()); }) (R&& Base)
 	{
-		return Range::All(Forward<R>(Base));
+		return Ranges::All(Forward<R>(Base));
 	});
 
 	return TAdaptorClosure<FClosure>();
@@ -162,7 +162,7 @@ NODISCARD FORCEINLINE constexpr auto All()
 
 /** A view adapter that includes all elements of a range. */
 template <CViewableRange R>
-using TAllView = decltype(Range::All(DeclVal<R>()));
+using TAllView = decltype(Ranges::All(DeclVal<R>()));
 
 static_assert(        CInputRange<TAllView<IRange<        IInputIterator<int&>>>>);
 static_assert(      CForwardRange<TAllView<IRange<      IForwardIterator<int&>>>>);
@@ -176,7 +176,7 @@ static_assert(       CView<TAllView<      IRange<IInputOrOutputIterator<int>>>>)
 
 static_assert(COutputRange<TAllView<IRange<IOutputIterator<int&>>>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

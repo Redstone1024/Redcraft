@@ -16,7 +16,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter that includes a specified number of elements from the beginning of a range.
@@ -42,11 +42,11 @@ public:
 		{
 			if constexpr (CRandomAccessRange<V>)
 			{
-				return Range::Begin(Base);
+				return Ranges::Begin(Base);
 			}
-			else return MakeCountedIterator(Range::Begin(Base), Num());
+			else return MakeCountedIterator(Ranges::Begin(Base), Num());
 		}
-		else return MakeCountedIterator(Range::Begin(Base), Count);
+		else return MakeCountedIterator(Ranges::Begin(Base), Count);
 	}
 
 	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V>)
@@ -55,11 +55,11 @@ public:
 		{
 			if constexpr (CRandomAccessRange<const V>)
 			{
-				return Range::Begin(Base);
+				return Ranges::Begin(Base);
 			}
-			else return MakeCountedIterator(Range::Begin(Base), Num());
+			else return MakeCountedIterator(Ranges::Begin(Base), Num());
 		}
-		else return MakeCountedIterator(Range::Begin(Base), Count);
+		else return MakeCountedIterator(Ranges::Begin(Base), Count);
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() requires (!CSimpleView<V>)
@@ -68,11 +68,11 @@ public:
 		{
 			if constexpr (CRandomAccessRange<V>)
 			{
-				return Range::Begin(Base) + Num();
+				return Ranges::Begin(Base) + Num();
 			}
 			else return DefaultSentinel;
 		}
-		else return FSentinelImpl<false>(Range::End(Base));
+		else return FSentinelImpl<false>(Ranges::End(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() const requires (CRange<const V>)
@@ -81,15 +81,15 @@ public:
 		{
 			if constexpr (CRandomAccessRange<const V>)
 			{
-				return Range::Begin(Base) + Num();
+				return Ranges::Begin(Base) + Num();
 			}
 			else return DefaultSentinel;
 		}
-		else return FSentinelImpl<true>(Range::End(Base));
+		else return FSentinelImpl<true>(Ranges::End(Base));
 	}
 
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Math::Min(Range::Num(Base), Count); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Math::Min(Range::Num(Base), Count); }
+	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Math::Min(Ranges::Num(Base), Count); }
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Math::Min(Ranges::Num(Base), Count); }
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
 	NODISCARD FORCEINLINE constexpr V GetBase() &&                                      { return MoveTemp(Base); }
@@ -154,12 +154,12 @@ static_assert(       CView<TTakeView<TAllView<     IRange<IInputOrOutputIterator
 
 static_assert(COutputRange<TTakeView<TAllView<IRange<IOutputIterator<int&>>>>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T>
-constexpr bool bEnableBorrowedRange<Range::TTakeView<T>> = bEnableBorrowedRange<T>;
+constexpr bool bEnableBorrowedRange<Ranges::TTakeView<T>> = bEnableBorrowedRange<T>;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter that includes a specified number of elements from the beginning of a range. */
 template <CViewableRange R> requires (requires { TTakeView(DeclVal<R>(), DeclVal<size_t>()); })
@@ -171,15 +171,15 @@ NODISCARD FORCEINLINE constexpr auto Take(R&& Base, size_t Count)
 /** Creates A view adapter that includes a specified number of elements from the beginning of a range. */
 NODISCARD FORCEINLINE constexpr auto Take(size_t Count)
 {
-	using FClosure = decltype([]<CViewableRange R> requires (requires { Range::Take(DeclVal<R>(), DeclVal<size_t>()); }) (R&& Base, size_t Count)
+	using FClosure = decltype([]<CViewableRange R> requires (requires { Ranges::Take(DeclVal<R>(), DeclVal<size_t>()); }) (R&& Base, size_t Count)
 	{
-		return Range::Take(Forward<R>(Base), Count);
+		return Ranges::Take(Forward<R>(Base), Count);
 	});
 
 	return TAdaptorClosure<FClosure, size_t>(Count);
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

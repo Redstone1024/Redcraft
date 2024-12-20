@@ -11,7 +11,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * An interface class template for defining a range adaptor closure.
@@ -139,7 +139,7 @@ NODISCARD FORCEINLINE constexpr auto operator|(T&& LHS, U&& RHS)
 	return TPipeClosure<TRemoveCVRef<T>, TRemoveCVRef<U>>(Forward<T>(LHS), Forward<U>(RHS));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

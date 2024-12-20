@@ -11,7 +11,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** A view type that produces a view of no elements of a particular type. */
 template <CObject T>
@@ -39,12 +39,12 @@ static_assert(    CCommonRange<TEmptyView<int>>);
 static_assert(     CSizedRange<TEmptyView<int>>);
 static_assert(           CView<TEmptyView<int>>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T>
-constexpr bool bEnableBorrowedRange<Range::TEmptyView<T>> = true;
+constexpr bool bEnableBorrowedRange<Ranges::TEmptyView<T>> = true;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** A view type that contains exactly one element of a specified value. */
 template <CObject T> requires (CMoveConstructible<T>)
@@ -190,12 +190,12 @@ TIotaView(T, U) -> TIotaView<T, U>;
 static_assert(CForwardRange<TIotaView<int>>);
 static_assert(        CView<TIotaView<int>>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T, typename U>
-constexpr bool bEnableBorrowedRange<Range::TIotaView<T, U>> = true;
+constexpr bool bEnableBorrowedRange<Ranges::TIotaView<T, U>> = true;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** A view type that generates a sequence of elements by repeatedly producing the same value. Can be either bounded or unbounded. */
 template <CObject W, bool bIsUnreachable = true> requires (CMoveConstructible<W> && CSameAs<W, TRemoveCV<W>>)
@@ -307,9 +307,9 @@ static_assert(      CCommonRange<TRepeatView<int, false>>);
 static_assert(       CSizedRange<TRepeatView<int, false>>);
 static_assert(             CView<TRepeatView<int, false>>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** A view of no elements of a particular type. */
 template <CObject T>
@@ -350,7 +350,7 @@ NODISCARD FORCEINLINE constexpr TRepeatView<TDecay<W>, false> Repeat(W&& Value, 
 	return TRepeatView<TDecay<W>, false>(Forward<W>(Value), Count);
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

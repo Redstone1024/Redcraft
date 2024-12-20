@@ -479,7 +479,7 @@ struct TVariantVisitImpl
 			for (size_t Index = 0; Index < sizeof...(VariantTypes); ++Index)
 			{
 				Result *= VariantNums[Index];
-				Result += Range::Begin(Indices)[Index];
+				Result += Ranges::Begin(Indices)[Index];
 			}
 
 			return Result;

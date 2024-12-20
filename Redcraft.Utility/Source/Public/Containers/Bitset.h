@@ -5,7 +5,7 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Noncopyable.h"
-#include "Memory/Allocator.h"
+#include "Memory/Allocators.h"
 #include "Iterators/Utility.h"
 #include "Iterators/BasicIterator.h"
 #include "Iterators/Sentinel.h"
@@ -135,7 +135,7 @@ public:
 
 	/** Constructs the bitset with the bits of the range. */
 	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TBitset> && CConstructibleFrom<bool, TRangeReference<R>>)
-	FORCEINLINE explicit TBitset(R&& Range) : TBitset(Range::Begin(Range), Range::End(Range)) { }
+	FORCEINLINE explicit TBitset(R&& Range) : TBitset(Ranges::Begin(Range), Ranges::End(Range)) { }
 
 	/** Copy constructor. Constructs the bitset with the copy of the bits of 'InValue'. */
 	FORCEINLINE TBitset(const TBitset& InValue)
@@ -171,7 +171,7 @@ public:
 	}
 
 	/** Constructs the bitset with the bits of the initializer list. */
-	FORCEINLINE TBitset(initializer_list<bool> IL) : TBitset(Range::Begin(IL), Range::End(IL)) { }
+	FORCEINLINE TBitset(initializer_list<bool> IL) : TBitset(Ranges::Begin(IL), Ranges::End(IL)) { }
 
 	/** Destructs the bitset. The storage is deallocated. */
 	~TBitset()
@@ -239,9 +239,9 @@ public:
 	/** Replaces the bits with those identified by initializer list. */
 	TBitset& operator=(initializer_list<bool> IL)
 	{
-		auto First = Range::Begin(IL);
+		auto First = Ranges::Begin(IL);
 
-		const size_t BlocksCount = (Range::Num(IL) + BlockWidth - 1) / BlockWidth;
+		const size_t BlocksCount = (Ranges::Num(IL) + BlockWidth - 1) / BlockWidth;
 
 		size_t NumToAllocate = BlocksCount;
 
@@ -252,7 +252,7 @@ public:
 		{
 			Impl->Deallocate(Impl.Pointer);
 
-			Impl.BitsetNum = Range::Num(IL);
+			Impl.BitsetNum = Ranges::Num(IL);
 			Impl.BlocksMax = NumToAllocate;
 			Impl.Pointer   = Impl->Allocate(MaxBlocks());
 
@@ -261,7 +261,7 @@ public:
 			return *this;
 		}
 
-		Impl.BitsetNum = Range::Num(IL);
+		Impl.BitsetNum = Ranges::Num(IL);
 
 		for (FReference Ref : *this) Ref = *First++;
 

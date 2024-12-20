@@ -16,7 +16,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter that consists of the elements of a range that satisfies a predicate.
@@ -46,7 +46,7 @@ public:
 
 	NODISCARD FORCEINLINE constexpr FIterator Begin()
 	{
-		FIterator Iter(*this, Range::Begin(Base));
+		FIterator Iter(*this, Ranges::Begin(Base));
 
 		do
 		{
@@ -63,7 +63,7 @@ public:
 		return Iter;
 	}
 
-	NODISCARD FORCEINLINE constexpr FSentinel End() { return FSentinel(*this, Range::End(Base)); }
+	NODISCARD FORCEINLINE constexpr FSentinel End() { return FSentinel(*this, Ranges::End(Base)); }
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
 	NODISCARD FORCEINLINE constexpr V GetBase() &&                                      { return MoveTemp(Base); }
@@ -161,9 +161,9 @@ static_assert(CBidirectionalRange<TFilterView<TAllView<IRange<   IContiguousIter
 static_assert(CCommonRange<TFilterView<TAllView<ICommonRange<IForwardIterator<int>>>, bool(*)(int)>>);
 static_assert(       CView<TFilterView<TAllView<      IRange<  IInputIterator<int>>>, bool(*)(int)>>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter that consists of the elements of a range that satisfies a predicate. */
 template <CViewableRange R, typename Pred> requires (requires { TFilterView(DeclVal<R>(), DeclVal<Pred>()); })
@@ -176,15 +176,15 @@ NODISCARD FORCEINLINE constexpr auto Filter(R&& Base, Pred&& Predicate)
 template <typename Pred>
 NODISCARD FORCEINLINE constexpr auto Filter(Pred&& Predicate)
 {
-	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Range::Filter(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Predicate)
+	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Ranges::Filter(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Predicate)
 	{
-		return Range::Filter(Forward<R>(Base), Forward<T>(Predicate));
+		return Ranges::Filter(Forward<R>(Base), Forward<T>(Predicate));
 	});
 
 	return TAdaptorClosure<FClosure, TDecay<Pred>>(Forward<Pred>(Predicate));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

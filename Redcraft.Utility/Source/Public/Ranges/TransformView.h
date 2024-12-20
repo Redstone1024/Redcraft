@@ -13,7 +13,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter of a sequence that applies a transformation function to each element.
@@ -39,36 +39,36 @@ public:
 
 	NODISCARD FORCEINLINE constexpr auto Begin()
 	{
-		return FIteratorImpl<false>(*this, Range::Begin(Base));
+		return FIteratorImpl<false>(*this, Ranges::Begin(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V> && CRegularInvocable<const F&, TRangeReference<const V>>)
 	{
-		return FIteratorImpl<true>(*this, Range::Begin(Base));
+		return FIteratorImpl<true>(*this, Ranges::Begin(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End()
 	{
 		if constexpr (CCommonRange<V>)
 		{
-			return FIteratorImpl<false>(*this, Range::End(Base));
+			return FIteratorImpl<false>(*this, Ranges::End(Base));
 		}
 
-		else return FSentinelImpl<false>(*this, Range::End(Base));
+		else return FSentinelImpl<false>(*this, Ranges::End(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() const requires (CRange<const V> && CRegularInvocable<const F&, TRangeReference<const V>>)
 	{
 		if constexpr (CCommonRange<const V>)
 		{
-			return FIteratorImpl<true>(*this, Range::End(Base));
+			return FIteratorImpl<true>(*this, Ranges::End(Base));
 		}
 
-		else return FSentinelImpl<true>(*this, Range::End(Base));
+		else return FSentinelImpl<true>(*this, Ranges::End(Base));
 	}
 
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Range::Num(Base); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Range::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Ranges::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Ranges::Num(Base); }
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
 	NODISCARD FORCEINLINE constexpr V GetBase() &&                                      { return MoveTemp(Base); }
@@ -206,9 +206,9 @@ static_assert(       CView<TTransformView<TAllView<      IRange<  IInputIterator
 
 static_assert(COutputRange<TTransformView<TAllView<IRange<IForwardIterator<int>>>, int&(*)(int)>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter of a sequence that applies a transformation function to each element. */
 template <CViewableRange R, typename F> requires (requires { TTransformView(DeclVal<R>(), DeclVal<F>()); })
@@ -221,15 +221,15 @@ NODISCARD FORCEINLINE constexpr auto Transform(R&& Base, F&& Func)
 template <typename F>
 NODISCARD FORCEINLINE constexpr auto Transform(F&& Func)
 {
-	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Range::Transform(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Func)
+	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Ranges::Transform(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Func)
 	{
-		return Range::Transform(Forward<R>(Base), Forward<T>(Func));
+		return Ranges::Transform(Forward<R>(Base), Forward<T>(Func));
 	});
 
 	return TAdaptorClosure<FClosure, TDecay<F>>(Forward<F>(Func));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

@@ -19,8 +19,8 @@ void TestConversion()
 		const TArray<int> Arr  = { 1, 2, 3, 4, 5 };
 		const TList<int>  List = { 1, 2, 3, 4, 5 };
 
-		const TArray<int> Brr  = Range::View(List.Begin(), List.End()) | Range::To<TArray<int>>();
-		const TList<int>  Mist = Range::View(Arr.Begin(),  Arr.End())  | Range::To<TList<int>>();
+		const TArray<int> Brr  = Ranges::View(List.Begin(), List.End()) | Ranges::To<TArray<int>>();
+		const TList<int>  Mist = Ranges::View(Arr.Begin(),  Arr.End())  | Ranges::To<TList<int>>();
 
 		always_check(Arr  == Brr);
 		always_check(List == Mist);
@@ -30,8 +30,8 @@ void TestConversion()
 		const TArray<int> Arr  = { 1, 2, 3, 4, 5 };
 		const TList<int>  List = { 1, 2, 3, 4, 5 };
 
-		const TArray<int> Brr  = Range::View(List.Begin(), List.End()) | Range::To<TArray>();
-		const TList<int>  Mist = Range::View(Arr.Begin(),  Arr.End())  | Range::To<TList>();
+		const TArray<int> Brr  = Ranges::View(List.Begin(), List.End()) | Ranges::To<TArray>();
+		const TList<int>  Mist = Ranges::View(Arr.Begin(),  Arr.End())  | Ranges::To<TList>();
 
 		always_check(Arr  == Brr);
 		always_check(List == Mist);
@@ -42,27 +42,27 @@ void TestFactory()
 {
 	{
 		const TArray<int> Arr = { };
-		const TArray<int> Brr = Range::Empty<int> | Range::To<TArray<int>>();
+		const TArray<int> Brr = Ranges::Empty<int> | Ranges::To<TArray<int>>();
 
 		always_check(Arr == Brr);
 	}
 
 	{
 		const TArray<int> Arr = { 1 };
-		const TArray<int> Brr = Range::Single(1) | Range::To<TArray<int>>();
+		const TArray<int> Brr = Ranges::Single(1) | Ranges::To<TArray<int>>();
 
 		always_check(Arr == Brr);
 	}
 
 	{
 		const TArray<int> Arr = { 0, 1, 2, 3, 4 };
-		const TArray<int> Brr = Range::Iota(0, 5) | Range::To<TArray<int>>();
+		const TArray<int> Brr = Ranges::Iota(0, 5) | Ranges::To<TArray<int>>();
 
 		always_check(Arr == Brr);
 	}
 
 	{
-		auto View = Range::Iota(0, 5);
+		auto View = Ranges::Iota(0, 5);
 
 		always_check(View.Num() == 5);
 		always_check(!View.IsEmpty());
@@ -91,7 +91,7 @@ void TestFactory()
 	}
 
 	{
-		auto View = Range::Iota(0);
+		auto View = Ranges::Iota(0);
 
 		always_check(!View.IsEmpty());
 		always_check(!!View);
@@ -119,13 +119,13 @@ void TestFactory()
 
 	{
 		const TArray<int> Arr = { 0, 0, 0, 0, 0 };
-		const TArray<int> Brr = Range::Repeat(0, 5) | Range::To<TArray<int>>();
+		const TArray<int> Brr = Ranges::Repeat(0, 5) | Ranges::To<TArray<int>>();
 
 		always_check(Arr == Brr);
 	}
 
 	{
-		auto View = Range::Repeat(0, 8);
+		auto View = Ranges::Repeat(0, 8);
 
 		always_check(View.Num() == 8);
 		always_check(!View.IsEmpty());
@@ -176,7 +176,7 @@ void TestFactory()
 	}
 
 	{
-		auto View = Range::Repeat(0);
+		auto View = Ranges::Repeat(0);
 
 		always_check(!View.IsEmpty());
 		always_check(!!View);
@@ -226,15 +226,15 @@ void TestAllView()
 {
 	TArray<int> Arr = { 0, 1, 2, 3, 4 };
 
-	TArray<int> Brr = Range::All(Arr) | Range::To<TArray<int>>();
+	TArray<int> Brr = Ranges::All(Arr) | Ranges::To<TArray<int>>();
 
 	always_check(Arr == Brr);
 
-	auto View = Range::All(MoveTemp(Arr));
+	auto View = Ranges::All(MoveTemp(Arr));
 
 	Arr.Reset();
 
-	TArray<int> Crr = View | Range::To<TArray<int>>();
+	TArray<int> Crr = View | Ranges::To<TArray<int>>();
 
 	always_check(Brr == Crr);
 }
@@ -254,7 +254,7 @@ void TestMoveView()
 
 		FTracker Arr[2];
 
-		auto View = Arr | Range::Move();
+		auto View = Arr | Ranges::Move();
 
 		auto First = View.Begin();
 		auto Last  = View.End();
@@ -269,7 +269,7 @@ void TestMoveView()
 	{
 		TArray<int> Arr = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
-		auto View = Arr | Range::Move();
+		auto View = Arr | Ranges::Move();
 
 		always_check(View.Num() == 8);
 		always_check(!View.IsEmpty());
@@ -320,7 +320,7 @@ void TestMoveView()
 	}
 
 	{
-		auto View = Range::Iota(0) | Range::Move();
+		auto View = Ranges::Iota(0) | Ranges::Move();
 
 		always_check(!View.IsEmpty());
 		always_check(!!View);
@@ -354,8 +354,8 @@ void TestMiscView()
 		TArray<int> Brr = { 0, 2, 4, 6 };
 
 		TArray<int> Crr = Arr
-			| Range::Filter([](int Value) { return Value % 2 == 0; })
-			| Range::To<TArray<int>>();
+			| Ranges::Filter([](int Value) { return Value % 2 == 0; })
+			| Ranges::To<TArray<int>>();
 
 		always_check(Brr == Crr);
 	}
@@ -365,8 +365,8 @@ void TestMiscView()
 		TArray<int> Brr = { 0, 2, 4, 4, 2, 0 };
 
 		TArray<int> Crr = Arr
-			| Range::Transform([](int Value) { return Value * 2; })
-			| Range::To<TArray<int>>();
+			| Ranges::Transform([](int Value) { return Value * 2; })
+			| Ranges::To<TArray<int>>();
 
 		always_check(Brr == Crr);
 	}
@@ -376,14 +376,14 @@ void TestMiscView()
 		TArray<int> Brr = { 0, 2, 4, 4, 2, 0 };
 
 		TArray<int> Crr = Arr
-			| Range::Filter   ([](int Value) { return Value < 3; })
-			| Range::Transform([](int Value) { return Value * 2; })
-			| Range::To<TArray<int>>();
+			| Ranges::Filter   ([](int Value) { return Value < 3; })
+			| Ranges::Transform([](int Value) { return Value * 2; })
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Drr = Arr
-			| Range::Transform([](int Value) { return Value * 2; })
-			| Range::Filter   ([](int Value) { return Value < 6; })
-			| Range::To<TArray<int>>();
+			| Ranges::Transform([](int Value) { return Value * 2; })
+			| Ranges::Filter   ([](int Value) { return Value < 6; })
+			| Ranges::To<TArray<int>>();
 
 		always_check(Brr == Crr);
 		always_check(Brr == Drr);
@@ -392,13 +392,13 @@ void TestMiscView()
 	{
 		TArray<int> Arr = { 0, 1, 2, 3, 4, 5, 6, 7 };
 
-		TArray<int> Brr = Range::Iota(0)
-			| Range::Take(8)
-			| Range::To<TArray<int>>();
+		TArray<int> Brr = Ranges::Iota(0)
+			| Ranges::Take(8)
+			| Ranges::To<TArray<int>>();
 
-		TArray<int> Crr = Range::Iota(0)
-			| Range::TakeWhile([](int Value) { return Value < 8; })
-			| Range::To<TArray<int>>();
+		TArray<int> Crr = Ranges::Iota(0)
+			| Ranges::TakeWhile([](int Value) { return Value < 8; })
+			| Ranges::To<TArray<int>>();
 
 		always_check(Arr == Brr);
 		always_check(Arr == Crr);
@@ -409,40 +409,40 @@ void TestMiscView()
 		TArray<int> Brr = { 0, 2, 4 };
 
 		TArray<int> Crr = Arr
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::Take(3)
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::To<TArray<int>>();
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::Take(3)
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Drr = Arr
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::TakeWhile([](int Value) { return Value < 10;     })
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::To<TArray<int>>();
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::TakeWhile([](int Value) { return Value < 10;     })
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Err = Arr
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::Take(3)
-			| Range::To<TArray<int>>();
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::Take(3)
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Frr = Arr
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::TakeWhile([](int Value) { return Value < 5;      })
-			| Range::To<TArray<int>>();
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::TakeWhile([](int Value) { return Value < 5;      })
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Grr = Arr
-			| Range::Take(6)
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::To<TArray<int>>();
+			| Ranges::Take(6)
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::To<TArray<int>>();
 
 		TArray<int> Hrr = Arr
-			| Range::TakeWhile([](int Value) { return Value < 10;     })
-			| Range::Filter   ([](int Value) { return Value % 2 == 0; })
-			| Range::Transform([](int Value) { return Value / 2;      })
-			| Range::To<TArray<int>>();
+			| Ranges::TakeWhile([](int Value) { return Value < 10;     })
+			| Ranges::Filter   ([](int Value) { return Value % 2 == 0; })
+			| Ranges::Transform([](int Value) { return Value / 2;      })
+			| Ranges::To<TArray<int>>();
 
 		always_check(Brr == Crr);
 		always_check(Brr == Drr);

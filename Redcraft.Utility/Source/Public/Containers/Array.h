@@ -4,7 +4,7 @@
 #include "TypeTraits/TypeTraits.h"
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
-#include "Memory/Allocator.h"
+#include "Memory/Allocators.h"
 #include "Memory/MemoryOperator.h"
 #include "Iterators/Utility.h"
 #include "Iterators/BasicIterator.h"
@@ -60,7 +60,7 @@ public:
 
 	/** Constructs the container with 'Count' copies of elements with 'InValue'. */
 	FORCEINLINE explicit TArray(size_t Count, const FElementType& InValue) requires (CCopyConstructible<T>)
-		: TArray(Range::Repeat(InValue, Count))
+		: TArray(Ranges::Repeat(InValue, Count))
 	{ }
 
 	/** Constructs the container with the contents of the range ['First', 'Last'). */
@@ -104,7 +104,7 @@ public:
 
 	/** Constructs the container with the contents of the range. */
 	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TArray> && CConstructibleFrom<T, TRangeReference<R>> && CMovable<T>)
-	FORCEINLINE explicit TArray(R&& Range) : TArray(Range::Begin(Range), Range::End(Range)) { }
+	FORCEINLINE explicit TArray(R&& Range) : TArray(Ranges::Begin(Range), Ranges::End(Range)) { }
 
 	/** Copy constructor. Constructs the container with the copy of the contents of 'InValue'. */
 	TArray(const TArray& InValue) requires (CCopyConstructible<T>)
@@ -142,7 +142,7 @@ public:
 	}
 
 	/** Constructs the container with the contents of the initializer list. */
-	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<T>) : TArray(Range::Begin(IL), Range::End(IL)) { }
+	FORCEINLINE TArray(initializer_list<FElementType> IL) requires (CCopyConstructible<T>) : TArray(Ranges::Begin(IL), Ranges::End(IL)) { }
 
 	/** Destructs the array. The destructors of the elements are called and the used storage is deallocated. */
 	~TArray()
@@ -256,38 +256,38 @@ public:
 	/** Replaces the contents with those identified by initializer list. */
 	TArray& operator=(initializer_list<FElementType> IL) requires (CCopyable<T>)
 	{
-		size_t NumToAllocate = Range::Num(IL);
+		size_t NumToAllocate = Ranges::Num(IL);
 
-		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow  (Range::Num(IL), Max()) : NumToAllocate;
-		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(Range::Num(IL), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate > Max() ? Impl->CalculateSlackGrow  (Ranges::Num(IL), Max()) : NumToAllocate;
+		NumToAllocate = NumToAllocate < Max() ? Impl->CalculateSlackShrink(Ranges::Num(IL), Max()) : NumToAllocate;
 
 		if (NumToAllocate != Max())
 		{
 			Memory::Destruct(Impl.Pointer, Num());
 			Impl->Deallocate(Impl.Pointer);
 
-			Impl.ArrayNum = Range::Num(IL);
+			Impl.ArrayNum = Ranges::Num(IL);
 			Impl.ArrayMax = NumToAllocate;
 			Impl.Pointer  = Impl->Allocate(Max());
 
-			Memory::CopyConstruct<FElementType>(Impl.Pointer, Range::GetData(IL), Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer, Ranges::GetData(IL), Num());
 
 			return *this;
 		}
 
-		if (Range::Num(IL) <= Num())
+		if (Ranges::Num(IL) <= Num())
 		{
-			Memory::CopyAssign(Impl.Pointer, Range::GetData(IL), Range::Num(IL));
-			Memory::Destruct(Impl.Pointer + Range::Num(IL), Num() - Range::Num(IL));
+			Memory::CopyAssign(Impl.Pointer, Ranges::GetData(IL), Ranges::Num(IL));
+			Memory::Destruct(Impl.Pointer + Ranges::Num(IL), Num() - Ranges::Num(IL));
 		}
-		else if (Range::Num(IL) <= Max())
+		else if (Ranges::Num(IL) <= Max())
 		{
-			Memory::CopyAssign(Impl.Pointer, Range::GetData(IL), Num());
-			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), Range::GetData(IL) + Num(), Range::Num(IL) - Num());
+			Memory::CopyAssign(Impl.Pointer, Ranges::GetData(IL), Num());
+			Memory::CopyConstruct<FElementType>(Impl.Pointer + Num(), Ranges::GetData(IL) + Num(), Ranges::Num(IL) - Num());
 		}
 		else check_no_entry();
 
-		Impl.ArrayNum = Range::Num(IL);
+		Impl.ArrayNum = Ranges::Num(IL);
 
 		return *this;
 	}
@@ -419,7 +419,7 @@ public:
 	{
 		checkf(IsValidIterator(Iter), TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Insert(Iter, Range::Repeat(InValue, Count));
+		return Insert(Iter, Ranges::Repeat(InValue, Count));
 	}
 
 	/** Inserts elements from range ['First', 'Last') before 'Iter'. */
@@ -546,13 +546,13 @@ public:
 	template <CInputRange R> requires (CConstructibleFrom<T, TRangeReference<R>> && CAssignableFrom<T&, TRangeReference<R>> && CMovable<T>)
 	FORCEINLINE FIterator Insert(FConstIterator Iter, R&& Range)
 	{
-		return Insert(Iter, Range::Begin(Range), Range::End(Range));
+		return Insert(Iter, Ranges::Begin(Range), Ranges::End(Range));
 	}
 
 	/** Inserts elements from initializer list before 'Iter' in the container. */
 	FORCEINLINE FIterator Insert(FConstIterator Iter, initializer_list<FElementType> IL) requires (CCopyable<T>)
 	{
-		return Insert(Iter, Range::Begin(IL), Range::End(IL));
+		return Insert(Iter, Ranges::Begin(IL), Ranges::End(IL));
 	}
 
 	/** Inserts a new element into the container directly before 'Iter'. */

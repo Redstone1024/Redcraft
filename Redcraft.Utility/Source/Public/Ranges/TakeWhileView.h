@@ -16,7 +16,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter that includes elements that satisfy the predicate from the beginning of the range.
@@ -41,22 +41,22 @@ public:
 
 	NODISCARD FORCEINLINE constexpr auto Begin() requires (!CSimpleView<V>)
 	{
-		return Range::Begin(Base);
+		return Ranges::Begin(Base);
 	}
 
 	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V> && CPredicate<const Pred&, TRangeReference<const V>>)
 	{
-		return Range::Begin(Base);
+		return Ranges::Begin(Base);
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() requires (!CSimpleView<V>)
 	{
-		return FSentinelImpl<false>(Range::End(Base), AddressOf(Predicate));
+		return FSentinelImpl<false>(Ranges::End(Base), AddressOf(Predicate));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() const requires (CRange<const V> && CPredicate<const Pred&, TRangeReference<const V>>)
 	{
-		return FSentinelImpl<true>(Range::End(Base), AddressOf(Predicate));
+		return FSentinelImpl<true>(Ranges::End(Base), AddressOf(Predicate));
 	}
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
@@ -119,9 +119,9 @@ static_assert(CView<TTakeWhileView<TAllView<IRange<IInputIterator<int>>>, bool(*
 
 static_assert(COutputRange<TTakeWhileView<TAllView<IRange<IForwardIterator<int&>>>, bool(*)(int)>, int>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter that includes elements that satisfy the predicate from the beginning of the range. */
 template <CViewableRange R, typename Pred> requires (requires { TTakeWhileView(DeclVal<R>(), DeclVal<Pred>()); })
@@ -134,15 +134,15 @@ NODISCARD FORCEINLINE constexpr auto TakeWhile(R&& Base, Pred&& Predicate)
 template <typename Pred>
 NODISCARD FORCEINLINE constexpr auto TakeWhile(Pred&& Predicate)
 {
-	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Range::TakeWhile(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Predicate)
+	using FClosure = decltype([]<CViewableRange R, typename T> requires (requires { Ranges::TakeWhile(DeclVal<R>(), DeclVal<T>()); }) (R&& Base, T&& Predicate)
 	{
-		return Range::TakeWhile(Forward<R>(Base), Forward<T>(Predicate));
+		return Ranges::TakeWhile(Forward<R>(Base), Forward<T>(Predicate));
 	});
 
 	return TAdaptorClosure<FClosure, TDecay<Pred>>(Forward<Pred>(Predicate));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)

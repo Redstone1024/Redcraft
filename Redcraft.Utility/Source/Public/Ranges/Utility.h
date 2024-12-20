@@ -20,7 +20,7 @@ NAMESPACE_MODULE_BEGIN(Utility)
 template <typename R>
 inline constexpr bool bEnableBorrowedRange = false;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** @return The iterator to the beginning of a container. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
@@ -45,12 +45,12 @@ NODISCARD FORCEINLINE constexpr const T* Begin(initializer_list<T>& Container)
 	return Container.begin();
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename R>
-using TRangeIterator = decltype(Range::Begin(DeclVal<R&>()));
+using TRangeIterator = decltype(Ranges::Begin(DeclVal<R&>()));
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** @return The iterator to the end of a container. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
@@ -75,13 +75,13 @@ NODISCARD FORCEINLINE constexpr const T* End(initializer_list<T>& Container)
 	return Container.end();
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename R>
-using TRangeSentinel = decltype(Range::End(DeclVal<R&>()));
+using TRangeSentinel = decltype(Ranges::End(DeclVal<R&>()));
 
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** @return The reverse iterator to the beginning of a container. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
@@ -97,12 +97,12 @@ template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRe
 	&& (CSameAs<TRangeIterator<T>, TRangeSentinel<T>> && CBidirectionalIterator<TRangeIterator<T>>))
 NODISCARD FORCEINLINE constexpr auto RBegin(T&& Container)
 {
-	return MakeReverseIterator(Range::End(Forward<T>(Container)));
+	return MakeReverseIterator(Ranges::End(Forward<T>(Container)));
 }
 
 /** @return The reverse iterator to the end of a container. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
-	&& requires(T&& Container) { { Container.REnd() } -> CSentinelFor<decltype(Range::RBegin(DeclVal<T&>()))>; })
+	&& requires(T&& Container) { { Container.REnd() } -> CSentinelFor<decltype(Ranges::RBegin(DeclVal<T&>()))>; })
 NODISCARD FORCEINLINE constexpr auto REnd(T&& Container)
 {
 	return Container.REnd();
@@ -110,14 +110,14 @@ NODISCARD FORCEINLINE constexpr auto REnd(T&& Container)
 
 /** Overloads the REnd algorithm for synthesized. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
-	&& !requires(T&& Container) { { Container.REnd() } -> CSentinelFor<decltype(Range::RBegin(DeclVal<T&>()))>; }
+	&& !requires(T&& Container) { { Container.REnd() } -> CSentinelFor<decltype(Ranges::RBegin(DeclVal<T&>()))>; }
 	&& (CSameAs<TRangeIterator<T>, TRangeSentinel<T>> && CBidirectionalIterator<TRangeIterator<T>>))
 NODISCARD FORCEINLINE constexpr auto REnd(T&& Container)
 {
-	return MakeReverseIterator(Range::Begin(Forward<T>(Container)));
+	return MakeReverseIterator(Ranges::Begin(Forward<T>(Container)));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename R>
 using TRangeElement = TIteratorElement<TRangeIterator<R>>;
@@ -131,7 +131,7 @@ using TRangeReference = TIteratorReference<TRangeIterator<R>>;
 template <typename R>
 using TRangeRValueReference = TIteratorRValueReference<TRangeIterator<R>>;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** @return The pointer to the container element storage. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
@@ -144,19 +144,19 @@ NODISCARD FORCEINLINE constexpr auto GetData(T&& Container)
 /** Overloads the GetData algorithm for synthesized. */
 template <typename T> requires ((CLValueReference<T> || bEnableBorrowedRange<TRemoveCVRef<T>>)
 	&& !requires(T&& Container) { { Container.GetData() } -> CSameAs<TAddPointer<TRangeReference<T>>>; }
-	&&  requires(T&& Container) { { Range::Begin(Forward<T>(Container)) } -> CContiguousIterator; })
+	&&  requires(T&& Container) { { Ranges::Begin(Forward<T>(Container)) } -> CContiguousIterator; })
 NODISCARD FORCEINLINE constexpr auto GetData(T&& Container)
 {
-	return ToAddress(Range::Begin(Forward<T>(Container)));
+	return ToAddress(Ranges::Begin(Forward<T>(Container)));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 /** Disable the CSizedRange concept for specific types. */
 template <typename R>
 inline constexpr bool bDisableSizedRange = false;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** @return The number of elements in the container. */
 template <typename T> requires (!bDisableSizedRange<TRemoveCVRef<T>>
@@ -180,7 +180,7 @@ template <typename T> requires (!bDisableSizedRange<TRemoveCVRef<T>>
 	&& CSizedSentinelFor<TRangeSentinel<T>, TRangeIterator<T>> && CForwardIterator<TRangeIterator<T>>)
 NODISCARD FORCEINLINE constexpr size_t Num(T&& Container)
 {
-	return Range::End(Forward<T>(Container)) - Range::Begin(Forward<T>(Container));
+	return Ranges::End(Forward<T>(Container)) - Ranges::Begin(Forward<T>(Container));
 }
 
 /** Overloads the Num algorithm for initializer_list. */
@@ -203,7 +203,7 @@ template <typename T> requires ((CBoundedArray<TRemoveReference<T>>
 	&& !requires(T&& Container) { { Container.IsEmpty() } -> CBooleanTestable; })
 NODISCARD FORCEINLINE constexpr bool IsEmpty(T&& Container)
 {
-	return Range::Num(Forward<T>(Container)) == 0;
+	return Ranges::Num(Forward<T>(Container)) == 0;
 }
 
 /** Overloads the IsEmpty algorithm for synthesized. */
@@ -213,10 +213,10 @@ template <typename T> requires (!CBoundedArray<TRemoveReference<T>>
 	&& CForwardIterator<TRangeIterator<T>>)
 NODISCARD FORCEINLINE constexpr bool IsEmpty(T&& Container)
 {
-	return Range::End(Forward<T>(Container)) == Range::Begin(Forward<T>(Container));
+	return Ranges::End(Forward<T>(Container)) == Ranges::Begin(Forward<T>(Container));
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 /**
  * A concept specifies a type is a range.
@@ -261,7 +261,7 @@ concept CBorrowedRange = CRange<R> && (CLValueReference<R> || bEnableBorrowedRan
 
 /**
  * A concept specifies a type is a sized range.
- * Indicates the expression 'Range::Num(Range)' can get the size of the range at constant time
+ * Indicates the expression 'Ranges::Num(Range)' can get the size of the range at constant time
  * without modifying the range object. Modifying the range usually occurs when the iterator of
  * the range is an input iterator. Indirect calculation of the range by obtaining the iterator
  * may cause the range to become invalid, that is, the iterator cannot be obtained again.
@@ -270,7 +270,7 @@ template <typename R>
 concept CSizedRange = CRange<R>
 	&& requires(R Range)
 	{
-		{ Range::Num(Range) } -> CConvertibleTo<size_t>;
+		{ Ranges::Num(Range) } -> CConvertibleTo<size_t>;
 	};
 
 /** This is an example of a sized range type, indicate the traits that define a sized range type. */
@@ -337,7 +337,7 @@ template <typename R>
 concept CContiguousRange = CRandomAccessRange<R> && CContiguousIterator<TRangeIterator<R>>
 	&& requires(R& Range)
 	{
-		{ Range::GetData(Range) } -> CSameAs<TAddPointer<TRangeReference<R>>>;
+		{ Ranges::GetData(Range) } -> CSameAs<TAddPointer<TRangeReference<R>>>;
 	};
 
 /** This is an example of a contiguous range type, indicate the traits that define a contiguous range type. */
@@ -354,7 +354,7 @@ struct IContiguousRange /* : IRange<I, S> */
 	/**
 	 * Get the pointer to the container element storage.
 	 * The function is optional if the range size can be computed indirectly from the iterator.
-	 * If the function is provided, then the expression 'ToAddress(Range::Begin(Range)) == Range::GetData(Range)'
+	 * If the function is provided, then the expression 'ToAddress(Ranges::Begin(Range)) == Ranges::GetData(Range)'
 	 * must be satisfied to always be true.
 	 * If the function is const, it means that the const IContiguousRange satisfies CContiguousRange.
 	 */

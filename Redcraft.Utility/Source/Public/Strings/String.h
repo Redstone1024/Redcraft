@@ -5,7 +5,7 @@
 #include "Templates/Utility.h"
 #include "Templates/TypeHash.h"
 #include "Templates/Optional.h"
-#include "Memory/Allocator.h"
+#include "Memory/Allocators.h"
 #include "Containers/Array.h"
 #include "Containers/ArrayView.h"
 #include "Iterators/Utility.h"
@@ -93,7 +93,7 @@ public:
 	/** Constructs the string with the contents of the range. */
 	template <CInputRange R> requires (!CSameAs<TRemoveCVRef<R>, TString>
 		&& !CSameAs<TRemoveCVRef<R>, TStringView<FElementType>> && CConstructibleFrom<FElementType, TRangeReference<R>>)
-	FORCEINLINE explicit TString(R&& Range) : TString(Range::Begin(Range), Range::End(Range)) { }
+	FORCEINLINE explicit TString(R&& Range) : TString(Ranges::Begin(Range), Ranges::End(Range)) { }
 
 	/** Copy constructor. Constructs the string with the copy of the contents of 'InValue'. */
 	FORCEINLINE TString(const TString&) = default;
@@ -102,7 +102,7 @@ public:
 	FORCEINLINE TString(TString&&) = default;
 
 	/** Constructs the string with the contents of the initializer list. */
-	FORCEINLINE TString(initializer_list<FElementType> IL) : TString(Range::Begin(IL), Range::End(IL)) { }
+	FORCEINLINE TString(initializer_list<FElementType> IL) : TString(Ranges::Begin(IL), Ranges::End(IL)) { }
 
 	/** Copy assignment operator. Replaces the contents with a copy of the contents of 'InValue'. */
 	FORCEINLINE TString& operator=(const TString&) = default;
@@ -249,7 +249,7 @@ public:
 	void StableErase(...) = delete;
 
 	/** Appends 'Count' copies of the 'InValue' to the end of the string. */
-	TString& Append(size_t Count, FElementType InChar) { return Append(Range::Repeat(InChar, Count)); }
+	TString& Append(size_t Count, FElementType InChar) { return Append(Ranges::Repeat(InChar, Count)); }
 
 	/** Appends the contents of the range ['InPtr', 'InPtr' + 'Count') to the end of the string. */
 	FORCEINLINE TString& Append(const FElementType* InPtr, size_t Count) { return Append(TStringView<FElementType>(InPtr, Count)); }
@@ -296,10 +296,10 @@ public:
 
 	/** Appends the contents of the range to the end of the string. */
 	template <CInputRange R> requires (CConstructibleFrom<FElementType, TRangeReference<R>>)
-	FORCEINLINE TString& Append(R&& Range) { return Append(Range::Begin(Range), Range::End(Range)); }
+	FORCEINLINE TString& Append(R&& Range) { return Append(Ranges::Begin(Range), Ranges::End(Range)); }
 
 	/** Appends the contents of the initializer list to the end of the string. */
-	FORCEINLINE TString& Append(initializer_list<FElementType> IL) { return Append(Range::Begin(IL), Range::End(IL)); }
+	FORCEINLINE TString& Append(initializer_list<FElementType> IL) { return Append(Ranges::Begin(IL), Ranges::End(IL)); }
 
 	/** Appends the given character value to the end of the string. */
 	FORCEINLINE TString& operator+=(FElementType InChar) { return Append(1, InChar); }
@@ -470,7 +470,7 @@ public:
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, Range::Repeat(InChar, Count));
+		return Replace(First, Last, Ranges::Repeat(InChar, Count));
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the ['InPtr', 'InPtr' + 'Count'). */
@@ -599,7 +599,7 @@ public:
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, Range::Begin(Range), Range::End(Range));
+		return Replace(First, Last, Ranges::Begin(Range), Ranges::End(Range));
 	}
 
 	/** Replace the substring [Index, Index + CountToReplace) with the contents of the initializer list. */
@@ -615,7 +615,7 @@ public:
 	{
 		checkf(this->IsValidIterator(First) && this->IsValidIterator(Last) && First <= Last, TEXT("Read access violation. Please check IsValidIterator()."));
 
-		return Replace(First, Last, Range::Begin(IL), Range::End(IL));
+		return Replace(First, Last, Ranges::Begin(IL), Ranges::End(IL));
 	}
 
 	/** Obtains a string that is a view over the 'Count' characters of this string view starting at 'Offset'.  */
@@ -808,7 +808,7 @@ public:
 
 				do
 				{
-					const auto Result = Facet.in(State, BeginFrom, EndFrom, NextFrom, Range::Begin(Buffer), Range::End(Buffer), NextTo);
+					const auto Result = Facet.in(State, BeginFrom, EndFrom, NextFrom, Ranges::Begin(Buffer), Ranges::End(Buffer), NextTo);
 
 					if (BeginFrom == NextFrom) return false;
 
@@ -856,7 +856,7 @@ public:
 
 				do
 				{
-					const auto Result = Facet.out(State, BeginFrom, EndFrom, NextFrom, Range::Begin(Buffer), Range::End(Buffer), NextTo);
+					const auto Result = Facet.out(State, BeginFrom, EndFrom, NextFrom, Ranges::Begin(Buffer), Ranges::End(Buffer), NextTo);
 
 					if (BeginFrom == NextFrom) return false;
 

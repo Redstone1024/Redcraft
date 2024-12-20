@@ -15,7 +15,7 @@ NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /**
  * A view adapter which dereferences to a rvalue reference.
@@ -36,34 +36,34 @@ public:
 
 	NODISCARD FORCEINLINE constexpr auto Begin() requires (!CSimpleView<V>)
 	{
-		return MakeMoveIterator(Range::Begin(Base));
+		return MakeMoveIterator(Ranges::Begin(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto Begin() const requires (CRange<const V>)
 	{
-		return MakeMoveIterator(Range::Begin(Base));
+		return MakeMoveIterator(Ranges::Begin(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() requires (!CSimpleView<V>)
 	{
 		if constexpr (CCommonRange<V>)
 		{
-			return MakeMoveIterator(Range::End(Base));
+			return MakeMoveIterator(Ranges::End(Base));
 		}
-		else return MakeMoveSentinel(Range::End(Base));
+		else return MakeMoveSentinel(Ranges::End(Base));
 	}
 
 	NODISCARD FORCEINLINE constexpr auto End() const requires (CRange<const V>)
 	{
 		if constexpr (CCommonRange<V>)
 		{
-			return MakeMoveIterator(Range::End(Base));
+			return MakeMoveIterator(Ranges::End(Base));
 		}
-		else return MakeMoveSentinel(Range::End(Base));
+		else return MakeMoveSentinel(Ranges::End(Base));
 	}
 
-	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Range::Num(Base); }
-	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Range::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num()       requires (CSizedRange<      V>) { return Ranges::Num(Base); }
+	NODISCARD FORCEINLINE constexpr size_t Num() const requires (CSizedRange<const V>) { return Ranges::Num(Base); }
 
 	NODISCARD FORCEINLINE constexpr V GetBase() const& requires (CCopyConstructible<V>) { return          Base;  }
 	NODISCARD FORCEINLINE constexpr V GetBase() &&                                      { return MoveTemp(Base); }
@@ -86,12 +86,12 @@ static_assert( CRandomAccessRange<TMoveView<TAllView<IRange<   IContiguousIterat
 static_assert(CCommonRange<TMoveView<TAllView<ICommonRange<IForwardIterator<int>>>>>);
 static_assert(       CView<TMoveView<TAllView<      IRange<  IInputIterator<int>>>>>);
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 template <typename T>
-constexpr bool bEnableBorrowedRange<Range::TMoveView<T>> = bEnableBorrowedRange<T>;
+constexpr bool bEnableBorrowedRange<Ranges::TMoveView<T>> = bEnableBorrowedRange<T>;
 
-NAMESPACE_BEGIN(Range)
+NAMESPACE_BEGIN(Ranges)
 
 /** Creates A view adapter that dereferences to a rvalue reference. */
 template <CViewableRange R> requires (requires { TMoveView(DeclVal<R>()); })
@@ -103,15 +103,15 @@ NODISCARD FORCEINLINE constexpr auto Move(R&& Base)
 /** Creates A view adapter that dereferences to a rvalue reference. */
 NODISCARD FORCEINLINE constexpr auto Move()
 {
-	using FClosure = decltype([]<CViewableRange R> requires (requires { Range::Move(DeclVal<R>()); }) (R&& Base)
+	using FClosure = decltype([]<CViewableRange R> requires (requires { Ranges::Move(DeclVal<R>()); }) (R&& Base)
 	{
-		return Range::Move(Forward<R>(Base));
+		return Ranges::Move(Forward<R>(Base));
 	});
 
 	return TAdaptorClosure<FClosure>();
 }
 
-NAMESPACE_END(Range)
+NAMESPACE_END(Ranges)
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
