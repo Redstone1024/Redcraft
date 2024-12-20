@@ -13,6 +13,7 @@ REDCRAFTUTILITY_API void TestTemplates();
 REDCRAFTUTILITY_API void TestNumeric();
 REDCRAFTUTILITY_API void TestIterator();
 REDCRAFTUTILITY_API void TestRange();
+REDCRAFTUTILITY_API void TestAlgorithms();
 REDCRAFTUTILITY_API void TestMemory();
 REDCRAFTUTILITY_API void TestContainers();
 REDCRAFTUTILITY_API void TestString();
