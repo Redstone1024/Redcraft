@@ -94,18 +94,6 @@ FORCEINLINE constexpr TReferenceWrapper<T> Ref(TReferenceWrapper<T> InValue)
 	return Ref(InValue.Get());
 }
 
-template <typename T>
-FORCEINLINE constexpr TReferenceWrapper<const T> Ref(const T& InValue)
-{
-	return TReferenceWrapper<const T>(InValue);
-}
-
-template <typename T>
-FORCEINLINE constexpr TReferenceWrapper<const T> Ref(TReferenceWrapper<T> InValue)
-{
-	return Ref(InValue.Get());
-}
-
 NAMESPACE_PRIVATE_BEGIN
 
 template <typename T> struct TIsTReferenceWrapperImpl                       : FFalse { };
