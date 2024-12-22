@@ -115,11 +115,11 @@ NODISCARD FORCEINLINE constexpr ptrdiff Distance(I First, S Last)
 	}
 }
 
-/** @return The size of the range. */
+/** @return The size of the range. The range will not be modified if it is a sized range. */
 template <CRange R>
 NODISCARD FORCEINLINE constexpr ptrdiff Distance(R&& Range)
 {
-	if constexpr (CSizedRange<R>)
+	if constexpr (CSizedRange<R&>)
 	{
 		return static_cast<ptrdiff>(Ranges::Num(Range));
 	}
