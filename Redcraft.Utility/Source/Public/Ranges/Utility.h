@@ -222,7 +222,8 @@ NAMESPACE_END(Ranges)
  * A concept specifies a type is a range.
  * A range is an iterator-sentinel pair that represents a sequence of elements.
  * This concept does not require that iterator-sentinel pair can be fetched multiple times
- * from the range object. again this means that const R may not be a range if R is a range,
+ * if the range does not satisfy the forward range, otherwise it is equality-preserving.
+ * Again, this means that const R may not be a range if R is a range,
  * e.g. fetching the iterator-sentinel pair from the input range may require moving the iterator
  * directly from the range object and thus the range object may be modified.
  */
@@ -262,9 +263,8 @@ concept CBorrowedRange = CRange<R> && (CLValueReference<R> || bEnableBorrowedRan
 /**
  * A concept specifies a type is a sized range.
  * Indicates the expression 'Ranges::Num(Range)' can get the size of the range at constant time
- * without modifying the range object. Modifying the range usually occurs when the iterator of
- * the range is an input iterator. Indirect calculation of the range by obtaining the iterator
- * may cause the range to become invalid, that is, the iterator cannot be obtained again.
+ * without modifying the range object. A sized range may support fetched size before fetched iterator-sentinel pair
+ * if the range does not satisfy the forward range, otherwise it is equality-preserving.
  */
 template <typename R>
 concept CSizedRange = CRange<R>
