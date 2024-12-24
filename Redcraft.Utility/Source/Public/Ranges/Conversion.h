@@ -32,24 +32,49 @@ concept CReservableContainer = CSizedRange<C>
 	&& requires (C& Container, size_t N)
 	{
 		  Container.Reserve(N);
+		{ Container.Num() } -> CSameAs<size_t>;
 		{ Container.Max() } -> CSameAs<size_t>;
 	};
 
 /** A concept specifies a container that can append elements. */
-template <typename C, typename Ref>
+template <typename C, typename T>
 concept CAppendableContainer =
-	requires (C& Container, Ref&& Reference)
+	requires (C& Container, T&& Object)
 	{
 		requires
 		(
-			requires { Container.EmplaceBack             (Forward<Ref>(Reference)); } ||
-			requires { Container.PushBack                (Forward<Ref>(Reference)); } ||
-			requires { Container.Emplace(Container.End(), Forward<Ref>(Reference)); } ||
-			requires { Container.Insert (Container.End(), Forward<Ref>(Reference)); }
+			requires { Container.EmplaceBack             (Forward<T>(Object)); } ||
+			requires { Container.PushBack                (Forward<T>(Object)); } ||
+			requires { Container.Emplace(Container.End(), Forward<T>(Object)); } ||
+			requires { Container.Insert (Container.End(), Forward<T>(Object)); }
 		);
 	};
 
 NAMESPACE_BEGIN(Ranges)
+
+template <typename T, CAppendableContainer<T> C>
+FORCEINLINE constexpr void AppendTo(C& Container, T&& Object)
+{
+	if constexpr (requires { Container.EmplaceBack(Forward<T>(Object)); })
+	{
+		Container.EmplaceBack(Forward<T>(Object));
+	}
+
+	else if constexpr (requires { Container.PushBack(Forward<T>(Object)); })
+	{
+		Container.PushBack(Forward<T>(Object));
+	}
+
+	else if constexpr (requires { Container.Emplace(Container.End(), Forward<T>(Object)); })
+	{
+		Container.Emplace(Container.End(), Forward<T>(Object));
+	}
+
+	else /* if constexpr (requires { Container.Insert(Container.End(), Forward<T>(Object)); }) */
+	{
+		Container.Insert(Container.End(), Forward<T>(Object));
+	}
+}
 
 /** Constructs a non-view object from the elements of the range. */
 template <typename C, CInputRange R, typename... Ts> requires (!CView<C>)
@@ -78,25 +103,7 @@ NODISCARD FORCEINLINE constexpr auto To(R&& Range, Ts&&... Args)
 
 			for (TRangeReference<R> Element : Range)
 			{
-				if constexpr (requires { Result.EmplaceBack(DeclVal<TRangeReference<R>>()); })
-				{
-					Result.EmplaceBack(Forward<TRangeReference<R>>(Element));
-				}
-
-				else if constexpr (requires { Result.PushBack(DeclVal<TRangeReference<R>>()); })
-				{
-					Result.PushBack(Forward<TRangeReference<R>>(Element));
-				}
-
-				else if constexpr (requires { Result.Emplace(Result.End(), DeclVal<TRangeReference<R>>()); })
-				{
-					Result.Emplace(Result.End(), Forward<TRangeReference<R>>(Element));
-				}
-
-				else /* if constexpr (requires { Result.Insert(Result.End(), DeclVal<TRangeReference<R>>()); }) */
-				{
-					Result.Insert(Result.End(), Forward<TRangeReference<R>>(Element));
-				}
+				Ranges::AppendTo(Result, Forward<TRangeReference<R>>(Element));
 			}
 
 			return Result;
