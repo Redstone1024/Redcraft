@@ -1144,22 +1144,64 @@ public:
 		return TStringView<FElementType>(*this).IsASCII();
 	}
 
-	/** @return true if the string can be fully represented as a boolean value, false otherwise. */
+	/** @return true if the string can be converted to a boolean value, false otherwise. */
 	NODISCARD FORCEINLINE bool IsBoolean() const
 	{
 		return TStringView<FElementType>(*this).IsBoolean();
 	}
 
-	/** @return true if the string can be fully represented as an integer value, false otherwise. */
-	NODISCARD FORCEINLINE bool IsInteger(unsigned Base = 10, bool bSigned = true) const
+	/** @return true if the string can be converted to an integer value, false otherwise. */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && CSameAs<TRemoveCVRef<U>, U>)
+	NODISCARD FORCEINLINE bool IsInteger(uint Base = 0) const
 	{
-		return TStringView<FElementType>(*this).IsInteger(Base, bSigned);
+		return TStringView<FElementType>(*this).template IsInteger<U>(Base);
 	}
 
-	/** @return true if the string can be fully represented as a floating-point value, false otherwise. */
-	NODISCARD FORCEINLINE bool IsFloatingPoint(bool bFixed = true, bool bScientific = true, bool bSigned = true) const
+	/** @return true if the string can be converted to a floating-point value, false otherwise. */
+	template <CFloatingPoint U = float> requires (!CSameAs<U, bool> && CSameAs<TRemoveCVRef<U>, U>)
+	NODISCARD FORCEINLINE bool IsFloatingPoint(bool bFixed = true, bool bScientific = true, bool bHex = true) const
 	{
-		return TStringView<FElementType>(*this).IsFloatingPoint(bFixed, bScientific, bSigned);
+		return TStringView<FElementType>(*this).template IsFloatingPoint<U>(bFixed, bScientific, bHex);
+	}
+
+	/** Converts the string into a boolean value. */
+	NODISCARD FORCEINLINE constexpr bool ToBool() const
+	{
+		return TStringView<FElementType>(*this).ToBool();
+	}
+
+	/** Converts the string into an integer value. */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE constexpr U ToInt(uint Base = 0) const
+	{
+		return TStringView<FElementType>(*this).template ToInt<U>(Base);
+	}
+
+	/** Converts the string into a floating-point value. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE constexpr U ToFloat(bool bFixed = true, bool bScientific = true, bool bHex = true) const
+	{
+		return TStringView<FElementType>(*this).template ToFloat<U>(bFixed, bScientific, bHex);
+	}
+
+	/** Parse the string into a boolean value. */
+	NODISCARD FORCEINLINE constexpr bool Parse(bool& Value)
+	{
+		return TStringView<FElementType>(*this).Parse(Value);
+	}
+
+	/** Parse the string into an integer value. */
+	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE constexpr bool Parse(U& Value, uint Base = 0)
+	{
+		return TStringView<FElementType>(*this).Parse(Value, Base);
+	}
+
+	/** Parse the string into a floating-point value. */
+	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
+	NODISCARD FORCEINLINE constexpr bool Parse(U& Value, bool bFixed = true, bool bScientific = true, bool bHex = true)
+	{
+		return TStringView<FElementType>(*this).Parse(Value, bFixed, bScientific, bHex);
 	}
 
 public:
@@ -1275,105 +1317,6 @@ public:
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
 	void AppendFloat(U Value, bool bFixed, bool bScientific, unsigned Precision);
 
-	/**
-	 * Converts a string into a boolean value.
-	 *
-	 * - "True"  and non-zero integers become true.
-	 * - "False" and unparsable values become false.
-	 *
-	 * @return The boolean value.
-	 */
-	NODISCARD FORCEINLINE bool ToBool() const
-	{
-		return TStringView<FElementType>(*this).ToBool();
-	}
-
-	/**
-	 * Converts a string into an integer value.
-	 *
-	 * - "0x" or "0X" prefixes are not recognized if base is 16.
-	 * - Only the minus sign is recognized (not the plus sign), and only for signed integer types of value.
-	 * - Leading whitespace is not ignored.
-	 *
-	 * Ensure that the entire string can be parsed if IsNumeric(Base, false, true, false) is true.
-	 *
-	 * @param Base - The base of the number, between [2, 36].
-	 *
-	 * @return The integer value.
-	 */
-	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-	NODISCARD FORCEINLINE U ToInt(unsigned Base = 10) const
-	{
-		checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
-
-		return TStringView<FElementType>(*this).template ToInt<U>(Base);
-	}
-
-	/**
-	 * Converts a string into a floating-point value.
-	 *
-	 * - "0x" or "0X" prefixes are not recognized if base is 16.
-	 * - The plus sign is not recognized outside the exponent (only the minus sign is permitted at the beginning).
-	 * - Leading whitespace is not ignored.
-	 *
-	 * Ensure that the entire string can be parsed if bFixed and IsNumeric(10, false) is true.
-	 * Parsers hex floating-point values if bFixed and bScientific are false.
-	 *
-	 * @param bFixed      - The fixed-point format.
-	 * @param bScientific - The scientific notation.
-	 *
-	 * @return The floating-point value.
-	 */
-	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	NODISCARD FORCEINLINE U ToFloat(bool bFixed = true, bool bScientific = false) const
-	{
-		return TStringView<FElementType>(*this).template ToFloat<U>(bFixed, bScientific);
-	}
-
-	/** Converts a string into a boolean value and remove the parsed substring. */
-	NODISCARD FORCEINLINE bool ToBoolAndTrim()
-	{
-		TStringView<FElementType> View = *this;
-
-		bool Result = View.ToBoolAndTrim();
-
-		size_t TrimNum = this->Num() - View.Num();
-
-		if (TrimNum > 0) Erase(0, TrimNum);
-
-		return Result;
-	}
-
-	/** Converts a string into an integer value and remove the parsed substring. */
-	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-	NODISCARD FORCEINLINE U ToIntAndTrim(unsigned Base = 10)
-	{
-		TStringView<FElementType> View = *this;
-
-		U Result = View.template ToIntAndTrim<U>(Base);
-
-		size_t TrimNum = this->Num() - View.Num();
-
-		if (TrimNum > 0) Erase(0, TrimNum);
-
-		return Result;
-	}
-
-	/** Converts a string into a floating-point value and remove the parsed substring. */
-	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	NODISCARD FORCEINLINE U ToFloatAndTrim(bool bFixed = true, bool bScientific = true)
-	{
-		TStringView<FElementType> View = *this;
-
-		U Result = View.template ToFloatAndTrim<U>(bFixed, bScientific);
-
-		size_t TrimNum = this->Num() - View.Num();
-
-		if (TrimNum > 0) Erase(0, TrimNum);
-
-		return Result;
-	}
-
 public:
 
 	/**
@@ -1397,35 +1340,6 @@ public:
 	/** Format some objects using a format string and append to the string. */
 	template <typename... Ts>
 	void AppendFormat(TStringView<FElementType> Fmt, const Ts&... Args);
-
-	/**
-	 * Parse a string using a format string to objects.
-	 *
-	 * @param Fmt  - The format string.
-	 * @param Args - The objects to parse.
-	 *
-	 * @return The number of objects successfully parsed.
-	 */
-	template <typename... Ts>
-	FORCEINLINE size_t Parse(TStringView<FElementType> Fmt, Ts&... Args) const
-	{
-		return TStringView(*this).Parse(Fmt, Args...);
-	}
-
-	/** Parse a string using a format string to objects and remove the parsed substring. */
-	template <typename... Ts>
-	FORCEINLINE size_t ParseAndTrim(TStringView<FElementType> Fmt, Ts&... Args)
-	{
-		TStringView<FElementType> View = *this;
-
-		size_t Result = View.ParseAndTrim(Fmt, Args...);
-
-		size_t TrimNum = this->Num() - View.Num();
-
-		if (TrimNum > 0) Erase(0, TrimNum);
-
-		return Result;
-	}
 
 public:
 

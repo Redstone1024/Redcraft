@@ -2,9 +2,10 @@
 
 #include "Strings/Char.h"
 #include "Memory/Memory.h"
-#include "Strings/String.h"
 #include "Numerics/Numerics.h"
+#include "Strings/String.h"
 #include "Strings/StringView.h"
+#include "Strings/Convert.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -196,10 +197,11 @@ void TestStringView()
 		{
 			always_check( LITERAL_VIEW(T, "012345678900").IsASCII());
 			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsASCII());
-			always_check( LITERAL_VIEW(T, "012345678900").IsInteger());
-			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").IsInteger());
-			always_check(!LITERAL_VIEW(T, "0123456789AB").IsInteger());
-			always_check( LITERAL_VIEW(T, "0123456789AB").IsInteger(16));
+
+			always_check( LITERAL_VIEW(T, "012345678900").template IsInteger<uint64>(10));
+			always_check(!LITERAL_VIEW(T, "\u4E38\u8FA3").template IsInteger<uint64>(10));
+			always_check(!LITERAL_VIEW(T, "0123456789AB").template IsInteger<uint64>(10));
+			always_check( LITERAL_VIEW(T, "0123456789AB").template IsInteger<uint64>(16));
 		}
 	};
 
@@ -211,7 +213,7 @@ void TestStringView()
 	Test(InPlaceType<unicodechar>);
 }
 
-void TestTemplateString()
+void TestString()
 {
 	auto Test = []<typename T>(TInPlaceType<T>)
 	{
@@ -448,38 +450,17 @@ void TestTemplateString()
 	Test(InPlaceType<unicodechar>);
 }
 
-void TestStringConversion()
+void TestConvert()
 {
 	auto Test = []<typename T>(TInPlaceType<T>)
 	{
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), true ) == LITERAL(T, "#True#" ));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), false) == LITERAL(T, "#False#"));
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0) == LITERAL(T, "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0) == LITERAL(T, "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0) == LITERAL(T, "#0#"));
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 42) == LITERAL(T, "#42#"));
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0.0) == LITERAL(T,  "#0.000000#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0.0) == LITERAL(T,  "#0.000000#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0.0) == LITERAL(T, "#-0.000000#"));
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.140000#"));
-
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::Infinity()) == LITERAL(T,  "#Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::Infinity()) == LITERAL(T, "#-Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::QuietNaN()) == LITERAL(T,  "#NaN#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::QuietNaN()) == LITERAL(T, "#-NaN#"));
-
 		auto CheckParseArithmetic = []<typename U>(TStringView<T> View, U Result)
 		{
 			U Object;
 
-			if      constexpr (CSameAs<U, bool>)  always_check(View.Parse(LITERAL(T, "{0:}"),    Object) == 1);
-			else if constexpr (CIntegral<U>)      always_check(View.Parse(LITERAL(T, "{0:+#I}"), Object) == 1);
-			else if constexpr (CFloatingPoint<U>) always_check(View.Parse(LITERAL(T, "{0:+#G}"), Object) == 1);
+			if      constexpr (CSameAs<U, bool>)  always_check(View.Parse(Object));
+			else if constexpr (CIntegral<U>)      always_check(View.Parse(Object));
+			else if constexpr (CFloatingPoint<U>) always_check(View.Parse(Object));
 
 			if constexpr (CFloatingPoint<U>)
 			{
@@ -555,6 +536,60 @@ void TestStringConversion()
 		CheckParseFloat(InPlaceType<double>);
 
 		{
+			always_check( LITERAL_VIEW(T, "true" ).ToBool());
+			always_check(!LITERAL_VIEW(T, "false").ToBool());
+			always_check( LITERAL_VIEW(T, "True" ).ToBool());
+			always_check(!LITERAL_VIEW(T, "False").ToBool());
+		}
+
+		{
+			always_check(LITERAL_VIEW(T, "42"     ).ToInt()   == 42 );
+			always_check(LITERAL_VIEW(T, "FF"     ).ToInt(16) == 255);
+			always_check(LITERAL_VIEW(T, "-42"    ).ToInt()   == -42);
+			always_check(LITERAL_VIEW(T, "0"      ).ToInt()   == 0  );
+		}
+
+		{
+			always_check(LITERAL_VIEW(T, "3.14"    ).ToFloat() ==  3.14f);
+			always_check(LITERAL_VIEW(T, "3.14e+00").ToFloat() ==  3.14f);
+			always_check(LITERAL_VIEW(T, "-3.14"   ).ToFloat() == -3.14f);
+			always_check(LITERAL_VIEW(T, "0.0"     ).ToFloat() ==   0.0f);
+		}
+	};
+
+	Test(InPlaceType<char>);
+	Test(InPlaceType<wchar>);
+	Test(InPlaceType<u8char>);
+	Test(InPlaceType<u16char>);
+	Test(InPlaceType<u32char>);
+	Test(InPlaceType<unicodechar>);
+}
+
+void TestStringConversion()
+{
+	auto Test = []<typename T>(TInPlaceType<T>)
+	{
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), true ) == LITERAL(T, "#True#" ));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), false) == LITERAL(T, "#False#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0) == LITERAL(T, "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0) == LITERAL(T, "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0) == LITERAL(T, "#0#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 42) == LITERAL(T, "#42#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0.0) == LITERAL(T, "#-0.000000#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.140000#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::Infinity()) == LITERAL(T,  "#Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::Infinity()) == LITERAL(T, "#-Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::QuietNaN()) == LITERAL(T,  "#NaN#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::QuietNaN()) == LITERAL(T, "#-NaN#"));
+
+		{
 			always_check(TString<T>::FromBool(true ) == LITERAL(T, "True" ));
 			always_check(TString<T>::FromBool(false) == LITERAL(T, "False"));
 		}
@@ -579,37 +614,6 @@ void TestStringConversion()
 			always_check(TString<T>::FromFloat(3.14f, false, false, 2)      == LITERAL(T, "1.92p+1" ));
 			always_check(TString<T>::FromFloat(1.0f / 3.0f, true, false, 5) == LITERAL(T, "0.33333" ));
 		}
-
-		{
-			always_check( LITERAL_VIEW(T, "True"  ).ToBool());
-			always_check(!LITERAL_VIEW(T, "False" ).ToBool());
-			always_check( LITERAL_VIEW(T, "1"     ).ToBool());
-			always_check(!LITERAL_VIEW(T, "0"     ).ToBool());
-			always_check(!LITERAL_VIEW(T, "random").ToBool());
-		}
-
-		{
-			always_check(LITERAL_VIEW(T, "42"     ).ToInt()   == 42 );
-			always_check(LITERAL_VIEW(T, "FF"     ).ToInt(16) == 255);
-			always_check(LITERAL_VIEW(T, "-42"    ).ToInt()   == -42);
-			always_check(LITERAL_VIEW(T, "0"      ).ToInt()   == 0  );
-			always_check(LITERAL_VIEW(T, "Invalid").ToInt()   == 0  );
-
-			always_check(LITERAL_VIEW(T,  "999999999999999999999999999999").ToInt() == 0);
-			always_check(LITERAL_VIEW(T, "-999999999999999999999999999999").ToInt() == 0);
-		}
-
-		{
-			always_check(LITERAL_VIEW(T, "3.14"    ).ToFloat() ==  3.14f);
-			always_check(LITERAL_VIEW(T, "3.14e+00").ToFloat() ==  3.14f);
-			always_check(LITERAL_VIEW(T, "-3.14"   ).ToFloat() == -3.14f);
-			always_check(LITERAL_VIEW(T, "0.0"     ).ToFloat() ==   0.0f);
-
-			always_check(Math::IsNaN(LITERAL_VIEW(T,  "1e+308").ToFloat()));
-			always_check(Math::IsNaN(LITERAL_VIEW(T, "-1e+308").ToFloat()));
-			always_check(Math::IsNaN(LITERAL_VIEW(T,  "1e-308").ToFloat()));
-			always_check(Math::IsNaN(LITERAL_VIEW(T, "-1e-308").ToFloat()));
-		}
 	};
 
 	Test(InPlaceType<char>);
@@ -626,7 +630,8 @@ void TestString()
 {
 	NAMESPACE_PRIVATE::TestChar();
 	NAMESPACE_PRIVATE::TestStringView();
-	NAMESPACE_PRIVATE::TestTemplateString();
+	NAMESPACE_PRIVATE::TestString();
+	NAMESPACE_PRIVATE::TestConvert();
 	NAMESPACE_PRIVATE::TestStringConversion();
 }
 
