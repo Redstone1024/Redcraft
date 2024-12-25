@@ -1209,7 +1209,7 @@ template <CForwardRange R,
 	CRegularInvocable<TRangeReference<R>> Proj =
 		decltype([]<typename T>(T&& A) -> T&& { return Forward<T>(A); }),
 	CEquivalenceRelation<TInvokeResult<Proj, TRangeReference<R>>, TInvokeResult<Proj, TRangeReference<R>>> Pred =
-		TConditional<CWeaklyEqualityComparable<TInvokeResult<Proj, TRangeReference<R>>>,
+		TConditional<CWeaklyEqualityComparable<TInvokeResult<Proj, TRangeReference<R>>, TInvokeResult<Proj, TRangeReference<R>>>,
 			decltype([]<typename LHS, typename RHS>(const LHS& A, const RHS& B) { return A == B; }), void>>
 	requires (CBorrowedRange<R>)
 NODISCARD constexpr TRangeIterator<R> FindAdjacent(R&& Range, Pred Predicate = { }, Proj Projection = { })
@@ -1251,7 +1251,7 @@ template <CForwardIterator I, CSentinelFor<I> S,
 	CRegularInvocable<TIteratorReference<I>> Proj =
 		decltype([]<typename T>(T&& A) -> T&& { return Forward<T>(A); }),
 	CEquivalenceRelation<TInvokeResult<Proj, TIteratorReference<I>>, TInvokeResult<Proj, TIteratorReference<I>>> Pred =
-		TConditional<CWeaklyEqualityComparable<TInvokeResult<Proj, TIteratorReference<I>>>,
+		TConditional<CWeaklyEqualityComparable<TInvokeResult<Proj, TIteratorReference<I>>, TInvokeResult<Proj, TIteratorReference<I>>>,
 			decltype([]<typename LHS, typename RHS>(const LHS& A, const RHS& B) { return A == B; }), void>>
 NODISCARD FORCEINLINE constexpr I FindAdjacent(I First, S Last, Pred Predicate = { }, Proj Projection = { })
 {
