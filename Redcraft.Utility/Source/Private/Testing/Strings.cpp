@@ -543,10 +543,10 @@ void TestConvert()
 		}
 
 		{
-			always_check(LITERAL_VIEW(T, "42"     ).ToInt()   == 42 );
-			always_check(LITERAL_VIEW(T, "FF"     ).ToInt(16) == 255);
-			always_check(LITERAL_VIEW(T, "-42"    ).ToInt()   == -42);
-			always_check(LITERAL_VIEW(T, "0"      ).ToInt()   == 0  );
+			always_check(LITERAL_VIEW(T, "42" ).ToInt()   == 42 );
+			always_check(LITERAL_VIEW(T, "FF" ).ToInt(16) == 255);
+			always_check(LITERAL_VIEW(T, "-42").ToInt()   == -42);
+			always_check(LITERAL_VIEW(T, "0"  ).ToInt()   == 0  );
 		}
 
 		{
