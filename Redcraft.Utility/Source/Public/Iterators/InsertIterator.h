@@ -6,6 +6,7 @@
 #include "Templates/Utility.h"
 #include "Templates/Noncopyable.h"
 #include "Templates/Invoke.h"
+#include "Memory/Address.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 NAMESPACE_REDCRAFT_BEGIN
@@ -124,27 +125,77 @@ private:
 
 static_assert(COutputIterator<TInsertIterator<void(*)(int)>, int>);
 
+template <typename C>
+class FFrontInserter
+{
+public:
+
+	FORCEINLINE constexpr explicit FFrontInserter(C& InContainer) : Container(AddressOf(InContainer)) { }
+
+	template <typename T>
+	FORCEINLINE constexpr void operator()(T&& A) { Container->PushFront(Forward<T>(A)); }
+
+private:
+
+	C* Container;
+
+};
+
+template <typename C>
+class FBackInserter
+{
+public:
+
+	FORCEINLINE constexpr explicit FBackInserter(C& InContainer) : Container(AddressOf(InContainer)) { }
+
+	template <typename T>
+	FORCEINLINE constexpr void operator()(T&& A) { Container->PushBack(Forward<T>(A)); }
+
+private:
+
+	C* Container;
+
+};
+
+template <typename C>
+class FInserter
+{
+public:
+
+	template <typename I>
+	FORCEINLINE constexpr FInserter(C& InContainer, I&& InIter) : Container(AddressOf(InContainer)), Iter(Forward<I>(InIter)) { }
+
+	template <typename T>
+	FORCEINLINE constexpr void operator()(T&& A) { Iter = Container->Insert(Iter, Forward<T>(A)); ++Iter; }
+
+private:
+
+	C* Container;
+	typename C::FConstIterator Iter;
+
+};
+
 NAMESPACE_PRIVATE_END
 
 /** Creates an iterator adapter inserted in the front of the container. */
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeFrontInserter(C& Container)
 {
-	return NAMESPACE_PRIVATE::TInsertIterator([&Container]<typename T>(T&& A) { Container.PushFront(Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TInsertIterator(NAMESPACE_PRIVATE::FFrontInserter(Container));
 }
 
 /** Creates an iterator adapter inserted in the back of the container. */
 template <typename C>
 NODISCARD FORCEINLINE constexpr auto MakeBackInserter(C& Container)
 {
-	return NAMESPACE_PRIVATE::TInsertIterator([&Container]<typename T>(T&& A) { Container.PushBack(Forward<T>(A)); });
+	return NAMESPACE_PRIVATE::TInsertIterator(NAMESPACE_PRIVATE::FBackInserter(Container));
 }
 
 /** Creates an iterator adapter inserted in the container. */
-template <typename C>
-NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, const typename C::FConstIterator& InIter)
+template <typename C, typename I>
+NODISCARD FORCEINLINE constexpr auto MakeInserter(C& Container, I&& InIter)
 {
-	return NAMESPACE_PRIVATE::TInsertIterator([&Container, Iter = InIter]<typename T>(T&& A) mutable { Iter = Container.Insert(Iter, Forward<T>(A)); ++Iter; });
+	return NAMESPACE_PRIVATE::TInsertIterator(NAMESPACE_PRIVATE::FInserter(Container, Forward<I>(InIter)));
 }
 
 NAMESPACE_MODULE_END(Utility)
