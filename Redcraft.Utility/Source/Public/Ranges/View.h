@@ -112,8 +112,6 @@ class TRangeView : public IBasicViewInterface<TRangeView<I, S>>
 {
 public:
 
-	using FElementType = TIteratorElement<I>;
-
 	FORCEINLINE constexpr TRangeView() requires (CDefaultConstructible<I>) = default;
 
 	FORCEINLINE constexpr TRangeView(I InFirst, S InLast) : First(MoveTemp(InFirst)), Last(InLast) { }
