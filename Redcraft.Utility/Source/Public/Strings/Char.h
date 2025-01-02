@@ -85,7 +85,14 @@ struct TChar
 
 	NODISCARD FORCEINLINE static constexpr bool IsValid(FCharType InChar)
 	{
-		if constexpr (CSameAs<FCharType, u8char>)
+		if constexpr (TChar::IsASCII() && CSameAs<FCharType, char>)
+		{
+			if (0x00 <= InChar && InChar <= 0x7F) return true;
+
+			return false;
+		}
+
+		else if constexpr (CSameAs<FCharType, u8char>)
 		{
 			if ((InChar & 0b10000000) == 0b00000000) return true;
 
