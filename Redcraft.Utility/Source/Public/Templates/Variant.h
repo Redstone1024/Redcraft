@@ -433,11 +433,11 @@ private:
 	using FMoveAssignImpl    = void(*)(void*,       void*);
 	using FDestroyImpl       = void(*)(void*             );
 
-	static constexpr FCopyConstructImpl CopyConstructImpl[] = { [](void* A, const void* B) { if constexpr (requires(Ts* A, const Ts* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (reinterpret_cast<Ts*>(A), reinterpret_cast<const Ts*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Ts).name()); }... };
-	static constexpr FMoveConstructImpl MoveConstructImpl[] = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (reinterpret_cast<Ts*>(A), reinterpret_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Ts).name()); }... };
-	static constexpr FCopyAssignImpl    CopyAssignImpl[]    = { [](void* A, const void* B) { if constexpr (requires(Ts* A, const Ts* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (reinterpret_cast<Ts*>(A), reinterpret_cast<const Ts*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Ts).name()); }... };
-	static constexpr FMoveAssignImpl    MoveAssignImpl[]    = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (reinterpret_cast<Ts*>(A), reinterpret_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Ts).name()); }... };
-	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Ts* A             ) { Memory::Destruct      (A   ); }) Memory::Destruct      (reinterpret_cast<Ts*>(A)                                   ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Ts).name()); }... };
+	static constexpr FCopyConstructImpl CopyConstructImpl[] = { [](void* A, const void* B) { if constexpr (requires(Ts* A, const Ts* B) { Memory::CopyConstruct (A, B); }) Memory::CopyConstruct (static_cast<Ts*>(A), static_cast<const Ts*>(B)); else checkf(false, TEXT("The type '%s' is not copy constructible."), typeid(Ts).name()); }... };
+	static constexpr FMoveConstructImpl MoveConstructImpl[] = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveConstruct (A, B); }) Memory::MoveConstruct (static_cast<Ts*>(A), static_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move constructible."), typeid(Ts).name()); }... };
+	static constexpr FCopyAssignImpl    CopyAssignImpl[]    = { [](void* A, const void* B) { if constexpr (requires(Ts* A, const Ts* B) { Memory::CopyAssign    (A, B); }) Memory::CopyAssign    (static_cast<Ts*>(A), static_cast<const Ts*>(B)); else checkf(false, TEXT("The type '%s' is not copy assignable."),    typeid(Ts).name()); }... };
+	static constexpr FMoveAssignImpl    MoveAssignImpl[]    = { [](void* A,       void* B) { if constexpr (requires(Ts* A,       Ts* B) { Memory::MoveAssign    (A, B); }) Memory::MoveAssign    (static_cast<Ts*>(A), static_cast<      Ts*>(B)); else checkf(false, TEXT("The type '%s' is not move assignable."),    typeid(Ts).name()); }... };
+	static constexpr FDestroyImpl       DestroyImpl[]       = { [](void* A               ) { if constexpr (requires(Ts* A             ) { Memory::Destruct      (A   ); }) Memory::Destruct      (static_cast<Ts*>(A)                           ); else checkf(false, TEXT("The type '%s' is not destructible."),       typeid(Ts).name()); }... };
 
 	TAlignedUnion<1, Ts...> Value;
 	uint8 TypeIndex;
@@ -502,10 +502,10 @@ struct TVariantVisitImpl
 	};
 
 	template <size_t EncodedIndex, typename>
-	struct FInvokeEncoded;
+	struct TInvokeEncoded;
 
 	template <size_t EncodedIndex, size_t... ExtentIndices>
-	struct FInvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
+	struct TInvokeEncoded<EncodedIndex, TIndexSequence<ExtentIndices...>>
 	{
 		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
@@ -513,7 +513,7 @@ struct TVariantVisitImpl
 		}
 
 		template <typename Ret>
-		struct FResult
+		struct TResult
 		{
 			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
@@ -523,26 +523,26 @@ struct TVariantVisitImpl
 	};
 
 	template <typename>
-	struct FInvokeVariant;
+	struct TInvokeVariant;
 
 	template <size_t... EncodedIndices>
-	struct FInvokeVariant<TIndexSequence<EncodedIndices...>>
+	struct TInvokeVariant<TIndexSequence<EncodedIndices...>>
 	{
 		FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 		{
 			using FExtentIndices = TIndexSequenceFor<VariantTypes...>;
 
-			using FResultType = TCommonType<decltype(FInvokeEncoded<EncodedIndices, FExtentIndices>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...))...>;
+			using FResultType = TCommonReference<decltype(TInvokeEncoded<EncodedIndices, FExtentIndices>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...))...>;
 
 			using FInvokeImplType = FResultType(*)(F&&, VariantTypes&&...);
 
-			constexpr FInvokeImplType InvokeImpl[] = { FInvokeEncoded<EncodedIndices, FExtentIndices>::template FResult<FResultType>::Do... };
+			constexpr FInvokeImplType InvokeImpl[] = { TInvokeEncoded<EncodedIndices, FExtentIndices>::template TResult<FResultType>::Do... };
 
 			return InvokeImpl[FEncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 		}
 
 		template <typename Ret>
-		struct FResult
+		struct TResult
 		{
 			FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 			{
@@ -550,7 +550,7 @@ struct TVariantVisitImpl
 
 				using FInvokeImplType = Ret(*)(F&&, VariantTypes&&...);
 
-				constexpr FInvokeImplType InvokeImpl[] = { FInvokeEncoded<EncodedIndices, FExtentIndices>::template FResult<Ret>::Do... };
+				constexpr FInvokeImplType InvokeImpl[] = { TInvokeEncoded<EncodedIndices, FExtentIndices>::template TResult<Ret>::Do... };
 
 				return InvokeImpl[FEncodeIndices::Do({ Variants.GetIndex()... })](Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 			}
@@ -559,15 +559,15 @@ struct TVariantVisitImpl
 
 	FORCEINLINE static constexpr decltype(auto) Do(F&& Func, VariantTypes&&... Variants)
 	{
-		return FInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+		return TInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 	}
 
 	template <typename Ret>
-	struct FResult
+	struct TResult
 	{
 		FORCEINLINE static constexpr Ret Do(F&& Func, VariantTypes&&... Variants)
 		{
-			return FInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::template FResult<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
+			return TInvokeVariant<TMakeIndexSequence<FGetTotalNum::Do()>>::template TResult<Ret>::Do(Forward<F>(Func), Forward<VariantTypes>(Variants)...);
 		}
 	};
 };
@@ -589,7 +589,7 @@ template <typename Ret, typename F, typename FirstVariantType, typename... Varia
 constexpr Ret Visit(F&& Func, FirstVariantType&& FirstVariant, VariantTypes&&... Variants)
 {
 	checkf((true && ... && Variants.IsValid()), TEXT("It is an error to call Visit() on an wrong TVariant. Please either check IsValid()."));
-	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template FResult<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
+	return NAMESPACE_PRIVATE::TVariantVisitImpl<F, FirstVariantType, VariantTypes...>::template TResult<Ret>::Do(Forward<F>(Func), Forward<FirstVariantType>(FirstVariant), Forward<VariantTypes>(Variants)...);
 }
 
 NAMESPACE_MODULE_END(Utility)
