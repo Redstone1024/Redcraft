@@ -414,7 +414,7 @@ NAMESPACE_END(Algorithms)
  *
  * The syntax of format specifications is:
  *
- *	[Fill And Align] [Width] [Precision] [Type]
+ *	[Fill And Align] [Width] [Precision] [Type] [!] [?]
  *
  * 1. The fill and align part:
  *
@@ -427,6 +427,7 @@ NAMESPACE_END(Algorithms)
  *
  *		- '<': Align the formatted argument to the left of the available space
  *		       by inserting n fill characters after the formatted argument.
+ *		       This is default option.
  *		- '^': Align the formatted argument to the center of the available space
  *		       by inserting n fill characters around the formatted argument.
  *		       If cannot absolute centering, offset to the left.
@@ -438,7 +439,7 @@ NAMESPACE_END(Algorithms)
  *	- 'N':   The number is used to specify the minimum field width of the object.
  *	         N should be an unsigned non-zero decimal number.
  *	- '{N}': Dynamically determine the minimum field width of the object.
- *	         N should be a valid index of the format integer argument.
+ *	         N should be a valid index of the format integral argument.
  *	         N is optional, and the default value is automatic indexing.
  *
  * 3. The precision part:
@@ -446,16 +447,23 @@ NAMESPACE_END(Algorithms)
  *	- '.N':   The number is used to specify the maximum field width of the object.
  *	          N should be an unsigned non-zero decimal number.
  *	- '.{N}': Dynamically determine the maximum field width of the object.
- *	          N should be a valid index of the format integer argument.
+ *	          N should be a valid index of the format integral argument.
  *	          N is optional, and the default value is automatic indexing.
  *
- * 4. The type indicators part:
+ * 4. The type indicator part:
  *
  *	- none: Indicates the as-is formatting.
  *	- 'S':  Indicates the as-is formatting.
- *	- '!':  Indicates uppercase formatting.
  *	- 's':  Indicates lowercase formatting.
- *	- '?':  Indicates escape formatting.
+ *
+ * 5. The case indicators part:
+ *
+ *	- '!': Indicates capitalize the entire string.
+ *
+ * 6. The escape indicators part:
+ *
+ *	- '?': Indicates the escape formatting.
+ *
  */
 template <CCharType T>
 class TFormatter<T*, T>
@@ -743,9 +751,27 @@ public:
 
 		// Try to parse the type indicators part.
 		if      (Char == LITERAL(FCharType, 'S')) {                    if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; }
-		else if (Char == LITERAL(FCharType, '!')) { bUppercase = true; if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; }
 		else if (Char == LITERAL(FCharType, 's')) { bLowercase = true; if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; }
-		else if (Char == LITERAL(FCharType, '?')) { bEscape    = true; if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; }
+
+		// Try to parse the case indicators part.
+		if (Char == LITERAL(FCharType, '!'))
+		{
+			bUppercase = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		// Try to parse the escape indicators part.
+		if (Char == LITERAL(FCharType, '?'))
+		{
+			bEscape = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
 
 		checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
 
@@ -878,8 +904,8 @@ public:
 			if (Iter == Sent) UNLIKELY return Iter;
 
 			// Convert the character case.
-			if      (bLowercase) Char = FCharTraits::ToLower(Char);
-			else if (bUppercase) Char = FCharTraits::ToUpper(Char);
+			if (bLowercase) Char = FCharTraits::ToLower(Char);
+			if (bUppercase) Char = FCharTraits::ToUpper(Char);
 
 			if (bEscape)
 			{
