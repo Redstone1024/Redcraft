@@ -549,12 +549,17 @@ public:
 		{
 			if (Iter == Sent) break;
 
-			if (*Iter != LITERAL(FCharType, '<') && *Iter != LITERAL(FCharType, '^') && *Iter != LITERAL(FCharType, '>')) break;
+			// If the fill character is specified.
+			if (*Iter == LITERAL(FCharType, '<') || *Iter == LITERAL(FCharType, '^') || *Iter == LITERAL(FCharType, '>'))
+			{
+				FillUnitLength   = 1;
+				FillCharacter[0] = Char;
 
-			FillUnitLength   = 1;
-			FillCharacter[0] = Char;
+				Char = *Iter; ++Iter;
+			}
 
-			Char = *Iter; ++Iter;
+			// If the fill character is not specified and the align option is not specified.
+			else if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) break;
 
 			AlignOption = Char;
 
@@ -1232,12 +1237,17 @@ public:
 		{
 			if (Iter == Sent) break;
 
-			if (*Iter != LITERAL(FCharType, '<') && *Iter != LITERAL(FCharType, '^') && *Iter != LITERAL(FCharType, '>')) break;
+			// If the fill character is specified.
+			if (*Iter == LITERAL(FCharType, '<') || *Iter == LITERAL(FCharType, '^') || *Iter == LITERAL(FCharType, '>'))
+			{
+				FillUnitLength   = 1;
+				FillCharacter[0] = Char;
 
-			FillUnitLength   = 1;
-			FillCharacter[0] = Char;
+				Char = *Iter; ++Iter;
+			}
 
-			Char = *Iter; ++Iter;
+			// If the fill character is not specified and the align option is not specified.
+			else if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) break;
 
 			bHasFillAndAlign = true;
 
