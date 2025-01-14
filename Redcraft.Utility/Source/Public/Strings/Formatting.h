@@ -8,6 +8,7 @@
 #include "Algorithms/Basic.h"
 #include "Containers/StaticArray.h"
 #include "Containers/Array.h"
+#include "Numerics/Bit.h"
 #include "Numerics/Math.h"
 #include "Strings/Char.h"
 #include "Miscellaneous/AssertionMacros.h"
@@ -1867,7 +1868,7 @@ public:
 			*Iter++ = bCharacter ? LITERAL(FCharType, '\'') : LITERAL(FCharType, '\"');
 		}
 
-		// Write the object, include escaped quotes in the counter.
+		// Write the object.
 		{
 			if (Iter == Sent) UNLIKELY return Iter;
 
@@ -1972,7 +1973,7 @@ static_assert(CFormattable<char>);
 static_assert(CFormattable<bool>);
 
 /**
- * A formatter for the floating-point type.
+ * A formatter for the floating-point types.
  *
  * The syntax of format specifications is:
  *
@@ -2697,7 +2698,7 @@ public:
 			}
 		}
 
-		// Write the object, include escaped quotes in the counter.
+		// Write the object.
 		{
 			static_assert(FChar::IsASCII() && FCharTraits::IsASCII());
 
@@ -2772,6 +2773,397 @@ private:
 };
 
 static_assert(CFormattable<float>);
+
+/**
+ * A formatter for pointer or member pointer types.
+ *
+ * The syntax of format specifications is:
+ *
+ *	[Fill And Align] [Width] [Type] [!]
+ *
+ * 1. The fill and align part:
+ *
+ *	[Fill Character] <Align Option>
+ *
+ *	i.   Fill Character: The character is used to fill width of the object. It is optional and cannot be '{' or '}'.
+ *	                     It should be representable as a single unicode otherwise it is undefined behavior.
+ *
+ *  ii.  Align Option: The character is used to indicate the direction of alignment.
+ *
+ *		- '<': Align the formatted argument to the left of the available space
+ *		       by inserting n fill characters after the formatted argument.
+ *		       This is default option.
+ *		- '^': Align the formatted argument to the center of the available space
+ *		       by inserting n fill characters around the formatted argument.
+ *		       If cannot absolute centering, offset to the left.
+ *		- '>': Align the formatted argument ro the right of the available space
+ *		       by inserting n fill characters before the formatted argument.
+ *
+ * 2. The width part:
+ *
+ *	- 'N':   The number is used to specify the minimum field width of the object.
+ *	         N should be an unsigned non-zero decimal number.
+ *	- '{N}': Dynamically determine the minimum field width of the object.
+ *	         N should be a valid index of the format integral argument.
+ *	         N is optional, and the default value is automatic indexing.
+ *
+ * 3. The type indicator part:
+ *
+ *	- none: Indicates the normal formatting.
+ *	- 'P':  Indicates the normal formatting.
+ *	- 'p':  Indicates lowercase formatting.
+ *
+ * 4. The case indicators part:
+ *
+ *	- '!': Indicates capitalize the entire string.
+ *
+ */
+template <typename T, CCharType CharType> requires ((CNullPointer<T> || CPointer<T> || CMemberPointer<T>) && CSameAs<TRemoveCVRef<T>, T>)
+class TFormatter<T, CharType>
+{
+private:
+
+	using FCharType      = CharType;
+	using FCharTraits    = TChar<FCharType>;
+	using FFillCharacter = TStaticArray<FCharType, FCharTraits::MaxCodeUnitLength>;
+
+public:
+
+	template <CFormatStringContext<FCharType> CTX>
+	constexpr TRangeIterator<CTX> Parse(CTX& Context)
+	{
+		auto Iter = Ranges::Begin(Context);
+		auto Sent = Ranges::End  (Context);
+
+		// Set the default values.
+		{
+			FillUnitLength   = 1;
+			FillCharacter[0] = LITERAL(FCharType, ' ');
+			AlignOption      = LITERAL(FCharType, '>');
+
+			FieldWidth = 0;
+
+			bDynamicWidth = false;
+
+			bLowercase = false;
+			bUppercase = false;
+		}
+
+		// If the format description string is empty.
+		if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+		FCharType Char = *Iter; ++Iter;
+
+		// Try to parse the fill and align part.
+		// This code assumes that the format string does not contain multi-unit characters, except for fill character.
+
+		// If the fill character is multi-unit.
+		if (!FCharTraits::IsValid(Char))
+		{
+			FillUnitLength   = 1;
+			FillCharacter[0] = Char;
+
+			while (true)
+			{
+				if (Iter == Sent) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				Char = *Iter; ++Iter;
+
+				// If the fill character ends.
+				if (FillUnitLength == FCharTraits::MaxCodeUnitLength || FCharTraits::IsValid(Char)) break;
+
+				FillCharacter[FillUnitLength++] = Char;
+			}
+
+			if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) UNLIKELY
+			{
+				checkf(false, TEXT("Illegal format string. The fill character is not representable as a single unicode."));
+
+				return Iter;
+			}
+
+			AlignOption = Char;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		// If the fill character is single-unit.
+		else do
+		{
+			if (Iter == Sent) break;
+
+			// If the fill character is specified.
+			if (*Iter == LITERAL(FCharType, '<') || *Iter == LITERAL(FCharType, '^') || *Iter == LITERAL(FCharType, '>'))
+			{
+				FillUnitLength   = 1;
+				FillCharacter[0] = Char;
+
+				Char = *Iter; ++Iter;
+			}
+
+			// If the fill character is not specified and the align option is not specified.
+			else if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) break;
+
+			AlignOption = Char;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+		while (false);
+
+		// Try to parse the width part.
+		{
+			if (Char == LITERAL(FCharType, '{'))
+			{
+				bDynamicWidth = true;
+				FieldWidth    = INDEX_NONE;
+
+				if (Iter == Sent) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				Char = *Iter; ++Iter;
+			}
+
+			if ((bDynamicWidth || Char != LITERAL(FCharType, '0')) && FCharTraits::IsDigit(Char))
+			{
+				FieldWidth = FCharTraits::ToDigit(Char);
+
+				while (true)
+				{
+					if (Iter == Sent)
+					{
+						checkf(!bDynamicWidth, TEXT("Illegal format string. Missing '}' in format string."));
+
+						return Iter;
+					}
+
+					if (!bDynamicWidth && *Iter == LITERAL(FCharType, '}')) return Iter;
+
+					Char = *Iter; ++Iter;
+
+					const uint Digit = FCharTraits::ToDigit(Char);
+
+					if (Digit >= 10) break;
+
+					FieldWidth = FieldWidth * 10 + Digit;
+				}
+			}
+
+			if (bDynamicWidth)
+			{
+				if (Char != LITERAL(FCharType, '}')) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				do
+				{
+					// Try to automatic indexing.
+					if (FieldWidth == INDEX_NONE)
+					{
+						FieldWidth = Context.GetNextIndex();
+
+						if (FieldWidth == INDEX_NONE) UNLIKELY
+						{
+							checkf(false, TEXT("Illegal index. Please check the field width."));
+						}
+						else break;
+					}
+
+					// Try to manual indexing.
+					else if (!Context.CheckIndex(FieldWidth)) UNLIKELY
+					{
+						checkf(false, TEXT("Illegal index. Please check the field width."));
+					}
+
+					else break;
+
+					bDynamicWidth = false;
+					FieldWidth    = 0;
+				}
+				while (false);
+
+				if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+				Char = *Iter; ++Iter;
+			}
+		}
+
+		// Try to parse the type indicators part.
+
+		switch (Char)
+		{
+		case LITERAL(FCharType, 'p'): bLowercase = true; break;
+		default: { }
+		}
+
+		switch (Char)
+		{
+		case LITERAL(FCharType, 'P'):
+		case LITERAL(FCharType, 'p'): if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; break;
+		default: { }
+		}
+
+		// Try to parse the case indicators part.
+		if (Char == LITERAL(FCharType, '!'))
+		{
+			bUppercase = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+		return Iter;
+	}
+
+	template <CFormatObjectContext<FCharType> CTX>
+	constexpr TRangeIterator<CTX> Format(T Object, CTX& Context) const
+	{
+		auto Iter = Ranges::Begin(Context);
+		auto Sent = Ranges::End  (Context);
+
+		size_t TargetField = FieldWidth;
+
+		// Visit the dynamic width argument.
+		if (bDynamicWidth)
+		{
+			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
+			{
+				if constexpr (CIntegral<TRemoveReference<U>>)
+				{
+					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
+
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+
+					return 0;
+				}
+			}
+			, FieldWidth);
+		}
+
+		size_t LeftPadding  = 0;
+		size_t RightPadding = 0;
+
+		// Estimate the field width.
+		if (TargetField != 0)
+		{
+			const size_t LiteralWidth = 2 * sizeof(T) + 2;
+
+			const size_t PaddingWidth = TargetField - Math::Min(LiteralWidth, TargetField);
+
+			switch (AlignOption)
+			{
+			case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
+			case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
+			case LITERAL(FCharType, '^'):
+				LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
+				RightPadding = PaddingWidth - LeftPadding;
+				break;
+			default: check_no_entry();
+			}
+		}
+
+		// Write the left padding.
+		for (size_t Index = 0; Index != LeftPadding; ++Index)
+		{
+			for (size_t Jndex = 0; Jndex != FillUnitLength; ++Jndex)
+			{
+				if (Iter == Sent) UNLIKELY return Iter;
+
+				*Iter++ = FillCharacter[Jndex];
+			}
+		}
+
+		// Write the object, include escaped quotes in the counter.
+		{
+			if (Iter == Sent) UNLIKELY return Iter;
+
+			*Iter++ = LITERAL(FCharType, '0');
+
+			if (Iter == Sent) UNLIKELY return Iter;
+
+			*Iter++ = bUppercase ? LITERAL(FCharType, 'X') : LITERAL(FCharType, 'x');
+
+			const uint8* Ptr = reinterpret_cast<const uint8*>(&Object);
+
+			if constexpr (Math::EEndian::Native != Math::EEndian::Little)
+			{
+				for (size_t Index = 0; Index != sizeof(T); ++Index)
+				{
+					if (Iter == Sent) UNLIKELY return Iter;
+
+					*Iter++ = FCharTraits::FromDigit(Ptr[Index] >> 4, bLowercase);
+
+					if (Iter == Sent) UNLIKELY return Iter;
+
+					*Iter++ = FCharTraits::FromDigit(Ptr[Index] & 0x0F, bLowercase);
+				}
+			}
+
+			else
+			{
+				for (size_t Index = 0; Index != sizeof(T); ++Index)
+				{
+					if (Iter == Sent) UNLIKELY return Iter;
+
+					*Iter++ = FCharTraits::FromDigit(Ptr[sizeof(T) - Index - 1] >> 4, bLowercase);
+
+					if (Iter == Sent) UNLIKELY return Iter;
+
+					*Iter++ = FCharTraits::FromDigit(Ptr[sizeof(T) - Index - 1] & 0x0F, bLowercase);
+				}
+			}
+		}
+
+		// Write the right padding.
+		for (size_t Index = 0; Index != RightPadding; ++Index)
+		{
+			for (size_t Jndex = 0; Jndex != FillUnitLength; ++Jndex)
+			{
+				if (Iter == Sent) UNLIKELY return Iter;
+
+				*Iter++ = FillCharacter[Jndex];
+			}
+		}
+
+		return Iter;
+	}
+
+private:
+
+	size_t         FillUnitLength = 1;
+	FFillCharacter FillCharacter  = { LITERAL(FCharType, ' ') };
+	FCharType      AlignOption    =   LITERAL(FCharType, '>');
+
+	size_t FieldWidth = 0;
+
+	bool bDynamicWidth = false;
+
+	bool bLowercase = false;
+	bool bUppercase = false;
+
+};
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
