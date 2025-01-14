@@ -7,9 +7,12 @@
 #include "Ranges/View.h"
 #include "Algorithms/Basic.h"
 #include "Containers/StaticArray.h"
+#include "Containers/Array.h"
 #include "Numerics/Math.h"
 #include "Strings/Char.h"
 #include "Miscellaneous/AssertionMacros.h"
+
+#include <charconv>
 
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
@@ -804,41 +807,47 @@ public:
 		size_t MaxDynamicField = MaxFieldWidth;
 
 		// Visit the dynamic width argument.
-		if (bDynamicMin) MinDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
+		if (bDynamicMin)
 		{
-
-			if constexpr (CIntegral<U>)
+			MinDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
-				return Math::Max(Value, 1);
-			}
-			else
-			{
-				checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+				if constexpr (CIntegral<U>)
+				{
+					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
-				return 0;
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+
+					return 0;
+				}
 			}
+			, MinFieldWidth);
 		}
-		, MinFieldWidth);
 
 		// Visit the dynamic precision argument.
-		if (bDynamicMax) MaxDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
+		if (bDynamicMax)
 		{
-			if constexpr (CIntegral<U>)
+			MaxDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				checkf(Value > 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned non-zero number."));
+				if constexpr (CIntegral<U>)
+				{
+					checkf(Value > 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned non-zero number."));
 
-				return Math::Max(Value, 1);
-			}
-			else
-			{
-				checkf(false, TEXT("Illegal format argument. The dynamic precision argument must be an integral."));
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic precision argument must be an integral."));
 
-				return 0;
+					return 0;
+				}
 			}
+			, MaxFieldWidth);
 		}
-		, MaxFieldWidth);
 
 		size_t LeftPadding  = 0;
 		size_t RightPadding = 0;
@@ -954,7 +963,7 @@ public:
 
 							FUnsignedT IntValue = static_cast<FUnsignedT>(Char);
 
-							FCharType Buffer[DigitNum];
+							TStaticArray<FCharType, DigitNum> Buffer;
 
 							for (size_t Jndex = 0; Jndex != DigitNum; ++Jndex)
 							{
@@ -1180,15 +1189,15 @@ public:
 			bEscape    = false;
 		}
 
-		// Flag indicates that the part is specified.
-		bool bHasFillAndAlign = false;
-		bool bHasSignOption   = false;
-		bool bHasIntegralBase = false;
-
 		// If the format description string is empty.
 		if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
 
 		FCharType Char = *Iter; ++Iter;
+
+		// Flag indicates that the part is specified.
+		bool bHasFillAndAlign = false;
+		bool bHasSignOption   = false;
+		bool bHasIntegralBase = false;
 
 		// Try to parse the fill and align part.
 		// This code assumes that the format string does not contain multi-unit characters, except for fill character.
@@ -1401,14 +1410,14 @@ public:
 			}
 		}
 
-		// Try to parse the precision part.
+		// Try to parse the base part.
 		if (Char == LITERAL(FCharType, '_'))
 		{
 			bHasIntegralBase = true;
 
 			if (Iter == Sent) UNLIKELY
 			{
-				checkf(false, TEXT("Illegal format string. Missing precision in format string."));
+				checkf(false, TEXT("Illegal format string. Missing base in format string."));
 
 				return Iter;
 			}
@@ -1487,7 +1496,7 @@ public:
 
 						if (IntegralBase == INDEX_NONE) UNLIKELY
 						{
-							checkf(false, TEXT("Illegal index. Please check the precision."));
+							checkf(false, TEXT("Illegal index. Please check the base."));
 						}
 						else break;
 					}
@@ -1495,7 +1504,7 @@ public:
 					// Try to manual indexing.
 					else if (!Context.CheckIndex(IntegralBase)) UNLIKELY
 					{
-						checkf(false, TEXT("Illegal index. Please check the precision."));
+						checkf(false, TEXT("Illegal index. Please check the base."));
 					}
 
 					else break;
@@ -1624,45 +1633,51 @@ public:
 		auto Iter = Ranges::Begin(Context);
 		auto Sent = Ranges::End  (Context);
 
-		size_t DynamicField = FieldWidth;
-		size_t DynamicBase  = IntegralBase;
+		size_t TargetField = FieldWidth;
+		size_t TargetBase  = IntegralBase;
 
 		// Visit the dynamic width argument.
-		if (bDynamicWidth) DynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
+		if (bDynamicWidth)
 		{
-
-			if constexpr (CIntegral<U>)
+			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
-				return Math::Max(Value, 1);
-			}
-			else
-			{
-				checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+				if constexpr (CIntegral<U>)
+				{
+					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
-				return 0;
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+
+					return 0;
+				}
 			}
+			, FieldWidth);
 		}
-		, DynamicField);
 
 		// Visit the dynamic base argument.
-		if (bDynamicBase) DynamicBase = Context.Visit([]<typename U>(U&& Value) -> size_t
+		if (bDynamicBase)
 		{
-			if constexpr (CIntegral<U>)
+			TargetBase = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				checkf(Value > 0, TEXT("Illegal format argument. The dynamic base argument must be a unsigned non-zero number."));
+				if constexpr (CIntegral<U>)
+				{
+					checkf(!Math::IsWithinInclusive(Value, 2, 36), TEXT("Illegal format argument. The dynamic base argument must be in the range [2, 36]."));
 
-				return Math::Max(Value, 1);
-			}
-			else
-			{
-				checkf(false, TEXT("Illegal format argument. The dynamic base argument must be an integral."));
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic base argument must be an integral."));
 
-				return 0;
+					return 0;
+				}
 			}
+			, IntegralBase);
 		}
-		, DynamicBase);
 
 		bool bNegative = false;
 
@@ -1680,7 +1695,7 @@ public:
 
 		constexpr size_t BufferSize = sizeof(T) * 8;
 
-		FCharType Buffer[BufferSize];
+		TStaticArray<FCharType, BufferSize> Buffer;
 
 		do
 		{
@@ -1719,11 +1734,11 @@ public:
 			}
 
 			// Handle the illegal base.
-			if (!Math::IsWithinInclusive(DynamicBase, 2, 36))
+			if (!Math::IsWithinInclusive(TargetBase, 2, 36))
 			{
 				checkf(false, TEXT("Illegal format argument. The base must be in the range [2, 36]."));
 
-				DynamicBase = 10;
+				TargetBase = 10;
 			}
 
 			// Handle the integral boolean type.
@@ -1755,10 +1770,10 @@ public:
 					}
 				}
 
-				FCharType* DigitIter = Buffer + BufferSize;
-				FCharType* DigitSent = Buffer + BufferSize;
+				FCharType* DigitIter = Buffer.GetData() + BufferSize;
+				FCharType* DigitSent = Buffer.GetData() + BufferSize;
 
-				switch (DynamicBase)
+				switch (TargetBase)
 				{
 				case 0x02: do { *--DigitIter = static_cast<FCharType>('0' + (Unsigned & 0b00001));                            Unsigned >>= 1; } while (Unsigned != 0); break;
 				case 0x04: do { *--DigitIter = static_cast<FCharType>('0' + (Unsigned & 0b00011));                            Unsigned >>= 2; } while (Unsigned != 0); break;
@@ -1771,8 +1786,8 @@ public:
 				case 6:
 				case 7:
 				case 9:
-				case 10: do { *--DigitIter = static_cast<FCharType>('0' + Unsigned % DynamicBase);                            Unsigned = static_cast<FUnsignedT>(Unsigned / DynamicBase); } while (Unsigned != 0); break;
-				default: do { *--DigitIter =       FCharTraits::FromDigit(Unsigned % DynamicBase, bLowercase && !bUppercase); Unsigned = static_cast<FUnsignedT>(Unsigned / DynamicBase); } while (Unsigned != 0); break;
+				case 10: do { *--DigitIter = static_cast<FCharType>('0' + Unsigned % TargetBase);                            Unsigned = static_cast<FUnsignedT>(Unsigned / TargetBase); } while (Unsigned != 0); break;
+				default: do { *--DigitIter =       FCharTraits::FromDigit(Unsigned % TargetBase, bLowercase && !bUppercase); Unsigned = static_cast<FUnsignedT>(Unsigned / TargetBase); } while (Unsigned != 0); break;
 				}
 
 				TargetWidth = DigitSent - DigitIter;
@@ -1788,7 +1803,7 @@ public:
 		size_t RightPadding = 0;
 
 		// Estimate the field width.
-		if (DynamicField != 0 && !bZeroPadding)
+		if (TargetField != 0 && !bZeroPadding)
 		{
 			size_t LiteralWidth = TargetWidth;
 
@@ -1798,13 +1813,13 @@ public:
 			// Handle the sign option.
 			switch (SignOption)
 			{
-			case LITERAL(FCharType, '+'): LiteralWidth += 1; break;
+			case LITERAL(FCharType, '+'):
 			case LITERAL(FCharType, ' '): LiteralWidth += 1; break;
 			default: if (bNegative)       LiteralWidth += 1;
 			}
 
 			// Handle the alternate form.
-			if (bAlternateForm) switch (DynamicBase)
+			if (bAlternateForm) switch (TargetBase)
 			{
 			case 0x02: LiteralWidth += 2; break;
 			case 0x08: LiteralWidth += 1; break;
@@ -1812,7 +1827,7 @@ public:
 			default: { }
 			}
 
-			const size_t PaddingWidth = DynamicField - Math::Min(LiteralWidth, DynamicField);
+			const size_t PaddingWidth = TargetField - Math::Min(LiteralWidth, TargetField);
 
 			switch (AlignOption)
 			{
@@ -1862,7 +1877,7 @@ public:
 			{
 				if (Iter == Sent) UNLIKELY return Iter;
 
-				switch (DynamicBase)
+				switch (TargetBase)
 				{
 				case 0x02:
 				case 0x08:
@@ -1872,7 +1887,7 @@ public:
 
 				if (Iter == Sent) UNLIKELY return Iter;
 
-				switch (DynamicBase)
+				switch (TargetBase)
 				{
 				case 0x02: *Iter++ = bUppercase ? LITERAL(FCharType, 'B') : LITERAL(FCharType, 'b'); break;
 				case 0x10: *Iter++ = bUppercase ? LITERAL(FCharType, 'X') : LITERAL(FCharType, 'x'); break;
@@ -1881,9 +1896,9 @@ public:
 			}
 
 			// Handle the zero padding.
-			if (bZeroPadding)
+			if (bZeroPadding && Target == Buffer.GetData())
 			{
-				for (size_t Index = TargetWidth; Index < DynamicField; ++Index)
+				for (size_t Index = TargetWidth; Index < TargetField; ++Index)
 				{
 					if (Iter == Sent) UNLIKELY return Iter;
 
@@ -1951,6 +1966,804 @@ private:
 static_assert(CFormattable<int >);
 static_assert(CFormattable<char>);
 static_assert(CFormattable<bool>);
+
+/**
+ * A formatter for the floating-point type.
+ *
+ * The syntax of format specifications is:
+ *
+ *	[Fill And Align] [Sign] [#] [0] [Width] [Precision] [Type] [!]
+ *
+ * 1. The fill and align part:
+ *
+ *	[Fill Character] <Align Option>
+ *
+ *	i.   Fill Character: The character is used to fill width of the object. It is optional and cannot be '{' or '}'.
+ *	                     It should be representable as a single unicode otherwise it is undefined behavior.
+ *
+ *  ii.  Align Option: The character is used to indicate the direction of alignment.
+ *
+ *		- '<': Align the formatted argument to the left of the available space
+ *		       by inserting n fill characters after the formatted argument.
+ *		- '^': Align the formatted argument to the center of the available space
+ *		       by inserting n fill characters around the formatted argument.
+ *		       If cannot absolute centering, offset to the left.
+ *		- '>': Align the formatted argument ro the right of the available space
+ *		       by inserting n fill characters before the formatted argument.
+ *		       This is default option.
+ *
+ * 2. The sign part:
+ *
+ *	- '+': Always include a sign character before the number. Use '+' for positive.
+ *	- '-': Only include a sign character before the number if the number is negative. This is default option.
+ *	- ' ': Always include a sign character before the number. Use ' ' for positive.
+ *
+ * 3. The alternate form indicator part:
+ *
+ *	- '#': Insert the decimal point character unconditionally,
+ *	       and do not remove trailing zeros if the type indicator part is 'G' or 'g'.
+ *
+ * 4. The zero padding part:
+ *
+ *	This part is allowed only if the fill and align part is not specified but the width part is specified.
+ *
+ *	- '0': Use '0' as the fill character.
+ *
+ * 5. The width part:
+ *
+ *	- 'N':   The number is used to specify the minimum field width of the object.
+ *	         N should be an unsigned non-zero decimal number.
+ *	- '{N}': Dynamically determine the minimum field width of the object.
+ *	         N should be a valid index of the format integral argument.
+ *	         N is optional, and the default value is automatic indexing.
+ *
+ * 6. The precision part:
+ *
+ *	- '.N':   The number is used to specify the precision of the floating-point number.
+ *	          N should be an unsigned non-zero decimal number.
+ *	- '.{N}': Dynamically determine the precision of the floating-point number.
+ *	          N should be a valid index of the format integral argument.
+ *	          N is optional, and the default value is automatic indexing.
+ *
+ * 7. The type indicator part:
+ *
+ *	- none: Indicates the normal formatting.
+ *	- 'G':  Indicates the general formatting.
+ *	- 'g':  Indicates the general formatting.
+ *	- 'F':  Indicates the fixed-point formatting.
+ *	- 'f':  Indicates the fixed-point formatting.
+ *	- 'E':  Indicates the scientific formatting.
+ *	- 'e':  Indicates the scientific formatting.
+ *	- 'A':  Indicates the uppercase hexadecimal formatting.
+ *	- 'a':  Indicates the lowercase hexadecimal formatting.
+ *
+ * 8. The case indicators part:
+ *
+ *	- '!': Indicates capitalize the entire string.
+ *
+ */
+template <CFloatingPoint T, CCharType CharType> requires (CSameAs<TRemoveCVRef<T>, T>)
+class TFormatter<T, CharType>
+{
+private:
+
+	using FCharType      = CharType;
+	using FCharTraits    = TChar<FCharType>;
+	using FFillCharacter = TStaticArray<FCharType, FCharTraits::MaxCodeUnitLength>;
+
+public:
+
+	template <CFormatStringContext<FCharType> CTX>
+	constexpr TRangeIterator<CTX> Parse(CTX& Context)
+	{
+		auto Iter = Ranges::Begin(Context);
+		auto Sent = Ranges::End  (Context);
+
+		// Set the default values.
+		{
+			FillUnitLength = 1;
+			FillCharacter  = { LITERAL(FCharType, ' ') };
+			AlignOption    =   LITERAL(FCharType, '>');
+
+			SignOption = LITERAL(FCharType, '-');
+
+			bAlternateForm = false;
+			bZeroPadding   = false;
+
+			bHasPrecision = false;
+
+			FieldWidth = 0;
+			Precision  = 0;
+
+			bDynamicWidth     = false;
+			bDynamicPrecision = false;
+
+			bGeneral     = false;
+			bFixedPoint  = false;
+			bScientific  = false;
+			bHexadecimal = false;
+
+			bLowercase = false;
+			bUppercase = false;
+		}
+
+		// If the format description string is empty.
+		if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+		FCharType Char = *Iter; ++Iter;
+
+		// Flag indicates that the part is specified.
+		bool bHasFillAndAlign = false;
+
+		// Try to parse the fill and align part.
+		// This code assumes that the format string does not contain multi-unit characters, except for fill character.
+
+		// If the fill character is multi-unit.
+		if (!FCharTraits::IsValid(Char))
+		{
+			FillUnitLength   = 1;
+			FillCharacter[0] = Char;
+
+			while (true)
+			{
+				if (Iter == Sent) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				Char = *Iter; ++Iter;
+
+				// If the fill character ends.
+				if (FillUnitLength == FCharTraits::MaxCodeUnitLength || FCharTraits::IsValid(Char)) break;
+
+				FillCharacter[FillUnitLength++] = Char;
+			}
+
+			if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) UNLIKELY
+			{
+				checkf(false, TEXT("Illegal format string. The fill character is not representable as a single unicode."));
+
+				return Iter;
+			}
+
+			bHasFillAndAlign = true;
+
+			AlignOption = Char;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		// If the fill character is single-unit.
+		else do
+		{
+			if (Iter == Sent) break;
+
+			// If the fill character is specified.
+			if (*Iter == LITERAL(FCharType, '<') || *Iter == LITERAL(FCharType, '^') || *Iter == LITERAL(FCharType, '>'))
+			{
+				FillUnitLength   = 1;
+				FillCharacter[0] = Char;
+
+				Char = *Iter; ++Iter;
+			}
+
+			// If the fill character is not specified and the align option is not specified.
+			else if (Char != LITERAL(FCharType, '<') && Char != LITERAL(FCharType, '^') && Char != LITERAL(FCharType, '>')) break;
+
+			bHasFillAndAlign = true;
+
+			AlignOption = Char;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+		while (false);
+
+		// Try to parse the sign part.
+		switch (Char)
+		{
+		case LITERAL(FCharType, '+'):
+		case LITERAL(FCharType, '-'):
+		case LITERAL(FCharType, ' '):
+
+			SignOption = Char;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+
+		default: { }
+		}
+
+		// Try to parse the alternate form indicator part.
+		if (Char == LITERAL(FCharType, '#'))
+		{
+			bAlternateForm = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		// Try to parse the zero padding part.
+		if (Char == LITERAL(FCharType, '0') && !bHasFillAndAlign)
+		{
+			bZeroPadding = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		// Try to parse the width part.
+		{
+			if (Char == LITERAL(FCharType, '{'))
+			{
+				bDynamicWidth = true;
+				FieldWidth    = INDEX_NONE;
+
+				if (Iter == Sent) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				Char = *Iter; ++Iter;
+			}
+
+			if ((bDynamicWidth || Char != LITERAL(FCharType, '0')) && FCharTraits::IsDigit(Char))
+			{
+				FieldWidth = FCharTraits::ToDigit(Char);
+
+				while (true)
+				{
+					if (Iter == Sent)
+					{
+						checkf(!bDynamicWidth, TEXT("Illegal format string. Missing '}' in format string."));
+
+						return Iter;
+					}
+
+					if (!bDynamicWidth && *Iter == LITERAL(FCharType, '}')) return Iter;
+
+					Char = *Iter; ++Iter;
+
+					const uint Digit = FCharTraits::ToDigit(Char);
+
+					if (Digit > 10) break;
+
+					FieldWidth = FieldWidth * 10 + Digit;
+				}
+			}
+
+			if (bDynamicWidth)
+			{
+				if (Char != LITERAL(FCharType, '}')) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				do
+				{
+					// Try to automatic indexing.
+					if (FieldWidth == INDEX_NONE)
+					{
+						FieldWidth = Context.GetNextIndex();
+
+						if (FieldWidth == INDEX_NONE) UNLIKELY
+						{
+							checkf(false, TEXT("Illegal index. Please check the field width."));
+						}
+						else break;
+					}
+
+					// Try to manual indexing.
+					else if (!Context.CheckIndex(FieldWidth)) UNLIKELY
+					{
+						checkf(false, TEXT("Illegal index. Please check the field width."));
+					}
+
+					else break;
+
+					bDynamicWidth = false;
+					FieldWidth    = 0;
+				}
+				while (false);
+
+				if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+				Char = *Iter; ++Iter;
+			}
+		}
+
+		// Try to parse the precision part.
+		if (Char == LITERAL(FCharType, '.'))
+		{
+			bHasPrecision = true;
+
+			if (Iter == Sent) UNLIKELY
+			{
+				checkf(false, TEXT("Illegal format string. Missing precision in format string."));
+
+				return Iter;
+			}
+
+			Char = *Iter; ++Iter;
+
+			if (Char == LITERAL(FCharType, '{'))
+			{
+				bDynamicPrecision = true;
+				Precision         = INDEX_NONE;
+
+				if (Iter == Sent) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				Char = *Iter; ++Iter;
+			}
+
+			if ((bDynamicPrecision || Char != LITERAL(FCharType, '0')) && FCharTraits::IsDigit(Char))
+			{
+				Precision = FCharTraits::ToDigit(Char);
+
+				while (true)
+				{
+					if (Iter == Sent)
+					{
+						checkf(!bDynamicPrecision, TEXT("Illegal format string. Missing '}' in format string."));
+
+						return Iter;
+					}
+
+					if (!bDynamicPrecision && *Iter == LITERAL(FCharType, '}')) return Iter;
+
+					Char = *Iter; ++Iter;
+
+					const uint Digit = FCharTraits::ToDigit(Char);
+
+					if (Digit > 10) break;
+
+					Precision = Precision * 10 + Digit;
+				}
+			}
+
+			else if (!bDynamicPrecision)
+			{
+				checkf(false, TEXT("Illegal format string. Missing precision in format string."));
+
+				return Iter;
+			}
+
+			if (bDynamicPrecision)
+			{
+				if (Char != LITERAL(FCharType, '}')) UNLIKELY
+				{
+					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+					return Iter;
+				}
+
+				do
+				{
+					// Try to automatic indexing.
+					if (Precision == INDEX_NONE)
+					{
+						Precision = Context.GetNextIndex();
+
+						if (Precision == INDEX_NONE) UNLIKELY
+						{
+							checkf(false, TEXT("Illegal index. Please check the precision."));
+						}
+						else break;
+					}
+
+					// Try to manual indexing.
+					else if (!Context.CheckIndex(Precision)) UNLIKELY
+					{
+						checkf(false, TEXT("Illegal index. Please check the precision."));
+					}
+
+					else break;
+
+					bDynamicPrecision = false;
+					Precision         = 0;
+				}
+				while (false);
+
+				if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+				Char = *Iter; ++Iter;
+			}
+		}
+
+		// Try to parse the type indicators part.
+
+		// If indicates this is lowercase.
+		switch (Char)
+		{
+		case LITERAL(FCharType, 'g'):
+		case LITERAL(FCharType, 'f'):
+		case LITERAL(FCharType, 'e'):
+		case LITERAL(FCharType, 'a'): bLowercase = true; break;
+		default: { }
+		}
+
+		// If indicates this is not normal formatting.
+		switch (Char)
+		{
+		case LITERAL(FCharType, 'G'): case LITERAL(FCharType, 'g'): bGeneral     = true; break;
+		case LITERAL(FCharType, 'F'): case LITERAL(FCharType, 'f'): bFixedPoint  = true; break;
+		case LITERAL(FCharType, 'E'): case LITERAL(FCharType, 'e'): bScientific  = true; break;
+		case LITERAL(FCharType, 'A'): case LITERAL(FCharType, 'a'): bHexadecimal = true; break;
+		default: { }
+		}
+
+		// If exists the type indicators part.
+		switch (Char)
+		{
+		case LITERAL(FCharType, 'G'): case LITERAL(FCharType, 'g'):
+		case LITERAL(FCharType, 'F'): case LITERAL(FCharType, 'f'):
+		case LITERAL(FCharType, 'E'): case LITERAL(FCharType, 'e'):
+		case LITERAL(FCharType, 'A'): case LITERAL(FCharType, 'a'): if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter; Char = *Iter; ++Iter; break;
+		default: { }
+		}
+
+		// Try to parse the case indicators part.
+		if (Char == LITERAL(FCharType, '!'))
+		{
+			bUppercase = true;
+
+			if (Iter == Sent || *Iter == LITERAL(FCharType, '}')) return Iter;
+
+			Char = *Iter; ++Iter;
+		}
+
+		checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+		return Iter;
+	}
+
+	template <CFormatObjectContext<FCharType> CTX>
+	constexpr TRangeIterator<CTX> Format(T Object, CTX& Context) const
+	{
+		auto Iter = Ranges::Begin(Context);
+		auto Sent = Ranges::End  (Context);
+
+		size_t TargetField     = FieldWidth;
+		size_t TargetPrecision = Precision;
+
+		// Visit the dynamic width argument.
+		if (bDynamicWidth)
+		{
+			TargetField = Context.Visit([]<typename U>(U && Value) -> size_t
+			{
+
+				if constexpr (CIntegral<U>)
+				{
+					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
+
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic width argument must be an integral."));
+
+					return 0;
+				}
+			}
+			, FieldWidth);
+		}
+
+		// Visit the dynamic precision argument.
+		if (bDynamicPrecision)
+		{
+			TargetPrecision = Context.Visit([]<typename U>(U && Value) -> size_t
+			{
+				if constexpr (CIntegral<U>)
+				{
+					checkf(Value >= 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned number."));
+
+					return Math::Max(Value, 1);
+				}
+				else
+				{
+					checkf(false, TEXT("Illegal format argument. The dynamic precision argument must be an integral."));
+
+					return 0;
+				}
+			}
+			, Precision);
+		}
+
+		const bool bNegative = Math::IsNegative(Object);
+
+		size_t TargetWidth;
+
+		const char* Target = nullptr;
+
+		const char* InfinityNormal    = LITERAL(FCharType, "Infinity");
+		const char* InfinityLowercase = LITERAL(FCharType, "infinity");
+		const char* InfinityUppercase = LITERAL(FCharType, "INFINITY");
+
+		const char* NaNNormal    = LITERAL(FCharType, "NaN");
+		const char* NaNLowercase = LITERAL(FCharType, "nan");
+		const char* NaNUppercase = LITERAL(FCharType, "NAN");
+
+		constexpr size_t StartingBufferSize = 64;
+
+		TArray<char, TInlineAllocator<StartingBufferSize>> Buffer(StartingBufferSize);
+
+		// Handle the infinite value.
+		if (Math::IsInfinity(Object))
+		{
+			TargetWidth = 8;
+
+			Target = InfinityNormal;
+
+			// Convert the character case.
+			if (bLowercase) Target = InfinityLowercase;
+			if (bUppercase) Target = InfinityUppercase;
+		}
+
+		// Handle the NaN value.
+		else if (Math::IsNaN(Object))
+		{
+			TargetWidth = 3;
+
+			Target = NaNNormal;
+
+			// Convert the character case.
+			if (bLowercase) Target = NaNLowercase;
+			if (bUppercase) Target = NaNUppercase;
+		}
+
+		// Handle the normal value.
+		else
+		{
+			NAMESPACE_STD::to_chars_result ConvertResult;
+
+			while (true)
+			{
+				if (bHasPrecision)
+				{
+					check(static_cast<int>(TargetPrecision) >= 0);
+
+					if      (bGeneral    ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::general   , static_cast<int>(TargetPrecision));
+					else if (bFixedPoint ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::fixed     , static_cast<int>(TargetPrecision));
+					else if (bScientific ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::scientific, static_cast<int>(TargetPrecision));
+					else if (bHexadecimal) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::hex       , static_cast<int>(TargetPrecision));
+					else                   ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::general   , static_cast<int>(TargetPrecision));
+				}
+
+				else
+				{
+					if      (bGeneral    ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::general   );
+					else if (bFixedPoint ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::fixed     );
+					else if (bScientific ) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::scientific);
+					else if (bHexadecimal) ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object, NAMESPACE_STD::chars_format::hex       );
+					else                   ConvertResult = NAMESPACE_STD::to_chars(Buffer.GetData(), Buffer.GetData() + Buffer.Num(), Object);
+				}
+
+				if (ConvertResult.ec != NAMESPACE_STD::errc::value_too_large) break;
+
+				Buffer.Reserve(Buffer.Num() * 2);
+			}
+
+			Buffer.SetNum(ConvertResult.ptr - Buffer.GetData());
+
+			// Remove the negative sign.
+			if (Buffer.Front() == TEXT('-')) Buffer.StableErase(Buffer.Begin());
+
+			// Handle the alternate form.
+			if (bAlternateForm)
+			{
+				const char ExponentChar = bHexadecimal ? TEXT('p') : TEXT('e');
+
+				auto BufferIter = Buffer.Begin();
+
+				// Insert the decimal point character.
+				while (true)
+				{
+					if (BufferIter == Buffer.End())
+					{
+						Buffer.PushBack(TEXT('.'));
+
+						BufferIter = Algorithms::Prev(Buffer.End());
+
+						break;
+					}
+
+					if (*BufferIter == ExponentChar)
+					{
+						BufferIter = Buffer.Insert(BufferIter, TEXT('.'));
+
+						break;
+					}
+
+					if (*BufferIter == TEXT('.')) break;
+
+					++BufferIter;
+				}
+
+				// Restore trailing zeros.
+				if (bGeneral)
+				{
+					if (!bHasPrecision) TargetPrecision = 6;
+
+					size_t DigitNum = BufferIter - Buffer.Begin();
+
+					++BufferIter;
+
+					while (true)
+					{
+						if (DigitNum >= TargetPrecision) break;
+
+						if (BufferIter == Buffer.End())
+						{
+							Buffer.SetNum(Buffer.Num() + TargetPrecision - DigitNum, TEXT('0'));
+
+							break;
+						}
+
+						if (*BufferIter == ExponentChar)
+						{
+							Buffer.Insert(BufferIter, TargetPrecision - DigitNum, TEXT('0'));
+
+							break;
+						}
+
+						++BufferIter;
+						++DigitNum;
+					}
+				}
+			}
+
+			// Convert the character case.
+			if (!bLowercase || bUppercase) for (char& Char : Buffer)
+			{
+				// Convert the exponent character.
+				if      ( bHexadecimal && Char == TEXT('p')) Char = bUppercase ? TEXT('P') : TEXT('p');
+				else if (!bHexadecimal && Char == TEXT('e')) Char = bUppercase ? TEXT('E') : TEXT('e');
+
+				// Convert the digit character.
+				else if (!bLowercase) Char = FChar::ToUpper(Char);
+			}
+
+			TargetWidth = Buffer.Num();
+
+			Target = Buffer.GetData();
+		}
+
+		size_t LeftPadding  = 0;
+		size_t RightPadding = 0;
+
+		// Estimate the field width.
+		if (TargetField != 0 && !bZeroPadding)
+		{
+			size_t LiteralWidth = TargetWidth;
+
+			// Handle the sign option.
+			switch (SignOption)
+			{
+			case LITERAL(FCharType, '+'):
+			case LITERAL(FCharType, ' '): LiteralWidth += 1; break;
+			default: if (bNegative)       LiteralWidth += 1;
+			}
+
+			const size_t PaddingWidth = TargetField - Math::Min(LiteralWidth, TargetField);
+
+			switch (AlignOption)
+			{
+			case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
+			case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
+			case LITERAL(FCharType, '^'):
+				LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
+				RightPadding = PaddingWidth - LeftPadding;
+				break;
+			default: check_no_entry();
+			}
+		}
+
+		// Write the left padding.
+		for (size_t Index = 0; Index != LeftPadding; ++Index)
+		{
+			for (size_t Jndex = 0; Jndex != FillUnitLength; ++Jndex)
+			{
+				if (Iter == Sent) UNLIKELY return Iter;
+
+				*Iter++ = FillCharacter[Jndex];
+			}
+		}
+
+		// Write the object, include escaped quotes in the counter.
+		{
+			static_assert(FChar::IsASCII() && FCharTraits::IsASCII());
+
+			if (Iter == Sent) UNLIKELY return Iter;
+
+			// Handle the sign option.
+			switch (SignOption)
+			{
+			case LITERAL(FCharType, '+'): *Iter++ = bNegative ? LITERAL(FCharType, '-') : LITERAL(FCharType, '+'); break;
+			case LITERAL(FCharType, ' '): *Iter++ = bNegative ? LITERAL(FCharType, '-') : LITERAL(FCharType, ' '); break;
+			default: if (bNegative)       *Iter++ =             LITERAL(FCharType, '-');
+			}
+
+			// Handle the zero padding.
+			if (bZeroPadding && Target == Buffer.GetData())
+			{
+				for (size_t Index = TargetWidth; Index < TargetField; ++Index)
+				{
+					if (Iter == Sent) UNLIKELY return Iter;
+
+					*Iter++ = LITERAL(FCharType, '0');
+				}
+			}
+
+			// Write the target object.
+			for (size_t Index = 0; Index != TargetWidth; ++Index)
+			{
+				if (Iter == Sent) UNLIKELY return Iter;
+
+				*Iter++ = static_cast<FCharType>(Target[Index]);
+			}
+		}
+
+		// Write the right padding.
+		for (size_t Index = 0; Index != RightPadding; ++Index)
+		{
+			for (size_t Jndex = 0; Jndex != FillUnitLength; ++Jndex)
+			{
+				if (Iter == Sent) UNLIKELY return Iter;
+
+				*Iter++ = FillCharacter[Jndex];
+			}
+		}
+
+		return Iter;
+	}
+
+private:
+
+	size_t         FillUnitLength = 1;
+	FFillCharacter FillCharacter  = { LITERAL(FCharType, ' ') };
+	FCharType      AlignOption    =   LITERAL(FCharType, '>');
+
+	FCharType SignOption = LITERAL(FCharType, '-');
+
+	bool bAlternateForm = false;
+	bool bZeroPadding   = false;
+
+	bool bHasPrecision = false;
+
+	size_t FieldWidth = 0;
+	size_t Precision  = 0;
+
+	bool bDynamicWidth     = false;
+	bool bDynamicPrecision = false;
+
+	bool bGeneral     = false;
+	bool bFixedPoint  = false;
+	bool bScientific  = false;
+	bool bHexadecimal = false;
+
+	bool bLowercase = false;
+	bool bUppercase = false;
+
+};
+
+static_assert(CFormattable<float>);
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
