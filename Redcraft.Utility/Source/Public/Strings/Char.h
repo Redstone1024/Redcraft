@@ -110,13 +110,13 @@ struct TChar
 		// Windows uses UTF-16 encoding for wchar.
 		else if constexpr (PLATFORM_WINDOWS && (CSameAs<FCharType, wchar>))
 		{
-			return TChar::IsValid(static_cast<u16char>(InChar));
+			return TChar<u16char>::IsValid(static_cast<u16char>(InChar));
 		}
 
 		// Linux uses UTF-32 encoding for wchar.
 		else if constexpr (PLATFORM_LINUX && (CSameAs<FCharType, wchar>))
 		{
-			return TChar::IsValid(static_cast<u32char>(InChar));
+			return TChar<u32char>::IsValid(static_cast<u32char>(InChar));
 		}
 
 		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
@@ -153,13 +153,13 @@ struct TChar
 		// Windows uses UTF-16 encoding for wchar.
 		else if constexpr (PLATFORM_WINDOWS && (CSameAs<FCharType, wchar>))
 		{
-			return TChar::IsNonch(static_cast<u16char>(InChar));
+			return TChar<u16char>::IsNonch(static_cast<u16char>(InChar));
 		}
 
 		// Linux uses UTF-32 encoding for wchar.
 		else if constexpr (PLATFORM_LINUX && (CSameAs<FCharType, wchar>))
 		{
-			return TChar::IsNonch(static_cast<u32char>(InChar));
+			return TChar<u32char>::IsNonch(static_cast<u32char>(InChar));
 		}
 
 		else static_assert(sizeof(FCharType) == -1, "Unsupported character type");
