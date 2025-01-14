@@ -811,8 +811,7 @@ public:
 		{
 			MinDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -833,7 +832,7 @@ public:
 		{
 			MaxDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned non-zero number."));
 
@@ -1641,8 +1640,7 @@ public:
 		{
 			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -1663,9 +1661,9 @@ public:
 		{
 			TargetBase = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
-					checkf(!Math::IsWithinInclusive(Value, 2, 36), TEXT("Illegal format argument. The dynamic base argument must be in the range [2, 36]."));
+					checkf(Math::IsWithinInclusive(Value, 2, 36), TEXT("Illegal format argument. The dynamic base argument must be in the range [2, 36]."));
 
 					return Math::Max(Value, 1);
 				}
@@ -2451,10 +2449,9 @@ public:
 		// Visit the dynamic width argument.
 		if (bDynamicWidth)
 		{
-			TargetField = Context.Visit([]<typename U>(U && Value) -> size_t
+			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -2473,9 +2470,9 @@ public:
 		// Visit the dynamic precision argument.
 		if (bDynamicPrecision)
 		{
-			TargetPrecision = Context.Visit([]<typename U>(U && Value) -> size_t
+			TargetPrecision = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<U>)
+				if constexpr (CIntegral<TRemoveReference<U>>)
 				{
 					checkf(Value >= 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned number."));
 
