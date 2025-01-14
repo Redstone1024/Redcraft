@@ -279,7 +279,7 @@ FORCEINLINE constexpr TRangeIterator<R2> Format(R2&& Output, R1&& Fmt, Ts&&... A
 					{
 						const uint Digit = FCharTraits::ToDigit(Char);
 
-						if (Digit > 10) bIsValid = false;
+						if (Digit >= 10) bIsValid = false;
 
 						Index = Index * 10 + Digit;
 
@@ -608,7 +608,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					MinFieldWidth = MinFieldWidth * 10 + Digit;
 				}
@@ -702,7 +702,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					MaxFieldWidth = MaxFieldWidth * 10 + Digit;
 				}
@@ -1362,7 +1362,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					FieldWidth = FieldWidth * 10 + Digit;
 				}
@@ -1465,7 +1465,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					IntegralBase = IntegralBase * 10 + Digit;
 				}
@@ -2236,7 +2236,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					FieldWidth = FieldWidth * 10 + Digit;
 				}
@@ -2332,7 +2332,7 @@ public:
 
 					const uint Digit = FCharTraits::ToDigit(Char);
 
-					if (Digit > 10) break;
+					if (Digit >= 10) break;
 
 					Precision = Precision * 10 + Digit;
 				}
