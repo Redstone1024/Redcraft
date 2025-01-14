@@ -565,29 +565,37 @@ void TestConvert()
 	Test(InPlaceType<unicodechar>);
 }
 
-void TestStringConversion()
+void TestFormatting()
 {
 	auto Test = []<typename T>(TInPlaceType<T>)
 	{
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), true ) == LITERAL(T, "#True#" ));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), false) == LITERAL(T, "#False#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), LITERAL(T, "Hello, World!")) == LITERAL(T, "#Hello, World!#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0) == LITERAL(T, "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0) == LITERAL(T, "#0#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0) == LITERAL(T, "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), true ) == LITERAL(T, "#True#" ));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), false) == LITERAL(T, "#False#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 42) == LITERAL(T, "#42#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), +0) == LITERAL(T, "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"),  0) == LITERAL(T, "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), -0) == LITERAL(T, "#0#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +0.0) == LITERAL(T,  "#0.000000#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"),  0.0) == LITERAL(T,  "#0.000000#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -0.0) == LITERAL(T, "#-0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), 42) == LITERAL(T, "#42#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), 3.14) == LITERAL(T, "#3.140000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), +0.0) == LITERAL(T,  "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"),  0.0) == LITERAL(T,  "#0#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), -0.0) == LITERAL(T, "#-0#"));
 
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::Infinity()) == LITERAL(T,  "#Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::Infinity()) == LITERAL(T, "#-Infinity#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), +TNumericLimits<float>::QuietNaN()) == LITERAL(T,  "#NaN#"));
-		always_check(TString<T>::Format(LITERAL(T, "#{}#"), -TNumericLimits<float>::QuietNaN()) == LITERAL(T, "#-NaN#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), 3.14) == LITERAL(T, "#3.14#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{0:.6F}#"), +0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0:.6F}#"),  0.0) == LITERAL(T,  "#0.000000#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0:.6F}#"), -0.0) == LITERAL(T, "#-0.000000#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{0:.6F}#"), 3.14) == LITERAL(T, "#3.140000#"));
+
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), +TNumericLimits<float>::Infinity()) == LITERAL(T,  "#Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), -TNumericLimits<float>::Infinity()) == LITERAL(T, "#-Infinity#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), +TNumericLimits<float>::QuietNaN()) == LITERAL(T,  "#NaN#"));
+		always_check(TString<T>::Format(LITERAL(T, "#{0}#"), -TNumericLimits<float>::QuietNaN()) == LITERAL(T, "#-NaN#"));
 
 		{
 			always_check(TString<T>::FromBool(true ) == LITERAL(T, "True" ));
@@ -632,7 +640,7 @@ void TestString()
 	NAMESPACE_PRIVATE::TestStringView();
 	NAMESPACE_PRIVATE::TestString();
 	NAMESPACE_PRIVATE::TestConvert();
-	NAMESPACE_PRIVATE::TestStringConversion();
+	NAMESPACE_PRIVATE::TestFormatting();
 }
 
 NAMESPACE_END(Testing)

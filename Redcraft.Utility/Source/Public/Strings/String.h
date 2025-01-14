@@ -9,12 +9,14 @@
 #include "Containers/Array.h"
 #include "Containers/ArrayView.h"
 #include "Iterators/Utility.h"
-#include "Iterators/BasicIterator.h"
 #include "Iterators/Sentinel.h"
+#include "Iterators/BasicIterator.h"
+#include "Iterators/InsertIterator.h"
 #include "Ranges/Utility.h"
 #include "Ranges/Factory.h"
 #include "Strings/Char.h"
 #include "Strings/StringView.h"
+#include "Strings/Formatting.h"
 #include "Miscellaneous/AssertionMacros.h"
 
 #include <locale>
@@ -1231,7 +1233,7 @@ public:
 	 * @return The string containing the integer value.
 	 */
 	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-	NODISCARD static FORCEINLINE TString FromInt(U Value, unsigned Base = 10)
+	NODISCARD static FORCEINLINE TString FromInt(U Value, uint Base = 10)
 	{
 		checkf(Base >= 2 && Base <= 36, TEXT("Illegal base. Please check the base."));
 
@@ -1289,7 +1291,7 @@ public:
 	 * @return
 	 */
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	NODISCARD static FORCEINLINE TString FromFloat(U Value, bool bFixed, bool bScientific, unsigned Precision)
+	NODISCARD static FORCEINLINE TString FromFloat(U Value, bool bFixed, bool bScientific, uint Precision)
 	{
 		TString Result;
 
@@ -1299,23 +1301,84 @@ public:
 	}
 
 	/** Converts a boolean value into a string and appends it to the string. */
-	void AppendBool(bool Value);
+	FORCEINLINE void AppendBool(bool Value)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0}"), Value);
+	}
 
 	/** Converts an integer value into a string and appends it to the string. */
 	template <CIntegral U = int> requires (!CSameAs<U, bool> && !CConst<U> && !CVolatile<U>)
-	void AppendInt(U Value, unsigned Base = 10);
+	FORCEINLINE void AppendInt(U Value, uint Base = 10)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:_{1}I}"), Value, Base);
+	}
 
 	/** Converts a floating-point value into a string and appends it to the string. */
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	void AppendFloat(U Value);
+	FORCEINLINE void AppendFloat(U Value)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0}"), Value);
+	}
 
 	/** Converts a floating-point value into a string and appends it to the string. */
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	void AppendFloat(U Value, bool bFixed, bool bScientific);
+	FORCEINLINE void AppendFloat(U Value, bool bFixed, bool bScientific)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		if (bFixed && bScientific)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:G}"), Value);
+		}
+
+		else if (bFixed)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:F}"), Value);
+		}
+
+		else if (bScientific)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:E}"), Value);
+		}
+
+		else
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:A}"), Value);
+		}
+	}
 
 	/** Converts a floating-point value into a string and appends it to the string. */
 	template <CFloatingPoint U = float> requires (!CConst<U> && !CVolatile<U>)
-	void AppendFloat(U Value, bool bFixed, bool bScientific, unsigned Precision);
+	FORCEINLINE void AppendFloat(U Value, bool bFixed, bool bScientific, uint Precision)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		if (bFixed && bScientific)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:.{1}G}"), Value, Precision);
+		}
+
+		else if (bFixed)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:.{1}F}"), Value, Precision);
+		}
+
+		else if (bScientific)
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:.{1}E}"), Value, Precision);
+		}
+
+		else
+		{
+			Algorithms::Format(Inserter, LITERAL_VIEW(FElementType, "{0:.{1}A}"), Value, Precision);
+		}
+	}
 
 public:
 
@@ -1339,7 +1402,12 @@ public:
 
 	/** Format some objects using a format string and append to the string. */
 	template <typename... Ts>
-	void AppendFormat(TStringView<FElementType> Fmt, const Ts&... Args);
+	FORCEINLINE void AppendFormat(TStringView<FElementType> Fmt, const Ts&... Args)
+	{
+		auto Inserter = Ranges::View(MakeBackInserter(*this), UnreachableSentinel);
+
+		Algorithms::Format(Inserter, Fmt, Args...);
+	}
 
 public:
 
@@ -1379,5 +1447,3 @@ template <CCharType T> template <typename Allocator> constexpr TStringView<T>::T
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
-
-#include "Strings/Conversion.h.inl"
