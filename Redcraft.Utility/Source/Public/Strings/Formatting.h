@@ -812,7 +812,9 @@ public:
 		{
 			MinDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -833,7 +835,9 @@ public:
 		{
 			MaxDynamicField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned non-zero number."));
 
@@ -1641,7 +1645,9 @@ public:
 		{
 			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -1662,7 +1668,9 @@ public:
 		{
 			TargetBase = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Math::IsWithinInclusive(Value, 2, 36), TEXT("Illegal format argument. The dynamic base argument must be in the range [2, 36]."));
 
@@ -2444,7 +2452,9 @@ public:
 		{
 			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
@@ -2465,7 +2475,9 @@ public:
 		{
 			TargetPrecision = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value >= 0, TEXT("Illegal format argument. The dynamic precision argument must be a unsigned number."));
 
@@ -3030,7 +3042,9 @@ public:
 		{
 			TargetField = Context.Visit([]<typename U>(U&& Value) -> size_t
 			{
-				if constexpr (CIntegral<TRemoveReference<U>>)
+				using FDecayU = TRemoveCVRef<U>;
+
+				if constexpr (CIntegral<FDecayU> && !CSameAs<FDecayU, bool>)
 				{
 					checkf(Value > 0, TEXT("Illegal format argument. The dynamic width argument must be a unsigned non-zero number."));
 
