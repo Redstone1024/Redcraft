@@ -1686,14 +1686,6 @@ public:
 
 		const FCharType* Target = nullptr;
 
-		const FCharType* TrueNormal    = LITERAL(FCharType, "True");
-		const FCharType* TrueLowercase = LITERAL(FCharType, "true");
-		const FCharType* TrueUppercase = LITERAL(FCharType, "TRUE");
-
-		const FCharType* FalseNormal    = LITERAL(FCharType, "False");
-		const FCharType* FalseLowercase = LITERAL(FCharType, "false");
-		const FCharType* FalseUppercase = LITERAL(FCharType, "FALSE");
-
 		constexpr size_t BufferSize = sizeof(T) * 8;
 
 		TStaticArray<FCharType, BufferSize> Buffer;
@@ -1705,11 +1697,11 @@ public:
 			{
 				TargetWidth = bCharacter ? 1 : Object ? 4 : 5;
 
-				Target = Object ? TrueNormal : FalseNormal;
+				Target = Object ? LITERAL(FCharType, "True") : LITERAL(FCharType, "False");
 
 				// Convert the character case.
-				if (bLowercase) Target = Object ? TrueLowercase : FalseLowercase;
-				if (bUppercase) Target = Object ? TrueUppercase : FalseUppercase;
+				if (bLowercase) Target = Object ? LITERAL(FCharType, "true") : LITERAL(FCharType, "false");
+				if (bUppercase) Target = Object ? LITERAL(FCharType, "TRUE") : LITERAL(FCharType, "FALSE");
 
 				break;
 			}
@@ -2497,14 +2489,6 @@ public:
 
 		const char* Target = nullptr;
 
-		const char* InfinityNormal    = LITERAL(FCharType, "Infinity");
-		const char* InfinityLowercase = LITERAL(FCharType, "infinity");
-		const char* InfinityUppercase = LITERAL(FCharType, "INFINITY");
-
-		const char* NaNNormal    = LITERAL(FCharType, "NaN");
-		const char* NaNLowercase = LITERAL(FCharType, "nan");
-		const char* NaNUppercase = LITERAL(FCharType, "NAN");
-
 		constexpr size_t StartingBufferSize = 64;
 
 		TArray<char, TInlineAllocator<StartingBufferSize>> Buffer(StartingBufferSize);
@@ -2514,11 +2498,11 @@ public:
 		{
 			TargetWidth = 8;
 
-			Target = InfinityNormal;
+			Target = TEXT("Infinity");
 
 			// Convert the character case.
-			if (bLowercase) Target = InfinityLowercase;
-			if (bUppercase) Target = InfinityUppercase;
+			if (bLowercase) Target = TEXT("infinity");
+			if (bUppercase) Target = TEXT("INFINITY");
 		}
 
 		// Handle the NaN value.
@@ -2526,11 +2510,11 @@ public:
 		{
 			TargetWidth = 3;
 
-			Target = NaNNormal;
+			Target = TEXT("NaN");
 
 			// Convert the character case.
-			if (bLowercase) Target = NaNLowercase;
-			if (bUppercase) Target = NaNUppercase;
+			if (bLowercase) Target = TEXT("nan");
+			if (bUppercase) Target = TEXT("NAN");
 		}
 
 		// Handle the normal value.
