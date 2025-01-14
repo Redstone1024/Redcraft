@@ -1081,10 +1081,10 @@ static_assert(CFormattable<const char[256]>);
  *
  * 4. The zero padding part:
  *
- *	This part is allowed only if the type indicator part is not 'C', 'c', 'S' or 's',
- *	and the fill and align part is not specified but the width part is specified.
+ *	This part is allowed only if the type indicator part is not 'C', 'c', 'S' or 's'.
  *
- *	- '0': Use '0' as the fill character.
+ *	- '0': By adding the prefix '0' to satisfy the minimum field width of the object.
+ *	       if the object is normal number.
  *
  * 5. The width part:
  *
@@ -1312,7 +1312,7 @@ public:
 		}
 
 		// Try to parse the zero padding part.
-		if (Char == LITERAL(FCharType, '0') && !bHasFillAndAlign)
+		if (Char == LITERAL(FCharType, '0'))
 		{
 			bZeroPadding = true;
 
@@ -1681,6 +1681,8 @@ public:
 
 		bool bNegative = false;
 
+		bool bNormal = false;
+
 		size_t TargetWidth;
 
 		const FCharType* Target = nullptr;
@@ -1728,10 +1730,12 @@ public:
 
 				Buffer[0] = Char;
 
-				Target = Buffer;
+				Target = Buffer.GetData();
 
 				break;
 			}
+
+			bNormal = true;
 
 			// Handle the illegal base.
 			if (!Math::IsWithinInclusive(TargetBase, 2, 36))
@@ -1748,7 +1752,7 @@ public:
 
 				Buffer[0] = Object ? LITERAL(FCharType, '1') : LITERAL(FCharType, '0');
 
-				Target = Buffer;
+				Target = Buffer.GetData();
 
 				break;
 			}
@@ -1799,11 +1803,12 @@ public:
 		}
 		while (false);
 
+		size_t ZeroPadding  = 0;
 		size_t LeftPadding  = 0;
 		size_t RightPadding = 0;
 
 		// Estimate the field width.
-		if (TargetField != 0 && !bZeroPadding)
+		if (TargetField != 0)
 		{
 			size_t LiteralWidth = TargetWidth;
 
@@ -1829,16 +1834,20 @@ public:
 
 			const size_t PaddingWidth = TargetField - Math::Min(LiteralWidth, TargetField);
 
-			switch (AlignOption)
+			if (!bZeroPadding || !bNormal)
 			{
-			case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
-			case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
-			case LITERAL(FCharType, '^'):
-				LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
-				RightPadding = PaddingWidth - LeftPadding;
-				break;
-			default: check_no_entry();
+				switch (AlignOption)
+				{
+				case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
+				case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
+				case LITERAL(FCharType, '^'):
+					LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
+					RightPadding = PaddingWidth - LeftPadding;
+					break;
+				default: check_no_entry();
+				}
 			}
+			else ZeroPadding = PaddingWidth;
 		}
 
 		// Write the left padding.
@@ -1896,14 +1905,11 @@ public:
 			}
 
 			// Handle the zero padding.
-			if (bZeroPadding && Target == Buffer.GetData())
+			for (size_t Index = 0; Index != ZeroPadding; ++Index)
 			{
-				for (size_t Index = TargetWidth; Index < TargetField; ++Index)
-				{
-					if (Iter == Sent) UNLIKELY return Iter;
+				if (Iter == Sent) UNLIKELY return Iter;
 
-					*Iter++ = LITERAL(FCharType, '0');
-				}
+				*Iter++ = LITERAL(FCharType, '0');
 			}
 
 			// Write the target object.
@@ -2005,9 +2011,8 @@ static_assert(CFormattable<bool>);
  *
  * 4. The zero padding part:
  *
- *	This part is allowed only if the fill and align part is not specified but the width part is specified.
- *
- *	- '0': Use '0' as the fill character.
+ *	- '0': By adding the prefix '0' to satisfy the minimum field width of the object.
+ *	       if the object is normal number.
  *
  * 5. The width part:
  *
@@ -2191,7 +2196,7 @@ public:
 		}
 
 		// Try to parse the zero padding part.
-		if (Char == LITERAL(FCharType, '0') && !bHasFillAndAlign)
+		if (Char == LITERAL(FCharType, '0'))
 		{
 			bZeroPadding = true;
 
@@ -2488,6 +2493,8 @@ public:
 
 		const bool bNegative = Math::IsNegative(Object);
 
+		bool bNormal = false;
+
 		size_t TargetWidth;
 
 		const char* Target = nullptr;
@@ -2531,6 +2538,8 @@ public:
 		// Handle the normal value.
 		else
 		{
+			bNormal = true;
+
 			NAMESPACE_STD::to_chars_result ConvertResult;
 
 			while (true)
@@ -2557,7 +2566,7 @@ public:
 
 				if (ConvertResult.ec != NAMESPACE_STD::errc::value_too_large) break;
 
-				Buffer.Reserve(Buffer.Num() * 2);
+				Buffer.SetNum(Buffer.Num() * 2);
 			}
 
 			Buffer.SetNum(ConvertResult.ptr - Buffer.GetData());
@@ -2645,11 +2654,12 @@ public:
 			Target = Buffer.GetData();
 		}
 
+		size_t ZeroPadding  = 0;
 		size_t LeftPadding  = 0;
 		size_t RightPadding = 0;
 
 		// Estimate the field width.
-		if (TargetField != 0 && !bZeroPadding)
+		if (TargetField != 0)
 		{
 			size_t LiteralWidth = TargetWidth;
 
@@ -2663,16 +2673,20 @@ public:
 
 			const size_t PaddingWidth = TargetField - Math::Min(LiteralWidth, TargetField);
 
-			switch (AlignOption)
+			if (!bZeroPadding || !bNormal)
 			{
-			case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
-			case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
-			case LITERAL(FCharType, '^'):
-				LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
-				RightPadding = PaddingWidth - LeftPadding;
-				break;
-			default: check_no_entry();
+				switch (AlignOption)
+				{
+				case LITERAL(FCharType, '<'): RightPadding = PaddingWidth; break;
+				case LITERAL(FCharType, '>'): LeftPadding  = PaddingWidth; break;
+				case LITERAL(FCharType, '^'):
+					LeftPadding  = Math::DivAndFloor(PaddingWidth, 2);
+					RightPadding = PaddingWidth - LeftPadding;
+					break;
+				default: check_no_entry();
+				}
 			}
+			else ZeroPadding = PaddingWidth;
 		}
 
 		// Write the left padding.
@@ -2701,14 +2715,11 @@ public:
 			}
 
 			// Handle the zero padding.
-			if (bZeroPadding && Target == Buffer.GetData())
+			for (size_t Index = 0; Index != ZeroPadding; ++Index)
 			{
-				for (size_t Index = TargetWidth; Index < TargetField; ++Index)
-				{
-					if (Iter == Sent) UNLIKELY return Iter;
+				if (Iter == Sent) UNLIKELY return Iter;
 
-					*Iter++ = LITERAL(FCharType, '0');
-				}
+				*Iter++ = LITERAL(FCharType, '0');
 			}
 
 			// Write the target object.
