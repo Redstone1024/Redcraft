@@ -235,8 +235,6 @@ FORCEINLINE constexpr TRangeIterator<R2> Format(R2&& Output, R1&& Fmt, Ts&&... A
 	// If the output range is insufficient.
 	if (OutIter == OutSent) UNLIKELY return OutIter;
 
-	TTuple<TFormatter<TRemoveCVRef<Ts>, FCharType>...> Formatters;
-
 	// For each character in the format string.
 	for (FCharType Char; FmtIter != FmtSent; ++FmtIter)
 	{
@@ -315,35 +313,40 @@ FORCEINLINE constexpr TRangeIterator<R2> Format(R2&& Output, R1&& Fmt, Ts&&... A
 				// Jump over the ':' character.
 				if (Char == LITERAL(FCharType, ':')) ++FmtIter;
 
-				FormatStringContext.AdvanceTo(MoveTemp(FmtIter));
-
-				// Parse the format description string.
-				FmtIter = Formatters.Visit([&FormatStringContext](auto& Formatter) -> decltype(FmtIter) { return Formatter.Parse(FormatStringContext); }, Index);
-
-				if (FmtIter == FmtSent || *FmtIter != LITERAL(FCharType, '}')) UNLIKELY
+				if (FmtIter == FmtSent) UNLIKELY
 				{
 					checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
 
 					break;
 				}
 
-				FormatObjectContext.AdvanceTo(MoveTemp(OutIter));
+				Char = *FmtIter;
 
-				auto FormatHandler = [&]<size_t... Indices>(TIndexSequence<Indices...>)
+				ForwardAsTuple(Forward<Ts>(Args)...).Visit([&]<typename T>(T&& Arg)
 				{
-					TTuple<TConstant<size_t, Indices>...> Visitor;
+					TFormatter<TRemoveCVRef<T>, FCharType> Formatter;
 
-					return Visitor.Visit([&]<size_t ConstantIndex>(TConstant<size_t, ConstantIndex>)
+					if (Char != LITERAL(FCharType, '}'))
 					{
-						check(ConstantIndex == Index);
+						FormatStringContext.AdvanceTo(MoveTemp(FmtIter));
 
-						return Formatters.template GetValue<ConstantIndex>().Format(ForwardAsTuple(Forward<Ts>(Args)...).template GetValue<ConstantIndex>(), FormatObjectContext);
+						// Parse the format description string.
+						FmtIter = Formatter.Parse(FormatStringContext);
+
+						if (FmtIter == FmtSent || *FmtIter != LITERAL(FCharType, '}')) UNLIKELY
+						{
+							checkf(false, TEXT("Illegal format string. Missing '}' in format string."));
+
+							return;
+						}
 					}
-					, Index);
-				};
 
-				// Format the object and write the result to the context.
-				OutIter = FormatHandler(TIndexSequenceFor<Ts...>());
+					FormatObjectContext.AdvanceTo(MoveTemp(OutIter));
+
+					// Format the object and write the result to the context.
+					OutIter = Formatter.Format(Forward<T>(Arg), FormatObjectContext);
+				}
+				, Index);
 			}
 
 			else
