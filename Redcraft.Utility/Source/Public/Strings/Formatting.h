@@ -928,14 +928,21 @@ public:
 			*Iter++ = LITERAL(FCharType, '\"');
 		}
 
-		const FCharType* Ptr = Object - 1;
+		const FCharType* Ptr = Object;
+
+		bool bComplete = false;
 
 		// Write the object, include escaped quotes in the counter.
 		for (size_t Index = bEscape ? 1 : 0; Index != MaxDynamicField; ++Index)
 		{
-			FCharType Char = *++Ptr;
+			if (*Ptr == LITERAL(FCharType, '\0'))
+			{
+				bComplete = true;
 
-			if (Char == LITERAL(FCharType, '\0')) break;
+				break;
+			}
+
+			FCharType Char = *Ptr++;
 
 			if (Iter == Sent) UNLIKELY return Iter;
 
@@ -998,7 +1005,7 @@ public:
 		}
 
 		// Write the right quote, if the field width is enough.
-		if (bEscape && *Ptr == LITERAL(FCharType, '\0'))
+		if (bEscape && bComplete)
 		{
 			if (Iter == Sent) UNLIKELY return Iter;
 

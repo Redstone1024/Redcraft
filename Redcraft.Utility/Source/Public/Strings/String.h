@@ -1442,7 +1442,67 @@ using FU32String     = TString<u32char>;
 using FUnicodeString = TString<unicodechar>;
 
 template <CCharType T> template <typename Allocator> constexpr TStringView<T>::TStringView(const TString<FElementType, Allocator>& InString)
-	: TStringView(InString.GetData(), InString.Num()) { }
+	: TStringView(InString.GetData(), InString.Num())
+{ }
+
+/**
+ * A formatter for TString.
+ *
+ * The syntax of format specifications is:
+ *
+ *	[Fill And Align] [Width] [Precision] [Type] [!] [?]
+ *
+ * 1. The fill and align part:
+ *
+ *	[Fill Character] <Align Option>
+ *
+ *	i.   Fill Character: The character is used to fill width of the object. It is optional and cannot be '{' or '}'.
+ *	                     It should be representable as a single unicode otherwise it is undefined behavior.
+ *
+ *  ii.  Align Option: The character is used to indicate the direction of alignment.
+ *
+ *		- '<': Align the formatted argument to the left of the available space
+ *		       by inserting n fill characters after the formatted argument.
+ *		       This is default option.
+ *		- '^': Align the formatted argument to the center of the available space
+ *		       by inserting n fill characters around the formatted argument.
+ *		       If cannot absolute centering, offset to the left.
+ *		- '>': Align the formatted argument ro the right of the available space
+ *		       by inserting n fill characters before the formatted argument.
+ *
+ * 2. The width part:
+ *
+ *	- 'N':   The number is used to specify the minimum field width of the object.
+ *	         N should be an unsigned non-zero decimal number.
+ *	- '{N}': Dynamically determine the minimum field width of the object.
+ *	         N should be a valid index of the format integral argument.
+ *	         N is optional, and the default value is automatic indexing.
+ *
+ * 3. The precision part:
+ *
+ *	- '.N':   The number is used to specify the maximum field width of the object.
+ *	          N should be an unsigned non-zero decimal number.
+ *	- '.{N}': Dynamically determine the maximum field width of the object.
+ *	          N should be a valid index of the format integral argument.
+ *	          N is optional, and the default value is automatic indexing.
+ *
+ * 4. The type indicator part:
+ *
+ *	- none: Indicates the as-is formatting.
+ *	- 'S':  Indicates the as-is formatting.
+ *	- 's':  Indicates lowercase formatting.
+ *
+ * 5. The case indicators part:
+ *
+ *	- '!': Indicates capitalize the entire string.
+ *
+ * 6. The escape indicators part:
+ *
+ *	- '?': Indicates the escape formatting.
+ *
+ */
+template <CCharType T, typename Allocator>
+class TFormatter<TString<T, Allocator>, T> : public TFormatter<TStringView<T>, T> { };
 
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
