@@ -15,6 +15,9 @@
 
 #include <charconv>
 
+#pragma warning(push)
+#pragma warning(disable: 4244)
+
 NAMESPACE_REDCRAFT_BEGIN
 NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
@@ -3176,3 +3179,5 @@ private:
 NAMESPACE_MODULE_END(Utility)
 NAMESPACE_MODULE_END(Redcraft)
 NAMESPACE_REDCRAFT_END
+
+#pragma warning(pop)
