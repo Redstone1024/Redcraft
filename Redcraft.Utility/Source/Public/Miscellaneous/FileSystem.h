@@ -9,7 +9,7 @@
 #include "Strings/String.h"
 
 NAMESPACE_REDCRAFT_BEGIN
-	NAMESPACE_MODULE_BEGIN(Redcraft)
+NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(FileSystem)
@@ -82,22 +82,31 @@ bool SaveStringToFile(T&& String, FStringView Path, FileSystem::EEncoding Encodi
 	return false;
 }
 
+/** @return The size of the file at the specified path. */
 REDCRAFTUTILITY_API size_t FileSize(FStringView Path);
 
+/** Deletes the file at the specified path. */
 REDCRAFTUTILITY_API bool Delete(FStringView Path);
 
+/** @return true if the regular file at the specified path exists, false otherwise. */
 REDCRAFTUTILITY_API bool Exists(FStringView Path);
 
+/** Copies the file from the source path to the destination path. */
 REDCRAFTUTILITY_API bool Copy(FStringView Destination, FStringView Source);
 
+/** Renames the file from the source path to the destination path. */
 REDCRAFTUTILITY_API bool Rename(FStringView Destination, FStringView Source);
 
+/** Creates the directory at the specified path. If recursive, it will not delete the created items on failure. */
 REDCRAFTUTILITY_API bool CreateDirectory(FStringView Path, bool bRecursive = false);
 
+/** Deletes the directory at the specified path. If recursive, it will not recreate the deleted items on failure. */
 REDCRAFTUTILITY_API bool DeleteDirectory(FStringView Path, bool bRecursive = false);
 
+/** @return true if the directory at the specified path exists, false otherwise. */
 REDCRAFTUTILITY_API bool ExistsDirectory(FStringView Path);
 
+/** Iterates items in the directory at the specified path. */
 REDCRAFTUTILITY_API bool IterateDirectory(FStringView Path, TFunctionRef<bool(FStringView /* Path */, bool /* bIsDirectory */)> Visitor);
 
 NAMESPACE_END(FileSystem)
