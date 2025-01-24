@@ -493,7 +493,7 @@ public:
 	/** @return The non-modifiable standard C character string version of the string view. */
 	NODISCARD FORCEINLINE auto operator*() const
 	{
-		if (this->Back() == LITERAL(FElementType, '\0') || Contains(LITERAL(FElementType, '\0')))
+		if (EndsWith(LITERAL(FElementType, '\0')) || Contains(LITERAL(FElementType, '\0')))
 		{
 			return NAMESPACE_PRIVATE::TCStringFromTStringView<FElementType>(this->GetData(), false);
 		}

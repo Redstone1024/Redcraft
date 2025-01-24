@@ -1124,10 +1124,7 @@ public:
 	/** @return The non-modifiable standard C character string version of the string. */
 	NODISCARD FORCEINLINE auto operator*() &&
 	{
-		if (this->Back() != LITERAL(T, '\0'))
-		{
-			this->PushBack(LITERAL(T, '\0'));
-		}
+		if (!EndsWith(LITERAL(T, '\0'))) this->PushBack(LITERAL(T, '\0'));
 
 		return AsConst(*this).GetData();
 	}
