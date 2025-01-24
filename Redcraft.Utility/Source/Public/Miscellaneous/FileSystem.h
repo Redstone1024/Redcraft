@@ -2,12 +2,14 @@
 
 #include "CoreTypes.h"
 #include "TypeTraits/TypeTraits.h"
+#include "Templates/Utility.h"
+#include "Templates/Function.h"
 #include "Containers/Array.h"
 #include "Strings/StringView.h"
 #include "Strings/String.h"
 
 NAMESPACE_REDCRAFT_BEGIN
-NAMESPACE_MODULE_BEGIN(Redcraft)
+	NAMESPACE_MODULE_BEGIN(Redcraft)
 NAMESPACE_MODULE_BEGIN(Utility)
 
 NAMESPACE_BEGIN(FileSystem)
@@ -42,13 +44,7 @@ REDCRAFTUTILITY_API bool SaveArrayToFile(TArrayView<const uint8> Data, FStringVi
  * @return true if the file was successfully loaded, false otherwise.
  */
 template <CCharType T>
-bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncoding Encoding = FileSystem::EEncoding::Default, bool bVerify = false);
-
-template REDCRAFTUTILITY_API bool LoadFileToString<char>   (FString&,    FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool LoadFileToString<wchar>  (FWString&,   FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool LoadFileToString<u8char> (FU8String&,  FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool LoadFileToString<u16char>(FU16String&, FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool LoadFileToString<u32char>(FU32String&, FStringView, FileSystem::EEncoding, bool);
+REDCRAFTUTILITY_API bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncoding Encoding = FileSystem::EEncoding::Default, bool bVerify = false);
 
 /**
  * Saves the string to the file at the specified path.
@@ -61,13 +57,7 @@ template REDCRAFTUTILITY_API bool LoadFileToString<u32char>(FU32String&, FString
  * @return true if the file was successfully saved, false otherwise.
  */
 template <CCharType T>
-bool SaveStringToFile(TStringView<T> String, FStringView Path, FileSystem::EEncoding Encoding = FileSystem::EEncoding::Default, bool bWithBOM = true);
-
-template REDCRAFTUTILITY_API bool SaveStringToFile<char>   (FStringView,    FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool SaveStringToFile<wchar>  (FWStringView,   FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool SaveStringToFile<u8char> (FU8StringView,  FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool SaveStringToFile<u16char>(FU16StringView, FStringView, FileSystem::EEncoding, bool);
-template REDCRAFTUTILITY_API bool SaveStringToFile<u32char>(FU32StringView, FStringView, FileSystem::EEncoding, bool);
+REDCRAFTUTILITY_API bool SaveStringToFile(TStringView<T> String, FStringView Path, FileSystem::EEncoding Encoding = FileSystem::EEncoding::Default, bool bWithBOM = true);
 
 /**
  * Saves the string to the file at the specified path.
@@ -91,6 +81,24 @@ bool SaveStringToFile(T&& String, FStringView Path, FileSystem::EEncoding Encodi
 
 	return false;
 }
+
+REDCRAFTUTILITY_API size_t FileSize(FStringView Path);
+
+REDCRAFTUTILITY_API bool Delete(FStringView Path);
+
+REDCRAFTUTILITY_API bool Exists(FStringView Path);
+
+REDCRAFTUTILITY_API bool Copy(FStringView Destination, FStringView Source);
+
+REDCRAFTUTILITY_API bool Rename(FStringView Destination, FStringView Source);
+
+REDCRAFTUTILITY_API bool CreateDirectory(FStringView Path, bool bRecursive = false);
+
+REDCRAFTUTILITY_API bool DeleteDirectory(FStringView Path, bool bRecursive = false);
+
+REDCRAFTUTILITY_API bool ExistsDirectory(FStringView Path);
+
+REDCRAFTUTILITY_API bool IterateDirectory(FStringView Path, TFunctionRef<bool(FStringView /* Path */, bool /* bIsDirectory */)> Visitor);
 
 NAMESPACE_END(FileSystem)
 

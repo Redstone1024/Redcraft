@@ -1,10 +1,21 @@
 #include <Miscellaneous/FileSystem.h>
 
 #include "Numerics/Bit.h"
+#include "Numerics/Math.h"
 #include "Templates/ScopeHelper.h"
 #include "Containers/StaticArray.h"
 
 #include <cstdio>
+
+#if PLATFORM_WINDOWS
+#	undef TEXT
+#	include <windows.h>
+#	undef CreateDirectory
+#elif PLATFORM_LINUX
+#	include <unistd.h>
+#	include <dirent.h>
+#	include <sys/stat.h>
+#endif
 
 #pragma warning(push)
 #pragma warning(disable: 4996)
@@ -17,6 +28,8 @@ NAMESPACE_BEGIN(FileSystem)
 
 bool LoadFileToArray(TArray<uint8>& Result, FStringView Path)
 {
+	if (!FileSystem::Exists(Path)) return false;
+
 	FILE* File = std::fopen(*Path, "rb");
 
 	if (File == nullptr) return false;
@@ -27,7 +40,7 @@ bool LoadFileToArray(TArray<uint8>& Result, FStringView Path)
 
 	const long Length = std::ftell(File);
 
-	if (Length == -1) return false;
+	if (!Math::IsWithin(Length, 0, TNumericLimits<long>::Max())) return false;
 
 	if (std::fseek(File, 0, SEEK_SET) != 0) return false;
 
@@ -62,6 +75,8 @@ bool SaveArrayToFile(TArrayView<const uint8> Data, FStringView Path)
 template <CCharType T>
 bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncoding Encoding /* = FileSystem::EEncoding::Default */, bool bVerify /* = false */)
 {
+	if (!FileSystem::Exists(Path)) return false;
+
 	FILE* File = std::fopen(*Path, "rb");
 
 	if (File == nullptr) return false;
@@ -72,7 +87,7 @@ bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncodin
 
 	long Length = std::ftell(File);
 
-	if (Length == -1) return false;
+	if (!Math::IsWithin(Length, 0, TNumericLimits<long>::Max())) return false;
 
 	if (std::fseek(File, 0, SEEK_SET) != 0) return false;
 
@@ -136,7 +151,7 @@ bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncodin
 
 			if (ReadNum != sizeof(U)) return false;
 
-			if constexpr (sizeof(U) > 1) if (bByteSwap) Char = Math::ByteSwap(Char);
+			if (bByteSwap) Char = Math::ByteSwap(static_cast<TMakeUnsigned<U>>(Char));
 
 #			if PLATFORM_WINDOWS
 			{
@@ -186,6 +201,12 @@ bool LoadFileToString(TString<T>& Result, FStringView Path, FileSystem::EEncodin
 
 	return true;
 }
+
+template REDCRAFTUTILITY_API bool LoadFileToString<char>   (FString&,    FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool LoadFileToString<wchar>  (FWString&,   FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool LoadFileToString<u8char> (FU8String&,  FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool LoadFileToString<u16char>(FU16String&, FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool LoadFileToString<u32char>(FU32String&, FStringView, FileSystem::EEncoding, bool);
 
 template <CCharType T>
 bool SaveStringToFile(TStringView<T> String, FStringView Path, FileSystem::EEncoding Encoding /* = FileSystem::EEncoding::Default */, bool bWithBOM /* = true */)
@@ -252,14 +273,14 @@ bool SaveStringToFile(TStringView<T> String, FStringView Path, FileSystem::EEnco
 				{
 					T Return = LITERAL(T, '\r');
 
-					if constexpr (sizeof(T) > 1) if (bByteSwap) Return = Math::ByteSwap(Return);
+					if (bByteSwap) Return = Math::ByteSwap(static_cast<TMakeUnsigned<T>>(Return));
 
 					if (std::fwrite(&Return, 1, sizeof(T), File) != sizeof(T)) return false;
 				}
 			}
 #			endif
 
-			if constexpr (sizeof(T) > 1) if (bByteSwap) Char = Math::ByteSwap(Char);
+			if (bByteSwap) Char = Math::ByteSwap(static_cast<TMakeUnsigned<T>>(Char));
 
 			if (std::fwrite(&Char, 1, sizeof(T), File) != sizeof(T)) return false;
 		}
@@ -271,19 +292,299 @@ bool SaveStringToFile(TStringView<T> String, FStringView Path, FileSystem::EEnco
 		return true;
 	}
 
+	FString PathWithNull;
+
+	PathWithNull.Reserve(Path.Num() + 1);
+
+	PathWithNull += Path;
+	PathWithNull += '\0';
+
 	switch (Encoding)
 	{
-	case FileSystem::EEncoding::Narrow:  { FString    Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::Narrow,  bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::Wide:    { FWString   Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::Wide,    bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::UTF8:    { FU8String  Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::UTF8,    bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::UTF16BE: { FU16String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::UTF16BE, bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::UTF16LE: { FU16String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::UTF16LE, bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::UTF32BE: { FU32String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::UTF32BE, bWithBOM)) return false; break; }
-	case FileSystem::EEncoding::UTF32LE: { FU32String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, Path, FileSystem::EEncoding::UTF32LE, bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::Narrow:  { FString    Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::Narrow,  bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::Wide:    { FWString   Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::Wide,    bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::UTF8:    { FU8String  Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::UTF8,    bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::UTF16BE: { FU16String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::UTF16BE, bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::UTF16LE: { FU16String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::UTF16LE, bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::UTF32BE: { FU32String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::UTF32BE, bWithBOM)) return false; break; }
+	case FileSystem::EEncoding::UTF32LE: { FU32String Temp; if (!Temp.DecodeFrom(String)) return false; if (!FileSystem::SaveStringToFile(Temp, PathWithNull, FileSystem::EEncoding::UTF32LE, bWithBOM)) return false; break; }
 	default: check_no_entry(); return false;
 	}
 
 	return true;
+}
+
+template REDCRAFTUTILITY_API bool SaveStringToFile<char>   (FStringView,    FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool SaveStringToFile<wchar>  (FWStringView,   FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool SaveStringToFile<u8char> (FU8StringView,  FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool SaveStringToFile<u16char>(FU16StringView, FStringView, FileSystem::EEncoding, bool);
+template REDCRAFTUTILITY_API bool SaveStringToFile<u32char>(FU32StringView, FStringView, FileSystem::EEncoding, bool);
+
+size_t FileSize(FStringView Path)
+{
+	if (!FileSystem::Exists(Path)) return static_cast<size_t>(-1);
+
+	FILE* File = std::fopen(*Path, "rb");
+
+	if (File == nullptr) return static_cast<size_t>(-1);
+
+	auto FileGuard = TScopeCallback([=] { Ignore = std::fclose(File); });
+
+	if (std::fseek(File, 0, SEEK_END) != 0) return static_cast<size_t>(-1);
+
+	const long Length = std::ftell(File);
+
+	if (!Math::IsWithin(Length, 0, TNumericLimits<long>::Max())) return static_cast<size_t>(-1);
+
+	FileGuard.Release();
+
+	if (std::fclose(File) != 0) return static_cast<size_t>(-1);
+
+	return Length;
+}
+
+bool Delete(FStringView Path)
+{
+	return std::remove(*Path) == 0;
+}
+
+bool Exists(FStringView Path)
+{
+#	if PLATFORM_WINDOWS
+	{
+		DWORD Attributes = GetFileAttributesA(*Path);
+
+		if (Attributes == INVALID_FILE_ATTRIBUTES) return false;
+
+		return !(Attributes & FILE_ATTRIBUTE_DIRECTORY);
+	}
+#	elif PLATFORM_LINUX
+	{
+		struct stat FileInfo;
+
+		FileInfo.st_size = -1;
+
+		if (stat(*Path, &FileInfo) != 0) return false;
+
+		if (!S_ISREG(FileInfo.st_mode)) return false;
+
+		return true;
+	}
+#	endif
+
+	return false;
+}
+
+bool Copy(FStringView Destination, FStringView Source)
+{
+	if (!FileSystem::Exists(Source)) return false;
+
+	FILE* FileA = std::fopen(*Source, "rb");
+
+	if (FileA == nullptr) return false;
+
+	auto FileGuardA = TScopeCallback([=] { Ignore = std::fclose(FileA); });
+
+	FILE* FileB = std::fopen(*Destination, "wb");
+
+	if (FileB == nullptr) return false;
+
+	auto FileGuardB = TScopeCallback([=] { Ignore = std::fclose(FileB); });
+
+	size_t ReadSize;
+
+	constexpr size_t BufferSize = 4096;
+
+	TStaticArray<uint8, BufferSize> Buffer;
+
+	do
+	{
+		ReadSize = std::fread(Buffer.GetData(), 1, BufferSize, FileA);
+
+		if (std::fwrite(Buffer.GetData(), 1, ReadSize, FileB) != ReadSize) return false;
+	}
+	while (ReadSize == BufferSize);
+
+	FileGuardA.Release();
+
+	if (std::fclose(FileA) != 0) return false;
+
+	FileGuardB.Release();
+
+	if (std::fclose(FileB) != 0) return false;
+
+	return true;
+}
+
+bool Rename(FStringView Destination, FStringView Source)
+{
+	return std::rename(*Source, *Destination) == 0;
+}
+
+bool CreateDirectory(FStringView Path, bool bRecursive /* = false */)
+{
+	if (Path.Num() == 0) return false;
+
+	if (bRecursive)
+	{
+		if (Path.Back() == '/' || Path.Back() == '\\') Path = Path.First(Path.Num() - 1);
+
+		FStringView Parent = Path.First(Path.FindLastOf("/\\"));
+
+		if (!FileSystem::ExistsDirectory(Parent) && !FileSystem::CreateDirectory(Parent, true)) return false;
+	}
+
+#	if PLATFORM_WINDOWS
+	{
+		return CreateDirectoryA(*Path, nullptr) != 0;
+	}
+#	elif PLATFORM_LINUX
+	{
+		return mkdir(*Path, 0755) == 0;
+	}
+#	endif
+
+	return false;
+}
+
+bool DeleteDirectory(FStringView Path, bool bRecursive /* = false */)
+{
+	if (bRecursive)
+	{
+		FString Temp;
+
+		bool bSuccessfully = FileSystem::IterateDirectory(Path, [&](FStringView File, bool bIsDirectory) -> bool
+		{
+			Temp.Reset(false);
+
+			Temp += Path;
+			Temp += '/';
+			Temp += File;
+			Temp += '\0';
+
+			if (bIsDirectory)
+			{
+				if (!FileSystem::DeleteDirectory(Temp, true)) return false;
+			}
+
+			else
+			{
+				if (!FileSystem::Delete(Temp)) return false;
+			}
+
+			return true;
+		});
+
+		if (!bSuccessfully) return false;
+	}
+
+#	if PLATFORM_WINDOWS
+	{
+		return RemoveDirectoryA(*Path) != 0;
+	}
+#	elif PLATFORM_LINUX
+	{
+		return rmdir(*Path) == 0;
+	}
+#	endif
+
+	return false;
+}
+
+bool ExistsDirectory(FStringView Path)
+{
+#	if PLATFORM_WINDOWS
+	{
+		DWORD Attributes = GetFileAttributesA(*Path);
+
+		if (Attributes == INVALID_FILE_ATTRIBUTES) return false;
+
+		return Attributes & FILE_ATTRIBUTE_DIRECTORY;
+	}
+#	elif PLATFORM_LINUX
+	{
+		DIR* Directory = opendir(*Path);
+
+		if (Directory == nullptr) return false;
+
+		Ignore = closedir(Directory);
+
+		return true;
+	}
+#	endif
+
+	return false;
+}
+
+bool IterateDirectory(FStringView Path, TFunctionRef<bool(FStringView /* Path */, bool /* bIsDirectory */)> Visitor)
+{
+#	if PLATFORM_WINDOWS
+	{
+		FString FindPath;
+
+		FindPath.Reserve(Path.Num() + 3);
+
+		FindPath += Path;
+		FindPath += '\\';
+		FindPath += '*';
+		FindPath += '\0';
+
+		WIN32_FIND_DATA FindData;
+
+		HANDLE FindHandle = FindFirstFileA(*FindPath, &FindData);
+
+		auto FindGuard = TScopeCallback([=] { Ignore = FindClose(FindHandle); });
+
+		if (FindHandle == INVALID_HANDLE_VALUE) return false;
+
+		do
+		{
+			const FStringView FilePath = FindData.cFileName;
+
+			if (FilePath == "." || FilePath == "..") continue;
+
+			const bool bIsDirectory = (FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+			if (!Visitor(FilePath, bIsDirectory)) return false;
+		}
+		while (FindNextFileA(FindHandle, &FindData) != 0);
+
+		FindGuard.Release();
+
+		if (!FindClose(FindHandle)) return false;
+
+		return true;
+	}
+#	elif PLATFORM_LINUX
+	{
+		DIR* Directory = opendir(*Path);
+
+		if (Directory == nullptr) return false;
+
+		auto DirectoryGuard = TScopeCallback([=] { Ignore = closedir(Directory); });
+
+		dirent* Entry;
+
+		while ((Entry = readdir(Directory)) != nullptr)
+		{
+			const FStringView FilePath = Entry->d_name;
+
+			if (FilePath == "." || FilePath == "..") continue;
+
+			const bool bIsDirectory = Entry->d_type == DT_DIR;
+
+			if (!Visitor(FilePath, bIsDirectory)) return false;
+		}
+
+		DirectoryGuard.Release();
+
+		if (closedir(Directory) != 0) return false;
+
+		return true;
+	}
+#	endif
+
+	return false;
 }
 
 NAMESPACE_END(FileSystem)
